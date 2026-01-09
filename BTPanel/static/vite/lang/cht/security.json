@@ -463,6 +463,86 @@
 			"Index_4": "設置成功",
 			"Index_5": "請選擇用戶",
 			"Index_6": "您確定要刪除此用戶嗎？"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "正在掃描",
+				"lastScanTime": "上次掃描時間：",
+				"cancelScan": "取消掃描",
+				"scanNow": "立即掃描",
+				"title": "智能網站安全",
+				"desc": "基於強大引擎打造的免費網站安全，一鍵即可檢查網站風險信號，aaPanel自動給出優化和修復建議，用戶僅需簡單操作即可加固網站。",
+				"noPhpSite": "沒有找到PHP網站"
+			},
+			"Metric": {
+				"duration": "耗時",
+				"seconds": "秒",
+				"durationDesc": "本次網站掃描總耗時",
+				"xssDesc": "本次網站掃描XSS攻擊數量",
+				"sqlDesc": "本次網站掃描SQL注入攻擊數據",
+				"maliciousScan": "惡意翻譯",
+				"maliciousScanDesc": "本次網站掃描援助數量",
+				"phpAttack": "PHP攻擊",
+				"phpAttackDesc": "本次網站掃描PHP攻擊數量"
+			},
+			"Summary": {
+				"scoreTitle": "網站安全評分",
+				"scoreLabel": "評分"
+			},
+			"Top": {
+				"title": "IP (TOP 5 排行)",
+				"columns": {
+					"ip": "IP地址",
+					"count": "訪問次數"
+				},
+				"banTitle": "封禁IP【{0}】",
+				"banContent": "封禁該IP後，將不再允許此IP訪問服務器，是否繼續操作？",
+				"unbanTitle": "解封IP【{0}】",
+				"unbanContent": "解封該IP後，將恢復此IP對服務器的訪問，是否繼續操作？",
+				"banBrief": "網站安全頁麵點擊IP手動封禁"
+			},
+			"Project": {
+				"title": "安全項目",
+				"waiting": "等待掃描",
+				"foundRisk": "發現{0}項風險",
+				"noRisk": "無風險項",
+				"expand": "展開",
+				"items": {
+					"webscan": "網站配置安全性",
+					"fileleak": "文件洩露檢測",
+					"webshell": "木馬檢測",
+					"backup": "備份文件",
+					"weakpass": "弱口令檢測",
+					"weblog": "網站日誌"
+				}
+			},
+			"Risk": {
+				"detailLabel": "詳情：",
+				"repairLabel": "修復方案："
+			},
+			"RiskLevel": {
+				"warning": "警告",
+				"low": "低風險",
+				"middle": "中風險",
+				"high": "高風險"
+			},
+			"Info": {
+				"overviewTitle": "功能概覽",
+				"features": {
+					"scan": {
+						"title": "免費且強大的全能網站入侵掃描",
+						"desc": "免費全能掃描，全面攔截網站入侵風險"
+					},
+					"trojan": {
+						"title": "深度檢測是否存在危險木馬",
+						"desc": "深度木馬檢測，精準排查隱藏威脅程序"
+					},
+					"log": {
+						"title": "專業分析網站訪問日誌",
+						"desc": "通過日誌分析，挖掘訪問異常與安全隱患"
+					}
+				}
+			}
 		}
 	}
 }

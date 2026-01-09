@@ -278,7 +278,7 @@
 				"index_6": "Lieu d'attribution",
 				"index_7": "Utilisateur",
 				"index_8": "Statut",
-				"index_9": "Temps de fonctionnement",
+				"index_9": "Date de l'évènement",
 				"index_10": "Conseils",
 				"index_11": "Après avoir bloqué cette IP, cette IP ne sera plus autorisée à accéder au serveur, continuer?",
 				"index_12": "Page de journal de connexion SSH Cliquez sur le blocage du manuel IP",
@@ -306,12 +306,12 @@
 			"Index_1": "Configuration",
 			"Index_2": "Liste blanche",
 			"Index_3": "Liste noire",
-			"Index_4": "Rapports d'histoire",
+			"Index_4": "Historique des rapports",
 			"Index_5": "Aperçu",
 			"Index_6": "Traiter la liste blanche",
 			"Index_7": "Journaux d'opération",
 			"Index_8": "Protection",
-			"Index_9": "Bloquer IP",
+			"Index_9": "IP bloquées",
 			"Index_10": "Journaux d'opération"
 		},
 		"Conf": {
@@ -320,14 +320,14 @@
 			"Index_3": "Ajouter à la liste blanche",
 			"Index_4": "Il est recommandé d'allumer la fonction antiviolence. Il fera mieux sécuriser le serveur. Voulez-vous continuer?",
 			"Index_5": "Protection basée sur le nom d'utilisateur",
-			"Index_6": "La protection basée sur le nom d'utilisateur suit les tentatives de connexion pour les comptes d'utilisateurs. Lorsqu'il est désactivé, ne verrouillera pas les comptes d'utilisateurs, mais les verrous de compte existants resteront",
+			"Index_6": "La protection basée sur le nom d'utilisateur suit les tentatives de connexion aux comptes utilisateurs. Lorsqu'elle est désactivée, les comptes utilisateurs ne seront pas verrouillés, mais les verrouillages existants resteront en place.",
 			"Index_7": "Période de protection contre la force brute (en quelques minutes)",
 			"Index_8": "Échecs maximum par compte",
 			"Index_9": "Appliquer une protection aux adresses locales uniquement",
 			"Index_10": "Appliquer une protection aux adresses locales et distantes",
 			"Index_11": "Autoriser la protection du nom d'utilisateur pour verrouiller l'utilisateur «racine»",
 			"Index_12": "Protection basée sur l'adresse IP",
-			"Index_13": "La protection basée sur les adresses IP suit les tentatives de connexion à partir d'adresses IP spécifiques. Lorsqu'il est désactivé, ne bloquera pas les adresses IP, mais les blocs existants resteront",
+			"Index_13": "La protection basée sur l'adresse IP suit les tentatives de connexion à partir d'adresses IP spécifiques. Lorsqu'elle est désactivée, les adresses IP ne sont pas bloquées, mais les blocages existants sont maintenus.",
 			"Index_14": "Période de protection contre la force brute basée sur l'adresse IP (en minutes)",
 			"Index_15": "Échecs maximum par compte",
 			"Index_16": "Commande pour s'exécuter lorsqu'une adresse IP déclenche une protection contre la force brute",
@@ -464,6 +464,86 @@
 			"Index_4": "Établir le succès",
 			"Index_5": "Veuillez sélectionner l'utilisateur",
 			"Index_6": "Êtes-vous sûr de supprimer cet utilisateur?"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "Scanning",
+				"lastScanTime": "Last scan time:",
+				"cancelScan": "Cancel Scan",
+				"scanNow": "Scan Now",
+				"title": "Intelligent Website Security",
+				"desc": "Free website security powered by a robust engine. With one click you can check for website risk signals; aaPanel automatically provides optimization and remediation suggestions so you can harden your site with simple operations.",
+				"noPhpSite": "No PHP websites found"
+			},
+			"Metric": {
+				"duration": "Duration",
+				"seconds": "seconds",
+				"durationDesc": "Total duration of this website scan",
+				"xssDesc": "XSS attacks in this website scan",
+				"sqlDesc": "SQL injection in this website scan",
+				"maliciousScan": "Malicious Scan",
+				"maliciousScanDesc": "Malicious scans in this website scan",
+				"phpAttack": "PHP Attack",
+				"phpAttackDesc": "PHP attacks in this website scan"
+			},
+			"Summary": {
+				"scoreTitle": "Website Security Score",
+				"scoreLabel": "Score"
+			},
+			"Top": {
+				"title": "IP (Top 5)",
+				"columns": {
+					"ip": "IP Address",
+					"count": "Visits"
+				},
+				"banTitle": "Ban IP [{0}]",
+				"banContent": "After banning this IP, it will no longer be allowed to access the server. Continue?",
+				"unbanTitle": "Unban IP [{0}]",
+				"unbanContent": "After unbanning this IP, access from this IP to the server will be restored. Continue?",
+				"banBrief": "Website security manually block IP"
+			},
+			"Project": {
+				"title": "Security Items",
+				"waiting": "Waiting to scan",
+				"foundRisk": "{0} risks",
+				"noRisk": "No risks",
+				"expand": "Expand",
+				"items": {
+					"webscan": "Website Configuration Security",
+					"fileleak": "File Leak Detection",
+					"webshell": "Webshell Detection",
+					"backup": "Backup Files",
+					"weakpass": "Weak Password Detection",
+					"weblog": "Website Logs"
+				}
+			},
+			"Risk": {
+				"detailLabel": "Details:",
+				"repairLabel": "Fix:"
+			},
+			"RiskLevel": {
+				"warning": "Warning",
+				"low": "Low",
+				"middle": "Medium",
+				"high": "High"
+			},
+			"Info": {
+				"overviewTitle": "Overview",
+				"features": {
+					"scan": {
+						"title": "Free and powerful all-in-one website intrusion scan",
+						"desc": "Comprehensive free scan to block website intrusion risks"
+					},
+					"trojan": {
+						"title": "Deep scan for dangerous trojans",
+						"desc": "Accurately detect hidden threats with deep trojan scanning"
+					},
+					"log": {
+						"title": "Professional analysis of website access logs",
+						"desc": "Discover anomalies and security risks through log analysis"
+					}
+				}
+			}
 		}
 	}
 }

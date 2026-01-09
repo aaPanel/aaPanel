@@ -156,6 +156,9 @@ def create_php_site_with_mysql(domain: str, site_path: str, php_ver_short: str, 
         if data['siteId'] is not None:
             from public import websitemgr
             websitemgr.remove_site(data['siteId'])
+
+            if data.get('databaseErrorMsg', ''):
+                raise HintException(data.get('databaseErrorMsg', ''))
         raise HintException(public.lang('Database creation failed. Please check mysql running status and try again.'))
 
     return aap_t_simple_site_info(data['siteId'], data['d_id'])

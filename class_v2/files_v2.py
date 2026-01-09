@@ -2342,7 +2342,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             fp.close()
 
             if isConf != -1:
-                isError = public.checkWebConfig()
+                isError = public.checkWebConfig(path=get.path)
                 if isError != True:
                     public.ExecShell('\\cp -a /tmp/backup.conf ' + get.path)
                     return public.return_message(-1, 0, 'ERROR:<br><font style="color:red;">' + isError.replace("\n",

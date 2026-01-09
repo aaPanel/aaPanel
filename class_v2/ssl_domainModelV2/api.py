@@ -6,9 +6,9 @@ import ipaddress
 import json
 import os.path
 import shutil
+import sys
 import threading
 import time
-import sys
 from datetime import datetime
 from typing import Tuple, Dict
 
@@ -48,24 +48,11 @@ from .model import (
     DnsDomainRecord,
     DnsDomainSSL,
     DnsDomainTask,
-    apply_cert,
 )
-from ssl_dnsV2.model import DnsResolve
+
 from .service import (
-    init_panel_http,
-    init_panel_dns,
-    generate_panel_task,
-    SyncService,
     DomainValid,
-    make_suer_alarm_task,
-    generate_sites_task,
-    find_site_with_domain,
     CertHandler,
-    RecordCache,
-    check_legal,
-    init_aaDns,
-    make_suer_renew_task,
-    get_mail_record,
 )
 
 
@@ -181,9 +168,12 @@ class DomainObject:
         """
         对账号立即同步域名信息
         """
+        from .service import SyncService
         target_id = get.id if hasattr(get, "id") else None
         instance = SyncService(target_id)
-        task = threading.Thread(target=instance.process)
+        task = threading.Thread(
+            target=instance.process, kwargs=({"apply_new": True})
+        )
         task.start()
         return public.success_v2(public.lang("success"))
 
@@ -206,6 +196,7 @@ class DomainObject:
 
         # clear task
         self._clear_task_force()
+        from .service import check_legal, init_aaDns
         check_legal()
         init_aaDns()
         page = int(getattr(get, "p", 1))
@@ -343,6 +334,7 @@ class DomainObject:
             domain_name = get.domain
         else:
             domain_name = provider.domains[0] if provider.domains else ""
+        from .service import RecordCache
         RecordCache.record_ensure(domain_name)
 
         # search_and
@@ -542,6 +534,7 @@ class DomainObject:
                 domain=d.get("name", ""), provider_id=int(get.id)
             ).count()
             if bulitin:
+                from ssl_dnsV2.model import DnsResolve
                 resolve = DnsResolve.objects.filter(domain=d.get("name", "")).fields(
                     "ns_resolve", "a_resolve", "tips"
                 ).first()
@@ -556,6 +549,51 @@ class DomainObject:
         return public.success_v2({"data": data[start:end], "total": total})
 
     # ===========   SSL    ============
+    def _get_alarm_status(self) -> bool:
+        # 校验alarm
+        task_path = f"{public.get_panel_path()}/data/mod_push_data/task.json"
+        if not os.path.exists(task_path):
+            return False
+        task = public.readFile(task_path)
+        if not task:
+            return False
+        try:
+            task_info = json.loads(task)
+        except:
+            task_info = []
+        for t in task_info:
+            if t.get("task_data", {}).get("type") == "ssl":
+                return True
+        return False
+
+    def _get_verify(self, ssl: DnsDomainSSL) -> str:
+        if not ssl.auth_info:
+            return "dns01_manual"
+        auth_type = ssl.auth_info.get("auth_type", "")
+        auth_to = ssl.auth_info.get("auth_to", "").rstrip("/").replace("//", "/")
+        if auth_type == "http":
+            return "http01"
+        elif auth_type == "dns":
+            try:
+                if not "|" in auth_to:
+                    return "dns01_manual"
+                info = auth_to.split("|")
+                if len(info) == 3 and info[0]:
+                    return "dns01"
+                else:
+                    return "dns01_manual"
+            except:
+                return "dns01_manual"
+
+        elif DomainValid.is_ip(ssl.dns):
+            if ssl.info.get("issuer_O") == "Let's Encrypt":
+                return "http01"
+
+        elif auth_to == "" or any("*" in d for d in ssl.dns):
+            return "dns01_manual"
+
+        return ""
+
     def list_ssl_info(self, get):
         """
         证书列表
@@ -575,6 +613,8 @@ class DomainObject:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+
+        alarm_status = self._get_alarm_status()
         page = int(getattr(get, "p", 1))
         limit = int(getattr(get, "limit", 100))
         ssl_obj = DnsDomainSSL.objects.filter(
@@ -599,9 +639,9 @@ class DomainObject:
                     },
                     "log": ssl.log if ssl.log else ssl.get_ssl_log(),
                     "user_for": ssl.user_for,
-                    "alarm": ssl.alarm,
+                    "alarm": ssl.alarm if alarm_status else 0,
+                    "verify": self._get_verify(ssl)
                 },
-                # task_name=DnsTask.apply_ssl.value,
             ) for ssl in ssl_obj
         ]
         return public.success_v2({"data": data, "total": total})
@@ -640,6 +680,7 @@ class DomainObject:
         """
         一键全量续签
         """
+        from .service import make_suer_renew_task
         make_suer_renew_task()  # 确保任务存在
         echo = public.md5(public.md5("domain_ssl_renew_lets_ssl_bt"))
         task = public.S("crontab").where("echo=?", echo).find()
@@ -663,20 +704,25 @@ class DomainObject:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
-
-        ts_month = 31 * 24 * 60 * 60 * 1000
-        months = int(time.time() * 1000) + ts_month
         invalid_msg = public.lang(
             "This Certificate auth info is invalid, cannot renew! Please Apply for a New Certificate."
             "It will be renewed for you automatically in the future"
         )
         ssl_obj = DnsDomainSSL.objects.filter(hash=get.hash).first()
-        if not ssl_obj or not ssl_obj.auth_info:
+        if not ssl_obj:
+            raise HintException(public.lang("SSL Certificate Not Found!"))
+        is_ip_ssl = DomainValid.is_ip(ssl_obj.dns)
+        if not ssl_obj.auth_info and not is_ip_ssl:
+            ssl_obj.renew_status = 0
+            ssl_obj.save()
             raise HintException(invalid_msg)
 
+        day = 3 if is_ip_ssl else 30
+        ts_month = day * 24 * 60 * 60 * 1000
+        months = int(time.time() * 1000) + ts_month
         debug = public.readFile("/www/server/panel/data/debug.pl") or "False"
         if debug.lower() == "false" and ssl_obj.not_after_ts > months:
-            raise HintException(public.lang("SSL Certificate is less than 30 days, no need to renew!"))
+            raise HintException(public.lang(f"SSL Certificate is less than {day} days, no need to renew!"))
 
         auth_type = ssl_obj.auth_info.get("auth_type")
         auth_to = ssl_obj.auth_info.get("auth_to", "").rstrip("/").replace("//", "/")
@@ -684,11 +730,28 @@ class DomainObject:
         args.domains = json.dumps(ssl_obj.dns)
 
         if auth_type == "http" or (auth_type == "dns" and auth_to == "dns"):
-            # 明确的http方式, 或 手动认证申请的dns, 尝试http
-            args.auth_type = "http"
-            args.deploy = 1
-            args.site_id = public.M("sites").where("path=?", (auth_to,)).getField("id") or "-1"
-            return self.apply_new_ssl(args)
+            if auth_to:  # 有 site
+                # 明确的http方式, 或 手动认证申请的dns, 尝试http
+                args.auth_type = "http"
+                args.deploy = 1
+                args.site_id = public.M("sites").where("path=?", (auth_to,)).getField("id") or "-1"
+                return self.apply_new_ssl(args)
+            else:  # todo 新场景, 无 site 续签 ip ssl, 暂时仅支持面板ssl
+                if not is_ip_ssl or not ssl_obj.panel_uf == ["panel"]:
+                    raise HintException("only panel ip ssl support http01 renew now!")
+                if len(ssl_obj.dns) > 1:
+                    raise HintException("only single ip ssl support http01 renew now!")
+                from .service import init_panel_http, generate_panel_task
+                task_obj = generate_panel_task({"domain": ssl_obj.dns[0]})
+                http_task = threading.Thread(
+                    target=init_panel_http, args=(ssl_obj.dns[0], task_obj, True)
+                )
+                http_task.start()
+                return public.success_v2({
+                    "result": public.lang("Apply Successfully! please wait for a moment"),
+                    "task_id": task_obj.id,
+                    "path": task_obj.task_log,
+                })
 
         elif auth_type == "dns":
             args.auth_type = "dns"
@@ -820,10 +883,11 @@ class DomainObject:
         apply_domains = [x.strip() for x in list(set(get.domains))]
         apply_domains.sort()
 
-        for d in apply_domains:
-            if not DomainValid.is_valid_domain(d.replace("*.", "")):
-                return public.fail_v2(public.lang(f"Invalid domain name: {d}"))
+        if len(apply_domains) == 0:
+            return public.fail_v2(public.lang("Domains Error: domains is empty"))
 
+        from .model import apply_cert
+        from .service import generate_sites_task
         if get.auth_type == "dns":  # auto dns verify
             provider = None
             for d in apply_domains:
@@ -850,8 +914,9 @@ class DomainObject:
             })
 
         elif get.auth_type == "http":  # file verify
+            from .service import find_site_with_domain
             site = find_site_with_domain(get.domains[0])
-            if not site:
+            if not site and not DomainValid.is_ip(get.domains):
                 return public.fail_v2(public.lang("Http01 Verify Error, but Site Not Found."))
             if site.get("status") != "1":
                 return public.fail_v2(public.lang("Http01 Verify Error, but Site is Not Running"))
@@ -1014,6 +1079,7 @@ class DomainObject:
 
         alarm = int(get.alarm)
         if alarm == 1:  # open
+            from .service import make_suer_alarm_task
             make_suer_alarm_task()  # make suer alarm task
             ssl_obj.alarm = alarm
             ssl_obj.save()
@@ -1367,31 +1433,36 @@ class DomainObject:
         domain = get.domain.get("domain", "").strip()
         if "*." in domain:
             return public.fail_v2(public.lang("Wildcard domain is not supported!"))
-        if not DomainValid.is_valid_domain(domain):
-            return public.fail_v2(public.lang("Domain Not Valid!"))
+
+        if DomainValid.is_ip(domain) and DomainValid.is_private_ip(domain):
+            # 如果是ip, 且不是公网
+            return public.fail_v2(public.lang("Private IP address is not supported!"))
+
+        if not DomainValid.is_valid_domain(domain) and not (DomainValid.is_ip(domain)):
+            # 既不是合法域名, 也不是ip
+            return public.fail_v2(public.lang("Domain or IP addr Not Valid!"))
 
         get.domain["domain"] = domain
         if not domain:
             return public.fail_v2(public.lang("domain is empty"))
         if auth_type not in ["http", "dns"]:
             return public.fail_v2(public.lang("auth_type must be 'http' or 'dns'"))
-        # org = public.readFile(PANEL_DOMAIN)
-        # if domain == org:
-        #     return public.success_v2("Set Panel's SSL Successfully!")
 
         # real chage
+        from .service import generate_panel_task
         task_obj = generate_panel_task(get.domain)
         if auth_type == "dns":
             support = get.domain.get("support")
             if "cf_proxy" in support:
                 support.remove("cf_proxy")
             get.domain["support"] = support
-
+            from .service import init_panel_dns
             dns_task = threading.Thread(
                 target=init_panel_dns, args=(get.domain, task_obj)
             )
             dns_task.start()
         else:
+            from .service import init_panel_http
             http_task = threading.Thread(
                 target=init_panel_http, args=(domain, task_obj)
             )
@@ -1425,6 +1496,7 @@ class DomainObject:
             'hash': '',
             'domain': domain
         }
+        from .service import get_mail_record
         records = get_mail_record(domain_info)
         if isinstance(records, str):
             return public.fail_v2(public.lang(records))

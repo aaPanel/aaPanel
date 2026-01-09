@@ -1320,18 +1320,31 @@ class GodaddyDns(BaseDns):
     # =============== 域名管理 ====================
     def get_domains(self) -> list:
         try:
-            res = self._make_request("GET", "/v1/domains").json()
-            domains = []
-            for domain in res:
-                if domain.get("status") != "ACTIVE":
-                    sync_log(f"|-- warning: [{domain.get('domain')}] is Not ACTIVE, Skip It...")
-                    continue
-                if domain.get("expires") and domain.get("expires") < datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"):
-                    sync_log(f"|-- warning: [{domain.get('domain')}] is Expired, Skip It...")
-                    continue
-                domains.append(domain.get("domain"))
-            domains.sort()
-            return domains
+            all_domains = []
+            limit = 300
+            endpoint = f"/v1/domains?limit={limit}"
+            while 1:
+                res = self._make_request("GET", endpoint).json()
+                if not res:
+                    break
+                for domain in res:
+                    if domain.get("status") != "ACTIVE":
+                        sync_log(f"|-- warning: [{domain.get('domain')}] is Not ACTIVE, Skip It...")
+                        continue
+                    if domain.get("expires") and domain.get("expires") < datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"):
+                        sync_log(f"|-- warning: [{domain.get('domain')}] is Expired, Skip It...")
+                        continue
+                    all_domains.append(domain.get("domain"))
+
+                if len(res) < limit:
+                    break
+
+                last_domain = res[-1]["domain"]
+                endpoint = f"/v1/domains?limit={limit}&marker={last_domain}"
+                time.sleep(1) # 限流
+
+            all_domains.sort()
+            return all_domains
         except Exception as e:
             raise HintException(f"get domains error {e}")
 

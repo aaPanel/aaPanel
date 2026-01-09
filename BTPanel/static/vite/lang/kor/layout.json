@@ -8,7 +8,7 @@
 			"site_4": "프록시 프로젝트",
 			"wp_1": "로컬 관리",
 			"wp_2": "원격 관리",
-			"wp_3": "WP 툴킷",
+			"wp_3": "WP Toolkit",
 			"ftp_1": "FTP",
 			"ftp_2": "FTP 관리자",
 			"database_1": "데이터베이스",
@@ -29,7 +29,7 @@
 			"docker_10": "용량",
 			"docker_11": "저장소",
 			"docker_12": "설정",
-			"monitor_1": "감시 장치",
+			"monitor_1": "모니터링",
 			"monitor_2": "시스템 모니터",
 			"security_1": "보안",
 			"security_2": "방화벽",
@@ -59,7 +59,7 @@
 			"mail_8": "스팸",
 			"mail_9": "outbox",
 			"mail_10": "메일을 보내기",
-			"mail_11": "지원",
+			"mail_11": "백업",
 			"mail_12": "환경",
 			"mail_13": "대량 메일",
 			"mail_14": "구독 취소",
@@ -70,7 +70,7 @@
 			"logs_4": "감시 로그",
 			"logs_5": "SSH 로그인 로그",
 			"logs_6": "소프트 로그",
-			"terminal_1": "단말기",
+			"terminal_1": "터미널",
 			"crontab_1": "크론",
 			"soft_1": "앱 스토어",
 			"soft_2": "소프트웨어 스토어",
@@ -94,11 +94,12 @@
 			"account_5": "저장",
 			"account_6": "설정",
 			"domain_1": "도메인",
-			"domain_2": "자격증"
+			"domain_2": "자격증",
+			"security_8": "Website Security"
 		},
 		"Footer": {
 			"index_1": "Aapanel Linux 패널 © 2014- {0} Aapanel",
-			"index_2": "지원 제안은 Aapanel 포럼을 방문하십시오",
+			"index_2": "지원 제안은 Aapanel 포럼을 방문하세요",
 			"index_3": "선적 서류 비치"
 		},
 		"MessageBox": {

@@ -2,7 +2,7 @@
 	"Public": {
 		"Name": "aaPanel",
 		"All": "모두",
-		"SelectAll": "모두를 선택하십시오",
+		"SelectAll": "모두를 선택하세요",
 		"Punctuation": {
 			"Colon": ": ",
 			"Comma": ",,, ",
@@ -75,11 +75,12 @@
 			"Select": "선택",
 			"Rebuild": "재빌드",
 			"Upload": "업로드",
-			"Play": "놀다"
+			"Play": "놀다",
+			"Link": "Link"
 		},
 		"Batch": {
 			"Del": "삭제",
-			"ChooseDel": "삭제를 선택하십시오"
+			"ChooseDel": "삭제를 선택하세요"
 		},
 		"Confirm": {
 			"Title": "팁",
@@ -94,7 +95,7 @@
 			"Password": "비밀번호",
 			"Path": "경로",
 			"Note": "메모",
-			"Action": "활성화",
+			"Action": "작업",
 			"Operation": "작업",
 			"Page": {
 				"index_1": "집",

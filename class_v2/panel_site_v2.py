@@ -371,12 +371,13 @@ scripthandler  {
 extprocessor BTSITENAME {
   type                    lsapi
   address                 UDS://tmp/lshttpd/BT_EXTP_NAME.sock
-  maxConns                20
-  env                     LSAPI_CHILDREN=20
+  maxConns                300 
+  env                     LSAPI_CHILDREN=300
+  env                     LSAPI_AVOID_FORK=1 
   initTimeout             600
-  retryTimeout            0
+  retryTimeout            5
   persistConn             1
-  pcKeepAliveTimeout      1
+  pcKeepAliveTimeout      30
   respBuffer              0
   autoStart               1
   path                    /usr/local/lsws/lsphpBTPHPV/bin/lsphp
@@ -384,8 +385,8 @@ extprocessor BTSITENAME {
   extGroup                www
   memSoftLimit            2047M
   memHardLimit            2047M
-  procSoftLimit           400
-  procHardLimit           500
+  procSoftLimit           1000 
+  procHardLimit           1100
 }
 
 phpIniOverride  {
@@ -1744,15 +1745,39 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         if not multiple:
             public.serviceReload()
 
-        # 从数据库删除
-        public.M('sites').where("id=?", (id,)).delete()
-        public.M('binding').where("pid=?", (id,)).delete()
-        public.M('domain').where("pid=?", (id,)).delete()
-        public.M('wordpress_onekey').where("s_id=?", (id,)).delete()
-        # 删除git数据
-        from git_tools import GitTools
-        GitTools().del_site_git(public.to_dict_obj({'site_id': id}))
-        public.write_log_gettext('Site manager', 'Successfully deleted site {}!', (siteName,))
+        try:
+            # 从数据库删除
+            public.M('sites').where("id=?", (id,)).delete()
+            public.M('binding').where("pid=?", (id,)).delete()
+            public.M('domain').where("pid=?", (id,)).delete()
+            public.M('wordpress_onekey').where("s_id=?", (id,)).delete()
+            # 删除git数据
+            from git_tools import GitTools
+            GitTools().del_site_git(public.to_dict_obj({'site_id': id}))
+            public.write_log_gettext('Site manager', 'Successfully deleted site {}!', (siteName,))
+
+            # 尝试删除免费网站监控数据
+            free_monitor_path = '/www/server/site_total/data/total'
+            site_path = os.path.join(free_monitor_path, siteName)
+            if os.path.exists(site_path) and os.path.isdir(site_path):
+                shutil.rmtree(site_path)
+
+            # 尝试删除监控报表插件数据
+            conf_file = '/www/server/panel/plugin/monitor/monitor_data/config/config.json'
+            if os.path.exists(conf_file):
+                conf_str = public.readFile(conf_file)
+                conf_data = json.loads(conf_str) if conf_str else None
+
+                db_path = None
+                if isinstance(conf_data, dict):
+                    db_path = conf_data.get('data_save_path')
+
+                if db_path and os.path.exists(db_path):
+                    monitor_path = os.path.join(db_path, siteName)
+                    if os.path.exists(monitor_path) and os.path.isdir(monitor_path):
+                        shutil.rmtree(monitor_path)
+        except:
+            pass
 
         # 是否删除关联数据库
         if hasattr(get, 'database'):
@@ -2844,7 +2869,7 @@ listener SSL443 {{
                             public.serviceReload()
                             return public.return_message(0, 0, public.lang("SSL turned on!"))
                         else:
-                            return True
+                            return  public.returnMsg(True,"")
 
                     if ng_conf.find('#error_page 404/404.html;') == -1:
                         return public.returnMsg(False, "can found【#error_page 404/404.html;】，"
@@ -3011,46 +3036,10 @@ listener SSL443 {{
                     shutil.copyfile(file, self.apache_conf_bak)
                     public.writeFile(file, ap_conf)
                     if other_project == "node":  # 兼容Nodejs项目
-                        from projectModel.nodejsModel import main
+                        from projectModelV2.nodejsModel import main
                         m = main()
                         project_find = m.get_project_find(siteName)
                         m.set_apache_config(project_find)
-                    # if other_project == "java":  # 兼容Java项目
-                    #     try:
-                    #         from mod.project.java.java_web_conf import JavaApacheTool
-                    #         from mod.project.java.projectMod import main
-                    #         JavaApacheTool().set_apache_config_for_ssl(main().get_project_find(siteName))
-                    #     except:
-                    #         from projectModel.javaModel import main
-                    #         m = main()
-                    #         project_find = m.get_project_find(siteName)
-                    #         m.set_apache_config(project_find)
-                    # if other_project == "go":  # 兼容Go项目
-                    #     from projectModel.goModel import main
-                    #     m = main()
-                    #     project_find = m.get_project_find(siteName)
-                    #     m.set_apache_config(project_find)
-                    # if other_project == "other":  # 兼容其他项目
-                    #     from projectModel.otherModel import main
-                    #     m = main()
-                    #     project_find = m.get_project_find(siteName)
-                    #     m.set_apache_config(project_find)
-                    # if other_project == "python":  # 兼容python项目
-                    #     from projectModel.pythonModel import main
-                    #     m = main()
-                    #     project_find = m.get_project_find(siteName)
-                    #     m.set_apache_config(project_find)
-                    # if other_project == "net":
-                    #     from projectModel.netModel import main
-                    #     m = main()
-                    #     project_find = m.get_project_find(siteName)
-                    #     m.set_apache_config(project_find)
-                    #
-                    # if other_project == "html":
-                    #     from projectModel.htmlModel import main
-                    #     m = main()
-                    #     project_find = m.get_project_find(siteName)
-                    #     m.set_apache_config(project_find)
 
             if not have_nginx_conf and not have_apache_conf:
                 return public.returnMsg(False, 'No server configuration file. '
@@ -3090,7 +3079,7 @@ listener SSL443 {{
         if 'isBatch' not in get:
             return result
         else:
-            return True
+            return public.returnMsg(True, "")
 
     def save_cert(self, get):
         # try:
@@ -3450,11 +3439,9 @@ listener SSL443 {{
         try:
             from ssl_domainModelV2.service import CertHandler
             from ssl_domainModelV2.model import DnsDomainSSL
-            ssl = None
-            for s in DnsDomainSSL.objects.filter(user_for__like=f"%{siteName}%").fields("auto_renew"):
-                if siteName in s.sites_uf:
-                    ssl = s
-                    break
+            ssl = DnsDomainSSL.objects.filter(hash=CertHandler.get_hash(csr)).first()
+            if not ssl:
+                ssl = None
             res = {
                 'status': status,
                 'oid': oid,
@@ -6590,7 +6577,7 @@ location %s
 
             if conf:
                 regex_obj = re.compile(r'(?:# *)?(access_log +(?:{}|off; # Disable with aapanel))(?: *;)?'.format(rep.replace('.', r'\.')))
-                if conf.find('access_log {}'.format(rep)) > -1:
+                if conf.find('access_log {}'.format(rep)) > -1 or conf.find('access_log  {}'.format(rep)) > -1:
                     # 禁用Access日志
                     conf = regex_obj.sub('access_log off; # Disable with aapanel'.format(rep), conf)
                 else:
@@ -11698,23 +11685,18 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         for path in site_path_list:
             if os.path.exists(path):
                 content = public.readFile(path)
+
+                # 关闭时，关闭获取代理ip
+                if status == 'disable':
+                    remove_pat = re.compile(r'#Obtain the reverse proxy ip start[\s\S]*?#Obtain the reverse proxy ip end\n?',re.DOTALL)
+                    content = remove_pat.sub('', content)
+
                 content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
                 content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
                 content = content.replace(f'[::]:{port_80}', f'[::]:{new_port_80}')
                 content = content.replace(f'[::]:{port_443}', f'[::]:{new_port_443}')
                 public.writeFile(path, content)
 
-        # 处理node
-        site_name = public.M('sites').where('project_type = ?','Node').field('name').select()
-        for name in site_name:
-            self.check_node_project(name, status)
-
-            # path = os.path.join(public.get_panel_path(), 'vhost', 'apache', name['name'] + '.conf')
-        #     if os.path.exists(path):
-        #         content = public.readFile(path)
-        #         content = content.replace(f'*:{port_80}', f'*:{new_port_80}')
-        #         content = content.replace(f'*:{port_443}', f'*:{new_port_443}')
-        #         public.writeFile(path, content)
 
         if os.path.exists(main_config):
             content = public.readFile(main_config)
@@ -11889,11 +11871,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         if service_type == 'apache':
             ssl_port = '8290'
             listen_port = '8288'
-        elif service_type == 'openlitespeed':
-            ssl_port = '8190'
-            listen_port = '8188'
 
-        new_block = r"""server 
+            new_block = r"""upstream {site_name} {{
+    server 127.0.0.1:{listen_port};
+    keepalive 64;
+}}
+server 
 {{
 {listen}
     {server_name}
@@ -11918,22 +11901,29 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     #error_page 502 /502.html;
     #ERROR-PAGE-END
     {begin_deny}
-
+    
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|bmp|webp|woff|woff2|svg)$ {{
+        root {site_path};
+        expires 30d;              
+        access_log off;            
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
+    }}
+    
+    
     location / {{
-        proxy_pass http://127.0.0.1:{listen_port};
-
+        proxy_pass http://{site_name};
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header REMOTE-HOST $remote_addr;
-		proxy_set_header SERVER_PROTOCOL $server_protocol;
-        proxy_set_header HTTPS $https;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $connection_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header REMOTE_ADDR $remote_addr;
-        proxy_set_header REMOTE_PORT $remote_port;
+        set $connection_conf "";
+        if ($http_upgrade = "websocket") {{
+            set $connection_conf "upgrade";
+        }}
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_conf;
         add_header Cache-Control no-cache;
     }}
 
@@ -11958,10 +11948,120 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     error_log  {_log}.error.log;  
 
     {Monitor}
-}} """.format(server_name=res['server_name'], include_php=res['include_php'],rert_apply_check=res['rert_apply_check'],
-                   listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'],Monitor=res['Monitor'],begin_deny=res['begin_deny'],
-                   site_name=site_name, site_path=site_path,listen=res['listen'],_log=log_path,default_document=res['default_document'],
-              referenced_redirect=res['referenced_redirect'])
+}} """.format(server_name=res['server_name'], include_php=res['include_php'],
+                          rert_apply_check=res['rert_apply_check'],
+                          listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'], Monitor=res['Monitor'],
+                          begin_deny=res['begin_deny'],
+                          site_name=site_name, site_path=site_path, listen=res['listen'], _log=log_path,
+                          default_document=res['default_document'],
+                          referenced_redirect=res['referenced_redirect'])
+
+        elif service_type == 'openlitespeed':
+            ssl_port = '8190'
+            listen_port = '8188'
+
+            new_block = r"""upstream {site_name} {{
+    server 127.0.0.1:{listen_port};
+    keepalive 64;
+}}
+
+server 
+    {{
+{listen}
+        {server_name}
+{default_document} 
+        root {site_path};   
+        {rert_apply_check}
+    
+        #PHP-INFO-START\s+PHP reference configuration, allowed to be commented, deleted or modified
+        {include_php}
+        #PHP-INFO-END
+    
+        #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
+        {ssl}
+        #SSL-END
+        {referenced_redirect}
+        #REWRITE-START URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel
+        # include /www/server/panel/vhost/rewrite/{site_name}.conf;
+        #REWRITE-END
+    
+        #ERROR-PAGE-START  Error page configuration, allowed to be commented, deleted or modified
+        #error_page 404 /404.html;
+        #error_page 502 /502.html;
+        #ERROR-PAGE-END
+        {begin_deny}
+        
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|bmp|webp|woff|woff2|svg)$ {{
+        root {site_path};
+        expires 30d;              
+        access_log off;            
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
+    }}
+    
+        location / {{
+            proxy_pass http://{site_name};
+            
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # The following configuration can be adjusted according to your actual needs
+            set $conn_header "";
+            if ($http_upgrade = "websocket") {{
+                set $conn_header "upgrade";
+            }}
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $conn_header;
+            
+            proxy_cache_bypass $http_upgrade;
+            proxy_pass_header Set-Cookie;
+            proxy_pass_header Cookie;
+            proxy_pass_header X-LSCACHE;
+
+            proxy_buffer_size 256k;
+            proxy_buffers 4 128k;
+            proxy_busy_buffers_size 256k;
+            proxy_temp_file_write_size 256k; 
+    
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }}
+
+        gzip on;
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
+        
+        # Forbidden files or directories
+        location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+        {{
+            return 404;
+        }}
+    
+        location ~ \.well-known{{
+            allow all;
+            root {site_path};
+            try_files $uri =404;
+        }}
+    
+        #Prohibit putting sensitive files in certificate verification directory
+        if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {{
+            return 403;
+        }}
+        
+        access_log {_log}.log;
+        error_log  {_log}.error.log;  
+    
+        {Monitor}
+    }} """.format(server_name=res['server_name'], include_php=res['include_php'],rert_apply_check=res['rert_apply_check'],
+                       listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'],Monitor=res['Monitor'],begin_deny=res['begin_deny'],
+                       site_name=site_name, site_path=site_path,listen=res['listen'],_log=log_path,default_document=res['default_document'],
+                  referenced_redirect=res['referenced_redirect'])
         public.writeFile(config_path, new_block)
 
         # 处理apache配置ssl后，强制重定向
@@ -11995,21 +12095,51 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                 insert_marker = re.compile(r'/\* That\'s all, stop editing! Happy publishing\. \*/', re.IGNORECASE)
                 match = insert_marker.search(content)
 
-                if match:
-                    code_to_add = """
-/** Make WordPress correctly recognize HTTPS. start */
+                code_to_add = """/** Make WordPress correctly recognize HTTPS. start */
 if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') {
     $_SERVER['HTTPS'] = 'on';
     $_SERVER['SERVER_PORT'] = 443; 
 }
 /** Make WordPress correctly recognize HTTPS. end */
 """
-                    new_content = content[:match.start()] + code_to_add + content[match.start():]
 
-                    public.writeFile(file_path,new_content)
+                if match:
+                    new_content = content[:match.start()] + code_to_add + content[match.start():]
+                else:
+                    new_content = content + '\n' + code_to_add
+
+                public.writeFile(file_path, new_content)
+
             return  True
         except:
             return  False
+
+    # 设置 apache 日志IP
+    def set_apache_logs_ip(self,file_path, action='add'):
+        try:
+            content = public.readFile(file_path)
+            if not content:
+                return
+
+            ip_config = """
+    #Obtain the reverse proxy ip start   
+    RemoteIPTrustedProxy 127.0.0.1
+    RemoteIPHeader X-Real-IP
+    #Obtain the reverse proxy ip end
+    """
+            ip_pat = re.compile(r'#Obtain the reverse proxy ip start[\s\S]*?#Obtain the reverse proxy ip end\n?',
+                                    re.DOTALL)
+            pattern = re.compile(r'(<VirtualHost \*:8288>)(.*?)(?=</VirtualHost>)', re.DOTALL)
+            if action == 'add':
+                if ip_pat.search(content):
+                    return
+                content = pattern.sub(lambda m: f"{m.group(1)}{m.group(2)}{ip_config}", content)
+            else:
+                content = ip_pat.sub('', content)
+
+            public.writeFile(file_path, content)
+        except:
+            pass
 
     # 切换网站服务
     def switch_webservice(self, args: public.dict_obj):
@@ -12049,14 +12179,10 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
         if not ok:
             return public.return_message(-1, 0, public.lang('{}',msg))
 
-        # 切换服务,apache需同步修改虚拟主机端口
+        # 切换服务,apache需添加反向代理IP
+        path = os.path.join(public.get_panel_path(), 'vhost', 'apache', site['name'] + '.conf')
         if service_type == 'apache':
-            path = os.path.join(public.get_panel_path(), 'vhost', 'apache', site['name'] + '.conf')
-            if os.path.exists(path):
-                content = public.readFile(path)
-                content = content.replace(f'*:80', f'*:8288')
-                content = content.replace(f'*:443', f'*:443')
-                public.writeFile(path, content)
+            self.set_apache_logs_ip(path)
 
         # 修改nginx代理, 若是回滚操作则不修改配置，直接恢复备份
         if not args.get('website_rollback', False):
@@ -12153,17 +12279,10 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
                     res.append({site['name'] : msg })
                     continue
 
-                # 切换服务,apache需同步修改虚拟主机端口
+                # 切换服务,apache需添加获取反向代理IP
+                path = os.path.join(public.get_panel_path(), 'vhost', 'apache', site['name'] + '.conf')
                 if service_type == 'apache':
-                    path = os.path.join(public.get_panel_path(), 'vhost', 'apache', site['name'] + '.conf')
-                    if os.path.exists(path):
-                        content = public.readFile(path)
-                        content = content.replace(f'*:80', f'*:8288')
-                        content = content.replace(f'*:443', f'*:443')
-                        public.writeFile(path, content)
-                    else:
-                        res.append({site['name']: public.lang('Theconfiguration file does not exist')})
-                        continue
+                    self.set_apache_logs_ip(path)
 
                 ok = self.nginx_update_config(service_type, config_path, old_type, site['name'], site['path'], site['id'])
                 if not ok:
@@ -12192,8 +12311,6 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
 
         for proxy in proxy_list:
             if proxy['proxydir'] in ['/', '/*']:
-                # dict_obj = public.to_dict_obj({'sitename': name,'proxyname': proxy['proxyname']})
-                # self.RemoveProxy(dict_obj)
                 return False
         return True
 
@@ -12214,18 +12331,6 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
         except Exception as e:
             return
 
-    # 检测node项目，多服务下默认走nginx
-    def check_node_project(self, site_name, is_ = 'enable'):
-        conf = os.path.join(public.get_panel_path(),'vhost', 'apache', f'node_{site_name}.conf')
-
-        # 使多服务下apache文件不生效
-        if is_ == 'enable':
-            if os.path.exists(conf):
-                shutil.move(conf, conf + '.barduo')
-        else:
-            if os.path.exists(conf + '.barduo'):
-                shutil.move(conf + '.barduo', conf )
-        return True
 
     # 网站回滚
     def website_rollback(self, get):
@@ -12457,9 +12562,9 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
                         if white_ips:
                             status['white_ips'] = white_ips.strip("\n")
                 except:
-                    return public.return_message(-1, 0, public.lang("An error occurred when parsing the {} configuration file. Please check if the format is normal.",cdn_ip_conf_file))
-
-        # ===
+                    return public.return_message(-1, 0,
+                                                 public.lang("An error occurred when parsing the {} configuration file. Please check if the format is normal.",
+                                                             cdn_ip_conf_file))
 
         return public.return_message(0, 0,status)
 

@@ -840,7 +840,7 @@ class ajax:
                     return public.return_message(-1, 0, public.lang("Please run the program when all install tasks finished!"))
                 panel_update_name = '/LinuxPanel_EN-'
                 if updateInfo['is_beta'] == 1: updateInfo['version'] = updateInfo['beta']['version']
-                if updateInfo['is_pro'] == 1: 
+                if updateInfo['is_pro'] == 1:
                     updateInfo['version'] = updateInfo['pro']['version']
                     panel_update_name = '/LinuxPanelPro_EN-'
 
@@ -1112,6 +1112,9 @@ class ajax:
         service_type = ["nginx","apache"]
         if public.get_multi_webservice_status():
             service_type = ["nginx"]
+
+        is_changed = False
+        oldPort = None
         for i in service_type:
             file = "/www/server/panel/vhost/{}/phpmyadmin.conf".format(i)
             conf = public.readFile(file)
@@ -1142,8 +1145,9 @@ class ajax:
                 conf = re.sub(rep, "Listen " + get.port + "\n", conf, 1)
                 rep = r"VirtualHost\s*\*:[0-9]+"
                 conf = re.sub(rep, "VirtualHost *:" + get.port, conf, 1)
-            if oldPort == get.port:
-                return public.fail_v2(public.lang('Port [{}] is in use!', get.port))
+
+            if oldPort != get.port and is_changed is False:
+                is_changed = True
 
             public.writeFile(file, conf)
             public.serviceReload()
@@ -1159,6 +1163,16 @@ class ajax:
                 get.port = oldPort
                 fw.DelAcceptPort(get)
 
+        from firewallModelV2.comModel import main as firewall_main
+        fwd = firewall_main()
+        if is_changed and oldPort:
+            fwd.set_port_rule(public.to_dict_obj(
+                {"port": oldPort, "operation": "remove", "reload": "0"}
+            ))
+
+        fwd.set_port_rule(public.to_dict_obj(
+            {"port": get.port, "brief": "phpmyadmin"}
+        ))
         return public.success_v2(public.lang('Setup successfully!'))
 
     def _get_phpmyadmin_auth(self):
@@ -1368,7 +1382,7 @@ class ajax:
                 conf = re.sub(reg,"address *:{}".format(get.port),conf)
 
             if oldPort == get.port:
-                return public.fail_v2(public.lang('Port [{}] is in use!', get.port))
+                return public.success_v2(public.lang('Setup successfully!'))
 
             public.writeFile(filename,conf)
             import firewalls
@@ -1443,18 +1457,33 @@ class ajax:
                     if os.path.exists("/www/server/panel/vhost/apache/phpmyadmin.conf"):
                         os.remove("/www/server/panel/vhost/apache/phpmyadmin.conf")
             else:
-                if conf.find(stop_path) != -1:
-                    conf = conf.replace(stop_path,pma_path)
+                access_control_start = 'accessControl  {\n'
+                ols_conf = """accessControl  {
+    allow                   127.0.0.1
+    allow                   ::1
+    deny                    All
+}
+"""
+
+                if conf.find(access_control_start) == -1:
+                    conf = conf + '\n' + ols_conf
                     msg = public.getMsg('START')
                 else:
-                    conf = conf.replace(pma_path,stop_path)
-                    msg = public.getMsg('STOP')
+                    try:
+                        start_idx = conf.find(access_control_start)
+                        end_idx = conf.find('}', start_idx + len(access_control_start)) + 1
+                        conf = conf[:start_idx] + conf[end_idx:]
+                        msg = public.getMsg('STOP')
+                    except:
+                        return public.return_message(-1,0,public.lang('There is an error in the configuration of phpMyAdmin.'))
 
             public.writeFile(filename,conf)
             public.serviceReload()
             public.write_log_gettext('Software manager','phpMyAdmin already {}!',(msg,))
 
             return public.success_v2(public.lang('phpMyAdmin already {}!', msg))
+
+        return  public.return_message(-1,0,public.lang('Parameter error!'))
 
     def ToPunycode(self,get):
         import re

@@ -74,7 +74,9 @@
 			"Update": "Aggiornamento",
 			"Select": "Selezionare",
 			"Rebuild": "Ricostruire",
-			"Upload": "Caricamento"
+			"Upload": "Caricamento",
+			"Play": "Play",
+			"Link": "Link"
 		},
 		"Batch": {
 			"Del": "Elimina batch",

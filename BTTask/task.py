@@ -12,6 +12,7 @@
 # aa Background Schedule Task
 # ------------------------------
 
+import importlib
 import json
 import os
 import re
@@ -20,6 +21,7 @@ import sys
 import threading
 import time
 from datetime import datetime, timedelta
+from typing import Optional
 
 import psutil
 
@@ -341,20 +343,20 @@ def check502Task():
     task_ExecShell("check502task")
 
 
+# todo 计划废弃
 # 每1小时检查面板证书是否有更新
-def check_panel_ssl():
-    try:
-        lets_info = public.ReadFile("{}/ssl/lets.info".format(BASE_PATH))
-        if not lets_info:
-            del lets_info
-            return
-        os.system(
-            PYTHON_BIN + " {}/script/panel_ssl_task.py > /dev/null".format(BASE_PATH)
-        )
-        del lets_info
-    except Exception as e:
-        raise e
-
+# def check_panel_ssl():
+#     try:
+#         lets_info = public.ReadFile("{}/ssl/lets.info".format(BASE_PATH))
+#         if not lets_info:
+#             del lets_info
+#             return
+#         os.system(
+#             PYTHON_BIN + " {}/script/panel_ssl_task.py > /dev/null".format(BASE_PATH)
+#         )
+#         del lets_info
+#     except Exception as e:
+#         raise e
 
 # 更新PID文件
 def update_pid_file(pid):
@@ -367,87 +369,30 @@ def update_pid_file(pid):
         logger.error(f'Error writing to PID file: {e}')
 
 
-# 面板守护
-# todo
-def daemon_panel():
-    def find_panel_pid():
-        for pid in psutil.pids():
-            try:
-                p = psutil.Process(pid)
-                if 'BT-Panel' in p.name():  # 假设进程名包含 'BT-Panel'
-                    return pid
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                continue
-        return None
-
-    panel_pid_file = "{}/logs/panel.pid".format(public.get_panel_path())
-    # 检查PID文件是否存在
-    if not os.path.exists(panel_pid_file):
-        logger.info(f'{panel_pid_file} not found, starting panel service...')
-        return
-
-    panel_pid = ""
-    try:
-        # 读取PID文件
-        with open(panel_pid_file, 'r') as file:
-            panel_pid = file.read()
-    except Exception:
-        service_panel('start')
-        return
-
-    if not panel_pid:
-        logger.info(f'PID is empty in {panel_pid_file}, starting panel service...')
-        service_panel('start')
-        return
-
-    panel_pid = panel_pid.strip()
-    # 检查PID对应的进程是否存在
-    if not psutil.pid_exists(int(panel_pid)):
-        logger.info(
-            f'PID {panel_pid} not found, attempting to find running panel process...'
-        )
-        panel_pid = find_panel_pid()
-
-        if panel_pid:
-            # 更新PID文件
-            update_pid_file(panel_pid)
-        else:
-            logger.info('No panel process found, starting service...')
-            service_panel('start')
-
-    else:
-        # 检查进程是否是面板进程
-        comm_file = f"/proc/{panel_pid}/comm"
-        if os.path.exists(comm_file):
-            with open(comm_file, 'r') as file:
-                comm = file.read()
-            if not comm or comm.find("BT-Panel") == -1:
-                logger.info(
-                    f'Process {panel_pid} is not a BT-Panel process,'
-                    f'comm-{comm} commtype-{type(comm)}'
-                )
-                service_panel('start')
-                return
-
-        else:
-            logger.info(f'comm file not found for PID {panel_pid}, restarting service...')
-            service_panel('start')
-
-
+# 服务守护
 def daemon_service():
-    task_ExecShell("daemon_service")
-
-
-def service_panel(action='reload'):
-    if not os.path.exists('{}/init.sh'.format(BASE_PATH)):
-        os.system("curl -k https://node.aapanel.com/install/update_7.x_en.sh|bash &")
-    else:
-        os.system("nohup bash /www/server/panel/init.sh {} > /dev/null 2>&1 &".format(action))
-    logger.info("Panel Service: {}".format(action))
+    try:
+        from script import restart_services
+        importlib.reload(restart_services)
+        obj = restart_services.RestartServices()
+        obj.main()
+        del obj
+    except Exception:
+        from script.restart_services import RestartServices
+        obj = RestartServices()
+        obj.main()
+        del obj
 
 
 # 重启面板服务
 def restart_panel():
+    def service_panel(action='reload'):
+        if not os.path.exists('{}/init.sh'.format(BASE_PATH)):
+            os.system("curl -k https://node.aapanel.com/install/update_7.x_en.sh|bash &")
+        else:
+            os.system("nohup bash /www/server/panel/init.sh {} > /dev/null 2>&1 &".format(action))
+        logger.info("Panel Service: {}".format(action))
+
     rtips = '{}/data/restart.pl'.format(BASE_PATH)
     reload_tips = '{}/data/reload.pl'.format(BASE_PATH)
 
@@ -457,25 +402,6 @@ def restart_panel():
     if os.path.exists(reload_tips):
         os.remove(reload_tips)
         service_panel('reload')
-
-
-# 取面板pid
-def get_panel_pid():
-    try:
-        pid = public.ReadFile('/www/server/panel/logs/panel.pid')
-        if pid:
-            return int(pid)
-        for pid in psutil.pids():
-            try:
-                p = psutil.Process(pid)
-                n = p.cmdline()[-1]
-                if n.find('runserver') != -1 or n.find('BT-Panel') != -1:
-                    return pid
-            except:
-                pass
-    except:
-        pass
-    return None
 
 
 # 定时任务去检测邮件信息
@@ -494,7 +420,36 @@ def check_panel_msg():
 
 # 面板推送消息
 def push_msg():
-    os.system('nohup {} /www/server/panel/script/push_msg.py > /dev/null 2>&1 &'.format(PYTHON_BIN))
+    def _read_file(file_path: str) -> Optional[list]:
+        if not os.path.exists(file_path):
+            return None
+        content = public.readFile(file_path)
+        if not content:
+            return None
+        try:
+            return json.loads(content)
+        except:
+            return []
+
+    sender_path = f"{BASE_PATH}/data/mod_push_data/sender.json"
+    task_path = f"{BASE_PATH}/data/mod_push_data/task.json"
+    sender_info = _read_file(sender_path) or []
+    work = False
+    for s in sender_info:
+        # default sender_type sms data is {}
+        if s.get("sender_type") != "sms" and s.get("data"):
+            work = True
+            break
+    if not work:
+        return
+
+    task_info = _read_file(task_path) or []
+    if not task_info:
+        return
+
+    public.ExecShell(
+        'nohup {} /www/server/panel/script/push_msg.py > /dev/null 2>&1 &'.format(PYTHON_BIN)
+    )
 
 
 # 检测面板授权
@@ -1031,7 +986,7 @@ TASKS = [
     {"func": update_monitor_requests, "interval": 60 * 20},  # 每隔20分钟更新一次网站报表数据
 
     {"func": check_panel_msg, "interval": 3600},  # 每1小时面板消息提醒
-    {"func": check_panel_ssl, "interval": 3600},  # 每1小时面板证书是否有更新
+    # {"func": check_panel_ssl, "interval": 60},  # 每1小时面板证书是否有更新
     {"func": dns_checker, "interval": 3600 * 3},  # 每3小时dns解析验证
     {"func": find_favicons, "interval": 43200},  # 每12小时找favicons
     {"func": domain_ssl_service, "interval": 3600},  # 每6小时进行域名SSL服务(内置时间标记, 可提前检查)
@@ -1070,8 +1025,7 @@ def thread_register(brain: SimpleBrain, is_core: bool = True):
 
                 # delay normal tasks, 削峰
                 if not is_core:
-                    d = min(3, int(1 + (index + 1) / 2))
-                    time.sleep(d)
+                    time.sleep(10)
 
                 brain.register_task(
                     func=task["func"],

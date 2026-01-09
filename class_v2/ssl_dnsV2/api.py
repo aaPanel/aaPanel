@@ -51,6 +51,20 @@ class DnsApiObject:
                 get.clean = 1
             else:
                 get.clean = int(get.clean)
+
+            if get.act == "install" and os.path.exists("/www/server/panel/plugin/syssafe/config.json"):
+                cf = public.readFile("/www/server/panel/plugin/syssafe/config.json")
+                if cf:
+                    jcf = None
+                    try:
+                        import json
+                        jcf = json.loads(cf)
+                    except:
+                        pass
+                    if jcf and jcf.get("open") is True:
+                        raise HintException(public.lang(
+                            "[System hardening] is enabled, please disable it first before installing aaDNS."
+                        ))
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.fail_v2(str(ex))

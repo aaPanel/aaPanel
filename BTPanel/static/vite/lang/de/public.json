@@ -75,7 +75,8 @@
 			"Select": "Wählen",
 			"Rebuild": "Wiederaufbau",
 			"Upload": "Hochladen",
-			"Play": "Spielen"
+			"Play": "Spielen",
+			"Link": "Link"
 		},
 		"Batch": {
 			"Del": "Stapel löschen",

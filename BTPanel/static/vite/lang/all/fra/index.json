@@ -66,5 +66,8 @@
 	"ec095d33d1c2a0b41afc87483146e551": "{0} Exécuter une fois",
 	"39838db537c95bc8df810c5601601d5b": "Tester la connexion",
 	"75cdd2fd902365c3be220a1dc7a36107": "Impossible de vous authentifier automatiquement, veuillez remplir les informations de connexion du serveur local !",
-	"7705bf38ca9a4afa0c3e4325d637d825": "Il n'y a actuellement aucun terminal activé"
+	"7705bf38ca9a4afa0c3e4325d637d825": "Il n'y a actuellement aucun terminal activé",
+	"e1a9dc9f23534e63de9df0d540ac1611": "Une fois",
+	"ae3bb2a1ac61750150b606298091d38a": "Nouveau mot de passe",
+	"f56aa590295b9637c7ffe19697853b17": "Ancien mot de passe"
 }

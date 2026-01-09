@@ -1,168 +1,168 @@
 {
-  "Component": {
-    "Batch": {
-      "index_1": "Lütfen seçin",
-      "index_2": "(Seçildi: {0})",
-      "index_3": "Toplu işleniyor {0}, mevcut ilerleme:"
-    },
-    "Auth": {
-      "index_1": "ÜCRETSİZ",
-      "index_2": "Yenileme",
-      "index_3": "Şimdi satın al",
-      "index_4": "Sona erme tarihi: ",
-      "index_5": "Şimdi yükselt",
-      "index_6": "Ömür boyu"
-    },
-    "Feedback": {
-      "index_7": "Geri bildirim",
-      "index_1": "aaPanel talep ve geri bildirim toplama",
-      "index_2": "Kullanım sırasında herhangi bir sorunla veya eksik bir özellikle karşılaşırsanız, lütfen",
-      "index_3": "sorunlarınızı veya ihtiyaçlarınızı bize ayrıntılı olarak açıklayın, çözmek veya geliştirmek için elimizden geleni yapacağız",
-      "index_4": "Gereksinim geri bildirimlerinize özel önem veriyoruz ve düzenli olarak haftalık gereksinim incelemeleri yapıyoruz. Umarım size daha iyi yardımcı olabilirim",
-      "index_5": "Lütfen geri bildirimi doldurun",
-      "index_6": "Katılımınız için teşekkür ederiz!"
-    },
-    "Coupon": {
-      "index_1": "Sınırlı süreli kuponları alın",
-      "index_2": "İNDİRİM",
-      "index_3": "Geçerlilik süresi: ",
-      "index_4": "Kupon",
-      "index_5": "Şimdi al",
-      "index_6": "Bugün için daha fazla hatırlatma yapma",
-      "index_7": "Son 7 gündür hatırlatma yapma",
-      "index_8": "Sana bir daha asla hatırlatma",
-      "index_9": "{0}, Emin misiniz?",
-      "index_10": "Bitiş tarihi ",
-      "index_11": "${0} kuponu al",
-      "index_12": "{0} kuponlar",
-      "index_13": "Bildirim yapılmayacak zamanı seçin"
-    },
-    "Pay": {
-      "index_1": "PRO",
-      "index_2": "Önerilen",
-      "index_3": "Pro Özelliği",
-      "index_4": "Eklenti açıklaması",
-      "index_5": "Özellik karşılaştırması",
-      "index_6": "Daha fazla tasarruf edin",
-      "index_7": "Linux Pro Sürümü, bu eklentiyi ve diğer tüm pro özellikleri ücretsiz kullanabilir",
-      "index_8": "Sorularınız mı var? Bize e-posta gönderin: {0}",
-      "index_9": "Planınızı seçin",
-      "index_10": "En popüler",
-      "index_11": "Lisans sayısı",
-      "index_12": "Yükleniyor, lütfen bekleyin...",
-      "index_13": "%{0} indirim",
-      "index_14": "{0} {1}",
-      "index_15": "{0} {1}",
-      "index_16": "OP: {0}",
-      "index_17": "Sadece eklenti",
-      "index_18": "Kupon({0})",
-      "index_19": "{1} ödemede ${0} İNDİRİM",
-      "index_20": "İndirim kuponu yok",
-      "index_21": "Kupon",
-      "index_22": "Lisans",
-      "index_23": "Hesap: ",
-      "index_24": "Değiştir",
-      "index_25": "Toplam: ",
-      "index_26": "Stripe ile Öde",
-      "index_27": "{0} ile ödeme başarısız olursa, şunu kullanmayı deneyebilirsiniz: ",
-      "index_28": "Ödeme siparişi başarısız oldu, lütfen yöneticiyle iletişime geçin!",
-      "index_29": "Abonelik: ",
-      "index_30": "* Lisans süresi dolduğunda otomatik olarak yenilenecektir",
-      "index_31": "* Abonelik seçildiğinde, yerel para birimiyle ödeme yapamazsınız",
-      "index_32": "Yerel Para Birimi: ",
-      "index_33": "* Yerel ödeme yönteminiz ve para biriminizle ödeyin",
-      "index_34": "Lisans bilgileri",
-      "index_35": "Lisans yok",
-      "index_36": "Lisans",
-      "index_37": "Kuponlar",
-      "index_38": "Kupon yok",
-      "index_39": "Kullan",
-      "index_40": "Son kullanma tarihi",
-      "index_41": "Lütfen satın almadan önce SSL başvurusunda bulunun!",
-      "index_42": "SSL'i aç",
-      "index_43": "Sınırlı Süreli Teklif: ",
-      "index_44": "${0}'a varan tasarruf edin",
-      "index_45": "Diğer Ödeme Yöntemleri",
-      "index_46": "Konumunuza göre ödeme para birimini otomatik olarak dönüştürür",
-      "index_47": "Şimdi Öde"
-    },
-    "BindAccount": {
-      "index_1": "aaPanel hesabını bağla",
-      "index_2": "Hesabınız yok mu, kaydolun",
-      "index_3": "Giriş yap",
-      "index_4": "Lütfen e-posta adresinizi girin",
-      "index_5": "Lütfen şifrenizi girin",
-      "index_6": "aaPanel hesabını bağla",
-      "index_7": "E-posta adresiniz",
-      "index_8": "Şifreniz"
-    },
-    "Logs": {
-      "index_1": "Kayıt yok"
-    },
-    "SelectPath": {
-      "index_1": "Geri dön",
-      "index_2": "Geçerli yol",
-      "index_3": "Dosya adı",
-      "index_4": "Değiştirme zamanı",
-      "index_5": "İzin",
-      "index_6": "Sahip",
-      "index_7": "Dizin seç"
-    },
-    "Editor": {
-      "index_1": "İpuçları: Ctrl+F Kelime ara, Ctrl+S Kaydet, Ctrl+H Bul ve değiştir"
-    },
-    "Quota": {
-      "index_1": "Kota",
-      "index_2": "Ayarlanmadı",
-      "index_3": "Mevcut kullanılan kapasite: {0}",
-      "index_4": "Kapasite Kotasını Değiştirmek için Tıklayın",
-      "index_5": "{1} Yeni kota ayarla [{0}]",
-      "index_6": "Mevcut kullanılan kapasite",
-      "index_7": "Mevcut kapasite kotası",
-      "index_8": "Hatırlatma: Bu özellik pro sürüme özeldir",
-      "index_9": "Kullanmak için bir XFS dosya sistemi ve [prjquota] parametresini içermesi gerekir",
-      "index_10": "fstab örneği: /dev/vdc1 /data xfs defaults, prjquota 0 0",
-      "index_11": "Kota: Kotayı iptal etmek için \\\"0\\\" olarak ayarlayın",
-      "index_12": "Mevcut kapasite kotası: {0}"
-    },
-    "Terminal": {
-      "index_1": "Bağlantı kesildi, enter'a basmak yeniden bağlanmayı deneyecektir!",
-      "index_2": "Yeniden bağlanmaya çalışılıyor!"
-    },
-    "Upload": {
-      "index_1": "Dosya seç",
-      "index_2": "Seçilmedi"
-    },
-    "UploadFile": {
-      "index_1": "Dosyayı bu alana tıklayın veya sürükleyin",
-      "index_2": "Yalnızca {0} dosya formatı içe aktarmayı destekler",
-      "index_3": "Dosya adı",
-      "index_4": "Boyut",
-      "index_5": "Durum",
-      "index_6": "Dosya seç",
-      "index_7": "[{0}] dosyasının boyutu {1}M'yi aşamaz",
-      "index_8": "Yükleme bekleniyor",
-      "index_9": "Yükleme başarılı",
-      "index_10": "Lütfen yüklenecek dosyayı seçin"
-    },
-    "FormMore": {
-      "index_1": "Daha fazla yapılandırma, görüntülemek için tıklayın"
-    },
-    "Confirm": {
-      "index_1": "İşlemi onaylıyorsanız, manuel olarak \\\"{text_}\\\" girin",
-      "index_2": "Giriş hatası, lütfen tekrar deneyin",
-      "index_3": "{0} tamamlandı, toplam {1} görev, {2} başarılı, {3} başarısız",
-      "index_4": "Sonuç: ",
-      "index_5": "Sonuç yanlış, lütfen tekrar deneyin"
-    },
-    "SoftState": {
-      "index_1": "{1} hizmetini {0} edip devam etmek istediğinizden emin misiniz?"
-    },
-    "Api": {
-      "index_1": "Yükleniyor, lütfen bekleyin...",
-      "index_2": "Bağlanıyor, lütfen bekleyin...",
-      "index_3": "Geri bildirim gönderiliyor, lütfen bekleyin..",
-      "index_4": "Dosya yükleniyor, lütfen bekleyin..."
-    }
-  }
+	"Component": {
+		"Batch": {
+			"index_1": "Lütfen seçin",
+			"index_2": "(Seçildi: {0})",
+			"index_3": "Toplu işleniyor {0}, mevcut ilerleme:"
+		},
+		"Auth": {
+			"index_1": "ÜCRETSİZ",
+			"index_2": "Yenileme",
+			"index_3": "Şimdi satın al",
+			"index_4": "Sona erme tarihi: ",
+			"index_5": "Şimdi yükselt",
+			"index_6": "Ömür boyu"
+		},
+		"Feedback": {
+			"index_7": "Geri bildirim",
+			"index_1": "aaPanel talep ve geri bildirim toplama",
+			"index_2": "Kullanım sırasında herhangi bir sorunla veya eksik bir özellikle karşılaşırsanız, lütfen",
+			"index_3": "sorunlarınızı veya ihtiyaçlarınızı bize ayrıntılı olarak açıklayın, çözmek veya geliştirmek için elimizden geleni yapacağız",
+			"index_4": "Gereksinim geri bildirimlerinize özel önem veriyoruz ve düzenli olarak haftalık gereksinim incelemeleri yapıyoruz. Umarım size daha iyi yardımcı olabilirim",
+			"index_5": "Lütfen geri bildirimi doldurun",
+			"index_6": "Katılımınız için teşekkür ederiz!"
+		},
+		"Coupon": {
+			"index_1": "Sınırlı süreli kuponları alın",
+			"index_2": "İNDİRİM",
+			"index_3": "Geçerlilik süresi: ",
+			"index_4": "Kupon",
+			"index_5": "Şimdi al",
+			"index_6": "Bugün için daha fazla hatırlatma yapma",
+			"index_7": "Son 7 gündür hatırlatma yapma",
+			"index_8": "Sana bir daha asla hatırlatma",
+			"index_9": "{0}, Emin misiniz?",
+			"index_10": "Bitiş tarihi ",
+			"index_11": "${0} kuponu al",
+			"index_12": "{0} kuponlar",
+			"index_13": "Bildirim yapılmayacak zamanı seçin"
+		},
+		"Pay": {
+			"index_1": "PRO",
+			"index_2": "Önerilen",
+			"index_3": "Pro Özelliği",
+			"index_4": "Eklenti açıklaması",
+			"index_5": "Özellik karşılaştırması",
+			"index_6": "Daha fazla tasarruf edin",
+			"index_7": "Linux Pro Sürümü, bu eklentiyi ve diğer tüm pro özellikleri ücretsiz kullanabilir",
+			"index_8": "Sorularınız mı var? Bize e-posta gönderin: {0}",
+			"index_9": "Planınızı seçin",
+			"index_10": "En popüler",
+			"index_11": "Lisans sayısı",
+			"index_12": "Yükleniyor, lütfen bekleyin...",
+			"index_13": "%{0} indirim",
+			"index_14": "{0} {1}",
+			"index_15": "{0} {1}",
+			"index_16": "OP: {0}",
+			"index_17": "Sadece eklenti",
+			"index_18": "Kupon({0})",
+			"index_19": "{1} ödemede ${0} İNDİRİM",
+			"index_20": "İndirim kuponu yok",
+			"index_21": "Kupon",
+			"index_22": "Lisans",
+			"index_23": "Hesap: ",
+			"index_24": "Değiştir",
+			"index_25": "Toplam: ",
+			"index_26": "Stripe ile Öde",
+			"index_27": "{0} ile ödeme başarısız olursa, şunu kullanmayı deneyebilirsiniz: ",
+			"index_28": "Ödeme siparişi başarısız oldu, lütfen yöneticiyle iletişime geçin!",
+			"index_29": "Abonelik: ",
+			"index_30": "* Lisans süresi dolduğunda otomatik olarak yenilenecektir",
+			"index_31": "* Abonelik seçildiğinde, yerel para birimiyle ödeme yapamazsınız",
+			"index_32": "Yerel Para Birimi: ",
+			"index_33": "* Yerel ödeme yönteminiz ve para biriminizle ödeyin",
+			"index_34": "Lisans bilgileri",
+			"index_35": "Lisans yok",
+			"index_36": "Lisans",
+			"index_37": "Kuponlar",
+			"index_38": "Kupon yok",
+			"index_39": "Kullan",
+			"index_40": "Son kullanma tarihi",
+			"index_41": "Lütfen satın almadan önce SSL başvurusunda bulunun!",
+			"index_42": "SSL'i aç",
+			"index_43": "Sınırlı Süreli Teklif: ",
+			"index_44": "${0}'a varan tasarruf edin",
+			"index_45": "Diğer Ödeme Yöntemleri",
+			"index_46": "Konumunuza göre ödeme para birimini otomatik olarak dönüştürür",
+			"index_47": "Şimdi Öde"
+		},
+		"BindAccount": {
+			"index_1": "aaPanel hesabını bağla",
+			"index_2": "Hesabınız yok mu, kaydolun",
+			"index_3": "Giriş yap",
+			"index_4": "Lütfen e-posta adresinizi girin",
+			"index_5": "Lütfen şifrenizi girin",
+			"index_6": "aaPanel hesabını bağla",
+			"index_7": "E-posta adresiniz",
+			"index_8": "Şifreniz"
+		},
+		"Logs": {
+			"index_1": "Kayıt yok"
+		},
+		"SelectPath": {
+			"index_1": "Geri dön",
+			"index_2": "Geçerli yol",
+			"index_3": "Dosya adı",
+			"index_4": "Değiştirme zamanı",
+			"index_5": "İzin",
+			"index_6": "Sahip",
+			"index_7": "Dizin seç"
+		},
+		"Editor": {
+			"index_1": "İpuçları: Ctrl+F Kelime ara, Ctrl+S Kaydet, Ctrl+H Bul ve değiştir"
+		},
+		"Quota": {
+			"index_1": "Kota",
+			"index_2": "Ayarlanmadı",
+			"index_3": "Mevcut kullanılan kapasite: {0}",
+			"index_4": "Kapasite Kotasını Değiştirmek için Tıklayın",
+			"index_5": "{1} Yeni kota ayarla [{0}]",
+			"index_6": "Mevcut kullanılan kapasite",
+			"index_7": "Mevcut kapasite kotası",
+			"index_8": "Hatırlatma: Bu özellik pro sürüme özeldir",
+			"index_9": "Kullanmak için bir XFS dosya sistemi ve [prjquota] parametresini içermesi gerekir",
+			"index_10": "fstab örneği: /dev/vdc1 /data xfs defaults, prjquota 0 0",
+			"index_11": "Kota: Kotayı iptal etmek için \\\"0\\\" olarak ayarlayın",
+			"index_12": "Mevcut kapasite kotası: {0}"
+		},
+		"Terminal": {
+			"index_1": "Bağlantı kesildi, enter'a basmak yeniden bağlanmayı deneyecektir!",
+			"index_2": "Yeniden bağlanmaya çalışılıyor!"
+		},
+		"Upload": {
+			"index_1": "Dosya seç",
+			"index_2": "Seçilmedi"
+		},
+		"UploadFile": {
+			"index_1": "Dosyayı bu alana tıklayın veya sürükleyin",
+			"index_2": "Yalnızca {0} dosya formatı içe aktarmayı destekler",
+			"index_3": "Dosya adı",
+			"index_4": "Boyut",
+			"index_5": "Durum",
+			"index_6": "Dosya seç",
+			"index_7": "[{0}] dosyasının boyutu {1}M'yi aşamaz",
+			"index_8": "Yükleme bekleniyor",
+			"index_9": "Yükleme başarılı",
+			"index_10": "Lütfen yüklenecek dosyayı seçin"
+		},
+		"FormMore": {
+			"index_1": "Daha fazla yapılandırma, görüntülemek için tıklayın"
+		},
+		"Confirm": {
+			"index_1": "İşlemi onaylıyorsanız, manuel olarak \\\"{text_}\\\" girin",
+			"index_2": "Giriş hatası, lütfen tekrar deneyin",
+			"index_3": "{0} tamamlandı, toplam {1} görev, {2} başarılı, {3} başarısız",
+			"index_4": "Sonuç: ",
+			"index_5": "Sonuç yanlış, lütfen tekrar deneyin"
+		},
+		"SoftState": {
+			"index_1": "{1} hizmetini {0} edip devam etmek istediğinizden emin misiniz?"
+		},
+		"Api": {
+			"index_1": "Yükleniyor, lütfen bekleyin...",
+			"index_2": "Bağlanıyor, lütfen bekleyin...",
+			"index_3": "Geri bildirim gönderiliyor, lütfen bekleyin..",
+			"index_4": "Dosya yükleniyor, lütfen bekleyin..."
+		}
+	}
 }

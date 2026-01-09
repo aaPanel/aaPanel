@@ -75,7 +75,8 @@
 			"Select": "選擇",
 			"Rebuild": "重建",
 			"Upload": "上傳",
-			"Play": "播放"
+			"Play": "播放",
+			"Link": "鏈接"
 		},
 		"Batch": {
 			"Del": "批量刪除",

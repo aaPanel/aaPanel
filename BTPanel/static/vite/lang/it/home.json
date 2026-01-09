@@ -267,6 +267,9 @@
 			"index_97": "Scansione",
 			"index_98": "Articolo privo di rischio",
 			"index_99": "In attesa di scansione"
-		}
+		},
+		"systemRestartReminder": "System Restart Reminder",
+		"serverRestartedAt": "Your server restarted at {time}.",
+		"iKnow": "I Know"
 	}
 }

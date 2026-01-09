@@ -27,7 +27,8 @@
 			"app_list_15": "点击跳转域名：",
 			"app_list_16": "管理网站",
 			"app_list_17": "备份",
-			"app_category_0": "已安装",
+				"app_list_18": "一键登录",
+				"app_category_0": "已安装",
 			"app_category_1": "更多",
 			"Install": {
 				"index_1": "名称",

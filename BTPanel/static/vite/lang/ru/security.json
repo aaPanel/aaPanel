@@ -464,6 +464,86 @@
 			"Index_4": "Настройки сохранены",
 			"Index_5": "Выберите пользователя",
 			"Index_6": "Удалить этого пользователя?"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "Scanning",
+				"lastScanTime": "Last scan time:",
+				"cancelScan": "Cancel Scan",
+				"scanNow": "Scan Now",
+				"title": "Intelligent Website Security",
+				"desc": "Free website security powered by a robust engine. With one click you can check for website risk signals; aaPanel automatically provides optimization and remediation suggestions so you can harden your site with simple operations.",
+				"noPhpSite": "No PHP websites found"
+			},
+			"Metric": {
+				"duration": "Duration",
+				"seconds": "seconds",
+				"durationDesc": "Total duration of this website scan",
+				"xssDesc": "XSS attacks in this website scan",
+				"sqlDesc": "SQL injection in this website scan",
+				"maliciousScan": "Malicious Scan",
+				"maliciousScanDesc": "Malicious scans in this website scan",
+				"phpAttack": "PHP Attack",
+				"phpAttackDesc": "PHP attacks in this website scan"
+			},
+			"Summary": {
+				"scoreTitle": "Website Security Score",
+				"scoreLabel": "Score"
+			},
+			"Top": {
+				"title": "IP (Top 5)",
+				"columns": {
+					"ip": "IP Address",
+					"count": "Visits"
+				},
+				"banTitle": "Ban IP [{0}]",
+				"banContent": "After banning this IP, it will no longer be allowed to access the server. Continue?",
+				"unbanTitle": "Unban IP [{0}]",
+				"unbanContent": "After unbanning this IP, access from this IP to the server will be restored. Continue?",
+				"banBrief": "Website security manually block IP"
+			},
+			"Project": {
+				"title": "Security Items",
+				"waiting": "Waiting to scan",
+				"foundRisk": "{0} risks",
+				"noRisk": "No risks",
+				"expand": "Expand",
+				"items": {
+					"webscan": "Website Configuration Security",
+					"fileleak": "File Leak Detection",
+					"webshell": "Webshell Detection",
+					"backup": "Backup Files",
+					"weakpass": "Weak Password Detection",
+					"weblog": "Website Logs"
+				}
+			},
+			"Risk": {
+				"detailLabel": "Details:",
+				"repairLabel": "Fix:"
+			},
+			"RiskLevel": {
+				"warning": "Warning",
+				"low": "Low",
+				"middle": "Medium",
+				"high": "High"
+			},
+			"Info": {
+				"overviewTitle": "Overview",
+				"features": {
+					"scan": {
+						"title": "Free and powerful all-in-one website intrusion scan",
+						"desc": "Comprehensive free scan to block website intrusion risks"
+					},
+					"trojan": {
+						"title": "Deep scan for dangerous trojans",
+						"desc": "Accurately detect hidden threats with deep trojan scanning"
+					},
+					"log": {
+						"title": "Professional analysis of website access logs",
+						"desc": "Discover anomalies and security risks through log analysis"
+					}
+				}
+			}
 		}
 	}
 }

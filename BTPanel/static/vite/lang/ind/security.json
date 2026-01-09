@@ -464,6 +464,86 @@
 			"Index_4": "Pengaturan kesuksesan",
 			"Index_5": "Pilih Pengguna",
 			"Index_6": "Apakah Anda pasti akan menghapus pengguna ini?"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "Memindai",
+				"lastScanTime": "Waktu pemindaian terakhir:",
+				"cancelScan": "Batalkan Pemindaian",
+				"scanNow": "Pindai Sekarang",
+				"title": "Keamanan Situs Web Cerdas",
+				"desc": "Keamanan situs web gratis berbasis mesin yang tangguh: deteksi risiko sekali klik, saran pengoptimalan/remediasi otomatis aaPanel, pengerasan situs web yang mudah.",
+				"noPhpSite": "Tidak ada situs web PHP yang ditemukan"
+			},
+			"Metric": {
+				"duration": "Durasi",
+				"seconds": "detik",
+				"durationDesc": "Total durasi pemindaian situs web ini",
+				"xssDesc": "Serangan XSS dalam pemindaian situs web ini",
+				"sqlDesc": "Injeksi SQL dalam pemindaian situs web ini",
+				"maliciousScan": "Pemindaian Berbahaya",
+				"maliciousScanDesc": "Pemindaian berbahaya dalam pemindaian situs web ini",
+				"phpAttack": "Serangan PHP",
+				"phpAttackDesc": "Serangan PHP dalam pemindaian situs web ini"
+			},
+			"Summary": {
+				"scoreTitle": "Skor Keamanan Situs Web",
+				"scoreLabel": "Skor"
+			},
+			"Top": {
+				"title": "IP (5 Teratas)",
+				"columns": {
+					"ip": "Alamat IP",
+					"count": "Kunjungan"
+				},
+				"banTitle": "Larangan IP [{0}]",
+				"banContent": "Setelah melarang IP ini, IP ini tidak lagi diizinkan mengakses server. Melanjutkan?",
+				"unbanTitle": "Batalkan pelarangan IP [{0}]",
+				"unbanContent": "Setelah membatalkan pelarangan IP ini, akses dari IP ini ke server akan dipulihkan. Melanjutkan?",
+				"banBrief": "Keamanan situs web memblokir IP secara manual"
+			},
+			"Project": {
+				"title": "Item Keamanan",
+				"waiting": "Menunggu untuk memindai",
+				"foundRisk": "{0} risiko",
+				"noRisk": "Tidak ada risiko",
+				"expand": "Perluas",
+				"items": {
+					"webscan": "Keamanan Konfigurasi Situs Web",
+					"fileleak": "Deteksi Kebocoran File",
+					"webshell": "Deteksi Kulit Web",
+					"backup": "File Cadangan",
+					"weakpass": "Deteksi Kata Sandi Lemah",
+					"weblog": "Log Situs Web"
+				}
+			},
+			"Risk": {
+				"detailLabel": "Detail:",
+				"repairLabel": "Saran:"
+			},
+			"RiskLevel": {
+				"warning": "Peringatan",
+				"low": "Rendah",
+				"middle": "Sedang",
+				"high": "Tinggi"
+			},
+			"Info": {
+				"overviewTitle": "Ringkasan",
+				"features": {
+					"scan": {
+						"title": "Pemindaian intrusi situs web lengkap yang gratis dan kuat",
+						"desc": "Pemindaian gratis yang komprehensif untuk memblokir risiko intrusi situs web"
+					},
+					"trojan": {
+						"title": "Pemindaian mendalam untuk mencari trojan berbahaya",
+						"desc": "Deteksi ancaman tersembunyi secara akurat dengan pemindaian trojan mendalam"
+					},
+					"log": {
+						"title": "Analisis profesional log akses situs web",
+						"desc": "Temukan anomali dan risiko keamanan melalui analisis log"
+					}
+				}
+			}
 		}
 	}
 }

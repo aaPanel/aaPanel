@@ -183,7 +183,8 @@
 			"index_74": "Modifica la password del database",
 			"index_75": "Password di root",
 			"index_76": "Posizione",
-			"index_77": "Aggiungi tempo"
+			"index_77": "Aggiungi tempo",
+			"index_78": "Show Logs"
 		},
 		"PhpAdmin": {
 			"index_1": "Servizio",
@@ -217,7 +218,8 @@
 			"index_29": "Il nome utente o la password non possono essere inferiori a 3 cifre!",
 			"index_30": "Le password in due input sono incoerenti!",
 			"index_31": "Versione PHP",
-			"index_32": "Seleziona la versione PHP-CLI"
+			"index_32": "Seleziona la versione PHP-CLI",
+			"index_33": "The Adminer driver depends on the currently running PHP version environment. If you find that the driver is missing, please go to PHP extensions to install php_mongodb and pdo_pgsql"
 		},
 		"Api": {
 			"Index_1": "Connessione al server remoto, per favore attendi ...",
@@ -261,7 +263,36 @@
 			"index_25": "L'autorizzazione di [{0}] sta per essere rimossa. Vuoi continuare?",
 			"index_26": "Impostazione dell'allarme",
 			"index_27": "Dopo l'impostazione, riavviare manualmente il database per avere effetto",
-			"index_28": "Scarica il certificato autofirmato Mysql SSL"
+			"index_28": "Scarica il certificato autofirmato Mysql SSL",
+			"type": {
+				"import": "Import",
+				"recover": "Recover",
+				"backup": "Backup"
+			},
+			"logs": {
+				"index_1": "{0} database file, please wait...",
+				"index_2": "Current {0} task is running in the background, you can close this page to perform other operations",
+				"index_3": "{0} Database: ",
+				"index_4": "{0} Size: ",
+				"index_5": "{0} Speed: ",
+				"index_6": "After the import is completed, you can view the import results in the import log"
+			}
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Current Status: ",
+				"fixed": "Fixed",
+				"install": "Install",
+				"uninstall": "Uninstall",
+				"confirmFixed": "Are you sure you want to fixed?",
+				"confirmInstall": "Are you sure you want to install?",
+				"confirmUninstall": "Are you sure you want to uninstall?",
+				"jumpingToAdminer": "Jumping to Adminer, please wait..."
+			},
+			"switchingPhp": "Switching PHP version, please wait...",
+			"installing": "Installing, please wait...",
+			"uninstalling": "Uninstalling, please wait...",
+			"switchingPort": "Switching port, please wait..."
 		}
 	}
 }

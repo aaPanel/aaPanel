@@ -2,50 +2,50 @@
 	"Logs": {
 		"Panel": {
 			"index_1": "Logs de operação",
-			"index_2": "Executar logs",
-			"index_3": "Toges Cron",
-			"index_4": "Por favor insira o nome do site",
-			"index_5": "Troncos claros",
+			"index_2": "Logs de execução",
+			"index_3": "Logs do Cron",
+			"index_4": "Por favor, insira o nome do site",
+			"index_5": "Limpar logs",
 			"index_6": "Tipo de operação",
 			"index_7": "Tempo de operação",
-			"index_13": "Hora da varredura",
+			"index_13": "Tempo de varredura",
 			"index_14": "Ataque PHP",
-			"index_15": "Prestes a limpar os logs, continue?"
+			"index_15": "Prestes a limpar logs, continuar?"
 		},
 		"Website": {
-			"index_1": "URL (TOP100)",
+			"index_1": "URL(top100)",
 			"index_2": "Logs de acesso",
-			"index_3": "Recomenda -se realizar análises de segurança quando a carga do servidor é baixa. Desta vez, o arquivo de log [{0}]. Será digitalizado e o tempo de espera pode ser mais longo. Você quer continuar?",
+			"index_3": "Recomenda-se realizar análises de segurança quando a carga do servidor estiver baixa. Desta vez, o arquivo [{0}].log será escaneado, e o tempo de espera pode ser maior. Deseja continuar?",
 			"index_4": "Logs de erro",
-			"index_5": "IP (TOP100)"
+			"index_5": "IP(top100)"
 		},
 		"Audit": {
-			"index_1": "Por favor, insira origem/porta/função/evento"
+			"index_1": "Por favor, insira Origem/Porta/Papel/Evento"
 		},
 		"SSH": {
-			"index_1": "IP: porta"
+			"index_1": "IP: Porta"
 		},
 		"Soft": {
-			"index_1": "Nome de usuário do FTP",
-			"index_2": "Operação IP",
+			"index_1": "Nome de usuário FTP",
+			"index_2": "IP de Operação",
 			"index_3": "Arquivo",
-			"index_4": "Tempo de pouso",
-			"index_5": "Logs FTP",
-			"index_6": "MySQL Logs lentos",
-			"index_7": "Logs de erro do MySQL",
-			"index_8": "Log de operação",
-			"index_9": "Por favor, insira as palavras -chave de pesquisa"
+			"index_4": "Hora de aterrissagem",
+			"index_5": "Logs de FTP",
+			"index_6": "Logs lentos do MySql",
+			"index_7": "Logs de erro do MySql",
+			"index_8": "Log de Operação",
+			"index_9": "Por favor, insira palavras-chave de pesquisa"
 		},
 		"Conversion": {
-			"index_1": "Auditoria de logs - Introdução",
-			"index_2": "Analisar e analisar toras comuns",
-			"index_3": "Colete, analise e audite informações como várias operações, eventos e situações anormais registradas pelo sistema, rede e programas de aplicativos.",
-			"index_4": "Logs FTP - Introdução",
-			"index_5": "Registre e visualize o login de login FTP atual e o log de operação",
-			"index_6": "Registre informações de login de login do cliente FTP",
-			"index_7": "Login SSH - Introdução",
-			"index_8": "Registre e veja os logs de login SSH atuais",
-			"index_9": "Registre informações atuais de login de login"
+			"index_1": "Auditoria de Logs - introdução",
+			"index_2": "Analisar e analisar logs comuns",
+			"index_3": "Coletar, analisar e auditar informações como várias operações, eventos e situações anormais registradas pelo sistema, rede e programas aplicativos.",
+			"index_4": "Logs de FTP - introdução",
+			"index_5": "Gravar e visualizar o log de login FTP atual e o log de operação",
+			"index_6": "Registrar log de login do cliente usuário FTP e informações de log de operação de arquivo",
+			"index_7": "Logs de login SSH - introdução",
+			"index_8": "Gravar e visualizar os logs de login SSH atuais",
+			"index_9": "Registrar informações de logs de login SSH atuais"
 		}
 	}
 }

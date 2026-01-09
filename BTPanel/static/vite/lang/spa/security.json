@@ -464,6 +464,86 @@
 			"Index_4": "Establecimiento de éxito",
 			"Index_5": "Seleccione el usuario",
 			"Index_6": "¿Seguro que eliminará a este usuario?"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "Escaneo",
+				"lastScanTime": "Hora del último escaneo:",
+				"cancelScan": "Cancelar escaneo",
+				"scanNow": "Escanear ahora",
+				"title": "Seguridad inteligente del sitio web",
+				"desc": "Seguridad de sitios web gratuita basada en un motor robusto: detección de riesgos con un solo clic, sugerencias de corrección/optimización automática de aaPanel, fácil fortalecimiento del sitio web.",
+				"noPhpSite": "No se encontraron sitios web PHP"
+			},
+			"Metric": {
+				"duration": "Duración",
+				"seconds": "segundos",
+				"durationDesc": "Duración total del análisis de este sitio web",
+				"xssDesc": "Ataques XSS en el escaneo de este sitio web",
+				"sqlDesc": "Inyección SQL en el escaneo de este sitio web",
+				"maliciousScan": "Escaneo malicioso",
+				"maliciousScanDesc": "Escaneos maliciosos en este escaneo de sitio web",
+				"phpAttack": "Ataque PHP",
+				"phpAttackDesc": "Ataques PHP en el escaneo de este sitio web"
+			},
+			"Summary": {
+				"scoreTitle": "Puntuación de seguridad del sitio web",
+				"scoreLabel": "Puntuación"
+			},
+			"Top": {
+				"title": "PI (5 primeros)",
+				"columns": {
+					"ip": "Dirección IP",
+					"count": "Visitas"
+				},
+				"banTitle": "Prohibir IP [{0}]",
+				"banContent": "Después de prohibir esta IP, ya no se le permitirá acceder al servidor. ¿Continuar?",
+				"unbanTitle": "Desbanear IP [{0}]",
+				"unbanContent": "Después de desbloquear esta IP, se restaurará el acceso desde esta IP al servidor. ¿Continuar?",
+				"banBrief": "La seguridad del sitio web bloquea manualmente la IP"
+			},
+			"Project": {
+				"title": "Artículos de seguridad",
+				"waiting": "Esperando para escanear",
+				"foundRisk": "{0} riesgos",
+				"noRisk": "Sin riesgos",
+				"expand": "Expandir",
+				"items": {
+					"webscan": "Seguridad de la configuración del sitio web",
+					"fileleak": "Detección de fugas de archivos",
+					"webshell": "Detección de shell web",
+					"backup": "Archivos de copia de seguridad",
+					"weakpass": "Detección de contraseña débil",
+					"weblog": "Registros del sitio web"
+				}
+			},
+			"Risk": {
+				"detailLabel": "Detalles:",
+				"repairLabel": "Sugerencia:"
+			},
+			"RiskLevel": {
+				"warning": "Advertencia",
+				"low": "Bajo",
+				"middle": "Medio",
+				"high": "Alto"
+			},
+			"Info": {
+				"overviewTitle": "Descripción general",
+				"features": {
+					"scan": {
+						"title": "Potente y gratuito análisis de intrusiones en sitios web todo en uno",
+						"desc": "Escaneo completo y gratuito para bloquear los riesgos de intrusión en sitios web"
+					},
+					"trojan": {
+						"title": "Análisis profundo en busca de troyanos peligrosos",
+						"desc": "Detecte con precisión amenazas ocultas con un análisis troyano profundo"
+					},
+					"log": {
+						"title": "Análisis profesional de registros de acceso a sitios web.",
+						"desc": "Descubra anomalías y riesgos de seguridad a través del análisis de registros"
+					}
+				}
+			}
 		}
 	}
 }

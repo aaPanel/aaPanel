@@ -188,7 +188,7 @@ class main(Base):
 
         data['ping'] = isPing
 
-        cache.set(cache_key, data, 3600)
+        cache.set(cache_key, data, 10)
         return public.success_v2(data)
 
     # 2024/3/26 下午 3:40 获取防火墙状态
@@ -219,6 +219,19 @@ class main(Base):
     def check_iptables_env(self, firewall_status):
         if firewall_status:
             if not os.path.exists('/etc/systemd/system/BT-FirewallServices.service'):
+                # 判断 数据库是否有数据 如果没数据直接初始化(新安装面板场景)
+                if public.M('firewall_country').count() == 0 and \
+                        public.M('firewall_ip').count() == 0 and \
+                        public.M('firewall_malicious_ip').count() == 0 and \
+                        public.M('firewall_forward').count() == 0:
+
+                    exec_shell = '('
+                    if not os.path.exists('/usr/sbin/ipset'):
+                        exec_shell = exec_shell + '{} install ipset -y;'.format(public.get_sys_install_bin())
+                    exec_shell = exec_shell + 'sh {panel_path}/script/init_firewall.sh)'.format(
+                        panel_path=public.get_panel_path())
+                    public.ExecShell(exec_shell)
+                    return {'status': True, 'msg': 'install.'}
                 return {'status': False, 'msg': public.lang('Firewall not initialised.')}
             elif public.ExecShell("iptables -C INPUT -j IN_BT")[1] != '':         #丢失iptable链 需要重新创建
                 exec_shell = 'sh {}/script/init_firewall.sh'.format(public.get_panel_path())
@@ -496,7 +509,7 @@ class main(Base):
                 sort_data = sorted(list_port, key=lambda x: x['addtime'], reverse=True)
 
             if get.query == "":
-                cache.set(cache_key, sort_data, 86400)
+                cache.set(cache_key, sort_data, 10)
         if get.export == "1":
             get.row = len(sort_data)
         return self.return_page(sort_data, get)
@@ -577,7 +590,7 @@ class main(Base):
                 sort_data = sorted(list_ip, key=lambda x: x['addtime'], reverse=True)
 
             if get.query == "":
-                cache.set(cache_key, sort_data, 86400)
+                cache.set(cache_key, sort_data, 10)
         else:   #缓存流程
             new_list = []
             sort_data = data
@@ -634,7 +647,9 @@ class main(Base):
                 for i in range(len(rule_db)):
                     if (rule_db[i]['T_Address'] == list_forward[j]['T_Address'] and
                             rule_db[i]['S_Port'] == list_forward[j]['S_Port'] and
-                            rule_db[i]['T_Port'] == list_forward[j]['T_Port']):
+                            rule_db[i]['T_Port'] == list_forward[j]['T_Port'] and
+                            rule_db[i]['Protocol'].upper() == list_forward[j]['Protocol'].upper()
+                        ):
                         list_forward[j]['id'] = rule_db[i]['id']
                         list_forward[j]['brief'] = rule_db[i]['brief']
                         list_forward[j]['addtime'] = rule_db[i]['addtime']
@@ -653,7 +668,7 @@ class main(Base):
                 sort_data = sorted(list_forward, key=lambda x: x['addtime'], reverse=True)
 
             if get.query == "":
-                cache.set(cache_key, sort_data, 86400)
+                cache.set(cache_key, sort_data, 10)
 
         return self.return_page(sort_data, get)
 
@@ -1667,7 +1682,18 @@ class main(Base):
 
             if get.operation == "add" and not self.check_ip_exist(get):
                 return public.fail_v2("Target address {} already exists, please don't add it repeatedly".format(get.address))
+            if get.strategy == "drop":
+                #读取封禁列表
+                ip_rules_file = "data/ssh_deny_ip_rules.json"
+                try:
+                    ip_rules = json.loads(public.readFile(ip_rules_file))
+                except Exception:
+                    ip_rules = []
 
+                if get.address in ip_rules:
+                    #移除封禁列表
+                    ip_rules.remove(get.address)
+                    public.writeFile(ip_rules_file, json.dumps(ip_rules))
             self.set_ip_db(get)
 
             info = {

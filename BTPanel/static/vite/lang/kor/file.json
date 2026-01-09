@@ -3,9 +3,9 @@
 		"upload": "업로드",
 		"remoteDownload": "원격 다운로드",
 		"create": "새로운",
-		"searchContent": "파일 내용을 검색합니다",
+		"searchContent": "파일 검색",
 		"favorite": "가장 좋아하는",
-		"shareList": "목록을 공유하십시오",
+		"shareList": "목록을 공유하세요",
 		"terminal": "터미널",
 		"rootDirectory": "root 디렉토리",
 		"fileProtection": "파일 보호",
@@ -54,7 +54,7 @@
 			"statusFailed": "실패한",
 			"confirmUpload": "업로드 확인",
 			"continueUpload": "계속 업로드하기",
-			"dragFilesHere": "여기에서 파일/폴더를 드래그하십시오",
+			"dragFilesHere": "여기에서 파일/폴더를 드래그하세요",
 			"fileAlreadyExists": "이 파일은 이미 존재합니다",
 			"cancelUpload": "업로드 취소",
 			"cancelUploadConfirm": "업로드를 취소 하시겠습니까? 취소 후 업로드 목록이 지워집니다.",
@@ -70,11 +70,11 @@
 			"sourceFile": "소스 파일",
 			"softLinkName": "SoftLink 이름",
 			"validation": {
-				"fillRequired": "sfile과 dfile을 작성하십시오"
+				"fillRequired": "sfile과 dfile을 작성하세요"
 			}
 		},
 		"searchFileContentModal": {
-			"title": "파일 내용을 검색합니다",
+			"title": "파일 검색",
 			"search": "찾다",
 			"suffix": "접미사",
 			"folder": "폴더",
@@ -82,7 +82,7 @@
 			"mode": "모드",
 			"words": "단어",
 			"regex": "리그 즈",
-			"matchWholeWord": "전체 단어와 일치하십시오",
+			"matchWholeWord": "전체 단어와 일치하세요",
 			"matchCase": "매치 케이스",
 			"searchResult": "검색 결과 : ",
 			"matchesIn": "일치합니다",
@@ -94,7 +94,7 @@
 			"searching": "검색, 잠깐만 ..."
 		},
 		"resourceManagerModal": {
-			"title": "경로를 선택하십시오",
+			"title": "경로를 선택하세요",
 			"fileName": "파일 이름",
 			"modificationTime": "수정 시간",
 			"permission": "허가",
@@ -113,8 +113,8 @@
 				"remoteDownload": "원격 다운로드",
 				"new": "새로운",
 				"searchFileContent": "파일 내용을 검색합니다",
-				"favorite": "가장 좋아하는",
-				"shareList": "목록을 공유하십시오",
+				"favorite": "즐겨찾기",
+				"shareList": "목록을 공유하세요",
 				"terminal": "터미널",
 				"rootDirectory": "루트 디렉토리",
 				"fileProtection": "파일/디어 보호"
@@ -212,7 +212,7 @@
 		"deleteController": {
 			"deleteSingleFileTitle": "파일 삭제 [{name}]",
 			"batchDeleteTitle": "배치 삭제 파일",
-			"recycleBinMessage": "삭제 후 파일이 휴지통으로 이동됩니다. 영구적 인 삭제하려면 Recycle Bin으로 이동하십시오. 계속 하시겠습니까?",
+			"recycleBinMessage": "삭제 후 파일이 휴지통으로 이동됩니다. 영구적 인 삭제하려면 Recycle Bin으로 이동하세요. 계속 하시겠습니까?",
 			"permanentDeleteMessage": "위험 작동, 휴지통은 현재 활성화되지 않았으며 파일은 영구적으로 삭제되며 삭제 후에 복구 할 수 없습니다. 계속 하시겠습니까?",
 			"deletingSingle": "삭제, 잠깐만 ...",
 			"deletingBatch": "배치 삭제, 잠깐만 ..."
@@ -223,23 +223,23 @@
 			"downloadTo": "다운로드",
 			"fileName": "파일 이름",
 			"validation": {
-				"urlRequired": "URL 주소를 입력하십시오",
-				"urlInvalid": "유효한 URL 주소를 입력하십시오",
-				"pathRequired": "다운로드 경로를 입력하십시오",
-				"filenameRequired": "파일 이름을 입력하십시오"
+				"urlRequired": "URL 주소를 입력하세요",
+				"urlInvalid": "유효한 URL 주소를 입력하세요",
+				"pathRequired": "다운로드 경로를 입력하세요",
+				"filenameRequired": "파일 이름을 입력하세요"
 			}
 		},
 		"backupModal": {
 			"title": "백업 디렉토리",
-			"backupButton": "지원",
+			"backupButton": "백업",
 			"confirmTitle": "백업을 확인 하시겠습니까?",
-			"enterBackupName": "현재 백업 이름을 입력하십시오",
+			"enterBackupName": "현재 백업 이름을 입력하세요",
 			"remarks": "발언",
 			"backupTime": "백업 시간",
 			"backupPath": "백업 경로",
 			"backupName": "백업 이름",
-			"deleteBackup": "백업을 삭제하십시오",
-			"pleaseSelectPath": "백업 디렉토리를 선택하십시오",
+			"deleteBackup": "백업을 삭제하세요",
+			"pleaseSelectPath": "백업 디렉토리를 선택하세요",
 			"deletingBackup": "백업 삭제, 잠깐만 ...",
 			"executingBackup": "백업 실행, 잠깐만 ...",
 			"deleteConfirm": "삭제 후 백업을 복원 할 수 없습니다. 계속 삭제 하시겠습니까?"
@@ -247,25 +247,25 @@
 		"decompressModal": {
 			"title": "감압 파일",
 			"fileName": "파일 이름",
-			"compressPath": "경로를 압축하십시오",
+			"compressPath": "경로를 압축하세요",
 			"password": "비밀번호",
 			"passwordPlaceholder": "비밀번호가 없음을 비워 두십시오",
 			"encoding": "부호화",
 			"validation": {
-				"fileNameRequired": "파일 이름 경로를 입력하십시오",
-				"pathRequired": "감압 주소를 입력하십시오"
+				"fileNameRequired": "파일 이름 경로를 입력하세요",
+				"pathRequired": "감압 주소를 입력하세요"
 			}
 		},
 		"compressionModal": {
 			"compressType": "압축 유형",
-			"compressPath": "경로를 압축하십시오",
+			"compressPath": "경로를 압축하세요",
 			"compressFolder": "폴더 압축 [{name}]",
 			"compressFile": "파일 압축 [{name}]",
 			"compressFolderAndFile": "폴더를 압축하고 파일 [{names}]"
 		},
 		"tableFooter": {
 			"summary": "총 {dirnum} 디렉토리, {filenum} 파일, 파일 크기 : ",
-			"calculate": "믿다"
+			"calculate": "보기"
 		},
 		"terminalModal": {
 			"title": "터미널",
@@ -287,25 +287,25 @@
 			"shareDetails": "세부 사항 공유-[{name}]",
 			"closeSharingChain": "공유 체인을 닫습니다",
 			"shareChain": "공유 체인",
-			"copyLinkAndCode": "링크 및 코드를 복사하십시오",
-			"cancelSharing": "공유를 취소하십시오",
+			"copyLinkAndCode": "링크 및 코드를 복사하세요",
+			"cancelSharing": "공유를 취소하세요",
 			"confirmStopSharing": "[{filename}] 공유를 중지하고 계속?",
 			"deletingShare": "공유 삭제, 기다려주세요 ...",
 			"linkAndCode": "링크 : {link}, 초대 코드 : {code}"
 		},
 		"shareListModal": {
-			"title": "목록을 공유하십시오",
+			"title": "목록을 공유하세요",
 			"shareName": "공유 이름",
-			"shareAddress": "주소를 공유하십시오",
+			"shareAddress": "주소를 공유하세요",
 			"expirationDate": "만료일",
-			"cancelShareTitle": "공유를 취소하십시오",
-			"cancelShareMessage": "공유를 중지하여 ing {filename}】를 계속하십시오.",
+			"cancelShareTitle": "공유를 취소하세요",
+			"cancelShareMessage": "공유를 중지하여 ing {filename}】를 계속하세요.",
 			"deletingShare": "공유 링크 삭제, 기다려주세요 ..."
 		},
 		"favoriteListModal": {
 			"title": "좋아하는 목록",
 			"path": "경로",
-			"removeFavoriteTitle": "좋아하는 것을 제거하십시오",
+			"removeFavoriteTitle": "좋아하는 것을 제거하세요",
 			"removeFavoriteMessage": "삭제 경로 확인 [{path}]?",
 			"management": "관리"
 		},
@@ -324,7 +324,7 @@
 			"originalDirectory": "원본 디렉토리",
 			"removalTime": "제거 시간",
 			"recover": "다시 덮다",
-			"deletePermanently": "영구적으로 삭제하십시오",
+			"deletePermanently": "영구적으로 삭제하세요",
 			"batchRestore": "배치 복원",
 			"batchRestoreConfirm": "배치 복원 선택 파일 복원, 계속 하시겠습니까?",
 			"batchDeletePermanently": "배치는 영구적으로 삭제됩니다",
@@ -358,7 +358,7 @@
 			"permissions": "권한",
 			"group": "그룹",
 			"user": "사용자",
-			"visitTime": "시간을 방문하십시오",
+			"visitTime": "시간을 방문하세요",
 			"modifiedTime": "수정 된 시간",
 			"metadataModificationTime": "메타 데이터 수정 시간",
 			"md5": "MD5",
@@ -373,7 +373,7 @@
 			"value": "값",
 			"view": "보다",
 			"restore": "복원",
-			"restoreHistoryFiles": "히스토리 파일을 복원하십시오",
+			"restoreHistoryFiles": "히스토리 파일을 복원하세요",
 			"restoreHistoryConfirm": "역사적 파일 복원 여부 {time}",
 			"restoreHistoryWarning": "히스토리 파일을 복원하면 현재 파일 내용이 대체됩니다!",
 			"restoring": "파일이 복원되고 있습니다. 잠시 기다려주세요.",
@@ -381,11 +381,11 @@
 			"restoreFailed": "히스토리 파일 복원 작업 실패!"
 		},
 		"permissionModal": {
-			"title": "허가를 설정하십시오",
-			"setPermission": "허가를 설정하십시오",
+			"title": "허가를 설정하세요",
+			"setPermission": "허가를 설정하세요",
 			"backupsList": "백업 목록",
 			"noBackup": "백업 없음",
-			"backup": "지원",
+			"backup": "백업",
 			"restore": "복원하다",
 			"read": "읽다",
 			"write": "쓰다",
@@ -394,19 +394,19 @@
 			"owner": "소유자",
 			"group": "그룹",
 			"public": "공공의",
-			"applyToSubdir": "Subdir에 적용하십시오",
-			"fixAllPermissions": "모든 권한을 [폴더 : 755, 파일 : 644]에 수정하십시오.",
-			"fixPermissions": "권한을 수정하십시오",
+			"applyToSubdir": "Subdir에 적용하세요",
+			"fixAllPermissions": "모든 권한을 [폴더 : 755, 파일 : 644]에 수정하세요.",
+			"fixPermissions": "권한을 수정하세요",
 			"confirmBackup": "백업을 확인 하시겠습니까?",
-			"enterBackupName": "현재 백업 이름을 입력하십시오",
+			"enterBackupName": "현재 백업 이름을 입력하세요",
 			"remarks": "발언",
 			"name": "이름",
 			"backupTime": "백업 시간",
-			"fixPermissionTitle": "허가를 수정하십시오",
+			"fixPermissionTitle": "허가를 수정하세요",
 			"fixPermissionNote": "참고 : 파일 또는 폴더에서 모든 권한은 [폴더 : 755, 파일 : 644]에 고정됩니다.",
-			"confirmRestore": "복원을 확인하십시오",
+			"confirmRestore": "복원을 확인하세요",
 			"restoreWarning": "복원은 현재 설정을 덮어 쓰고 계속합니까?",
-			"confirmDelete": "삭제를 확인하십시오",
+			"confirmDelete": "삭제를 확인하세요",
 			"deleteWarning": "삭제 후 백업을 복원 할 수 없습니다. 계속 삭제 하시겠습니까?",
 			"loading": {
 				"modifyingPermission": "권한 수정, 기다려주세요 ...",
@@ -423,7 +423,7 @@
 	"editor": {
 		"title": "온라인 텍스트 편집기",
 		"save": "구하다",
-		"saveAll": "모두 저장하십시오",
+		"saveAll": "모두 저장하세요",
 		"refresh": "새로 고치다",
 		"search": "찾다",
 		"replace": "바꾸다",

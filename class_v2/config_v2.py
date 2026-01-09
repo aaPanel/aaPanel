@@ -1941,8 +1941,8 @@ class config:
 
         if 'api' not in data: data['api'] = 'checked' if p_token['open'] else ''
 
-        import panel_ssl_v2 as panelSSL
-        data['user_info'] = panelSSL.panelSSL().GetUserInfo(None)['message']
+        import panelSSL
+        data['user_info'] = panelSSL.panelSSL().GetUserInfo(None)
         data['user'] = {}
         try:
             data['user']['username'] = public.get_user_info()['username']
@@ -4070,19 +4070,28 @@ class config:
             'main_bg_image': 'main_bg_images',
             'main_bg_image_opacity': 'main_bg_images_opacity',
         }
-        if not os.path.exists(self.__panel_asset_config):
-            return public.success_v2(default_values)
-
-        # 旧配置字段替换成新key
-        path_data = json.loads(public.readFile(self.__panel_asset_config))
-
-        for old_key, new_key in old_to_new.items():
-            if old_key in path_data:
-                path_data[new_key] = path_data.pop(old_key)
-
-        # 更新配置文件
-        public.writeFile(self.__panel_asset_config, json.dumps(path_data, indent=2))
         try:
+            if not os.path.exists(self.__panel_asset_config):
+                return public.success_v2(default_values)
+
+            # 旧配置字段替换成新key
+            cf = public.readFile(self.__panel_asset_config)
+            if not cf: # 空配置
+                public.ExecShell(f"rm -f {self.__panel_asset_config}")
+                return public.success_v2(default_values)
+
+            try:
+                path_data = json.loads(cf)
+            except json.JSONDecodeError: # 配置异常
+                public.ExecShell(f"rm -f {self.__panel_asset_config}")
+                return public.success_v2(default_values)
+
+            for old_key, new_key in old_to_new.items():
+                if old_key in path_data:
+                    path_data[new_key] = path_data.pop(old_key)
+
+            # 更新配置文件
+            public.writeFile(self.__panel_asset_config, json.dumps(path_data, indent=2))
             result = {}
             for key, default in default_values.items():
                 value = path_data.get(key, default)
@@ -4119,3 +4128,58 @@ class config:
             return public.success_v2(result)
         except:
             return public.success_v2(default_values)
+
+    # 面板服务监控list
+    def get_alarm_services(self, get=None):
+        try:
+            get.validate([
+                Param("p").Integer(),
+                Param("limit").Integer(),
+                Param("search").String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            page = 1 if not hasattr(get, "p") else int(get.p)
+            limit = 10 if not hasattr(get, "limit") else int(get.limit)
+            search = "" if not hasattr(get, "search") else str(get.search).strip().lower()
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        from script.restart_services import SERVICES_MAP, ServicesHelper, pretty_title
+        from mod.base.push_mod.mods import TaskConfig
+
+        all_services = list(SERVICES_MAP.keys())
+        if not search:
+            services = all_services
+        else:
+            services = [s for s in all_services if search in s or search in pretty_title(s).lower()]
+
+        # 移除未安装的, 以及内置的panel
+        services = [
+            s for s in services if ServicesHelper(s).is_install and s != "panel"
+        ]
+        total = len(services)
+        start = (page - 1) * limit
+        if start >= total or limit <= 0:
+            return public.success_v2({"data": [], "total": total})
+
+        page_services = services[start: page * limit]
+        tasks_obj = TaskConfig()
+        res = []
+        for s in page_services:
+            service = ServicesHelper(s)
+            alarm = tasks_obj.get_by_keyword("services", s) or {}
+            res.append({
+                "admin": os.path.exists("/www/server/panel/plugin/" + service.shop_name),
+                "name": s,
+                "title": service.pretty_title,
+                "shop_name": service.shop_name,
+                "alarm": {
+                    "alarm_id": alarm.get("id", ""),
+                    "alarm_status": alarm.get("status", False)
+                },
+                "version": service.version,
+                "status": service.is_running,
+            })
+        return public.success_v2({"data": res,"total": total})

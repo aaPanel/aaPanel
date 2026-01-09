@@ -1,0 +1,229 @@
+[
+  {
+    "template": "base",
+    "option": [
+      {
+        "title": "Site",
+        "name": "sites",
+        "status": true,
+        "type": "base",
+        "source": {
+          "click": "href",
+          "href": "/site"
+        },
+        "params": [
+          {
+            "name": "Site Type",
+            "type": "select",
+            "option": [
+              {
+                "name": "ALL",
+                "source": "all"
+              },
+              {
+                "name": "PHP Project",
+                "source": "php"
+              },
+              {
+                "name": "Node Project",
+                "source": "node"
+              },
+              {
+                "name": "Proxy",
+                "source": "proxy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "FTP",
+        "name": "ftps",
+        "status": true,
+        "type": "base",
+        "source": {
+          "click": "href",
+          "href": "/ftp"
+        },
+        "params": []
+      },
+      {
+        "title": "Database",
+        "name": "databases",
+        "status": true,
+        "type": "base",
+        "source": {
+          "click": "href",
+          "href": "/database"
+        },
+        "params": [
+          {
+            "name": "Database Type",
+            "type": "select",
+            "option": [
+              {
+                "name": "ALL",
+                "source": "all"
+              },
+              {
+                "name": "MySQL",
+                "source": "mysql"
+              },
+              {
+                "name": "SQLServer",
+                "source": "sqlserver"
+              },
+              {
+                "name": "MongoDB",
+                "source": "mongodb"
+              },
+              {
+                "name": "Redis",
+                "source": "redis"
+              },
+              {
+                "name": "PgSQL",
+                "source": "pgsql"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Security",
+        "name": "security",
+        "status": true,
+        "type": "model",
+        "source": {
+          "click": "model",
+          "href": "security"
+        },
+        "params": []
+      }
+    ]
+  },
+  {
+    "template": "browse",
+    "option": [
+      {
+        "title": "Monitor",
+        "name": "monitor",
+        "status": false,
+        "type": "plugin",
+        "source": {
+          "click": "plugin",
+          "href": "monitor"
+        },
+        "params": [
+          {
+            "name": "Site",
+            "type": "select",
+            "select_option": "site_all",
+            "option": []
+          },
+          {
+            "name": "Index",
+            "type": "select",
+            "option": [
+              {
+                "name": "Page Views",
+                "source": "pv"
+              },
+              {
+                "name": "Visitors",
+                "source": "uv"
+              },
+              {
+                "name": "IP",
+                "source": "ip"
+              },
+              {
+                "name": "Spider",
+                "source": "spider"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "WAF",
+        "name": "btwaf",
+        "status": false,
+        "type": "plugin",
+        "source": {
+          "click": "href",
+          "href": "/waf/overview"
+        },
+        "params": []
+      },
+      {
+        "title": "Tamper Core",
+        "name": "tamper_core",
+        "status": false,
+        "type": "plugin",
+        "source": {
+          "click": "plugin",
+          "href": "tamper_core"
+        },
+        "params": []
+      }
+    ]
+  },
+  {
+    "template": "browse",
+    "option": [
+      {
+        "title": "SSH Login Logs",
+        "name": "ssh_log",
+        "status": true,
+        "type": "model",
+        "source": {
+          "click": "href",
+          "href": "/security/ssh?menu=logs"
+        },
+        "params": [
+          {
+            "name": "Log Type",
+            "type": "select",
+            "option": [
+              {
+                "name": "ALL",
+                "source": "ALL"
+              },
+              {
+                "name": "Accepted",
+                "source": "Accepted"
+              },
+              {
+                "name": "Failed",
+                "source": "Failed"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SSL Certificates",
+        "name": "ssl",
+        "status": true,
+        "type": "model",
+        "source": {
+          "click": "model",
+          "href": "ssl"
+        },
+        "params": []
+      },
+      {
+        "title": "Alarm Logs",
+        "name": "alarm_logs",
+        "status": true,
+        "type": "model",
+        "source": {
+          "click": "href",
+          "href": "/setting/alarm?menu=logs"
+        },
+        "params": []
+      }
+    ]
+  }
+]

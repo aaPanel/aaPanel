@@ -285,10 +285,12 @@ class crontab:
             try:
                 task['user'] = self.parse_user_from_sbody(task['sBody'])
             except:pass
-             # 从sBody中移除sudo -u部分，只显示实际命令
+            # 从sBody中移除sudo -u部分，只显示实际命令
             if 'sudo -u' in task['sBody']:
                 task['sBody'] = task['sBody'].split("bash -c '", 1)[-1].rstrip("'")
-            # task['user'] = task.get('user', 'root')
+            # 只显示实际命令
+            if "<<'EOF'" in task['sBody']:
+                task['sBody'] = task['sBody'].split("<<'EOF'", 1)[-1].strip().rstrip("EOF").strip()
 
             # 任务不存在 ，标记为停止
             if task['type'] == 'once':
@@ -730,7 +732,11 @@ class crontab:
                 # 如果user有值，则修改sBody
                 user = get.get('user', 'root')
                 if user :
-                    get['sBody'] = "sudo -u {0} bash -c '{1}'".format(user, get['sBody'])
+                    if get["sType"] != "toShell":
+                        get['sBody'] = "sudo -u {0} bash -c '{1}'".format(user, get['sBody'])
+                    else:
+                        get['sBody'] = f"sudo -u {user} bash <<'EOF'\n{get['sBody']}\nEOF"
+
                 if get.get('version',''):
                     version = get['version'].replace(".", "")
                     get['sBody'] = get['sBody'].replace("${1/./}", version)
@@ -1010,16 +1016,19 @@ WantedBy=timers.target
             if get['sType'] == 'toShell':
                 get['sBody'] = get['sBody'].replace('\r\n', '\n')
 
-            # 如果user有值，则修改sBody
+            # 修改sBody
             user = get.get('user', 'root')
             if user:
-                get['sBody'] = "sudo -u {0} bash -c '{1}'".format(user, get['sBody'])
+                if get["sType"] != "toShell":
+                    get['sBody'] = "sudo -u {0} bash -c '{1}'".format(user, get['sBody'])
+                else:
+                    get['sBody'] = f"sudo -u {user} bash <<'EOF'\n{get['sBody']}\nEOF"
+
 
             # 如果get中有version键，就替换sBody中的版本号占位符
                 if get.get('version',''):
                     version = get['version'].replace(".", "")
                     get['sBody'] = get['sBody'].replace("${1/./}", version)
-                    print(get['sBody'])
 
             # 新增定时任务：在指定时间执行一次
             if get['type'] == 'once' and get['sType'] == 'toShell':
@@ -1459,26 +1468,6 @@ WantedBy=timers.target
                 'log_cleanup':head + python_bin + " " + public.GetConfigValue('setup_path') + "/panel/script/log_cleanup.py " +
                               " " + param['sName'],
             }
-            # 取消插件调用计划任务
-            # if param['backupTo'] != 'localhost':
-            #     cfile = public.GetConfigValue('setup_path') + "/panel/plugin/" + param['backupTo'] + "/" + param[
-            #         'backupTo'] + "_main.py"
-            #     if not os.path.exists(cfile): cfile = public.GetConfigValue('setup_path') + "/panel/script/backup_" + \
-            #                                           param['backupTo'] + ".py"
-            #     wheres = {
-            #         'path': head + python_bin + " " + cfile + " path " + param['sName'] + " " + str(
-            #             param['save']) + attach_param,
-            #         'site': head + python_bin + " " + cfile + " site " + param['sName'] + " " + str(
-            #             param['save']) + attach_param,
-            #         'database': head + python_bin + " " + cfile + " database " + param['sName'] + " " + str(
-            #             param['save']) + attach_param,
-            #         'logs': head + python_bin + " " + public.GetConfigValue(
-            #             'setup_path') + "/panel/script/logsBackup " + param['sName'] + " " + str(param['save']),
-            #         'rememory': head + "/bin/bash " + public.GetConfigValue('setup_path') + '/panel/script/rememory.sh',
-            #         'webshell': head + python_bin + " " + public.GetConfigValue(
-            #             'setup_path') + '/panel/class/webshell_check.py site ' + param['sName'] + ' ' + param[
-            #                         'urladdress']
-            #     }
             try:
                 shell = wheres[type]
             except:
@@ -1506,6 +1495,8 @@ fi
                     # shell = head + '''curl -sS -X POST --connect-timeout 10 -m 3600 -H "Content-Type: application/json"  -d '{}' {} '''.format(json.dumps(param1),
                     #                                                                                                                            param['urladdress'])
                     shell = head + '''curl -sS -L -X POST {} --connect-timeout 10 -m 3600 -H "Content-Type: application/json"  -d '{}' {} '''.format(user_agent, json.dumps(param1), param['urladdress'])
+                # elif type == 'toPython':
+                #     ...
                 else:
                     shell = head + param['sBody'].replace("\r\n", "\n")
             cronPath = '/www/server/cron'  # 修改为实际的路径

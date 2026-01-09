@@ -429,16 +429,42 @@ class acme_v2:
 
         return apply_domains
 
+    def is_ip(self, domain):
+        # IPv4地址
+        is_ipv4 = public.checkIp(domain)
+        if is_ipv4:
+            return True
+        # IPv6地址
+        pattern_v6 = re.compile(r"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$")
+        if pattern_v6.match(domain):
+            return True
+        return False
+
     # 创建订单
     def create_order(self, domains, auth_type, auth_to, index=None):
         domains = self.format_domains(domains)
         if not domains:
-            raise Exception(public.lang("Need at least a domain name!"))
+            raise Exception(public.lang("Need at least a domain name or ip addr!"))
         # 构造标识
         identifiers = []
+        all_is_ip = set()
         for domain_name in domains:
+            is_ip = self.is_ip(domain_name)
+            all_is_ip.add(is_ip)
+            if is_ip:
+                identifiers.append({"type": "ip", "value": domain_name})
+                continue
             identifiers.append({"type": 'dns', "value": domain_name})
         payload = {"identifiers": identifiers}
+        if len(all_is_ip) != 1:
+            raise Exception("Domain names and IP addresses cannot apply for certificates at the same time!")
+        all_is_ip = next(iter(all_is_ip))
+        if all_is_ip:
+            payload = {"identifiers": identifiers, "profile": "shortlived"}
+            if auth_type != 'http':
+                raise Exception(
+                    "Only HTTP file verification method can be used to apply for certificates for IP addresses!"
+                )
 
         # 请求创建订单
         res = self.acme_request(self._apis['newOrder'], payload)
@@ -627,6 +653,7 @@ class acme_v2:
                 identifier_auth['domain'],
                 identifier_auth['auth_value']
             )
+        return None
 
     # 从云端验证域名是否可访问
     def cloud_check_domain(self, domain):
@@ -1217,8 +1244,8 @@ if ( $well_known != "" ) {
             return int(time.time() + (86400 * 90))
 
     # 下载证书
-    def download_cert(self, index):
-        if self._debug is True:
+    def download_cert(self, index) -> dict:
+        if self._debug:
             return {
                 "cert": "---debug mode cert---",
                 "private_key": "---debug mode private_key---",
@@ -1395,7 +1422,6 @@ fullchain.pem       Paste into certificate input box
         paths = [
             '/www/server/panel/vhost/cert',
             '/www/server/panel/vhost/ssl',
-            '/www/server/panel',
             '/www/server/panel/plugin/mail_sys/cert',
         ]
         for path in paths:
@@ -1592,13 +1618,21 @@ fullchain.pem       Paste into certificate input box
             return self._config['orders']['csr']
         domain_name, domain_alt_names = self.get_alt_names(index)
         X509Req = OpenSSL.crypto.X509Req()
-        X509Req.get_subject().CN = domain_name
-        if domain_alt_names:
-            SAN = "DNS:{0}, ".format(domain_name).encode("utf8") + ", ".join(
-                "DNS:" + i for i in domain_alt_names
-            ).encode("utf8")
+        if not self.is_ip(domain_name):
+            X509Req.get_subject().CN = domain_name
+            if domain_alt_names:
+                SAN = "DNS:{0}, ".format(domain_name).encode("utf8") + ", ".join(
+                    "DNS:" + i for i in domain_alt_names
+                ).encode("utf8")
+            else:
+                SAN = "DNS:{0}".format(domain_name).encode("utf8")
         else:
-            SAN = "DNS:{0}".format(domain_name).encode("utf8")
+            if domain_alt_names:
+                SAN = "IP:{0}, ".format(domain_name).encode("utf8") + ", ".join(
+                    "IP:" + i for i in domain_alt_names
+                ).encode("utf8")
+            else:
+                SAN = "IP:{0}".format(domain_name).encode("utf8")
 
         X509Req.add_extensions(
             [
@@ -1620,6 +1654,7 @@ fullchain.pem       Paste into certificate input box
         return OpenSSL.crypto.dump_certificate_request(OpenSSL.crypto.FILETYPE_ASN1, X509Req)
 
     def create_csr_new(self, index):
+        import ipaddress
         from cryptography import x509
         from cryptography.x509.oid import NameOID
         from cryptography.hazmat.primitives import hashes
@@ -1629,28 +1664,51 @@ fullchain.pem       Paste into certificate input box
             return self._config['orders'][index]['csr']
         # 获取域名和备用域名
         domain_name, domain_alt_names = self.get_alt_names(index)
-        # 创建X509请求对象
-        csr_builder = x509.CertificateSigningRequestBuilder()
-        csr_builder = csr_builder.subject_name(
-            x509.Name([
-                x509.NameAttribute(NameOID.COMMON_NAME, domain_name)
-            ])
-        )
-        # 添加 SubjectAltName 扩展
-        san_list = [x509.DNSName(domain_name)]
-        if domain_alt_names:
-            san_list.extend([x509.DNSName(name) for name in domain_alt_names])
 
-        csr_builder = csr_builder.add_extension(
-            x509.SubjectAlternativeName(san_list),
-            critical=False
-        )
         # 生成私钥
         pk = self.create_certificate_key(index).encode()
         private_key = load_pem_private_key(pk, password=None)
+
+        is_ip_cert = self.is_ip(domain_name)
+
+        # 构建 CSR
+        if is_ip_cert:
+            # 对于 IP 证书，ACME v2 不允许在 Common Name 中包含 IP 地址。
+            # 主题可以为空，因为所有标识符都在 SAN 中。
+            csr_builder = x509.CertificateSigningRequestBuilder().subject_name(
+                x509.Name([])
+            )
+        else:
+            csr_builder = x509.CertificateSigningRequestBuilder().subject_name(
+                x509.Name([
+                    x509.NameAttribute(NameOID.COMMON_NAME, domain_name)
+                ])
+            )
+
+        if is_ip_cert:
+            # IP证书
+            # 添加 subjectAltName 扩展
+            org = [x509.IPAddress(ipaddress.ip_address(domain_name))]
+            if domain_alt_names:
+                alt_names = org + [x509.IPAddress(ipaddress.ip_address(alt)) for alt in domain_alt_names]
+            else:
+                alt_names = org
+        else:
+            # 域名证书
+            # 添加 subjectAltName 扩展
+            org = [x509.DNSName(domain_name)]
+            if domain_alt_names:
+                alt_names = org + [x509.DNSName(alt) for alt in domain_alt_names]
+            else:
+                alt_names = org
+
+        csr_builder = csr_builder.add_extension(
+            x509.SubjectAlternativeName(alt_names),
+            critical=False,
+        )
+
         # 签署 CSR
         csr = csr_builder.sign(private_key, hashes.SHA256())
-        # 返回 CSR (ASN1 格式)
         return csr.public_bytes(Encoding.DER)
 
     # 构造域名验证头和验证值
@@ -1898,7 +1956,10 @@ fullchain.pem       Paste into certificate input box
             self._config['account'][k] = {}
 
         if not 'key' in self._config['account'][k]:
-            self._config['account'][k]['key'] = self.create_key()
+            try:
+                self._config['account'][k]['key'] = self.create_key()
+            except:
+                self._config['account'][k]['key'] = self.create_key_new()
             if type(self._config['account'][k]['key']) == bytes:
                 self._config['account'][k]['key'] = self._config['account'][k]['key'].decode()
             self.save_config()
@@ -1910,7 +1971,10 @@ fullchain.pem       Paste into certificate input box
         if 'private_key' in self._config['orders'][index]:
             return self._config['orders'][index]['private_key']
         # 创建新的私钥
-        private_key = self.create_key()
+        try:
+            private_key = self.create_key()
+        except:
+            private_key = self.create_key_new()
         if type(private_key) == bytes:
             private_key = private_key.decode()
         # 保存私钥到订单配置文件
@@ -1921,26 +1985,35 @@ fullchain.pem       Paste into certificate input box
     # 创建Key
     # noinspection PyUnresolvedReferences
     def create_key(self, key_type=OpenSSL.crypto.TYPE_RSA):
+        if key_type not in [OpenSSL.crypto.TYPE_RSA, OpenSSL.crypto.TYPE_DSA, OpenSSL.crypto.TYPE_EC]:
+            key_type = OpenSSL.crypto.TYPE_RSA
         key = OpenSSL.crypto.PKey()
         key.generate_key(key_type, self._bits)
         private_key = OpenSSL.crypto.dump_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, key)
         return private_key
 
-    def create_key_new(self, key_type):
+    def create_key_new(self, key_type='RSA'):
         from cryptography.hazmat.primitives import serialization
-        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives.asymmetric import rsa, ec, ed25519
 
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,  # 公共指数
-            key_size=self._bits,  # 密钥大小（2048位）
-        )
+        if key_type == 'RSA':
+            private_key = rsa.generate_private_key(
+                public_exponent=65537,
+                key_size=self._bits
+            )
+        elif key_type == 'EC':
+            private_key = ec.generate_private_key(ec.SECP256R1())
+        elif key_type == 'ED25519':
+            private_key = ed25519.Ed25519PrivateKey.generate()
+        else:
+            raise ValueError(f"Unsupported key type: {key_type}")
         private_key_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption()
         )
-        return private_key_pem.decode()
+        return private_key_pem
 
     # 写配置文件
     def save_config(self):
@@ -2248,6 +2321,17 @@ fullchain.pem       Paste into certificate input box
             import random
             args_obj = public.dict_obj()
             if not cron_id:
+                all_count = public.M("dns_domain_ssl").count()
+                if all_count == 0:
+                    return
+                if all_count == 1:
+                    try:
+                        one = public.M("dns_domain_ssl").field("info").find()
+                        one_info = json.loads(one["info"])
+                        if one_info.get("issuer") == "aapanel.com" and one_info.get("issuer_O") == "aapanel.com":
+                            return
+                    except:
+                        pass
                 cronPath = public.GetConfigValue('setup_path') + '/cron/' + echo
                 shell = '{} -u /www/server/panel/class/acme_v2.py --renew_v3=1'.format(sys.executable)
                 public.writeFile(cronPath, shell)
@@ -2853,6 +2937,7 @@ fullchain.pem       Paste into certificate input box
     def delete_order(self, get):
         return self._delete_order(get)["finish_list"][0]
 
+    # noinspection PyTypeChecker
     def _delete_order(self, get):
         from sslModel import certModel
         certModel = certModel.main()
@@ -2993,6 +3078,48 @@ fullchain.pem       Paste into certificate input box
             import traceback
             public.print_log(traceback.format_exc())
 
+    def _renew_business_order(self, ssl):
+        """续签商业证书, 仅限一次性购买多年的证书"""
+        from BTPanel import app
+        from ssl_domainModelV2.business_ssl import BusinessSSL
+        with app.app_context():
+            busines_api = BusinessSSL()
+            order_list = busines_api.get_order_list().get("message", [])
+            if not order_list:
+                return
+            for order in order_list:
+                if not (order.get("certId") == ssl.cert_id and order.get("renew", False) is True):
+                    continue
+                write_log(
+                    f"|- Domain Subject:【{ssl.subject}】Business SSL certificate is being renewed, please wait..."
+                )
+                try:
+                    new_get = public.dict_obj
+                    new_get.uc_id = order["uc_id"]
+                    res = busines_api.renew_cert_order(new_get, cert_id=order["certId"])
+                    if res.get("status") == 0:
+                        write_log(
+                            f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal successfully!"
+                        )
+                    else:
+                        write_log(
+                            f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal failed: {res.get('message', 'Unknown error')}"
+                        )
+                except Exception as e:
+                    write_log(
+                        f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal failed: {str(e)}"
+                    )
+                finally:
+                    busines_api.list_business_ssl(public.to_dict_obj({"p": 1, "limit": "10"}))
+                    break
+            else:  # for else
+                write_log(
+                    f"|- Domain Subject:【{ssl.subject}】Business SSL certificate is not is not enabled renew, "
+                    f"can only be skipped."
+                )
+            return
+
+    # noinspection PyUnboundLocalVariable
     def renew_cert_v3(self, index: str = None, cycle: int = 31):
         # ============= import ===============
         import sys
@@ -3012,85 +3139,83 @@ fullchain.pem       Paste into certificate input box
         s = 0
         count = ssl_obj.count()
         write_log("", "wb+")
-        order_list = None  # businiess list
+        reload = False
         for ssl in ssl_obj:
             s += 1
             write_log(f"|-Renewing the {s} certificate，There are {count} certificates in total...")
-            # 计算 30 天后的日期
-            after_ts = round((time.time() + 86400 * cycle) * 1000)
-            if ssl.not_after_ts > after_ts:
-                write_log(
-                    f"|- Domain Subject:【{ssl.subject}】The expiration date is greater than {cycle} days,"
-                    f" so there is no need for renewal!"
-                )
-                continue
+            # ================= check expire time ===========================
+            # 是否Let's ip ssl
+            is_ip_ssl = all(self.is_ip(ip) for ip in ssl.dns)
+            is_lets = ssl.info.get("issuer_O") == "Let's Encrypt"
+            if is_ip_ssl and is_lets:
+                # 计算 3 天后的日期
+                temp_cycle = 3
+                after_ts = round((time.time() + 86400 * temp_cycle) * 1000)
+                if ssl.not_after_ts > after_ts:
+                    write_log(
+                        f"|- IP Subject:【{ssl.subject}】The expiration date is greater than {temp_cycle} days, skip"
+                    )
+                    continue
+            else:  # 其余
+                # 计算 30 天后的日期
+                after_ts = round((time.time() + 86400 * cycle) * 1000)
+                if ssl.not_after_ts > after_ts:
+                    write_log(
+                        f"|- Domain Subject:【{ssl.subject}】The expiration date is greater than {cycle} days, skip"
+                    )
+                    continue
 
             #  ================   businiess ssl renew =========================
             if ssl.is_order == 1:
-                from BTPanel import app
-                from ssl_domainModelV2.business_ssl import BusinessSSL
-                with app.app_context():
-                    busines_api = BusinessSSL()
-                    if not order_list: order_list = busines_api.get_order_list().get("message", [])
-                    if not order_list: continue
-                    for order in order_list:
-                        if not (order.get("certId") == ssl.cert_id and order.get("renew", False) is True):
-                            continue
-                        write_log(
-                            f"|- Domain Subject:【{ssl.subject}】Business SSL certificate is being renewed, please wait..."
-                        )
-                        try:
-                            new_get = public.dict_obj
-                            new_get.uc_id = order["uc_id"]
-                            res = busines_api.renew_cert_order(new_get, cert_id=order["certId"])
-                            if res.get("status") == 0:
-                                write_log(
-                                    f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal successfully!"
-                                )
-                            else:
-                                write_log(
-                                    f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal failed: {res.get('message', 'Unknown error')}"
-                                )
-                        except Exception as e:
-                            write_log(
-                                f"|- Domain Subject:【{ssl.subject}】Business SSL certificate renewal failed: {str(e)}"
-                            )
-                        finally:
-                            busines_api.list_business_ssl(public.to_dict_obj({"p": 1, "limit": "10"}))
-                            break
-                    else:  # for else
-                        write_log(
-                            f"|- Domain Subject:【{ssl.subject}】Business SSL certificate is not is not enabled renew, "
-                            f"can only be skipped."
-                        )
-                        continue
-            #  ================   businiess ssl renew end =========================
+                self._renew_business_order(ssl)
+                continue
 
-            # 官网自购商业证书续签后, 不是let's encrypt的证书不续签
-            if ssl.info.get("issuer") not in (
-                    "R3", "R8", "R11", "R10", "R5"
-            ) and ssl.info.get("issuer_O") != "Let's Encrypt":
+            # ================= Let's Encrypt renew =========================
+            # 非let's encrypt的证书跳过
+            if not is_lets:
                 write_log(
                     f"|- Domain Subject:【{ssl.subject}】It's not a Let's Encrypt certificate and cannot be renewed!")
                 continue
 
-            auth_type = ssl.auth_info.get("auth_type")
+            if is_ip_ssl and ssl.panel_uf == ["panel"]:  # 如果是ip ssl且是面板证书
+                from ssl_domainModelV2.service import apply_panel_ip_ssl_script
+                _, e = apply_panel_ip_ssl_script(ip=",".join(ssl.dns), log_path=ssl.log)
+                if e:
+                    write_log(
+                        f"|- IP Subject:【{ssl.subject}】Http Verification Renewal SSL certificate failed: {e.strip()}"
+                    )
+                else:
+                    write_log(
+                        f"|- IP Subject:【{ssl.subject}】Http Verification "
+                        f"Renewal SSL certificate processed via script, please check log file"
+                    )
+                    reload = True
+                continue
 
-            # 如果上次用的http, 则尝试http, 失败继续进行dns兜底
+            auth_type = ssl.auth_info.get("auth_type")
+            # 如果上次用的http, 则尝试http, 失败继续进行dns兜底再次尝试
             if auth_type == "http":
                 # panel ssl
                 if ssl.user_for.get("panel") == ["panel"]:
-                    from ssl_domainModelV2.service import apply_panel_ssl_http
                     temp = ""
                     for d in ssl.dns:
                         if "*." not in d:
                             temp = d
                             break
                     if temp != "":
-                        panel_apply = apply_panel_ssl_http(domain=temp)
+                        from ssl_domainModelV2.service import apply_panel_ssl_http, generate_panel_task
+                        panel_task_obj = generate_panel_task({"domain": temp})
+                        panel_apply = apply_panel_ssl_http(
+                            domain=temp, task_obj=panel_task_obj
+                        )
+                        if panel_task_obj:
+                            panel_task_obj.task_done()
+                        temp_ssl = DnsDomainSSL.objects.filter(hash=panel_apply.get("ssl_hash", "")).first()
+                        if temp_ssl:
+                            temp_ssl.deploy_panel()
+                            reload = True
                         write_log(f"|- Domain Subject:【{ssl.subject}】 {panel_apply.get('msg')}")
-                        if panel_apply.get("status"):
-                            continue
+                        continue
 
                 # other site ssl
                 site_path = ssl.auth_info.get("auth_to").rstrip("/")
@@ -3187,6 +3312,9 @@ fullchain.pem       Paste into certificate input box
                     f"Renewal SSL certificate Failed:{str(e)}"
                 )
                 continue
+
+        if reload:
+            public.writeFile("/www/server/panel/data/reload.pl", "1")
         return
 
     def apply_cert_domain(
@@ -3214,6 +3342,7 @@ fullchain.pem       Paste into certificate input box
         self.logger("", "wb+")
         index = ""
         self._auto_wildcard = auto_wildcard
+        apply_res = {"status": True}
         try:
             self.get_apis()
             self._set_task(5)
@@ -3248,12 +3377,12 @@ fullchain.pem       Paste into certificate input box
             self.send_csr(index)
             self._set_task(90)
             self.logger(public.lang("|-Downloading certificate.."))
-            cert = self.download_cert(index)
+            apply_res: dict = self.download_cert(index)
             self._set_task(99)
-            cert["status"] = True
-            cert["msg"] = public.lang("Application successful!")
+            apply_res["status"] = True
+            apply_res["msg"] = public.lang("Application successful!")
             self.logger(public.lang("|-Successful application!"))
-            return cert
+            return apply_res
         except Exception as ex:
             self.remove_manual_apply_lock(index)
             self.remove_dns_record()
@@ -3264,8 +3393,18 @@ fullchain.pem       Paste into certificate input box
             else:
                 msg = ex
                 self.logger(public.get_error_info())
-            _res = {"status": False, "msg": msg, "index": index}
-            return _res
+            apply_res = {"status": False, "msg": msg, "index": index}
+            return apply_res
+        finally:
+            try:
+                if not apply_res.get("status", True):
+                    from ssl_domainModelV2.model import DnsDomainSSL
+                    DnsDomainSSL.objects.filter(
+                        dns__contains=domains,
+                        info__issuer_O="Let's Encrypt",
+                    ).update({"renew_status": 0})
+            except Exception as e0:
+                public.print_log(f"Error reset renew status: {e0}")
 
 
 def echo_err(msg):

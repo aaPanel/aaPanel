@@ -457,7 +457,6 @@
 			"index_149": "None logs",
 			"index_150": "If you need to switch the git warehouse branch, please create a new website",
 			"index_151": "Enter your script here",
-
 			"Limit": {
 				"index_1": "Delete limit access [{0}]",
 				"index_2": "After deleting the selected rule, access will no longer require security verification. Do you want to continue?",

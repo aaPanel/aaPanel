@@ -30,11 +30,11 @@ $(
 					_shadow_top = $('<div class="tbody_shadow_top"></div>'),
 					_tbody_div = $(
 						'<div class="tbody_div" style="height:' +
-							_table_config[1] +
-							_table_config[2] +
-							';"><table class="table table-hover mb0" style="margin-top:-' +
-							$(this).find('thead').height() +
-							'px"></table></div>'
+						_table_config[1] +
+						_table_config[2] +
+						';"><table class="table table-hover mb0" style="margin-top:-' +
+						$(this).find('thead').height() +
+						'px"></table></div>'
 					),
 					_shadow_bottom = $('<div class="tbody_shadow_bottom"></div>');
 				_thead_div.find('table').append(_thead);
@@ -413,18 +413,18 @@ var aceEditor = {
 									$('.ace_conter_tips').show();
 									$('.ace_conter_tips .tips').html(
 										lan.public.read_only_file +
-											_item.path +
-											'，' +
-											lan.public.history_v +
-											' [ ' +
-											bt.format_data(new Number(_history)) +
-											' ]<a href="javascript:;" class="ml35 btlink" data-path="' +
-											_item.path +
-											'" data-history="' +
-											_history +
-											'">' +
-											lan.public.restore_history +
-											'</a>'
+										_item.path +
+										'，' +
+										lan.public.history_v +
+										' [ ' +
+										bt.format_data(new Number(_history)) +
+										' ]<a href="javascript:;" class="ml35 btlink" data-path="' +
+										_item.path +
+										'" data-history="' +
+										_history +
+										'">' +
+										lan.public.restore_history +
+										'</a>'
 									);
 								});
 							});
@@ -910,10 +910,10 @@ var aceEditor = {
 				$(this).before('<div class="search_input_title">Search Catalog File</div>');
 				$(this).after(
 					'<div class="search_input_view">\
-					<form>\
-                        <input type="text" id="search_input_val" class="ser-text pull-left" placeholder="">\
-                        <button type="button" class="ser-sub pull-left"></button>\
-                    </form>\
+					<form onsubmit="return false;">\
+							<input type="text" id="search_input_val" class="ser-text pull-left" placeholder="">\
+							<button type="button" class="ser-sub pull-left"></button>\
+						</form>\
                     <div class="search_boxs">\
                         <input id="search_alls" type="checkbox">\
                         <label for="search_alls"><span>Include Subdirectory Files</span></label>\
@@ -951,6 +951,13 @@ var aceEditor = {
 				all: $('#search_alls').is(':checked') ? 'True' : 'False',
 				is_empty: true,
 			});
+		});
+		// 按回车键触发搜索
+		$('.ace_dir_tools').on('keydown', '#search_input_val', function (e) {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				$('.search_input_view button').trigger('click');
+			}
 		});
 		// 当前根目录操作，新建文件或目录
 		$('.ace_dir_tools').on('click', '.folder_down_up li', function (e) {
@@ -1214,10 +1221,10 @@ var aceEditor = {
 				_active.find('.glyphicon').hide();
 				_active.prepend(
 					'<span class="file_input"><i class="' +
-						(_types === 'Dir' ? 'folder' : _this.get_file_suffix(_active.find('.file_title span').html())) +
-						'-icon"></i><input type="text" class="newly_file_input" value="' +
-						_active.find('.file_title span').html() +
-						'"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span><span class="glyphicon glyphicon-remove" aria-hidden="true"></span>'
+					(_types === 'Dir' ? 'folder' : _this.get_file_suffix(_active.find('.file_title span').html())) +
+					'-icon"></i><input type="text" class="newly_file_input" value="' +
+					_active.find('.file_title span').html() +
+					'"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span><span class="glyphicon glyphicon-remove" aria-hidden="true"></span>'
 				);
 				$('.file_fold .newly_file_input').width(
 					$('.file_fold .newly_file_input').parent().parent().parent().width() - ($('.file_fold .newly_file_input').parent().parent().attr('data-group') * 15 - 5) - 20 - 30 - 53
@@ -1533,18 +1540,18 @@ var aceEditor = {
 			$('#ace_editor_' + _item.id).css('bottom', '50px');
 			$('.ace_conter_tips .tips').html(
 				lan.public.read_only_file +
-					_item.path +
-					', ' +
-					lan.public.history_v +
-					' [ ' +
-					bt.format_data(new Number(_item.historys_active)) +
-					' ]<a href="javascript:;" class="ml35 btlink" style="margin-left:35px" data-path="' +
-					_item.path +
-					'" data-history="' +
-					_item.historys_active +
-					'">' +
-					lan.public.restore_history +
-					'</a>'
+				_item.path +
+				', ' +
+				lan.public.history_v +
+				' [ ' +
+				bt.format_data(new Number(_item.historys_active)) +
+				' ]<a href="javascript:;" class="ml35 btlink" style="margin-left:35px" data-path="' +
+				_item.path +
+				'" data-history="' +
+				_item.historys_active +
+				'">' +
+				lan.public.restore_history +
+				'</a>'
 			);
 		} else {
 			$('.ace_conter_tips').hide();
@@ -2026,18 +2033,18 @@ var aceEditor = {
 		$('.ace_conter_editor .ace_editors').removeClass('active');
 		$('.ace_conter_menu').append(
 			'<li class="item active item_tab_' +
-				_id +
-				'" data-type="shortcutKeys" data-id="' +
-				_id +
-				'" >\
+			_id +
+			'" data-type="shortcutKeys" data-id="' +
+			_id +
+			'" >\
 			<div class="ace_item_box">\
 				<span class="icon_file"><i class="text-icon"></i></span>\
 				<span>' +
-				(type ? conifg.title : 'Untitled-' + _index) +
-				'</span>\
+			(type ? conifg.title : 'Untitled-' + _index) +
+			'</span>\
 				<i class="glyphicon icon-tool glyphicon-remove" aria-hidden="true" data-file-state="0" data-title="' +
-				(type ? conifg.title : 'Untitled-' + _index) +
-				'"></i>\
+			(type ? conifg.title : 'Untitled-' + _index) +
+			'"></i>\
 			</div>\
 		</li>'
 		);
@@ -2109,33 +2116,33 @@ var aceEditor = {
 			$('.ace_conter_editor .ace_editors').removeClass('active');
 			$('.ace_conter_menu').append(
 				'<li class="item active item_tab_' +
-					_id +
-					'" title="' +
-					path +
-					'" data-type="' +
-					_type +
-					'" data-mode="' +
-					_mode +
-					'" data-id="' +
-					_id +
-					'" data-fileName="' +
-					_fileName +
-					'">' +
-					'<div class="ace_item_box">' +
-					'<span class="icon_file"><img src="/static/img/ico-history.png"></span><span title="' +
-					path +
-					lan.public.history_v +
-					' [ ' +
-					bt.format_data(obj.history) +
-					' ]' +
-					'">' +
-					_fileName +
-					'</span>' +
-					'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' +
-					_fileName +
-					'"></i>' +
-					'</div>' +
-					'</li>'
+				_id +
+				'" title="' +
+				path +
+				'" data-type="' +
+				_type +
+				'" data-mode="' +
+				_mode +
+				'" data-id="' +
+				_id +
+				'" data-fileName="' +
+				_fileName +
+				'">' +
+				'<div class="ace_item_box">' +
+				'<span class="icon_file"><img src="/static/img/ico-history.png"></span><span title="' +
+				path +
+				lan.public.history_v +
+				' [ ' +
+				bt.format_data(obj.history) +
+				' ]' +
+				'">' +
+				_fileName +
+				'</span>' +
+				'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' +
+				_fileName +
+				'"></i>' +
+				'</div>' +
+				'</li>'
 			);
 			$('.ace_conter_editor').append('<div id="ace_editor_' + _id + '" class="ace_editors active"></div>');
 			$('[data-paths="' + path + '"]')
@@ -2219,31 +2226,31 @@ var aceEditor = {
 					$('.ace_conter_editor .ace_editors').removeClass('active');
 					$('.ace_conter_menu').append(
 						'<li class="item active item_tab_' +
-							_id +
-							'" title="' +
-							path +
-							'" data-type="' +
-							_type +
-							'" data-mode="' +
-							_mode +
-							'" data-id="' +
-							_id +
-							'" data-fileName="' +
-							_fileName +
-							'">' +
-							'<div class="ace_item_box">' +
-							'<span class="icon_file"><i class="' +
-							_mode +
-							'-icon"></i></span><span title="' +
-							path +
-							'">' +
-							_fileName +
-							'</span>' +
-							'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' +
-							_fileName +
-							'"></i>' +
-							'</div>' +
-							'</li>'
+						_id +
+						'" title="' +
+						path +
+						'" data-type="' +
+						_type +
+						'" data-mode="' +
+						_mode +
+						'" data-id="' +
+						_id +
+						'" data-fileName="' +
+						_fileName +
+						'">' +
+						'<div class="ace_item_box">' +
+						'<span class="icon_file"><i class="' +
+						_mode +
+						'-icon"></i></span><span title="' +
+						path +
+						'">' +
+						_fileName +
+						'</span>' +
+						'<i class="glyphicon glyphicon-remove icon-tool" aria-hidden="true" data-file-state="0" data-title="' +
+						_fileName +
+						'"></i>' +
+						'</div>' +
+						'</li>'
 					);
 					$('.ace_conter_editor').append('<div id="ace_editor_' + _id + '" class="ace_editors active" style="font-size:' + aceEditor.aceConfig.aceEditor.fontSize + 'px"></div>');
 					$('[data-menu-path="' + path + '"]')
@@ -2259,9 +2266,9 @@ var aceEditor = {
 		$('.ace_toolbar_menu').hide();
 	},
 	// 获取收藏夹列表-方法
-	getFavoriteList: function () {},
+	getFavoriteList: function () { },
 	// 获取文件列表-请求
-	getFileList: function () {},
+	getFileList: function () { },
 	// 获取文件内容-请求
 	getFileBody: function (obj, callback) {
 		var loadT = layer.msg(lan.public.get_file_contents, { time: 0, icon: 16, shade: [0.3, '#000'] }),
@@ -3978,7 +3985,7 @@ function setSelectChecked(c, d) {
 // GetTaskCount();
 
 function RecInstall() {
-	$.getScript('jquery.fly.min.js.js?v=1764830988434');
+	$.getScript('jquery.fly.min.js.js?v=1767769852656');
 	$.post('/ajax?action=GetSoftList', '', function (l) {
 		var c = '';
 		var g = '';
@@ -4214,7 +4221,7 @@ function RecInstall() {
 					data: s,
 					type: 'POST',
 					async: false,
-					success: function (y) {},
+					success: function (y) { },
 				});
 			}
 			layer.close(loadT);
@@ -5318,7 +5325,7 @@ function GetReloads() {
 			} catch (e) {
 				return;
 			}
-		}).error(function () {});
+		}).error(function () { });
 	}, 1000);
 }
 
@@ -5632,12 +5639,12 @@ var Term = {
 	//     var termRows = 34;
 	//     var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
 	//     loadScript([
-	//         "/static/build/xterm.min.js?v=1764830988434",
-	//         "/static/build/addons/attach/attach.min.js?v=1764830988434",
-	//         "/static/build/addons/fit/fit.min.js?v=1764830988434",
-	//         "/static/build/addons/fullscreen/fullscreen.min.js?v=1764830988434",
-	//         "/static/build/addons/search/search.min.js?v=1764830988434",
-	//         "/static/build/addons/winptyCompat/winptyCompat.js?v=1764830988434"
+	//         "/static/build/xterm.min.js?v=1767769852656",
+	//         "/static/build/addons/attach/attach.min.js?v=1767769852656",
+	//         "/static/build/addons/fit/fit.min.js?v=1767769852656",
+	//         "/static/build/addons/fullscreen/fullscreen.min.js?v=1767769852656",
+	//         "/static/build/addons/search/search.min.js?v=1767769852656",
+	//         "/static/build/addons/winptyCompat/winptyCompat.js?v=1767769852656"
 	//     ], function () {
 	//         layer.close(loadT);
 	//         Term.term = new Terminal({ cols: termCols, rows: termRows, screenKeys: true, useStyle: true });
@@ -5648,8 +5655,8 @@ var Term = {
 	//             area: ['920px', '630px'],
 	//             closeBtn: 2,
 	//             shadeClose: false,
-	//             content: '<link rel="stylesheet" href="/static/build/xterm.min.css?v=1764830988434" />\
-	// 					<link rel="stylesheet" href="/static/build/addons/fullscreen/fullscreen.min.css?v=1764830988434" />\
+	//             content: '<link rel="stylesheet" href="/static/build/xterm.min.css?v=1767769852656" />\
+	// 					<link rel="stylesheet" href="/static/build/addons/fullscreen/fullscreen.min.css?v=1767769852656" />\
 	//             <a class="btlink" onclick="show_ssh_login(1)" style="position: fixed;margin-left: 83px;margin-top: -30px;">[' + lan.public.set + ']</a>\
 	//             <div class="term-box" style="background-color:#000"><div id="term"></div></div>',
 	//             cancel: function () {
@@ -5679,7 +5686,7 @@ var Term = {
 		// 	return;
 		// }
 		var loadT = layer.msg('It is loading the files required by the terminal. Please wait...', { icon: 16, time: 0, shade: 0.3 });
-		loadScript(['/static/js/xterm.js?v=1764830988434'], function () {
+		loadScript(['/static/js/xterm.js?v=1767769852656'], function () {
 			layer.close(loadT);
 			Term.term = new Terminal({
 				rendererType: 'canvas',
@@ -5699,7 +5706,7 @@ var Term = {
 				shadeClose: false,
 				skin: 'term_box_all',
 				content:
-					'<link rel="stylesheet" href="/static/css/xterm.css?v=1764830988434" />\
+					'<link rel="stylesheet" href="/static/css/xterm.css?v=1767769852656" />\
 	            <div class="term-box" style="background-color:#000;padding-top: 7px;" id="term"></div>',
 				cancel: function (index, lay) {
 					bt.confirm(

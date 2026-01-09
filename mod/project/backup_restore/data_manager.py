@@ -453,16 +453,17 @@ class DataManager(SoftModule):
                 if i['type'].lower() in ['mysql'] and i['sid'] == 0:
                     try:
                         db_name = i['name']
-                        table_list = self.mysql_obj.query(f"show tables from `{db_name}`")
-                        for tb_info in table_list:
-                            table = self.mysql_obj.query(
-                                f"show table status from `{db_name}` where name = '{tb_info[0]}'"
-                            )
-                            if not table:
-                                continue
-                            table_6 = table[0][6] or 0
-                            table_7 = table[0][7] or 0
-                            db_size += int(table_6) + int(table_7)
+                        query = (
+                            "SELECT SUM(data_length + index_length) "
+                            "FROM information_schema.TABLES "
+                            f"WHERE table_schema = '{db_name}' AND table_type = 'BASE TABLE'"
+                        )
+                        query_res = self.mysql_obj.query(query)
+                        if query_res and query_res[0] and query_res[0][0] is not None:
+                            db_size = int(query_res[0][0])
+                        else:
+                            # 回退到文件大小计算
+                            db_size = self.get_file_size(f"/www/server/data/{db_name}")
                     except:
                         db_size = self.get_file_size("/www/server/data/{}".format(db_name))
                 elif i['type'].lower() in ['pgsql'] and i['sid'] == 0:

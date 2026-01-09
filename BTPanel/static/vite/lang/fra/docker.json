@@ -59,7 +59,8 @@
 				"index_17": "Souhaitez-vous sauvegarder les données avant l'écrasement?",
 				"index_18": "L'importation du fichier de sauvegarde immédiatement écrasera les données de fichier existantes, veuillez vous assurer que vous avez sauvegardé les données pertinentes",
 				"index_19": "Veuillez sélectionner le fichier à télécharger"
-			}
+			},
+			"app_list_18": "One-click login"
 		},
 		"Overview": {
 			"index_1": "Conteneurs en cours d'exécution",
@@ -534,7 +535,7 @@
 			"index_28": "Composer les journaux",
 			"index_29": "Liste de conteneurs",
 			"index_30": "Terminal",
-			"index_31": "Bûches",
+			"index_31": "Journaux",
 			"index_32": "Journaux des conteneurs [{0}]",
 			"index_33": "Fichier de configuration",
 			"index_34": "Sauter au répertoire",

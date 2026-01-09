@@ -29,10 +29,13 @@ public.sys_path_append("class_v2/")
 class panelSetup:
     def __init_panel_asset(self) -> None:
         from config_v2 import config as config_v2
-        panel_asset = config_v2().get_panel_asset()
-        if panel_asset.get("status") == 0:
-            g.panel_asset = panel_asset.get("message")
-            return
+        try:
+            panel_asset = config_v2().get_panel_asset()
+            if panel_asset.get("status") == 0:
+                g.panel_asset = panel_asset.get("message")
+                return
+        except Exception as ex:
+            public.print_log("init_panel_asset error: {}".format(str(ex)))
 
         from BTPanel import PANEL_DEFAULT_ASSET
         g.panel_asset = PANEL_DEFAULT_ASSET
@@ -48,7 +51,7 @@ class panelSetup:
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '7.59.0'
+        g.version = '7.63.0'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')

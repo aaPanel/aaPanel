@@ -464,6 +464,86 @@
 			"Index_4": "Thiết lập thành công",
 			"Index_5": "Vui lòng chọn người dùng",
 			"Index_6": "Bạn có chắc chắn xóa người dùng này không?"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "Đang quét",
+				"lastScanTime": "Lần quét cuối cùng:",
+				"cancelScan": "Hủy quét",
+				"scanNow": "Quét ngay",
+				"title": "Bảo mật trang web thông minh",
+				"desc": "Bảo mật trang web dựa trên công cụ mạnh mẽ miễn phí: phát hiện rủi ro chỉ bằng một cú nhấp chuột, đề xuất khắc phục/tối ưu hóa tự động aaPanel, tăng cường trang web dễ dàng.",
+				"noPhpSite": "Không tìm thấy trang web PHP nào"
+			},
+			"Metric": {
+				"duration": "Thời lượng",
+				"seconds": "giây",
+				"durationDesc": "Tổng thời gian quét trang web này",
+				"xssDesc": "Các cuộc tấn công XSS trong quá trình quét trang web này",
+				"sqlDesc": "SQL SQL trong quá trình quét trang web này",
+				"maliciousScan": "Quét độc hại",
+				"maliciousScanDesc": "Quét độc hại trong quá trình quét trang web này",
+				"phpAttack": "Tấn công PHP",
+				"phpAttackDesc": "Các cuộc tấn công PHP trong quá trình quét trang web này"
+			},
+			"Summary": {
+				"scoreTitle": "Điểm bảo mật trang web",
+				"scoreLabel": "Điểm"
+			},
+			"Top": {
+				"title": "IP (Top 5)",
+				"columns": {
+					"ip": "Địa chỉ IP",
+					"count": "lượt truy cập"
+				},
+				"banTitle": "Cấm IP [{0}]",
+				"banContent": "Sau khi cấm IP này, nó sẽ không được phép truy cập vào máy chủ nữa. Tiếp tục?",
+				"unbanTitle": "Bỏ cấm IP [{0}]",
+				"unbanContent": "Sau khi bỏ cấm IP này, quyền truy cập từ IP này vào máy chủ sẽ được khôi phục. Tiếp tục?",
+				"banBrief": "Bảo mật website chặn IP thủ công"
+			},
+			"Project": {
+				"title": "Mục bảo mật",
+				"waiting": "Đang chờ quét",
+				"foundRisk": "{0} rủi ro",
+				"noRisk": "Không có rủi ro",
+				"expand": "Mở rộng",
+				"items": {
+					"webscan": "Bảo mật cấu hình trang web",
+					"fileleak": "Phát hiện rò rỉ tập tin",
+					"webshell": "Phát hiện Webshell",
+					"backup": "Sao lưu tập tin",
+					"weakpass": "Phát hiện mật khẩu yếu",
+					"weblog": "Nhật ký trang web"
+				}
+			},
+			"Risk": {
+				"detailLabel": "Chi tiết:",
+				"repairLabel": "Gợi ý:"
+			},
+			"RiskLevel": {
+				"warning": "Cảnh báo",
+				"low": "Thấp",
+				"middle": "Trung bình",
+				"high": "Cao"
+			},
+			"Info": {
+				"overviewTitle": "Tổng quan",
+				"features": {
+					"scan": {
+						"title": "Quét xâm nhập trang web tất cả trong một miễn phí và mạnh mẽ",
+						"desc": "Quét miễn phí toàn diện để ngăn chặn nguy cơ xâm nhập website"
+					},
+					"trojan": {
+						"title": "Quét sâu để tìm trojan nguy hiểm",
+						"desc": "Phát hiện chính xác các mối đe dọa tiềm ẩn bằng tính năng quét trojan sâu"
+					},
+					"log": {
+						"title": "Phân tích chuyên nghiệp nhật ký truy cập trang web",
+						"desc": "Khám phá những bất thường và rủi ro bảo mật thông qua phân tích nhật ký"
+					}
+				}
+			}
 		}
 	}
 }

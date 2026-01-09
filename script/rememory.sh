@@ -50,6 +50,30 @@ if [ -f "/etc/init.d/php-fpm-74" ];then
 	/etc/init.d/php-fpm-74 reload
 fi
 
+if [ -f "/etc/init.d/php-fpm-80" ];then
+	/etc/init.d/php-fpm-80 reload
+fi
+
+if [ -f "/etc/init.d/php-fpm-81" ];then
+	/etc/init.d/php-fpm-81 reload
+fi
+
+if [ -f "/etc/init.d/php-fpm-82" ];then
+	/etc/init.d/php-fpm-82 reload
+fi
+
+if [ -f "/etc/init.d/php-fpm-83" ];then
+	/etc/init.d/php-fpm-83 reload
+fi
+
+if [ -f "/etc/init.d/php-fpm-84" ];then
+	/etc/init.d/php-fpm-84 reload
+fi
+
+if [ -f "/etc/init.d/php-fpm-85" ];then
+	/etc/init.d/php-fpm-85 reload
+fi
+
 if [ -f "/etc/init.d/mysqld" ];then
 	/etc/init.d/mysqld reload
 fi

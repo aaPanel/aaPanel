@@ -183,7 +183,8 @@
 			"index_74": "Смена пароля БД",
 			"index_75": "Пароль root",
 			"index_76": "Расположение",
-			"index_77": "Дата добавления"
+			"index_77": "Дата добавления",
+			"index_78": "Show Logs"
 		},
 		"PhpAdmin": {
 			"index_1": "Сервис",
@@ -217,7 +218,8 @@
 			"index_29": "Логин или пароль должны содержать минимум 3 символа!",
 			"index_30": "Пароли не совпадают!",
 			"index_31": "Версия PHP",
-			"index_32": "Выберите версию PHP-CLI"
+			"index_32": "Выберите версию PHP-CLI",
+			"index_33": "The Adminer driver depends on the currently running PHP version environment. If you find that the driver is missing, please go to PHP extensions to install php_mongodb and pdo_pgsql"
 		},
 		"Api": {
 			"Index_1": "Подключение к удалённому серверу, ожидайте...",
@@ -261,7 +263,36 @@
 			"index_25": "Права [{0}] будут удалены. Продолжить?",
 			"index_26": "Настройки оповещений",
 			"index_27": "После настройки требуется перезапуск БД для применения изменений",
-			"index_28": "Скачать самоподписанный SSL-сертификат MySQL"
+			"index_28": "Скачать самоподписанный SSL-сертификат MySQL",
+			"type": {
+				"import": "Import",
+				"recover": "Recover",
+				"backup": "Backup"
+			},
+			"logs": {
+				"index_1": "{0} database file, please wait...",
+				"index_2": "Current {0} task is running in the background, you can close this page to perform other operations",
+				"index_3": "{0} Database: ",
+				"index_4": "{0} Size: ",
+				"index_5": "{0} Speed: ",
+				"index_6": "After the import is completed, you can view the import results in the import log"
+			}
+		},
+		"adminerManager": {
+			"service": {
+				"currentStatus": "Current Status: ",
+				"fixed": "Fixed",
+				"install": "Install",
+				"uninstall": "Uninstall",
+				"confirmFixed": "Are you sure you want to fixed?",
+				"confirmInstall": "Are you sure you want to install?",
+				"confirmUninstall": "Are you sure you want to uninstall?",
+				"jumpingToAdminer": "Jumping to Adminer, please wait..."
+			},
+			"switchingPhp": "Switching PHP version, please wait...",
+			"installing": "Installing, please wait...",
+			"uninstalling": "Uninstalling, please wait...",
+			"switchingPort": "Switching port, please wait..."
 		}
 	}
 }

@@ -75,7 +75,8 @@
 			"Select": "Memilih",
 			"Rebuild": "Membangun kembali",
 			"Upload": "Mengunggah",
-			"Play": "Bermain"
+			"Play": "Bermain",
+			"Link": "Link"
 		},
 		"Batch": {
 			"Del": "Hapus Batch",

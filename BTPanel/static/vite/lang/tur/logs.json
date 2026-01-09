@@ -1,51 +1,51 @@
 {
-    "Logs": {
-      "Panel": {
-        "index_1": "İşlem günlükleri",
-        "index_2": "Çalışma günlükleri",
-        "index_3": "Cron günlükleri",
-        "index_4": "Lütfen günlük adını girin",
-        "index_5": "Günlükleri temizle",
-        "index_6": "İşlem türü",
-        "index_7": "İşlem zamanı",
-        "index_13": "Tarama zamanı",
-        "index_14": "PHP saldırısı",
-        "index_15": "Günlükler temizlenmek üzere, devam edilsin mi?"
-      },
-      "Website": {
-        "index_1": "URL(ilk 100)",
-        "index_2": "Erişim günlükleri",
-        "index_3": "Sunucu yükü düşükken güvenlik analizi yapılması tavsiye edilir. Bu işlemde [{0}].log dosyası taranacak ve bekleme süresi uzayabilir. Devam etmek istiyor musunuz?",
-        "index_4": "Hata günlükleri",
-        "index_5": "IP(ilk 100)"
-      },
-      "Audit": {
-        "index_1": "Lütfen Kaynak/Port/Rol/Olay girin"
-      },
-      "SSH": {
-        "index_1": "IP: Port"
-      },
-      "Soft": {
-        "index_1": "FTP Kullanıcı Adı",
-        "index_2": "İşlem IP'si",
-        "index_3": "Dosya",
-        "index_4": "Giriş zamanı",
-        "index_5": "FTP günlükleri",
-        "index_6": "MySql Yavaş Sorgu Günlükleri",
-        "index_7": "MySql Hata Günlükleri",
-        "index_8": "İşlem Günlüğü",
-        "index_9": "Lütfen arama anahtar kelimelerini girin"
-      },
-      "Conversion": {
-        "index_1": "Günlük Denetimi - giriş",
-        "index_2": "Yaygın günlükleri analiz etme ve ayrıştırma",
-        "index_3": "Sistem, ağ ve uygulama programları tarafından kaydedilen çeşitli işlemler, olaylar ve anormal durumlar gibi bilgileri toplayın, analiz edin ve denetleyin.",
-        "index_4": "FTP günlükleri - giriş",
-        "index_5": "Mevcut FTP giriş günlüğünü ve işlem günlüğünü kaydedin ve görüntüleyin",
-        "index_6": "FTP kullanıcı istemcisi giriş günlüğü ve dosya işlemi günlüğü bilgilerini kaydedin",
-        "index_7": "SSH oturum açma günlükleri - giriş",
-        "index_8": "Mevcut SSH oturum açma günlüklerini kaydedin ve görüntüleyin",
-        "index_9": "Mevcut SSH oturum açma günlüğü bilgilerini kaydedin"
-      }
-    }
-  }
+	"Logs": {
+		"Panel": {
+			"index_1": "İşlem günlükleri",
+			"index_2": "Çalışma günlükleri",
+			"index_3": "Cron günlükleri",
+			"index_4": "Lütfen günlük adını girin",
+			"index_5": "Günlükleri temizle",
+			"index_6": "İşlem türü",
+			"index_7": "İşlem zamanı",
+			"index_13": "Tarama zamanı",
+			"index_14": "PHP saldırısı",
+			"index_15": "Günlükler temizlenmek üzere, devam edilsin mi?"
+		},
+		"Website": {
+			"index_1": "URL(ilk 100)",
+			"index_2": "Erişim günlükleri",
+			"index_3": "Sunucu yükü düşükken güvenlik analizi yapılması tavsiye edilir. Bu işlemde [{0}].log dosyası taranacak ve bekleme süresi uzayabilir. Devam etmek istiyor musunuz?",
+			"index_4": "Hata günlükleri",
+			"index_5": "IP(ilk 100)"
+		},
+		"Audit": {
+			"index_1": "Lütfen Kaynak/Port/Rol/Olay girin"
+		},
+		"SSH": {
+			"index_1": "IP: Port"
+		},
+		"Soft": {
+			"index_1": "FTP Kullanıcı Adı",
+			"index_2": "İşlem IP'si",
+			"index_3": "Dosya",
+			"index_4": "Giriş zamanı",
+			"index_5": "FTP günlükleri",
+			"index_6": "MySql Yavaş Sorgu Günlükleri",
+			"index_7": "MySql Hata Günlükleri",
+			"index_8": "İşlem Günlüğü",
+			"index_9": "Lütfen arama anahtar kelimelerini girin"
+		},
+		"Conversion": {
+			"index_1": "Günlük Denetimi - giriş",
+			"index_2": "Yaygın günlükleri analiz etme ve ayrıştırma",
+			"index_3": "Sistem, ağ ve uygulama programları tarafından kaydedilen çeşitli işlemler, olaylar ve anormal durumlar gibi bilgileri toplayın, analiz edin ve denetleyin.",
+			"index_4": "FTP günlükleri - giriş",
+			"index_5": "Mevcut FTP giriş günlüğünü ve işlem günlüğünü kaydedin ve görüntüleyin",
+			"index_6": "FTP kullanıcı istemcisi giriş günlüğü ve dosya işlemi günlüğü bilgilerini kaydedin",
+			"index_7": "SSH oturum açma günlükleri - giriş",
+			"index_8": "Mevcut SSH oturum açma günlüklerini kaydedin ve görüntüleyin",
+			"index_9": "Mevcut SSH oturum açma günlüğü bilgilerini kaydedin"
+		}
+	}
+}

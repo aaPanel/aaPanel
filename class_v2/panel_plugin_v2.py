@@ -33,6 +33,7 @@ class panelPlugin:
     __link = 'config/link.json'
 
     __official_url = public.OfficialApiBase()
+    __sync_plugin = public.sync_plugin_OfficialApiBase()
 
     def __init__(self):
         self.__isTable = None
@@ -50,6 +51,7 @@ class panelPlugin:
         self.__plugin_save_file = self.__panel_path + '/data/plugin_bin.pl'
         self.__api_root_url = self.__official_url + '/api'
         self.__api_url = self.__api_root_url + '/panel/get_plugin_list'
+        self.__download_sync_plugin = self.__sync_plugin + '/api' + '/panel/download_plugin'  # 同步下载url
         self.__download_url = self.__api_root_url + '/panel/download_plugin'
         self.__download_d_main_url = self.__api_root_url + '/panel/download_plugin_main'
         self._check_url = self.__api_root_url + '/panel/get_soft_list_status'
@@ -502,9 +504,10 @@ class panelPlugin:
             @param plugin_name<string> 插件名称
             @return dict
         '''
-        result = self.__get_download_speed(get.plugin_name)
-        return result
-
+        ok , result = self.__get_download_speed(get.plugin_name)
+        if not ok:
+            return public.return_message(-1, 0, result)
+        return public.return_message(0, 0, result)
 
     # 取消下载
     def close_install(self, get):
@@ -728,7 +731,12 @@ class panelPlugin:
             if get.sName == 'clamav':
                 self.clear_clamav()
 
-            if os.path.exists(pluginPath): public.ExecShell('rm -rf ' + pluginPath)
+            # 兼容pg卸载
+            if get.sName == 'pgsql_manager':
+                pluginPath = '/www/server/pgsql'
+
+            if os.path.exists(pluginPath):
+                public.ExecShell('rm -rf ' + pluginPath)
             public.write_log_gettext('Installer','Successfully uninstalled software [{}]',(pluginInfo['title'],))
             return public.return_message(0, 0, public.lang("Uninstallaton succeeded"))
         else:
@@ -1162,6 +1170,33 @@ class panelPlugin:
             if public.readFile(check_version_path).find('2.2') == 0:
                 softList['apache22'] = True
                 softList['apache24'] = False
+
+        # 添加模块列表
+        query = get.get('query', '').strip().lower()
+        softList['m_list'] = []
+        if query and (query in 'docker' or query in 'module'):
+            softList['m_list'].append(
+              {
+                'name': 'docker',
+                "title": "Docker Module",
+                "sort": 1,
+                "route": "/docker/app",
+                "tab": "",
+                "ps": "Docker It is an open-source application container engine <a class='btlink' href='/docker/app'>>>Go</a>",
+              }
+            )
+        if query and (query in 'wp toolkit' or query in 'module' or query in 'wordpress'):
+            softList['m_list'].append(
+                {
+                    'name': 'wptools',
+                    "title": "WP Toolkit",
+                    "sort": 1,
+                    "route": "/wp/toolkit",
+                    "tab": "",
+                    "ps": "The toolkit specifically designed for Wordpress management provided by aaPanel <a class='btlink' href='/wp/toolkit'>>>Go</a>",
+                }
+            )
+
         return public.return_message(0, 0,  softList)
 
     #取首页软件列表
@@ -1461,6 +1496,10 @@ class panelPlugin:
                 is_start = conf.find('allow 127.0.0.1;') == -1
             elif webserver == 'apache':
                 is_start = conf.find('Allow from 127.0.0.1 ::1 localhost') == -1
+            # 补充OLS
+            else:
+                if conf.find('accessControl  {\n') != -1:
+                    is_start = False
         return is_start
 
 
@@ -2373,6 +2412,16 @@ class panelPlugin:
         except Exception as ex:
             tmp['status'] = False
             tmp['error'] = str(ex)
+        finally:
+            try:
+                if tmp['run']:
+                    php_info = self.get_soft_find(
+                        public.to_dict_obj({'sName': 'php-' + '.'.join(tmp['phpversion'])})
+                    )
+                    if php_info.get("status") == 0 and not php_info["message"].get("status"):
+                        public.ExecShell("/etc/init.d/php-fpm-" + tmp['phpversion'] + " start")
+            except:
+                pass
         return tmp
 
     def _get_ols_myphpadmin_info(self):
@@ -3285,8 +3334,9 @@ class panelPlugin:
             elif _ip_type == 'ipv6':
                 urllib3_conn.allowed_gai_family = lambda: socket.AF_INET6
             try:
+                cache.set(pkey, '0/0/0', 3600)
                 download_res = requests.post(
-                    self.__download_url,
+                    self.__download_sync_plugin,
                     pdata,
                     headers=public.get_requests_headers(),
                     timeout=(60, 1800),
@@ -3325,7 +3375,18 @@ class panelPlugin:
                     raise public.PanelError(download_res.text)
 
             res_down_size = 0
-            res_chunk_size = 8192
+            try:
+                # 动态设置分块大小
+                if headers_total_size < 10 * 1024 * 1024: # 小于10mb 分块64k
+                    res_chunk_size = 1024 * 64
+                elif headers_total_size < 100 * 1024 * 1024:# 小于100mb 分块128k
+                    res_chunk_size = 1024 * 128
+                else:
+                    res_chunk_size = 1024 * 256 # 大于100mb 分块256k
+            except:
+                # 默认使用 8k
+                res_chunk_size = 8192
+
             last_time = time.time()
             with open(filename, 'wb+') as with_res_f:
                 try:
@@ -3343,6 +3404,9 @@ class panelPlugin:
                                                          res_sec_speed)
                             cache.set(pkey, pre_text, 3600)
 
+                    # 下载完成
+                    cache.set(pkey, '1/1/1', 3600)
+                    time.sleep(1)
                 except Exception as ex:
                     ex_str = str(ex)
                     if "Read timed out" in ex_str:
@@ -3373,18 +3437,25 @@ class panelPlugin:
         pkey = '{}_pre'.format(upgrade_plugin_name)
         pre_text = cache.get(pkey)
         if not pre_text:
-            return public.returnMsg(False, public.lang('Cannot get progress bar for this plugin.'))
-        result = {"status": True}
+            return False, public.lang('Cannot get progress bar for this plugin.')
+        result = {}
+
         pre_tmp = pre_text.split('/')
+
         result['down_size'], result['total_size'] = (int(pre_tmp[0]),
                                                      int(pre_tmp[1]))
+
+        if result['down_size'] == 0 and result['total_size'] == 0:
+            result['down_pre'] = 0
+            result['need_time'] = 0
+            return True, result
+
         result['down_pre'] = round(
             result['down_size'] / result['total_size'] * 100, 1)
         result['sec_speed'] = int(float(pre_tmp[2]))
         result['need_time'] = int(
             (result['total_size'] - result['down_size']) / result['sec_speed'])
-        return result
-
+        return True, result
 
     # 获取插件与授权信息
     def __ensure_plugin_list_obtained(self, force: bool = False):

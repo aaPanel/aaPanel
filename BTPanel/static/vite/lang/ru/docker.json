@@ -59,7 +59,8 @@
 				"index_17": "Создать резервную копию перед перезаписью?",
 				"index_18": "Немедленный импорт резервной копии перезапишет существующие данные. Убедитесь, что важные данные сохранены",
 				"index_19": "Выберите файл для загрузки"
-			}
+			},
+			"app_list_18": "One-click login"
 		},
 		"Overview": {
 			"index_1": "Запущенные контейнеры",
@@ -69,7 +70,23 @@
 			"index_5": "Создан",
 			"index_6": "{0} обзор использования CPU и памяти",
 			"index_7": "Скрыть",
-			"index_8": "Показать"
+			"index_8": "Показать",
+			"overviewTitle": "Resource Overview",
+			"containerCount": "Containers",
+			"spaceUsed": "Space used",
+			"composeCount": "Compose",
+			"composeProjects": "Docker Compose Projects",
+			"imageCount": "Images",
+			"networkCount": "Networks",
+			"networksCreated": "Created networks",
+			"volumeCount": "Volumes",
+			"mirrorRepoCount": "Registries",
+			"repositoriesConfigured": "Configured repositories",
+			"containerList": "Container List",
+			"filterAll": "All",
+			"filterRunning": "Running",
+			"filterStopped": "Stopped",
+			"searchPlaceholder": "Search container name or image name"
 		},
 		"Container": {
 			"index_1": "Создать контейнер",
@@ -231,7 +248,7 @@
 				"index_11": "Мониторинг в реальном времени",
 				"index_12": "Логи в реальном времени",
 				"index_13": "Прокси",
-			"status": {
+				"status": {
 					"index_1": "Текущий статус: ",
 					"index_7": "Имя контейнера",
 					"index_8": "ID контейнера",
@@ -242,19 +259,19 @@
 					"index_13": "Порты",
 					"index_14": "{0} часов",
 					"index_15": "Менее 1 часа"
-			},
-			"details": {
+				},
+				"details": {
 					"index_1": "Просмотр",
 					"index_2": "Файлы",
 					"index_3": "Детали контейнера",
 					"index_4": "Образ",
 					"index_5": "Конфигурация портов"
-			},
-			"volume": {
+				},
+				"volume": {
 					"index_1": "Том",
 					"index_2": "Путь в контейнере"
-			},
-			"network": {
+				},
+				"network": {
 					"index_1": "Подключиться к сети",
 					"index_2": "Выберите сеть",
 					"index_3": "Имя сети",
@@ -262,7 +279,7 @@
 					"index_5": "Отключить",
 					"index_6": "Отключиться от сети [{0}]",
 					"index_7": "Вы действительно хотите отключиться от сети [{0}]?"
-			},
+				},
 				"restart": {
 					"index_1": "Стратегия перезапуска",
 					"index_2": "Максимальное количество попыток",
@@ -361,6 +378,39 @@
 				"index_13": "Запись",
 				"index_14": "Исходящий",
 				"index_15": "Входящий"
+			},
+			"search": {
+				"placeholder": "Search container name, ID, container image"
+			},
+			"batch": {
+				"start": {
+					"title": "Batch Start Containers",
+					"desc": "Batch start selected containers, continue operation?"
+				},
+				"restart": {
+					"title": "Batch Restart Containers",
+					"desc": "Batch restart selected containers, continue operation?"
+				},
+				"stop": {
+					"title": "Batch Stop Containers",
+					"desc": "Batch stop selected containers, continue operation?"
+				},
+				"kill": {
+					"title": "Batch Force Stop Containers",
+					"desc": "Batch force stop selected containers, continue operation?"
+				},
+				"pause": {
+					"title": "Batch Pause Containers",
+					"desc": "Batch pause selected containers, continue operation?"
+				},
+				"unpause": {
+					"title": "Batch Resume Containers",
+					"desc": "Batch resume selected containers, continue operation?"
+				},
+				"del": {
+					"title": "Batch Delete Containers",
+					"desc": "Batch delete selected containers, continue operation?"
+				}
 			}
 		},
 		"CloudImage": {
@@ -375,7 +425,25 @@
 			"index_10": "Загрузить",
 			"index_11": "Создать контейнер",
 			"index_12": "Удалить образ [{0}]",
-			"index_13": "Вы уверены, что хотите удалить образ [{0}]?"
+			"index_13": "Вы уверены, что хотите удалить образ [{0}]?",
+			"detail": {
+				"lastUpdated": "Last Updated:",
+				"isOfficial": "Official Image:",
+				"source": "Source:",
+				"dockerHub": "Docker Hub",
+				"pullsCount": "Pulls:",
+				"selectPlaceholder": "Please select or search image",
+				"pullButton": "Pull",
+				"yes": "Yes",
+				"no": "No",
+				"updated": "Updated",
+				"selectImageError": "Please select an image",
+				"pullImageTitle": "Pull Image"
+			},
+			"pull": {
+				"success": "Pull successful",
+				"failed": "Pull failed"
+			}
 		},
 		"LocalImage": {
 			"index_1": "Загрузить из репозитория",
@@ -430,7 +498,11 @@
 				"index_12": "Выполнить",
 				"index_13": "Введите команду",
 				"index_14": "Ошибка загрузки"
-			}
+			},
+			"searchPlaceholder": "Search image name, ID, containers in use",
+			"batchDelete": "Batch Delete",
+			"batchDeleteTitle": "Batch Delete Project Images",
+			"batchDeleteDesc": "Batch delete selected project images, continue operation?"
 		},
 		"ComposeNew": {
 			"index_1": "Добавить",
@@ -673,7 +745,76 @@
 				"index_2": "Приоритетное использование URL ускорения для операций. При таймауте запроса будет использован метод ускорения по умолчанию",
 				"index_3": "После настройки ускорения требуется перезапуск Docker",
 				"index_4": "Для отключения ускорения оставьте поле пустым",
-				"index_5": "Ускорение отключено"
+				"index_5": "Ускорение отключено",
+				"confirmTitle": "Set Acceleration URL",
+				"confirmContent": "Docker needs to be restarted after setting. Please ensure Docker can be restarted before proceeding!"
+			},
+			"cgroupDriver": "cgroup driver",
+			"setCgroupDriverTitle": "Set cgroup driver",
+			"setCgroupDriverConfirm": "After setting the cgroup driver, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
+			"logRotation": "Log Rotation",
+			"logRotationSet": "Set Log Rotation",
+			"logRotationSummary": "* Log file size {size}MB, retain {num} copies",
+			"closeLogRotationTitle": "Disable Log Rotation",
+			"closeLogRotationConfirm": "After disabling log rotation, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
+			"logRotationConfig": {
+				"fileSize": "File Size",
+				"retainCount": "Retain Count",
+				"unitMB": "MB",
+				"unitCount": "files",
+				"fileSizeRequired": "Please enter file size",
+				"retainCountRequired": "Please enter retain count",
+				"configTip1": "Current configuration will only affect newly created containers. Existing containers need to be recreated for the configuration to take effect",
+				"configTip2": "If your container contains important data, ensure to backup before performing rebuild operations"
+			},
+			"iptables": {
+				"description": "* Docker's automatic configuration of iptables rules",
+				"enableTitle": "Enable iptables",
+				"disableTitle": "Disable iptables",
+				"enableConfirm": "After enabling iptables, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
+				"disableConfirm": "After disabling iptables, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?"
+			},
+			"liveRestore": {
+				"description": "* When enabled, preserves the state of running containers when the Docker daemon stops unexpectedly or crashes",
+				"enableTitle": "Enable live_restore",
+				"disableTitle": "Disable live_restore",
+				"enableConfirm": "After enabling live_restore, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
+				"disableConfirm": "After disabling live_restore, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?"
+			},
+			"registry": {
+				"label": "Private Registry",
+				"placeholder": "Docker private registry address",
+				"modalTitle": "Set Private Registry",
+				"configPlaceholder": "Please enter private registry addresses, one per line, e.g.:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker will restart after setting",
+				"restartTitle": "Restart Docker",
+				"restartConfirm": "Docker will restart. Do you want to continue?"
+			},
+			"path": {
+				"label": "One-Click Install Dir",
+				"modifyButton": "Modify",
+				"disabledTip": "Applications already exist, cannot modify",
+				"validationError": "Please enter a valid directory path!",
+				"confirmTitle": "Modify App Store Directory",
+				"confirmContent": "Modifying the app store directory will restart the panel. Do you want to continue?"
+			},
+			"systemInfo": {
+				"hostname": "Hostname",
+				"systemVersion": "System Version",
+				"architecture": "Architecture",
+				"kernelVersion": "Kernel Version",
+				"cpuCore": "CPU Core",
+				"memorySize": "Memory Size",
+				"dockerVersion": "Docker Version",
+				"dockerComposeVersion": "Docker Compose Version",
+				"unixAddress": "Unix Address",
+				"dataDirectory": "Data Directory",
+				"updateButton": "Update",
+				"updateComposeTitle": "Update Docker Compose Version",
+				"updateComposeContent": "Do you want to update Docker Compose version?",
+				"updateLogsTitle": "Update Logs",
+				"updateSuccess": "Update successful",
+				"updateFailed": "Update failed"
 			}
 		},
 		"install": {

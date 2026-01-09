@@ -4064,6 +4064,15 @@ def panel_monitor_v2(pdata=None):
             'load_and_up_flow', 'get_request_count_by_hour')
     return publicObject(dataObject, defs, None, pdata)
 
+@app.route(route_v2 + '/site_monitor', methods=method_all)
+def monitor(pdata=None):
+    # 网站统计预览
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from projectModelV2 import monitorModel
+    dataObject = monitorModel.main()
+    defs = ('get_overview', 'get_site_overview')
+    return publicObject(dataObject, defs, None, pdata)
 
 @app.route(route_v2 + '/san', methods=method_all)
 def san_baseline_v2(pdata=None):
@@ -4208,6 +4217,7 @@ def abnormal_v2(pdata=None):
 @app.route(route_v2 + '/project/quota/<def_name>/html', methods=method_all)
 @app.route(route_v2 + '/project/proxy/<def_name>', methods=method_all)
 @app.route(route_v2 + '/project/proxy/<def_name>/html', methods=method_all)
+@app.route(route_v2 + '/project/webbasicscanning/<def_name>', methods=method_all)
 def project_v2(def_name):
     if request.method not in ['GET', 'POST']: return
     path_split = request.path.split("/")
@@ -4584,6 +4594,7 @@ def config_v2(pdata=None):
         'set_theme',
         'set_panel_asset',
         'get_panel_asset',
+        'get_alarm_services',
     )
     return publicObject(config_v2.config(), defs, None, pdata)
 
@@ -4653,8 +4664,7 @@ def panel_data_v2(pdata=None):
     defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal','get_wp_classification','get_wp_site_list')
     return publicObject(dataObject, defs, None, pdata)
 
-
-# 计划弃置
+# todo 计划调整
 @app.route(route_v2 + '/ssl', methods=method_all)
 def ssl_v2(pdata=None):
     # 商业SSL证书申请接口
@@ -4704,8 +4714,6 @@ def ssl_v2(pdata=None):
         'apply_order_ca',
         'apply_cert_install_pay',
         'verify_mail_any',
-
-        # 'pay_test'
     )
     get = get_input()
 
@@ -4713,9 +4721,6 @@ def ssl_v2(pdata=None):
         from io import BytesIO
         import base64
         result = toObject.download_cert(get)
-        # public.print_log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@1111111111111111 result: {}".format(result))
-        # {'success': False, 'res': '[code: 0] no data [file: /www/wwwroot/192.168.1.139/app/Api/Cert/controllers/Cert.php] [line: 955]', 'nonce': 1706498844}
-
         fp = BytesIO(base64.b64decode(result['res']['data']))
         return send_file(fp,
                          download_name=result['res']['filename'],
@@ -4724,6 +4729,22 @@ def ssl_v2(pdata=None):
     result = publicObject(toObject, defs, get.action, get)
     return result
 
+@app.route(route_v2 + '/overview', methods=method_all)
+def overview_v2(pdata=None):
+    # 首页overview管理
+    comReturn = comm.local()
+    if comReturn: return comReturn
+    from overviewV2.api import OverViewApi
+    defs = (
+        "overview_template",
+        "get_overview",
+        "add_overview",
+        "set_overview",
+        "del_overview",
+        "sort_overview",
+        "get_overview_window",
+    )
+    return publicObject(OverViewApi(), defs, None, pdata)
 
 @app.route(route_v2 + "/business_ssl", methods=method_all)
 def business_ssl(pdata=None):
@@ -4896,7 +4917,7 @@ def plugin_v2(pdata=None):
             'install', 'unInstall', 'getPluginList', 'getPluginInfo',
             'get_make_args', 'add_make_args', 'getPluginStatus',
             'setPluginStatus', 'a', 'getCloudPlugin', 'getConfigHtml',
-            'savePluginSort', 'del_make_args', 'set_make_args')
+            'savePluginSort', 'del_make_args', 'set_make_args', 'get_download_speed')
     return publicObject(pluginObject, defs, None, pdata)
 
 

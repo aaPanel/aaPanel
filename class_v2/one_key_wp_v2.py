@@ -876,25 +876,35 @@ class one_key_wp:
                     cache_conf = f'''
         # NGINX-CACHE-START
         proxy_cache {site['name'].replace(".", "_")}_cache;
-        proxy_cache_key "$host$request_uri$args";
-        proxy_cache_valid 200 301 302 10m;  
-        proxy_cache_valid 4041m;
-        proxy_cache_use_stale error timeout http_429 http_500 http_502 http_503 http_504;
+        proxy_cache_key "$scheme$host$request_uri"; 
+        proxy_cache_valid 200 301 302 2m;  
+        proxy_cache_valid 404 1m;
+        proxy_ignore_headers Cache-Control Expires Vary;
+        proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
         proxy_cache_background_update on;
+        proxy_cache_lock on;
         proxy_cache_revalidate on;
-        proxy_cache_min_uses 1;
-        proxy_cache_lock off;
-        add_header X-Cache-Type "Dynamic"; 
-        add_header X-Cache $upstream_cache_status; 
+        
+        # You can configure your own website caching policy here
         set $skip_cache 0;
-        if ($http_cookie ~* "user_logged_in|admin_session") {{
-            set $skip_cache 1; 
-        }}
-        if ($request_uri ~* "/admin/|/wp-admin/|/dashboard/") {{
+        if ($request_method = POST) {{ set $skip_cache 1; }}
+        if ($query_string != "") {{ set $skip_cache 1; }}
+        if ($request_uri ~* "/(cart|checkout|my-account|order|account|login|register|wp-admin|dashboard|xmlrpc.php|wp-login.php)") {{
             set $skip_cache 1;
         }}
+        if ($http_cookie ~* "comment_author|wordpress_[a-f0-9]+|wp-postpass|wordpress_no_cache|wordpress_logged_in|woocommerce_items_in_cart|woocommerce_cart_hash|wp_woocommerce_session_") {{
+            set $skip_cache 1;
+        }}
+
         proxy_no_cache $skip_cache;
         proxy_cache_bypass $skip_cache;
+        proxy_cache_bypass $http_upgrade;
+        proxy_buffer_size 256k;
+        proxy_buffers 4 128k;
+        proxy_busy_buffers_size 256k;
+        proxy_temp_file_write_size 256k;
+        add_header X-Cache "$upstream_cache_status";
+        add_header X-Frame-Options SAMEORIGIN;
         # NGINX-CACHE-END
 '''
                     if conf.find('add_header Cache-Control no-cache;') != -1:
@@ -1499,6 +1509,9 @@ class one_key_wp:
                                                        get.get('whl_redirect_admin', '404'))
                 self.write_logs('|-WP Plugin wps-hide-login installation succeeded')
 
+            # 清除本地回环
+            self.remove_hosts_record(values['site_name'])
+
             public.ServiceReload()
 
             self.write_logs("\n\n\n|-Deployment was successful!")
@@ -1509,6 +1522,39 @@ class one_key_wp:
             from traceback import format_exc
             public.print_log(format_exc())
             return public.return_message(-1, 0, public.lang("Deployment failed: {}", e))
+
+    # 删除指定的域名本地回环记录
+    def remove_hosts_record(self, site_name):
+        """
+        从 /etc/hosts 中删除指定的域名本地回环记录
+        """
+        hosts_path = '/etc/hosts'
+        try:
+            if not os.path.exists(hosts_path):
+                return False
+
+            # 读取原始文件
+            content = public.readFile(hosts_path)
+            if not content:
+                return False
+
+            # 构建正则表达式：匹配 127.0.0.1 后面跟着 site_name 的整行
+            # \s+ 匹配空格或制表符
+            # ^...$ 配合 re.M 确保只匹配独立的一行
+            pattern = r'^127\.0\.0\.1\s+{}\s*$'.format(re.escape(site_name))
+
+            # 替换为空字符串（同时处理换行符）
+            new_content = re.sub(pattern, '', content, flags=re.M)
+
+            # 清理可能产生的多余空行
+            new_content = os.linesep.join([line for line in new_content.splitlines() if line.strip()])
+
+            # 写回文件
+            public.writeFile(hosts_path, new_content)
+            return True
+        except Exception as e:
+            return False
+
 
     # 重新关联WP网站数据库
     def reset_wp_db(self, args):

@@ -464,6 +464,86 @@
 			"Index_4": "Erfolg setzen",
 			"Index_5": "Bitte wählen Sie Benutzer",
 			"Index_6": "Sind Sie sicher, diesen Benutzer zu löschen?"
+		},
+		"SiteSecurity": {
+			"Header": {
+				"scanning": "Scannen",
+				"lastScanTime": "Letzter Scan-Zeitpunkt:",
+				"cancelScan": "Scan abbrechen",
+				"scanNow": "Jetzt scannen",
+				"title": "Intelligente Website-Sicherheit",
+				"desc": "Kostenlose Website-Sicherheit auf robuster Engine-Basis: Risikoerkennung mit einem Klick, automatische Optimierungs-/Behebungsvorschläge von aaPanel, einfache Website-Härtung.",
+				"noPhpSite": "Keine PHP-Websites gefunden"
+			},
+			"Metric": {
+				"duration": "Dauer",
+				"seconds": "Sekunden",
+				"durationDesc": "Gesamtdauer dieses Website-Scans",
+				"xssDesc": "XSS-Angriffe in diesem Website-Scan",
+				"sqlDesc": "SQL-Injection bei diesem Website-Scan",
+				"maliciousScan": "Schädlicher Scan",
+				"maliciousScanDesc": "Schädliche Scans in diesem Website-Scan",
+				"phpAttack": "PHP-Angriff",
+				"phpAttackDesc": "PHP-Angriffe in diesem Website-Scan"
+			},
+			"Summary": {
+				"scoreTitle": "Website-Sicherheitsbewertung",
+				"scoreLabel": "Punktzahl"
+			},
+			"Top": {
+				"title": "IP (Top 5)",
+				"columns": {
+					"ip": "IP -Adresse",
+					"count": "Besuche"
+				},
+				"banTitle": "IP [{0}] sperren",
+				"banContent": "Nach dem Sperren dieser IP ist ihr der Zugriff auf den Server nicht mehr gestattet. Weitermachen?",
+				"unbanTitle": "IP [{0}] entsperren",
+				"unbanContent": "Nach der Aufhebung der Sperre dieser IP wird der Zugriff von dieser IP auf den Server wiederhergestellt. Weitermachen?",
+				"banBrief": "Website-Sicherheit blockiert IP manuell"
+			},
+			"Project": {
+				"title": "Sicherheitsartikel",
+				"waiting": "Warten auf den Scan",
+				"foundRisk": "{0} Risiken",
+				"noRisk": "Keine Risiken",
+				"expand": "Erweitern",
+				"items": {
+					"webscan": "Sicherheit der Website-Konfiguration",
+					"fileleak": "Erkennung von Dateilecks",
+					"webshell": "Webshell-Erkennung",
+					"backup": "Sicherungsdateien",
+					"weakpass": "Schwache Passworterkennung",
+					"weblog": "Website-Protokolle"
+				}
+			},
+			"Risk": {
+				"detailLabel": "Einzelheiten:",
+				"repairLabel": "Anregung:"
+			},
+			"RiskLevel": {
+				"warning": "Warnung",
+				"low": "Niedrig",
+				"middle": "Mittel",
+				"high": "Hoch"
+			},
+			"Info": {
+				"overviewTitle": "Überblick",
+				"features": {
+					"scan": {
+						"title": "Kostenloser und leistungsstarker All-in-One-Website-Intrusion-Scan",
+						"desc": "Umfassender kostenloser Scan, um das Risiko von Website-Einbrüchen zu blockieren"
+					},
+					"trojan": {
+						"title": "Tiefenscan nach gefährlichen Trojanern",
+						"desc": "Erkennen Sie versteckte Bedrohungen präzise mit umfassendem Trojaner-Scan"
+					},
+					"log": {
+						"title": "Professionelle Analyse von Website-Zugriffsprotokollen",
+						"desc": "Entdecken Sie Anomalien und Sicherheitsrisiken durch Protokollanalyse"
+					}
+				}
+			}
 		}
 	}
 }

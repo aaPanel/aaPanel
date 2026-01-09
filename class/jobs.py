@@ -36,6 +36,7 @@ def control_init_now():
     set_pma_access()
     check_enable_php()
     reset_restart_record()
+    setup_site_total()
 
 def control_init_delay():
     delay_list = [
@@ -44,6 +45,7 @@ def control_init_delay():
         (clear_other_files,),
         (remove_tty1,),
         (clean_hook_log,),
+        (catch_panel_ssl,),
         (acme_crond_reinit,),
         (clear_fastcgi_safe,),
         (run_script,),
@@ -75,52 +77,6 @@ def control_init_delay():
 def control_init_new():
     control_init_now()
     control_init_delay()
-
-# todo 计划移除
-def control_init():
-    update_py312()
-    public.chdck_salt()
-    rep_websocket_conf()
-    clear_other_files()
-    sql_pacth()
-    #disable_putenv('putenv')
-    #clean_session()
-    #set_crond()
-    clean_max_log('/www/server/panel/plugin/rsync/lsyncd.log')
-    clean_max_log('/var/log/rsyncd.log',1024*1024*10)
-    clean_max_log('/root/.pm2/pm2.log',1024*1024*20)
-    remove_tty1()
-    clean_hook_log()
-    acme_crond_reinit()
-    run_new()
-    clean_max_log('/www/server/cron',1024*1024*5,20)
-    clean_max_log("/www/server/panel/plugin/webhook/script",1024*1024*1)
-    #check_firewall()
-    # check_dnsapi()
-    clean_php_log()
-    files_set_mode()
-    set_pma_access()
-    # public.set_open_basedir()
-    clear_fastcgi_safe()
-    # update_py37()
-    run_script()
-    set_php_cli_env()
-    check_enable_php()
-    #sync_node_list()
-    check_default_curl_file()
-    null_html()
-    remove_other()
-    deb_bashrc()
-    # upgrade_gevent()
-    install_pycountry()
-    upgrade_polkit()
-    #hide_docker()
-    rep_pyenv_link()
-    rm_apache_cgi_test()
-    uninstall_pip_lxml()
-    install_pyroute2()
-    upgrade_fastcgi_cache_conf_format()
-
 
 def install_packages():
     try:
@@ -154,8 +110,6 @@ def install_packages():
     except Exception as e:
         public.print_log("install pyroute2 error:", str(e))
 
-
-
 def rm_apache_cgi_test():
     '''
         @name 删除apache测试cgi文件
@@ -177,6 +131,11 @@ def uninstall_pip_lxml():
     except:
         pass
 
+def catch_panel_ssl():
+    """收录面板SSL"""
+    from ssl_domainModelV2.service import sync_panel_ssl
+    sync_panel_ssl()
+
 def acme_crond_reinit():
     '''
         @name 修复acme定时任务
@@ -191,7 +150,6 @@ def acme_crond_reinit():
         acme_v2.acme_v2().set_crond_v2()
     except:
         pass
-
 
 def rep_pyenv_link():
     '''
@@ -451,12 +409,12 @@ def sql_pacth():
         CREATE TABLE IF NOT EXISTS `git_sites_auth` (
       `id` INTEGER PRIMARY KEY AUTOINCREMENT,
       `site_id` INTEGER,
-      `auth_type` REAL,
-      `oauth_access_token` REAL,
-      `oauth_scope` REAL,
-      `oauth_token_type` REAL,
-      `branch` REAL,
-      `repo` REAL,
+      `auth_type` TEXT,
+      `oauth_access_token` TEXT,
+      `oauth_scope` TEXT,
+      `oauth_token_type` TEXT,
+      `branch` TEXT,
+      `repo` TEXT,
       `number_copies` INTEGER DEFAULT 5
 )"""
         sql.execute(csql, ())
@@ -468,15 +426,15 @@ def sql_pacth():
         `site_id` INTEGER,
         `status` INTEGER,
         `deploy_status` INTEGER,
-        `script_path` REAL,
-        `log_path` REAL,
-        `deployment_time` REAL,
-        `execut_time` REAL,
-        `commit_hash` REAL,
-        `commit_hash_short` REAL,
-        `msg` REAL,
-        `author_name` REAL,
-        `committed_time` REAL
+        `script_path` TEXT,
+        `log_path` TEXT,
+        `deployment_time` TEXT,
+        `execut_time` TEXT,
+        `commit_hash` TEXT,
+        `commit_hash_short` TEXT,
+        `msg` TEXT,
+        `author_name` TEXT,
+        `committed_time` TEXT
     )"""
         sql.execute(csql, ())
 
@@ -485,8 +443,8 @@ def sql_pacth():
         CREATE TABLE IF NOT EXISTS `site_deploy_script` (
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `site_id` INTEGER,
-        `title` REAL,
-        `script_path` REAL,
+        `title` TEXT,
+        `script_path` TEXT,
         `is_webhook` INTEGER DEFAULT 0
     )"""
         sql.execute(csql, ())
@@ -644,7 +602,56 @@ def remove_other():
         if os.path.exists(f):
             os.remove(f)
 
+# 免费监控报表更新
+def setup_site_total():
+    # 获取免费监控报表状态，关闭则不更新
+    site_total_monitor_path = '/etc/systemd/system/site_total.service'
+    if not os.path.exists(site_total_monitor_path):
+        return
 
+    panel_path = public.get_panel_path()
+    config_py = "{}/class_v2/config_v2.py".format(panel_path)
+
+    # 获取版本更新时间，截至分钟级
+    update_time = os.path.getmtime(config_py)
+    update_time = int(update_time) // 60 * 60
+
+    # 尝试获取上次更新时间搓
+    last_install_file = "{}/data/free_site_total.pl".format(panel_path)
+    last_install_time = 0
+    if os.path.exists(last_install_file):
+        try:
+            last_install_time = int(public.readFile(last_install_file))
+        except:
+            pass
+
+    # 清除已删除的网站数据
+    try:
+        import shutil
+        data_path = '/www/server/site_total/data/total'
+        site_list = None
+        if os.path.exists(data_path):
+            site_list = public.M('sites').field('name').select()
+            site_list = [item['name'] for item in site_list]
+
+        if site_list:
+            for name in os.listdir(data_path):
+                full = os.path.join(data_path, name)
+                if os.path.isdir(full) and name not in site_list:
+                    shutil.rmtree(full)
+    except:
+        pass
+
+    # 更新时间相同，不更新
+    if last_install_time == update_time:
+        # public.print_log("setup_site_total: The update time is the same. No update")
+        return
+
+    install_sh = "{} {}/script/free_total_update.py".format(public.get_python_bin(), panel_path)
+    res = public.ExecShell(install_sh)
+    public.print_log(res)
+
+    public.writeFile(last_install_file, str(update_time))
 
 def null_html():
     null_files = ['/www/server/nginx/html/index.html','/www/server/apache/htdocs/index.html','/www/server/panel/data/404.html']

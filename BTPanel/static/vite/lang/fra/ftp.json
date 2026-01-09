@@ -1,13 +1,13 @@
 {
 	"Ftp": {
-		"index_1": "PLS Installez d'abord Prue-FTPD!",
+		"index_1": "SVP installez d'abord Pure-FTPD!",
 		"index_2": "Adresse FTP",
 		"index_3": "Ajouter FTP",
 		"index_4": "Modifier le port FTP",
 		"index_5": "Analyse du journal FTP",
 		"Add": {
 			"Title": "Ajouter l'utilisateur FTP",
-			"Index_1": "Documenter la racine",
+			"Index_1": "Racine du document",
 			"Index_2": "Le nom d'utilisateur FTP ne peut pas être vide!",
 			"Index_3": "Le nom d'utilisateur FTP ne peut contenir que des lettres, des chiffres et des soulignements!",
 			"Index_4": "Le nom d'utilisateur FTP ne peut pas être inférieur à 3 caractères!"

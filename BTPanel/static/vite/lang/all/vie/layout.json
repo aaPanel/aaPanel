@@ -6,7 +6,7 @@
 	"39fdee1a60aa3d1942ecac9bc4d55129": "Dự án Proxy",
 	"376812e33b0859c388831dfaefee4ddd": "Quản lý cục bộ",
 	"c7c11e256a3ae0df8bf886bdcec5221e": "Quản lý từ xa",
-	"3bac4b069c4662f60cdc78b767987244": "Bộ công cụ WP",
+	"3bac4b069c4662f60cdc78b767987244": "WP Toolkit",
 	"c728a49363c9a93a43a7e7f232b5a54a": "FTP",
 	"cb91c54309ab9a8ca29869f3401776bd": "Trình quản lý FTP",
 	"68051bf4aa2743b030984b694628ee9c": "Cơ sở dữ liệu",
@@ -85,7 +85,7 @@
 	"67ae28f46f85fd483d2f9adeb468ca31": "Dự án proxy",
 	"e750368f539c3184e4a13ced694104a1": "Quản lý địa phương",
 	"4994f6c09f0fb95b9ca435d55e850c82": "Quản lý từ xa",
-	"f32a0ffae32f6071989cccde0e38aeb8": "Bộ công cụ WP",
+	"f32a0ffae32f6071989cccde0e38aeb8": "WP Toolkit",
 	"1183704f4988470fb24c9fde6f1a12e5": "Trình quản lý FTP",
 	"ea2ef9b0d095bf991f4973633b485340": "Cơ sở dữ liệu",
 	"16476ccb991b1ef1e197a1f4c40d1a8d": "Cài đặt một lần nhấp",
@@ -166,5 +166,6 @@
 	"cc246bead7d06808781c69caf49f5a06": "Khôi phục sao lưu",
 	"10b5b21ed1ee90eca305b558caf7d03b": "Di cư",
 	"e8982e81b5418d9dd450e093564c9340": "Cài đặt trang",
-	"193cfc9be3b995831c6af2fea6650e60": "Trang"
+	"193cfc9be3b995831c6af2fea6650e60": "Trang",
+	"07806fdb6dc90f54119826561fbaf5c1": "Bảo mật trang web"
 }

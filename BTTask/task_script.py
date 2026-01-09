@@ -57,12 +57,6 @@ def task():
 # ======================================================
 # 守护服务
 @task()
-def daemon_service():
-    from script.restart_services import RestartServices
-    RestartServices().main()
-
-
-@task()
 def make_suer_ssl_task():
     from ssl_domainModelV2.service import make_suer_ssl_task
     make_suer_ssl_task()

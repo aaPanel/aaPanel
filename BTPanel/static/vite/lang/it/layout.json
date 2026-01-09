@@ -94,7 +94,8 @@
 			"account_5": "Magazzinaggio",
 			"account_6": "Impostazioni",
 			"domain_1": "Domini",
-			"domain_2": "Certificato"
+			"domain_2": "Certificato",
+			"security_8": "Website Security"
 		},
 		"Footer": {
 			"index_1": "Pannello Aapanel Linux © 2014 • {0} Aapanel",

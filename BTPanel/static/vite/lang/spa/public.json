@@ -75,7 +75,8 @@
 			"Select": "Seleccionar",
 			"Rebuild": "Reconstruir",
 			"Upload": "Subir",
-			"Play": "Jugar"
+			"Play": "Jugar",
+			"Link": "Enlace"
 		},
 		"Batch": {
 			"Del": "Eliminar por lotes",

@@ -28,7 +28,7 @@
 			"index_25": "Si vous devez modifier la version MySQL, veuillez sauvegarder vos données, désinstaller MySQL et les réinstaller.",
 			"index_26": "Emplacement de stockage",
 			"index_27": "Optimisation",
-			"index_28": "Bûche lente",
+			"index_28": "Journalisation lente",
 			"index_29": "Temps d'intervalle",
 			"index_30": "Soutien"
 		},

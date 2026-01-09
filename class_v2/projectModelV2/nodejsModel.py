@@ -1023,6 +1023,14 @@ export PATH
         if get.domain+":80" in project_find['project_config']['domains']:
             project_find['project_config']['domains'].remove(get.domain + ":80")
 
+        # 处理端口残留
+        domains = []
+        for domain in project_find['project_config']['domains']:
+            if get.domain == domain.split(':')[0]:
+                continue
+            domains.append(domain)
+        project_find['project_config']['domains'] = domains
+
         public.M('sites').where('id=?',(project_id,)).save('project_config',json.dumps(project_find['project_config']))
         public.WriteLog(self._log_name,'From project: [{}], delete domain name [{}]'.format(get.project_name,get.domain))
         self.set_config(get.project_name)
@@ -1088,8 +1096,7 @@ export PATH
         if not project_find['project_config']['bind_extranet']: return False
         if not project_find['project_config']['domains']: return False
         self.set_nginx_config(project_find)
-        if not public.get_multi_webservice_status():
-            self.set_apache_config(project_find)
+        self.set_apache_config(project_find)
         public.serviceReload()
         return True
 
@@ -1340,6 +1347,13 @@ export PATH
     </IfModule>
     #HTTP_TO_HTTPS_END'''
 
+            # 多服务下切换端口
+            if public.get_multi_webservice_status() and str(p) in ['80','443']:
+                if str(p) == '80':
+                    p = 8288
+                else:
+                    p = 8290
+
             # 生成vhost主体配置
             apache_config_body += config_body.format(
                 site_path = project_find['path'],
@@ -1355,7 +1369,7 @@ export PATH
             apache_config_body += "\n"
 
             # 添加端口到主配置文件
-            if not p in [80]:
+            if not p in [80] and not public.get_multi_webservice_status():
                 s.apacheAddPort(p)
         
         # 写.htaccess
@@ -1364,12 +1378,6 @@ export PATH
 
         # 写配置文件
         public.writeFile(config_file,apache_config_body)
-
-        # 多服务下使apache配置文件失效
-        if public.get_multi_webservice_status():
-            if os.path.exists(config_file):
-                shutil.move(config_file, config_file + '.barduo')
-
         return True
     
 

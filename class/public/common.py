@@ -1810,7 +1810,7 @@ def change_nginx_server_old_http2(nginx_file: str):
 
 # 错误收集适配
 # 检查Web服务器配置文件是否有错误
-def checkWebConfig(repair_num=2):
+def checkWebConfig(repair_num=2, path=None):
     f1 = '{}/'.format(get_vhost_path())
     f2 = '{}/'.format(get_plugin_path())
     setup_path = get_setup_path()
@@ -1835,35 +1835,28 @@ def checkWebConfig(repair_num=2):
             if os.path.exists(f3): os.remove(f3)
 
     web_s = get_webserver()
-    if web_s == 'nginx':
-        result = ExecShell(
-            "ulimit -n 8192 ; {setup_path}/nginx/sbin/nginx -t -c {setup_path}/nginx/conf/nginx.conf".format(
-                setup_path=setup_path))
-        writeFile('/tmp/nginx_new.conf', readFile('/www/server/nginx/conf/nginx.conf'))
-        # print_log('checkWebConfig--result:{}'.format(result))
-        searchStr = 'successful'
-        nginx_version = ExecShell("{}/nginx/sbin/nginx -v".format(setup_path))
-        # print_log('nginx')
-        version_info = nginx_version[1]
-    elif web_s == 'apache':
-        # print_log('apache')
-        # else:
+    if web_s == 'apache' or (path is not None and 'httpd.conf' in path):
         result = ExecShell("ulimit -n 8192 ; {setup_path}/apache/bin/apachectl -t".format(setup_path=setup_path))
         searchStr = 'Syntax OK'
         apache_version = ExecShell("{}/apache/bin/httpd -v".format(setup_path))
         version_info = apache_version[1]
+    elif web_s == 'nginx':
+        result = ExecShell(
+            "ulimit -n 8192 ; {setup_path}/nginx/sbin/nginx -t -c {setup_path}/nginx/conf/nginx.conf".format(
+                setup_path=setup_path))
+        writeFile('/tmp/nginx_new.conf', readFile('/www/server/nginx/conf/nginx.conf'))
+        searchStr = 'successful'
+        nginx_version = ExecShell("{}/nginx/sbin/nginx -v".format(setup_path))
+        version_info = nginx_version[1]
     else:
-        # print_log('other')
         result = ["1", "1"]
         searchStr = "1"
         version_info = "Unknow"
-    # print_log('checkWebConfig--result1:{}'.format(result))
     if result[1].find(
             'the "listen ... http2" directive is deprecated, use the "http2" directive instead') != -1 and web_s == "nginx" and is_change_nginx_http2():
         if repair_num > 0:
             repair_num -= 1
             change_nginx_http2()
-            # print_log('nginx----1')
             return checkWebConfig(repair_num)
 
     if result[1].find(searchStr) == -1:
@@ -2753,22 +2746,39 @@ def get_panel_version():
 
 
 def get_os_version():
-    '''
+    """
         @name 取操作系统版本
         @author hwliang<2021-08-07>
         @return string
-    '''
-    p_file = '/etc/.productinfo'
-    if os.path.exists(p_file):
-        s_tmp = readFile(p_file).split("\n")
+    """
+    # sys ver
+    version = ""
+    if os.path.exists("/etc/.productinfo"):
+        s_tmp = readFile("/etc/.productinfo").split("\n")
         if s_tmp[0].find('Kylin') != -1 and len(s_tmp) > 1:
             version = s_tmp[0] + ' ' + s_tmp[1].split('/')[0].strip()
-    else:
-        version = readFile('/etc/redhat-release')
+
+    release_version = (
+        "/etc/redhat-release",
+        "/etc/system-release",
+        "/etc/amazon-linux-release"
+    )
+    for tmp_file in release_version:
+        if not version and os.path.exists(tmp_file):
+            s_tmp = readFile(tmp_file)
+            version = s_tmp
+            break
+
+    # 2025/12 适配腾讯云及其他发行版
     if not version:
-        version = readFile('/etc/issue').strip().split("\n")[0].replace('\\n', '').replace(r'\l', '').strip()
+        tmp = public.readFile('/etc/os-release')
+        if tmp:
+            version_match = re.search(r'PRETTY_NAME=["\']?([^"\']+)["\']?', tmp)
+            if version_match:
+                version = version_match.groups()[0]
     else:
         version = version.replace('release ', '').replace('Linux', '').replace('(Core)', '').strip()
+    # py ver
     v_info = sys.version_info
     try:
         version = "{} {}(Py{}.{}.{})".format(version, os.uname().machine, v_info.major, v_info.minor, v_info.micro)
@@ -9112,6 +9122,9 @@ def OfficialApiBase():
     return 'https://www.aapanel.com'
     # return 'http://dev.aapanel.com'
 
+# 部分插件下载地址
+def sync_plugin_OfficialApiBase():
+    return 'https://download.aapanel.com'
 
 # 官网下载根地址
 def OfficialDownloadBase():

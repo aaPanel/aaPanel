@@ -953,6 +953,8 @@ class system:
             return public.is_memcached_process_exists()
         elif name == 'mongodb':
             return public.is_mongodb_process_exists()
+        elif name == 'pgsql':
+            return public.is_process_exists_by_exe('/www/server/pgsql/bin/postgres')
         else:
             return True
 

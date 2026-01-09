@@ -664,59 +664,18 @@ class ServicesTask(BaseTask):
         """
         获取已安装的服务
         """
-        res_list = []
-        php_path = "/www/server/php"
-        if os.path.exists(php_path) and glob.glob(php_path + "/*"):
-            res_list.append({
-                "title": "php-fpm service discontinued",
-                "value": "php-fpm"
-            })
-        if os.path.exists('/etc/init.d/httpd'):
-            res_list.append({
-                "title": "apache service discontinued",
-                "value": "apache"
-            })
-        if os.path.exists('/etc/init.d/nginx'):
-            res_list.append({
-                "title": "nginx service discontinued",
-                "value": "nginx"
-            })
-        if os.path.exists('/etc/init.d/mysqld'):
-            res_list.append({
-                "title": "mysql service discontinued",
-                "value": "mysql"
-            })
-        if os.path.exists('/etc/init.d/mongodb'):
-            res_list.append({
-                "title": "mysql service discontinued",
-                "value": "mongodb"
-            })
-        if os.path.exists('/www/server/tomcat/bin'):
-            res_list.append({
-                "title": "tomcat service discontinued",
-                "value": "tomcat"
-            })
-        if os.path.exists('/etc/init.d/pure-ftpd'):
-            res_list.append({
-                "title": "pure-ftpd service discontinued",
-                "value": "pure-ftpd"
-            })
-        if os.path.exists('/www/server/redis'):
-            res_list.append({
-                "title": "redis service discontinued",
-                "value": "redis"
-            })
-        if os.path.exists('/etc/init.d/memcached'):
-            res_list.append({
-                "title": "memcached service discontinued",
-                "value": "memcached"
-            })
-        if os.path.exists('/usr/local/lsws/bin/lswsctrl'):
-            res_list.append({
-                "title": "openlitespeed service discontinued",
-                "value": "openlitespeed"
-            })
-        return res_list
+        from script.restart_services import SERVICES_MAP, ServicesHelper
+        res = []
+        for s in SERVICES_MAP.keys():
+            if s == "panel":
+                continue
+            obj = ServicesHelper(s)
+            if obj.is_install:
+                res.append({
+                    "title": "{} service discontinued".format(s),
+                    "value": s
+                })
+        return res
 
     def check_task_data(self, task_data: dict) -> Union[dict, str]:
         if task_data["project"] not in {
@@ -768,154 +727,19 @@ class ServicesTask(BaseTask):
         return "Service Stop Alert --" + task_data["project"]
 
     def _services_start(self, service_name: str):
-        if service_name == "php-fpm":
-            base_path = "/www/server/php"
-            if not os.path.exists(base_path):
-                return None
-            for p in os.listdir(base_path):
-                init_file = os.path.join("/etc/init.d", "php-fpm-{}".format(p))
-                if not os.path.isfile(init_file):
-                    return None
-                ExecShell("{} start".format(init_file))
-
-        elif service_name == 'mysql':
-            init_file = os.path.join("/etc/init.d", "mysqld")
-            ExecShell("{} start".format(init_file))
-            if not self.get_server_status():
-                ExecShell("{} restart".format(init_file))
-
-        elif service_name == 'apache':
-            init_file = os.path.join("/etc/init.d", "httpd")
-            ExecShell("{} start".format(init_file))
-
-        elif service_name == 'openlitespeed':
-            init_file = "/usr/local/lsws/bin/lswsctrl"
-            ExecShell("{} start".format(init_file))
-            if not self.get_server_status():
-                ExecShell("{} restart".format(init_file))
-
-        else:
-            init_file = os.path.join("/etc/init.d", service_name)
-            ExecShell("{} start".format(init_file))
-
+        from script.restart_services import ServicesHelper
+        obj = ServicesHelper(service_name)
+        obj.script("start")
+        time.sleep(3)
+        if not obj.is_running:
+            obj.script("restart")
         self.pids = psutil.pids()  # renew pids
-
-    def get_pid_name(self, pname):
-        try:
-            if not self.pids:
-                self.pids = psutil.pids()
-            for pid in self.pids:
-                if psutil.Process(pid).name() == pname: return True
-            return False
-        except:
-            return True
-
-    def _sock_file_check(self, sock_path: str, process_name: str):
-        if os.path.exists(sock_path):
-            status = False
-            for proc in psutil.process_iter(['pid', 'name', 'connections']):
-                try:
-                    check_list = [process_name] if process_name != "mysqld" else ["mysqld", "mariadbd"]
-                    for c in check_list:
-                        if c in proc.info['name']:
-                            # noinspection PyDeprecation
-                            for conn in proc.connections(kind='unix'):
-                                if conn.laddr == sock_path:
-                                    status = True
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    continue
-            if status is True:
-                return True
-        return False
+        return
 
     def get_server_status(self) -> bool:
-        time.sleep(5)
-        if self.service_name == "php-fpm":
-            base_path = "/www/server/php"
-            if not os.path.exists(base_path):
-                return False
-            for p in os.listdir(base_path):
-                pid_file = os.path.join(base_path, p, "var/run/php-fpm.pid")
-                if os.path.exists(pid_file):
-                    status = self.check_process(pid_file)
-                    if status:
-                        return True
-            return False
-
-        elif self.service_name == 'nginx':
-            if os.path.exists('/etc/init.d/nginx'):
-                pid_f = '/www/server/nginx/logs/nginx.pid'
-                if os.path.exists(pid_f):
-                    try:
-                        return self.check_process(pid_f)
-                    except:
-                        pass
-            return False
-
-        elif self.service_name == 'apache':
-            if os.path.exists('/etc/init.d/httpd'):
-                pid_f = '/www/server/apache/logs/httpd.pid'
-                if os.path.exists(pid_f):
-                    return self.check_process(pid_f)
-            return False
-
-        elif self.service_name == 'mysql':
-            return self._sock_file_check('/tmp/mysql.sock', 'mysqld')
-
-        elif self.service_name == 'mongodb':
-            pid_f = '/www/server/mongodb/log/configsvr.pid'
-            if os.path.exists(pid_f):
-                return self.check_process(pid_f)
-            return False
-
-        elif self.service_name == 'tomcat':
-            status = False
-            if os.path.exists('/www/server/tomcat/logs/catalina-daemon.pid'):
-                if self.get_pid_name('jsvc'):
-                    status = True
-            if not status:
-                if self.get_pid_name('java'):
-                    status = True
-
-            return status
-
-        elif self.service_name == 'pure-ftpd':
-            pid_f = '/var/run/pure-ftpd.pid'
-            if os.path.exists(pid_f):
-                return self.check_process(pid_f)
-            return False
-
-        elif self.service_name == 'redis':
-            pid_f = '/www/server/redis/redis.pid'
-            if os.path.exists(pid_f):
-                return self.check_process(pid_f)
-            return False
-
-        elif self.service_name == 'memcached':
-            pid_f = '/var/run/memcached.pid'
-            if os.path.exists(pid_f):
-                return self.check_process(pid_f)
-            return False
-
-        elif self.service_name == 'openlitespeed':
-            return self._sock_file_check('/tmp/lshttpd/lsphp.sock', 'litespeed')
-
-        return True
-
-    def check_process(self, pid_f):
-        """
-        检查进程是否存在
-        :param pid_f: pid文件路径
-        :param name 服务名
-        """
-        try:
-            pid = read_file(pid_f)
-            if pid and int(pid) in psutil.pids():
-                return True
-            return False
-        except Exception as e:
-            print("check_process error %s", e)
-            return False
+        time.sleep(3)
+        from script.restart_services import ServicesHelper
+        return ServicesHelper(self.service_name).is_running
 
     def filter_template(self, template: dict) -> Optional[dict]:
         server_list = self.services_list()

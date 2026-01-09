@@ -1,43 +1,43 @@
 {
-    "Monitor": {
-      "System": {
-        "index_1": "İzleme Durumu",
-        "index_2": "Kaydedilecek gün sayısı: ",
-        "index_3": "Değiştir",
-        "index_4": "Logları Temizle",
-        "index_5": "Lütfen kaydedilecek gün sayısını girin",
-        "index_6": "Kaydedilecek gün sayısı geçersiz!",
-        "index_7": "Tüm İzleme loglarını temizlemek istediğinizden emin misiniz?",
-        "index_8": "Yük Ortalaması",
-        "index_9": "1 dk",
-        "index_10": "5 dk",
-        "index_11": "15 dk",
-        "index_12": "Sistem kaynak kullanımı",
-        "index_13": "Yük ayrıntıları",
-        "index_14": "Sistem kaynak kullanımı: ",
-        "index_15": "Tarih: ",
-        "index_16": "Bellek",
-        "index_17": "Disk G/Ç",
-        "index_18": "Okuma",
-        "index_19": "Yazma",
-        "index_20": "okuma/yazma sayısı",
-        "index_21": "okuma/yazma bekleme",
-        "index_22": "Birim: {0}/s",
-        "index_23": "Ağ G/Ç: ",
-        "index_24": "Yükleme",
-        "index_25": "İndirme",
-        "index_26": "Tam ekran",
-        "index_27": "Tam ekrandan çık",
-        "index_28": "İşlem adı",
-        "index_29": "CPU kullanımı",
-        "index_30": "Başlangıç kullanıcısı",
-        "index_31": "Bellek kullanımı",
-        "index_32": "Disk kullanımı",
-        "index_33": "İzleme Log Boyutu: "
-      },
-      "API": {
-        "system_1": "İzleme durumu ayarlanıyor, lütfen bekleyin...",
-        "system_2": "İzleme kayıtları temizleniyor, lütfen bekleyin..."
-      }
-    }
-  }
+	"Monitor": {
+		"System": {
+			"index_1": "İzleme Durumu",
+			"index_2": "Kaydedilecek gün sayısı: ",
+			"index_3": "Değiştir",
+			"index_4": "Logları Temizle",
+			"index_5": "Lütfen kaydedilecek gün sayısını girin",
+			"index_6": "Kaydedilecek gün sayısı geçersiz!",
+			"index_7": "Tüm İzleme loglarını temizlemek istediğinizden emin misiniz?",
+			"index_8": "Yük Ortalaması",
+			"index_9": "1 dk",
+			"index_10": "5 dk",
+			"index_11": "15 dk",
+			"index_12": "Sistem kaynak kullanımı",
+			"index_13": "Yük ayrıntıları",
+			"index_14": "Sistem kaynak kullanımı: ",
+			"index_15": "Tarih: ",
+			"index_16": "Bellek",
+			"index_17": "Disk G/Ç",
+			"index_18": "Okuma",
+			"index_19": "Yazma",
+			"index_20": "okuma/yazma sayısı",
+			"index_21": "okuma/yazma bekleme",
+			"index_22": "Birim: {0}/s",
+			"index_23": "Ağ G/Ç: ",
+			"index_24": "Yükleme",
+			"index_25": "İndirme",
+			"index_26": "Tam ekran",
+			"index_27": "Tam ekrandan çık",
+			"index_28": "İşlem adı",
+			"index_29": "CPU kullanımı",
+			"index_30": "Başlangıç kullanıcısı",
+			"index_31": "Bellek kullanımı",
+			"index_32": "Disk kullanımı",
+			"index_33": "İzleme Log Boyutu: "
+		},
+		"API": {
+			"system_1": "İzleme durumu ayarlanıyor, lütfen bekleyin...",
+			"system_2": "İzleme kayıtları temizleniyor, lütfen bekleyin..."
+		}
+	}
+}

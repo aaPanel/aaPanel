@@ -6,7 +6,7 @@
 	"67ae28f46f85fd483d2f9adeb468ca31": "Proyecto proxy",
 	"e750368f539c3184e4a13ced694104a1": "Gestión local",
 	"4994f6c09f0fb95b9ca435d55e850c82": "Administrar a distancia",
-	"f32a0ffae32f6071989cccde0e38aeb8": "Kit de herramientas WP",
+	"f32a0ffae32f6071989cccde0e38aeb8": "WP Toolkit",
 	"c728a49363c9a93a43a7e7f232b5a54a": "Ftp",
 	"1183704f4988470fb24c9fde6f1a12e5": "Gerente de FTP",
 	"ea2ef9b0d095bf991f4973633b485340": "Bases de datos",
@@ -99,5 +99,6 @@
 	"cc246bead7d06808781c69caf49f5a06": "Restauración de copia de seguridad",
 	"10b5b21ed1ee90eca305b558caf7d03b": "Emigrar",
 	"e8982e81b5418d9dd450e093564c9340": "Configuración de la página",
-	"193cfc9be3b995831c6af2fea6650e60": "Página"
+	"193cfc9be3b995831c6af2fea6650e60": "Página",
+	"07806fdb6dc90f54119826561fbaf5c1": "Seguridad del sitio web"
 }

@@ -1522,9 +1522,12 @@ server {{
         get.search = get.get("search", "")
 
         where = "project_type=?"
+        param = ["proxy"]
         if get.search != "":
-            where += " and name like ?"
-            param = ("proxy", "%{}%".format(get.search))
+            where += " and (name like ? or ps like ?)"
+            search_pattern = "%{}%".format(get.search)
+            param.append(search_pattern)
+            param.append(search_pattern)
         else:
             param = ("proxy",)
 

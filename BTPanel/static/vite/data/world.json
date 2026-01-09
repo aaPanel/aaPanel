@@ -4181,7 +4181,7 @@
 					]
 				]
 			},
-			"properties": { "name": "Central African Republic, ","childNum": 1 }
+			"properties": { "name": "Central African Republic","childNum": 1 }
 		},
 		{
 			"geometry": {
@@ -18060,7 +18060,7 @@
 					]
 				]
 			},
-			"properties": { "name": "Korea (the Democratic People's Republic of)", "childNum": 7 }
+			"properties": { "name": "Korea", "childNum": 7 }
 		},
 		{
 			"geometry": {

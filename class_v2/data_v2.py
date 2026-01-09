@@ -456,15 +456,20 @@ class data:
                     apache_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/apache.png"))
                     ols_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-openlitespeed.png"))
 
+                    # 按流量排序
+                    re_data = None
+                    if get.get('re_order'):
+                        re_data =  self.get_site_request()
+                        if re_data['status'] == 0:
+                            re_data = re_data['message']
+
                     for i in range(len(data['data'])):
-                        # 添加维护模式状态
-                        if get.get('project_type', '') == 'WP2':
-                            data['data'][i]['maintenance'] = False
-                            path = os.path.join(data['data'][i]['path'],'.maintenance')
-                            if os.path.exists(path):
-                                data['data'][i]['maintenance'] = True
-                        elif get.get('project_type', '') == 'PHP':
-                            pass
+                        # 添加流量排序
+                        if re_data:
+                            if data["data"][i]['name'] in re_data:
+                                data['data'][i]['re_total'] = re_data[data["data"][i]['name']]['total']['request']
+                            else:
+                                data['data'][i]['re_total'] = 0
 
                         data["data"][i]["last_backup_time"] = backup_info_map.get(data['data'][i]['id'], {}).get("last_backup_time", "")
 
@@ -563,9 +568,17 @@ class data:
                     #     data["net_flow_info"] = net_flow_json_info
                     # except Exception:
                     #     data["net_flow_info"] = {}
+
                     # 判断是否进行了类型筛选
                     if get.get('site_type', ''):
                         data['data'] = filtered_data
+
+                    if get.get('re_order') and re_data:
+                        if get.get('re_order') == 'desc':
+                            data['data'] = sorted(data['data'], key=lambda x: x["re_total"], reverse=True)
+                        else:
+                            data['data']  = sorted(data['data'], key=lambda x: x["re_total"])
+
             elif table == 'firewall':
                 for i in range(len(data['data'])):
                     if data['data'][i]['port'].find(':') != -1 or data['data'][i]['port'].find('.') != -1 or data['data'][i]['port'].find('-') != -1:
@@ -1196,7 +1209,7 @@ class data:
             if len(version_list)<3:return {'status': 0, "timestamp": int(time.time()), "message": result}
             if int(version_list[0])<4:return {'status': 0, "timestamp": int(time.time()), "message": result}
             if int(version_list[0])==4 and int(version_list[1])<1:return {'status': 0, "timestamp": int(time.time()), "message": result}
-            if int(version_list[0])==4 and int(version_list[2])<2:return {'status': 0, "timestamp": int(time.time()), "message": result}
+            if int(version_list[0])==4 and int(version_list[1])<1 and int(version_list[2])<2:return {'status': 0, "timestamp": int(time.time()), "message": result}
             #取网站域名列表
             try:
                 prorject_type=["PHP","WP2"]
@@ -1257,6 +1270,26 @@ class data:
             public.writeFile(cache_file, json.dumps(result))
 
         return {'status': 0, "timestamp": int(time.time()), "message": result}
+
+    # 简化版获取网站请求数用于排序
+    def get_site_request(self,get=None):
+        #保留免费版
+        if not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")):
+            site_names = [ i.get('name','') for i in public.M("sites").field("name").select() if i.get('name','') !='' ]
+            start_date= None if get==None else get.get('start_date',None)
+            end_date= None if get==None else get.get('end_date',None)
+            return {'status': 0, "timestamp": int(time.time()), "message": self.get_multi_site_stats(site_names=site_names,start_date=start_date,end_date=end_date)}
+
+        # 直接读取监控报表数据缓存
+        path = os.path.join(public.get_panel_path(), "plugin/monitor/site_thirty_total.json")
+        try:
+            re_data = {}
+            if os.path.exists(path):
+                re_data = json.loads(public.readFile(path))
+            return {'status': 0, "timestamp": int(time.time()), "message": re_data}
+        except:
+            return {'status': -1, "timestamp": int(time.time()), "message": {}}
+
         
     # 获取waf报表数据
     def getSiteWafConfig(self, get=None):
@@ -1596,8 +1629,21 @@ class data:
             apache_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/apache.png"))
             ols_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-openlitespeed.png"))
 
+            # 处理网站流量排序
+            re_data = None
+            if get.get('re_order'):
+                re_data = self.get_site_request()
+                if re_data['status'] == 0:
+                    re_data = re_data['message']
+
             # 补充字段
             for item in data:
+                if re_data:
+                    if item['name'] in re_data:
+                        item['re_total'] = re_data[item['name']]['total']['request']
+                    else:
+                        item['re_total'] = 0
+
                 # 处理备份时间
                 if item.get('last_backup_time', None):
                     try:
@@ -1668,6 +1714,13 @@ class data:
                     data = sorted(data, key=lambda x: x[order_list[0]])
                 else:
                     data = sorted(data, key=lambda x: x[order_list[0]], reverse=True)
+
+            # 处理网站流量排序
+            if get.get('re_order') and re_data:
+                if get.get('re_order') == 'desc':
+                    data = sorted(data, key=lambda x: x["re_total"], reverse=True)
+                else:
+                    data = sorted(data, key=lambda x: x["re_total"])
 
             res = {
                 'data': data,

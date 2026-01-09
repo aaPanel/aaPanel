@@ -3632,6 +3632,8 @@ SetLink
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+        if get.access == "":
+            return public.success_v2("Set successfully!")
 
         username = get.username
         host = get.host

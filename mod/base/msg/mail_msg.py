@@ -91,32 +91,54 @@ class MailMsg:
         for email in receive_list:
             if not email.strip():
                 continue
+            server = None
             try:
                 data = MIMEText(msg, 'html', 'utf-8')
                 data['From'] = formataddr((self.config['send']['qq_mail'], self.config['send']['qq_mail']))
                 data['To'] = formataddr((self.config['send']['qq_mail'], email.strip()))
                 data['Subject'] = title
-                if int(self.config['send']['port']) == 465:
-                    server = smtplib.SMTP_SSL(str(self.config['send']['hosts']), int(self.config['send']['port']))
-                else:
-                    server = smtplib.SMTP(str(self.config['send']['hosts']), int(self.config['send']['port']))
 
-                server.login(self.config['send']['qq_mail'], self.config['send']['qq_stmp_pwd'])
-                server.sendmail(self.config['send']['qq_mail'], [email.strip(), ], data.as_string())
-                server.quit()
+                port = int(self.config['send']['port'])
+                host = str(self.config['send']['hosts'])
+                user = self.config['send']['qq_mail']
+                pwd = self.config['send']['qq_stmp_pwd']
+
+                if port == 465:
+                    # SSL direct connection
+                    server = smtplib.SMTP_SSL(host, port, timeout=10)
+                else:
+                    # Standard connection, possibly with STARTTLS
+                    server = smtplib.SMTP(host, port, timeout=10)
+                    try:
+                        # Attempt to upgrade to a secure connection
+                        server.starttls()
+                    except smtplib.SMTPNotSupportedError:
+                        # The server does not support STARTTLS, proceed with an insecure connection
+                        pass
+
+                server.login(user, pwd)
+                server.sendmail(user, [email.strip(), ], data.as_string())
                 success_list.append(email)
             except:
+                err_msg = traceback.format_exc()
+                # public.print_log(f"邮件发送失败: {err_msg}")
                 error_list.append(email)
-                error_msg_dict[email] = traceback.format_exc()
+                error_msg_dict[email] = err_msg
+            finally:
+                if server:
+                    server.quit()
 
-        if not error_list and not success_list:  # 没有接收者
+        if not error_list and not success_list:
             return public.lang('The receiving mailbox is not configured')
         if not error_list:
-            write_push_log("mail", True, title, success_list)  # 没有失败
+            write_push_log("mail", True, title, success_list)
             return None
         if not success_list:
-            write_push_log("mail", False, title, error_list)  # 全都失败
-            return public.lang('Failed to send message, Recipient of failed to send:{}',error_list)
+            write_push_log("mail", False, title, error_list)
+            first_error_msg = list(error_msg_dict.values())[0]
+            # 修复 IndexError
+            return public.lang('Failed to send message, Recipient of failed to send:{}, Error: {}', error_list, first_error_msg)
+
         write_mail_push_log(title, error_list, success_list)
 
         return public.lang('Failed to send mail to some recipients, including:{}',error_list)

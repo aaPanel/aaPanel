@@ -9,7 +9,7 @@
 			"index_1": "GRATUIT",
 			"index_2": "Renouvellement",
 			"index_3": "Acheter maintenant",
-			"index_4": "Expirer sur: ",
+			"index_4": "Expire le: ",
 			"index_5": "Mettre à niveau maintenant",
 			"index_6": "Durée de vie"
 		},
@@ -159,10 +159,10 @@
 			"index_1": "Êtes-vous sûr de devoir {0} le service {1} et de continuer?"
 		},
 		"Api": {
-			"index_1": "Chargement, veuillez attendre ...",
-			"index_2": "Reliure, veuillez attendre ...",
-			"index_3": "Soumettre les commentaires, veuillez patienter.",
-			"index_4": "Fichier de téléchargement, veuillez patienter ..."
+			"index_1": "Chargement, veuillez patienter ...",
+			"index_2": "Reliure, veuillez patienter ...",
+			"index_3": "Soumission des commentaires, veuillez patienter.",
+			"index_4": "Téléchargement des fichiers, veuillez patienter ..."
 		}
 	}
 }

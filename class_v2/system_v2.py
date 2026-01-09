@@ -175,6 +175,13 @@ class system:
         data['mongodb'] = tmp
 
         tmp = {}
+        tmp['pgsql_manager_setup'] = os.path.exists('/www/server/panel/plugin/pgsql_manager')
+        tmp['setup'] = os.path.exists(self.setupPath +'/pgsql/bin/psql')
+        tmp['version'] = public.xss_version(public.readFile(self.setupPath + '/pgsql/data/PG_VERSION'))
+        tmp['status'] = os.path.exists('/www/server/pgsql/data/postmaster.pid')
+        data['pgsql'] = tmp
+
+        tmp = {}
         tmp['setup'] = os.path.exists(self.setupPath +'/redis/runtest')
         tmp['status'] = os.path.exists('/var/run/redis_6379.pid')
         data['redis'] = tmp
@@ -884,17 +891,44 @@ class system:
         # 提前执行Daemon服务标记
         self._operate_manual_flag(get)
         #服务管理
+        if get.name == "mysql": # 使用规范服务名
+            get.name = "mysqld" # 兼容旧代码
+
         if get.name == 'mysqld':
             public.CheckMyCnf()
             self.__check_mysql_path()
+
         if get.name.find('webserver') != -1:
             get.name = public.get_webserver()
+
+        # 各种特殊处理兼容, 提前return
+
+        if get.name == 'fail2ban':
+            try:
+                public.sys_path_append("plugin/fail2ban")
+                from plugin.fail2ban.fail2ban_main import fail2ban_main
+                res = fail2ban_main().set_fail2ban_status(get)
+                if res.get("status") is True:
+                    return public.return_message(0, 0, public.lang("Executed successfully!"))
+                return public.return_message(-1, 0, res.get("msg", "Service stop failed!"))
+            except Exception as e:
+                public.print_log("error info: {}".format(e))
+                return public.return_message(-1, 0, str(e))
 
         if get.name == 'phpmyadmin':
             import ajax_v2
             get.status = 'True'
             ajax_v2.ajax().setPHPMyAdmin(get)
             return public.return_message(0, 0, public.lang("Executed successfully!"))
+
+        if get.name == 'pdns':
+            try:
+                from ssl_dnsV2.dns_manager import DnsManager
+                DnsManager().change_service_status(service_name="pdns", status=get.type)
+                return public.return_message(0, 0, public.lang("Executed successfully!"))
+            except Exception as e:
+                public.print_log("error info: {}".format(e))
+                return public.return_message(-1, 0, str(e))
 
         if get.name == 'openlitespeed':
             if get.type == 'stop':
@@ -923,11 +957,13 @@ class system:
             result = public.ExecShell('ulimit -n 8192 ; ' + self.setupPath+'/apache/bin/apachectl -t')
             if result[1].find('Syntax OK') == -1:
                 public.write_log_gettext("Software manager",'Execution failed: {}', (str(result),))
-                return public.return_message(-1,0,"Apache rule configuration error: <br><a style='color:red;'>{}</a>",(result[1].replace("\n",'<br>'),))
+                return public.return_message(-1,0,f"Apache rule configuration error: <br><a style='color:red;'>{result[1].replace('\n','<br>')}</a>")
 
             if get.type == 'restart':
                 public.ExecShell('pkill -9 httpd')
                 public.ExecShell('/etc/init.d/httpd start')
+                time.sleep(0.5)
+                public.ExecShell('/etc/init.d/v-httpd restart')
                 time.sleep(0.5)
 
         #检查nginx配置文件
@@ -1036,6 +1072,8 @@ class system:
             return public.is_memcached_process_exists()
         elif name == 'mongodb':
             return public.is_mongodb_process_exists()
+        elif name == 'pgsql':
+            return public.is_process_exists_by_exe('/www/server/pgsql/bin/postgres')
         else:
             return True
 
