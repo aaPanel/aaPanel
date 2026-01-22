@@ -34,7 +34,7 @@
     "id": "memuAdatabase",
     "sort": 4
   },
-    {
+  {
     "title": "Docker",
     "href": "/docker",
     "class": "menu_docker",
@@ -62,7 +62,7 @@
     "id": "memu_btwaf",
     "sort": 8
   },
-    {
+  {
     "title": "Mail Server",
     "href": "/mail",
     "class": "memu_mailsys",
@@ -77,60 +77,66 @@
     "sort": 10
   },
   {
+    "title": "Node",
+    "href": "/node",
+    "class": "menu_node",
+    "id": "memuNode",
+    "sort": 11
+  },
+  {
     "title": "Logs",
     "href": "/logs",
     "class": "menu_logs",
     "id": "memuLogs",
-    "sort": 11
-},
+    "sort": 12
+  },
   {
     "title": "Domains",
     "href": "/ssl_domain",
     "class": "menu_domains",
     "id": "memuDomains",
-    "sort": 12
-},
+    "sort": 13
+  },
   {
     "title": "Terminal",
     "href": "/xterm",
     "class": "menu_xterm",
     "id": "memuAxterm",
-    "sort": 13
+    "sort": 14
   },
   {
     "title": "Account",
     "href": "/whm",
     "class": "menu_account",
     "id": "memuAccount",
-    "sort": 14
+    "sort": 15
   },
   {
     "title": "Cron",
     "href": "/crontab",
     "class": "menu_day",
     "id": "memuAcrontab",
-    "sort": 15
+    "sort": 16
   },
-
   {
     "title": "App Store",
     "href": "/soft",
     "class": "menu_soft",
     "id": "memuAsoft",
-    "sort": 16
+    "sort": 17
   },
   {
     "title": "Settings",
     "href": "/config",
     "class": "menu_set",
     "id": "memuAconfig",
-    "sort": 17
+    "sort": 18
   },
   {
     "title": "Log out",
     "href": "/login?dologin=True",
     "class": "menu_exit",
     "id": "dologin",
-    "sort": 18
+    "sort": 19
   }
 ]

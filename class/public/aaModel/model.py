@@ -173,7 +173,7 @@ class aaModel(aaCusModel):
         return f"<{self.__class__.__name__}: {self.as_dict()}>"
 
     @staticmethod
-    def check_destroyed(func):
+    def _check_destroyed(func):
         def wrapper(self, *args, **kwargs):
             if getattr(self, "__destroyed", False):
                 raise RuntimeError(f"Cannot call {func.__name__}() on destroyed object")
@@ -182,7 +182,7 @@ class aaModel(aaCusModel):
         return wrapper
 
     @classmethod
-    @check_destroyed
+    @_check_destroyed
     def _output(cls, data: dict, _field_filter=None) -> dict:
         serlz = cls._get_serialized()
         serlz_fields = cls._get_serialized_fields_fz()
@@ -195,7 +195,7 @@ class aaModel(aaCusModel):
         }
 
     @classmethod
-    @check_destroyed
+    @_check_destroyed
     def _serialized_data(cls, data: Optional[dict | list], _field_filter=None) -> Optional[dict | list]:
         if isinstance(data, list):
             return [cls._output(d, _field_filter) for d in data]
@@ -204,7 +204,7 @@ class aaModel(aaCusModel):
         else:
             return data
 
-    @check_destroyed
+    @_check_destroyed
     def _validate(self, target: dict = None, raise_exp: bool = True) -> Optional[Dict[str, Any]]:
         """
         模型验证, 返回序列化后的结果
@@ -246,7 +246,7 @@ class aaModel(aaCusModel):
         # override
         pass
 
-    @check_destroyed
+    @_check_destroyed
     def save(self, raise_exp: bool = True) -> Optional[Self]:
         """
         模型数据, 不存在则 保存 , 存在则 更新, 仅更新变动字段
@@ -316,7 +316,7 @@ class aaModel(aaCusModel):
             if self._dirty_fields:
                 self._dirty_fields.clear()
 
-    @check_destroyed
+    @_check_destroyed
     def delete(self) -> int:
         try:
             self.__class__.objects._query.where(
@@ -328,7 +328,7 @@ class aaModel(aaCusModel):
             return 0
         return 1
 
-    @check_destroyed
+    @_check_destroyed
     def as_dict(self) -> dict:
         """
         转字典

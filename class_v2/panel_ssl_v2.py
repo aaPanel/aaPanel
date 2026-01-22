@@ -25,7 +25,7 @@ try:
 except:
     pass
 
-
+# todo废弃, 仅保留若干用户信息接口
 class panelSSL:
     # __APIURL = public.GetConfigValue('home') + '/api/Auth'
     # __APIURL2 = public.GetConfigValue('home') + '/api/Cert'
@@ -183,7 +183,7 @@ class panelSSL:
             return public.return_message(-1,0, '%s<br>%s' % (
                 public.lang("Failed to connect server!"), str(rtmp)))
 
-# 删除Token  todo
+    # 删除Token  todo
     def DelToken(self, get):
         uinfo = public.readFile(self.__UPATH)
         try:

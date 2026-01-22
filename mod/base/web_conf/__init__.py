@@ -11,7 +11,6 @@ from .redirect import RealRedirect, Redirect
 from .access_restriction import AccessRestriction, RealAccessRestriction
 from .domain_tool import domain_to_puny_code, check_domain, normalize_domain, NginxDomainTool, ApacheDomainTool, \
     is_domain
-from .dns_api import DNSApiManager, RealDnsMager
 from .dir_tool import DirTool
 from .referer import Referer, RealReferer
 from .logmanager import LogMgr, RealLogMgr
@@ -19,6 +18,7 @@ from .proxy import Proxy, RealProxy
 from .ssl import SSLManager, RealSSLManger
 from .config_mgr import ConfigMgr
 from .default_site import set_default_site, get_default_site, check_default
+from .server_extension import NginxExtension as ng_ext, ApacheExtension as ap_ext
 
 
 def remove_sites_service_config(site_name: str, config_prefix: str = ""):

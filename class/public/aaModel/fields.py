@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime
-from typing import Any, TypeVar, List, Optional, Iterable
+from typing import Any, TypeVar, List, Optional, Iterable, TYPE_CHECKING
 
 from public.exceptions import HintException
 
@@ -19,6 +19,10 @@ __all__ = [
     "DictField",
     "DateTimeStrField",
 ]
+
+if TYPE_CHECKING:
+    from .model import aaModel
+
 
 M = TypeVar("M", bound="aaModel")
 
@@ -497,6 +501,7 @@ class DictField(aaField):
         "update",
     )
 
+ACCURACY = 1000
 
 @dataclass
 class DateTimeStrField(aaField):
@@ -541,7 +546,7 @@ class DateTimeStrField(aaField):
     dynamic: bool = True
     auto_now_add: bool = False
     auto_now: bool = False
-    accuracy: int = 1000
+    accuracy: int = ACCURACY
     format: str = "%Y-%m-%d %H:%M:%S"
     compare: tuple[str] = (
         "gt",

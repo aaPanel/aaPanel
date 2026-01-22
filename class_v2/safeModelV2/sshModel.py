@@ -276,11 +276,12 @@ class main(safeBase):
             if tmp == '1': isPing = False
         except:
             isPing = True
-
+        from ssh_security_v2 import ssh_security
         data = {}
         data['port'] = port
         data['status'] = status
         data['ping'] = isPing
+        data['config'] = ssh_security().get_config(None).get("message", {})
         data['firewall_status'] = self.CheckFirewallStatus()
         # data['error'] = self.get_ssh_intrusion(get)
         data['fail2ban'] = self._get_ssh_fail2ban()

@@ -520,6 +520,18 @@ def sql_pacth():
         public.M('messages').execute("alter TABLE messages add send integer DEFAULT 0",())
         public.M('messages').execute("alter TABLE messages add retry_num integer DEFAULT 0",())
 
+    try:
+        # firewall new table 初始化
+        from safeModelV2.firewallModel import Sqlite
+        Sqlite()
+    except:
+        pass
+
+    if sql:
+        try:
+            sql.close()
+        except:
+            pass
 
 def upgrade_gevent():
     '''

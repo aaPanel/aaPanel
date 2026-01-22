@@ -1,22 +1,21 @@
-#coding: utf-8
-#-------------------------------------------------------------------
+# coding: utf-8
+# -------------------------------------------------------------------
 # aaPanel
-#-------------------------------------------------------------------
+# -------------------------------------------------------------------
 # Copyright (c) 2015-2017 aaPanel(www.aapanel.com) All rights reserved.
-#-------------------------------------------------------------------
+# -------------------------------------------------------------------
 # Author: lkqiang <lkq@aapanel.com>
-#-------------------------------------------------------------------
+# -------------------------------------------------------------------
 # SSH 安全类
-#------------------------------
-import public,os,re,send_mail,json
-from datetime import datetime
+# ------------------------------
+import public, os, re, send_mail, json
 from public.validate import Param
 
 
 class ssh_security:
-    __type_list = ['ed25519','ecdsa','rsa', 'dsa']
+    __type_list = ['ed25519', 'ecdsa', 'rsa', 'dsa']
     __key_type_file = '{}/data/ssh_key_type.pl'.format(public.get_panel_path())
-    __key_files = ['/root/.ssh/id_ed25519','/root/.ssh/id_ecdsa','/root/.ssh/id_rsa','/root/.ssh/id_rsa_bt']
+    __key_files = ['/root/.ssh/id_ed25519', '/root/.ssh/id_ecdsa', '/root/.ssh/id_rsa', '/root/.ssh/id_rsa_bt']
     __type_files = {
         "ed25519": "/root/.ssh/id_ed25519",
         "ecdsa": "/root/.ssh/id_ecdsa",
@@ -25,102 +24,109 @@ class ssh_security:
     }
     open_ssh_login = public.get_panel_path() + '/data/open_ssh_login.pl'
 
-    __SSH_CONFIG='/etc/ssh/sshd_config'
+    __SSH_CONFIG = '/etc/ssh/sshd_config'
     __ip_data = None
-    __ClIENT_IP='/www/server/panel/data/host_login_ip.json'
+    __ClIENT_IP = '/www/server/panel/data/host_login_ip.json'
     __pyenv = 'python'
-    __REPAIR={"1":{"id":1,
-                   "type":"file",
-                   "harm":"High",
-                   "repaired":"1",
-                   "level":"3",
-                   "name":"Make sure SSH MaxAuthTries is set between 3-6",
-                   "file":"/etc/ssh/sshd_config",
-                   "Suggestions":"Remove the MaxAuthTries comment symbol # in /etc/ssh/sshd_config, set the maximum number of failed password attempts 3-6 recommended 4",
-                   "repair":"MaxAuthTries 4",
-                   "rule":[{"re":"\nMaxAuthTries\\s*(\\d+)","check":{"type":"number","max":7,"min":3}}],
-                   "repair_loophole":[{"re":"\n?#?MaxAuthTries\\s*(\\d+)","check":"\nMaxAuthTries 4"}]},
-              "2":{"id":2,
-                   "repaired":"1",
-                   "type":"file",
-                   "harm":"High",
-                   "level":"3",
-                   "name":"SSHD Mandatory use of V2 security protocol",
-                   "file":"/etc/ssh/sshd_config",
-                   "Suggestions":"Set parameters in the /etc/ssh/sshd_config file as follows",
-                   "repair":"Protocol 2",
-                   "rule":[{"re":"\nProtocol\\s*(\\d+)",
-                            "check":{"type":"number","max":3,"min":1}}],
-                   "repair_loophole":[{"re":"\n?#?Protocol\\s*(\\d+)","check":"\nProtocol 2"}]},
-              "3":{"id":3,
-                   "repaired":"1",
-                   "type":"file",
-                   "harm":"High",
-                   "level":"3",
-                   "name":"Set SSH idle exit time",
-                   "file":"/etc/ssh/sshd_config",
-                   "Suggestions":"Set ClientAliveInterval to 300 to 900 in /etc/ssh/sshd_config, which is 5-15 minutes, and set ClientAliveCountMax to 0-3",
-                   "repair":"ClientAliveInterval 600  ClientAliveCountMax 2",
-                   "rule":[{"re":"\nClientAliveInterval\\s*(\\d+)","check":{"type":"number","max":900,"min":300}}],
-                   "repair_loophole":[{"re":"\n?#?ClientAliveInterval\\s*(\\d+)","check":"\nClientAliveInterval 600"}]},
-              "4":{"id":4,
-                   "repaired":"1",
-                   "type":"file",
-                   "harm":"High",
-                   "level":"3",
-                   "name":"Make sure SSH LogLevel is set to INFO",
-                   "file":"/etc/ssh/sshd_config",
-                   "Suggestions":"Set parameters in the /etc/ssh/sshd_config file as follows (uncomment)",
-                   "repair":"LogLevel INFO",
-                   "rule":[{"re":"\nLogLevel\\s*(\\w+)","check":{"type":"string","value":["INFO"]}}],
-                   "repair_loophole":[{"re":"\n?#?LogLevel\\s*(\\w+)","check":"\nLogLevel INFO"}]},
-              "5":{"id":5,
-                   "repaired":"1",
-                   "type":"file",
-                   "harm":"High",
-                   "level":"3",
-                   "name":"Disable SSH users with empty passwords from logging in",
-                   "file":"/etc/ssh/sshd_config",
-                   "Suggestions":"Configure PermitEmptyPasswords to no in /etc/ssh/sshd_config",
-                   "repair":"PermitEmptyPasswords no",
-                   "rule":[{"re":"\nPermitEmptyPasswords\\s*(\\w+)","check":{"type":"string","value":["no"]}}],
-                   "repair_loophole":[{"re":"\n?#?PermitEmptyPasswords\\s*(\\w+)","check":"\nPermitEmptyPasswords no"}]},
-              "6":{"id":6,
-                   "repaired":"1",
-                   "type":"file",
-                   "name":"SSH uses the default port 22",
-                   "harm":"High",
-                   "level":"3",
-                   "file":"/etc/ssh/sshd_config",
-                   "Suggestions":"Set Port to 6000 to 65535 in / etc / ssh / sshd_config",
-                   "repair":"Port 60151",
-                   "rule":[{"re":"Port\\s*(\\d+)","check":{"type":"number","max":65535,"min":22}}],
-                   "repair_loophole":[{"re":"\n?#?Port\\s*(\\d+)","check":"\nPort 65531"}]}}
-    __root_login_types = {'yes':'yes - keys and passwords','no':'no - no login','without-password':'without-password - only key login','forced-commands-only':'forced-commands-only - can only execute commands'}
-
+    __REPAIR = {"1": {"id": 1,
+                      "type": "file",
+                      "harm": "High",
+                      "repaired": "1",
+                      "level": "3",
+                      "name": "Make sure SSH MaxAuthTries is set between 3-6",
+                      "file": "/etc/ssh/sshd_config",
+                      "Suggestions": "Remove the MaxAuthTries comment symbol # in /etc/ssh/sshd_config, set the maximum number of failed password attempts 3-6 recommended 4",
+                      "repair": "MaxAuthTries 4",
+                      "rule": [{"re": "\nMaxAuthTries\\s*(\\d+)", "check": {"type": "number", "max": 7, "min": 3}}],
+                      "repair_loophole": [{"re": "\n?#?MaxAuthTries\\s*(\\d+)", "check": "\nMaxAuthTries 4"}]},
+                "2": {"id": 2,
+                      "repaired": "1",
+                      "type": "file",
+                      "harm": "High",
+                      "level": "3",
+                      "name": "SSHD Mandatory use of V2 security protocol",
+                      "file": "/etc/ssh/sshd_config",
+                      "Suggestions": "Set parameters in the /etc/ssh/sshd_config file as follows",
+                      "repair": "Protocol 2",
+                      "rule": [{"re": "\nProtocol\\s*(\\d+)",
+                                "check": {"type": "number", "max": 3, "min": 1}}],
+                      "repair_loophole": [{"re": "\n?#?Protocol\\s*(\\d+)", "check": "\nProtocol 2"}]},
+                "3": {"id": 3,
+                      "repaired": "1",
+                      "type": "file",
+                      "harm": "High",
+                      "level": "3",
+                      "name": "Set SSH idle exit time",
+                      "file": "/etc/ssh/sshd_config",
+                      "Suggestions": "Set ClientAliveInterval to 300 to 900 in /etc/ssh/sshd_config, which is 5-15 minutes, and set ClientAliveCountMax to 0-3",
+                      "repair": "ClientAliveInterval 600  ClientAliveCountMax 2",
+                      "rule": [{"re": "\nClientAliveInterval\\s*(\\d+)",
+                                "check": {"type": "number", "max": 900, "min": 300}}],
+                      "repair_loophole": [
+                          {"re": "\n?#?ClientAliveInterval\\s*(\\d+)", "check": "\nClientAliveInterval 600"}]},
+                "4": {"id": 4,
+                      "repaired": "1",
+                      "type": "file",
+                      "harm": "High",
+                      "level": "3",
+                      "name": "Make sure SSH LogLevel is set to INFO",
+                      "file": "/etc/ssh/sshd_config",
+                      "Suggestions": "Set parameters in the /etc/ssh/sshd_config file as follows (uncomment)",
+                      "repair": "LogLevel INFO",
+                      "rule": [{"re": "\nLogLevel\\s*(\\w+)", "check": {"type": "string", "value": ["INFO"]}}],
+                      "repair_loophole": [{"re": "\n?#?LogLevel\\s*(\\w+)", "check": "\nLogLevel INFO"}]},
+                "5": {"id": 5,
+                      "repaired": "1",
+                      "type": "file",
+                      "harm": "High",
+                      "level": "3",
+                      "name": "Disable SSH users with empty passwords from logging in",
+                      "file": "/etc/ssh/sshd_config",
+                      "Suggestions": "Configure PermitEmptyPasswords to no in /etc/ssh/sshd_config",
+                      "repair": "PermitEmptyPasswords no",
+                      "rule": [
+                          {"re": "\nPermitEmptyPasswords\\s*(\\w+)", "check": {"type": "string", "value": ["no"]}}],
+                      "repair_loophole": [
+                          {"re": "\n?#?PermitEmptyPasswords\\s*(\\w+)", "check": "\nPermitEmptyPasswords no"}]},
+                "6": {"id": 6,
+                      "repaired": "1",
+                      "type": "file",
+                      "name": "SSH uses the default port 22",
+                      "harm": "High",
+                      "level": "3",
+                      "file": "/etc/ssh/sshd_config",
+                      "Suggestions": "Set Port to 6000 to 65535 in / etc / ssh / sshd_config",
+                      "repair": "Port 60151",
+                      "rule": [{"re": "Port\\s*(\\d+)", "check": {"type": "number", "max": 65535, "min": 22}}],
+                      "repair_loophole": [{"re": "\n?#?Port\\s*(\\d+)", "check": "\nPort 65531"}]}}
+    __root_login_types = {'yes': 'yes - keys and passwords', 'no': 'no - no login',
+                          'without-password': 'without-password - only key login',
+                          'forced-commands-only': 'forced-commands-only - can only execute commands'}
 
     def __init__(self):
         if not public.M('sqlite_master').where('type=? AND name=?', ('table', 'ssh_login_record')).count():
-            public.M('').execute('''CREATE TABLE ssh_login_record (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                addr TEXT,
-                server_ip TEXT,
-                user_agent TEXT,
-                ssh_user TEXT,
-                login_time INTEGER DEFAULT 0,
-                close_time INTEGER DEFAULT 0,
-                video_addr TEXT);''')
+            public.M('').execute('''CREATE TABLE ssh_login_record
+                                    (
+                                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        addr       TEXT,
+                                        server_ip  TEXT,
+                                        user_agent TEXT,
+                                        ssh_user   TEXT,
+                                        login_time INTEGER DEFAULT 0,
+                                        close_time INTEGER DEFAULT 0,
+                                        video_addr TEXT
+                                    );''')
             public.M('').execute('CREATE INDEX ssh_login_record ON ssh_login_record (addr);')
 
         if not os.path.exists(self.__ClIENT_IP):
-            public.WriteFile(self.__ClIENT_IP,json.dumps([]))
-        self.__mail=send_mail.send_mail()
-        self.__mail_config=self.__mail.get_settings()
+            public.WriteFile(self.__ClIENT_IP, json.dumps([]))
+        self.__mail = send_mail.send_mail()
+        self.__mail_config = self.__mail.get_settings()
         self._check_pyenv()
         try:
             self.__ip_data = json.loads(public.ReadFile(self.__ClIENT_IP))
         except:
-            self.__ip_data=[]
+            self.__ip_data = []
 
     def _check_pyenv(self):
         if os.path.exists('/www/server/panel/pyenv'):
@@ -140,13 +146,11 @@ class ssh_security:
             return new_type
         return default_type
 
-
     def return_python(self):
-        if os.path.exists('/www/server/panel/pyenv/bin/python'):return '/www/server/panel/pyenv/bin/python'
-        if os.path.exists('/usr/bin/python'):return '/usr/bin/python'
-        if os.path.exists('/usr/bin/python3'):return '/usr/bin/python3'
+        if os.path.exists('/www/server/panel/pyenv/bin/python'): return '/www/server/panel/pyenv/bin/python'
+        if os.path.exists('/usr/bin/python'): return '/usr/bin/python'
+        if os.path.exists('/usr/bin/python3'): return '/usr/bin/python3'
         return 'python'
-
 
     def return_profile(self):
         if os.path.exists('/root/.bash_profile'): return '/root/.bash_profile'
@@ -156,13 +160,12 @@ class ssh_security:
         return '/root/.bash_profil'
 
     def return_bashrc(self):
-        if os.path.exists('/root/.bashrc'):return '/root/.bashrc'
-        if os.path.exists('/etc/bashrc'):return '/etc/bashrc'
-        if os.path.exists('/etc/bash.bashrc'):return '/etc/bash.bashrc'
+        if os.path.exists('/root/.bashrc'): return '/root/.bashrc'
+        if os.path.exists('/etc/bashrc'): return '/etc/bashrc'
+        if os.path.exists('/etc/bash.bashrc'): return '/etc/bash.bashrc'
         fd = open('/root/.bashrc', mode="w", encoding="utf-8")
         fd.close()
         return '/root/.bashrc'
-
 
     def check_files(self):
         try:
@@ -174,7 +177,7 @@ class ssh_security:
         conf = public.readFile(self.__SSH_CONFIG)
         if not conf: conf = ''
         rep = r"#*Port\s+([0-9]+)\s*\n"
-        tmp1 = re.search(rep,conf)
+        tmp1 = re.search(rep, conf)
         port = '22'
         if tmp1:
             port = tmp1.groups(0)[0]
@@ -209,8 +212,8 @@ class ssh_security:
                                 return False
                 return True
 
-    def san_ssh_security(self,get):
-        data={"num":100,"result":[]}
+    def san_ssh_security(self, get):
+        data = {"num": 100, "result": []}
         result = []
         ret = self.check_san_baseline(self.__REPAIR['1'])
         if not ret: result.append(self.__REPAIR['1'])
@@ -224,9 +227,9 @@ class ssh_security:
         if not ret: result.append(self.__REPAIR['5'])
         ret = self.check_san_baseline(self.__REPAIR['6'])
         if not ret: result.append(self.__REPAIR['6'])
-        data["result"]=result
-        if len(result)>=1:
-            data['num']=data['num']-(len(result)*10)
+        data["result"] = result
+        if len(result) >= 1:
+            data['num'] = data['num'] - (len(result) * 10)
         return data
 
     ################## SSH 登陆报警设置 ####################################
@@ -236,7 +239,7 @@ class ssh_security:
         from panel_msg.collector import SitePushMsgCollect
         msg = SitePushMsgCollect.ssh_login(body)
         push_data = {
-            "login_ip": "" if body.find("backdoor user") != -1 else ( login_ip if login_ip != "" else "unknown ip"),
+            "login_ip": "" if body.find("backdoor user") != -1 else (login_ip if login_ip != "" else "unknown ip"),
             "msg_list": ['>Send content:' + body]
         }
         # public.print_log(push_data)
@@ -265,12 +268,12 @@ class ssh_security:
             object = public.init_msg(login_type.strip())
             if not object:
                 return False
-            if login_type=="mail":
-                data={}
+            if login_type == "mail":
+                data = {}
                 data['title'] = title
                 data['msg'] = body
                 object.push_data(data)
-            elif login_type=="wx_account":
+            elif login_type == "wx_account":
                 from push.site_push import ToWechatAccountMsg
                 if body.find("backdoor user") != -1:
                     msg = ToWechatAccountMsg.ssh_login("")
@@ -284,7 +287,7 @@ class ssh_security:
         except:
             pass
 
-    #检测非UID为0的账户
+    # 检测非UID为0的账户
     def check_user(self):
         ret = []
         cfile = '/etc/passwd'
@@ -296,21 +299,23 @@ class ssh_security:
                     if i[0] == 'root': continue
                     ret.append(i[0])
         if ret:
-            data=''.join(ret)
-            public.run_thread(self.send_mail_data,args=(public.GetLocalIp()+' There is a backdoor user in the server',public.GetLocalIp()+' There is a backdoor user in the server '+data+' please check/etc/passwd',))
+            data = ''.join(ret)
+            public.run_thread(self.send_mail_data,
+                              args=(public.GetLocalIp() + ' There is a backdoor user in the server',
+                                    public.GetLocalIp() + ' There is a backdoor user in the server ' + data + ' please check/etc/passwd',))
             return True
         else:
             return False
 
-    #记录root 的登陆日志
+    # 记录root 的登陆日志
 
-    #返回登陆IP
-    def return_ip(self,get):
+    # 返回登陆IP
+    def return_ip(self, get):
         self.check_files()
         # return public.returnMsg(True, self.__ip_data)
         return public.return_message(0, 0, self.__ip_data)
 
-    #添加IP白名单
+    # 添加IP白名单
     def add_return_ip(self, get):
 
         # 校验参数
@@ -356,23 +361,25 @@ class ssh_security:
             # return public.returnMsg(False, public.lang("IP does not exist"))
             return public.return_message(-1, 0, public.lang("IP does not exist"))
 
-    #取登陆的前50个条记录
+    # 取登陆的前50个条记录
     def login_last(self):
         self.check_files()
-        data=public.ExecShell('last -n 50')
-        data=re.findall(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",data[0])
-        if data>=1:
-            data2=list(set(data))
+        data = public.ExecShell('last -n 50')
+        data = re.findall(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",
+                          data[0])
+        if data >= 1:
+            data2 = list(set(data))
             for i in data2:
                 if not i in self.__ip_data:
                     self.__ip_data.append(i)
             public.writeFile(self.__ClIENT_IP, json.dumps(self.__ip_data))
         return self.__ip_data
 
-    #获取ROOT当前登陆的IP
+    # 获取ROOT当前登陆的IP
     def get_ip(self):
         data = public.ExecShell(''' who am i |awk ' {print $5 }' ''')
-        data = re.findall(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",data[0])
+        data = re.findall(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)",
+                          data[0])
         return data
 
     def get_logs(self, get):
@@ -412,48 +419,51 @@ class ssh_security:
 
     def get_server_ip(self):
         if os.path.exists('/www/server/panel/data/iplist.txt'):
-            data=public.ReadFile('/www/server/panel/data/iplist.txt')
+            data = public.ReadFile('/www/server/panel/data/iplist.txt')
             return data.strip()
-        else:return '127.0.0.1'
+        else:
+            return '127.0.0.1'
 
-
-    #登陆的情况下
+    # 登陆的情况下
     def login(self):
         self.check_files()
         self.check_user()
         self.__ip_data = json.loads(public.ReadFile(self.__ClIENT_IP))
-        ip=self.get_ip()
-        if len(ip[0])==0:return False
+        ip = self.get_ip()
+        if len(ip[0]) == 0: return False
         try:
             import time
             mDate = time.strftime('%Y-%m-%d %X', time.localtime())
             if ip[0] in self.__ip_data:
-                if public.M('logs').where('type=? addtime', ('SSH security',mDate,)).count():return False
-                public.WriteLog('SSH security', 'The server {} login IP is {}, login user is root'.format(public.GetLocalIp(),ip[0]))
+                if public.M('logs').where('type=? addtime', ('SSH security', mDate,)).count(): return False
+                public.WriteLog('SSH security',
+                                'The server {} login IP is {}, login user is root'.format(public.GetLocalIp(), ip[0]))
                 return False
             else:
                 if public.M('logs').where('type=? addtime', ('SSH security', mDate,)).count(): return False
-                self.send_mail_data('Server {} login alarm'.format(public.GetLocalIp()),'There is a login alarm on the server {}, the login IP is {}, the login user is root'.format(public.GetLocalIp(),ip[0]))
-                public.WriteLog('SSH security','There is a login alarm on the server {}, the login IP is {}, login user is root'.format(public.GetLocalIp(),ip [0]))
+                self.send_mail_data('Server {} login alarm'.format(public.GetLocalIp()),
+                                    'There is a login alarm on the server {}, the login IP is {}, the login user is root'.format(
+                                        public.GetLocalIp(), ip[0]))
+                public.WriteLog('SSH security',
+                                'There is a login alarm on the server {}, the login IP is {}, login user is root'.format(
+                                    public.GetLocalIp(), ip[0]))
                 return True
         except:
             pass
 
-
-
-    #修复bashrc文件
+    # 修复bashrc文件
     def repair_bashrc(self):
         data = public.ReadFile(self.return_bashrc())
         if re.search(self.return_python() + ' /www/server/panel/class/ssh_security.py', data):
-            public.WriteFile(self.return_bashrc(),data.replace(self.return_python()+' /www/server/panel/class/ssh_security.py login',''))
-            #遗留的错误信息
+            public.WriteFile(self.return_bashrc(),
+                             data.replace(self.return_python() + ' /www/server/panel/class/ssh_security.py login', ''))
+            # 遗留的错误信息
             datassss = public.ReadFile(self.return_bashrc())
-            if re.search(self.return_python(),datassss):
-                public.WriteFile(self.return_bashrc(),datassss.replace(self.return_python(),''))
+            if re.search(self.return_python(), datassss):
+                public.WriteFile(self.return_bashrc(), datassss.replace(self.return_python(), ''))
 
-
-    #开启监控
-    def start_jian(self,get):
+    # 开启监控
+    def start_jian(self, get):
         self.repair_bashrc()
         data = public.ReadFile(self.return_profile())
         if not re.search(self.return_python() + ' /www/server/panel/class/ssh_security.py', data):
@@ -464,33 +474,35 @@ class ssh_security:
             return public.returnMsg(True, public.lang("Open successfully"))
         return public.returnMsg(False, public.lang("Open failed"))
 
-    #关闭监控
-    def stop_jian(self,get):
+    # 关闭监控
+    def stop_jian(self, get):
         data = public.ReadFile(self.return_profile())
-        if re.search(self.return_python()+' /www/server/panel/class/ssh_security.py', data):
-            cmd='''shell="%s /www/server/panel/class/ssh_security.py login"'''%(self.return_python())
-            data=data.replace(cmd, '')
-            cmd='''nohup  `${shell}` &>/dev/null &'''
-            data=data.replace(cmd, '')
-            cmd='''disown $!'''
-            data=data.replace(cmd, '')
-            public.WriteFile(self.return_profile(),data)
-            #检查是否还存在遗留
-            if re.search(self.return_python()+' /www/server/panel/class/ssh_security.py', data):
-                public.WriteFile(self.return_profile(),data.replace(self.return_python()+' /www/server/panel/class/ssh_security.py login',''))
-            #遗留的错误信息
+        if re.search(self.return_python() + ' /www/server/panel/class/ssh_security.py', data):
+            cmd = '''shell="%s /www/server/panel/class/ssh_security.py login"''' % (self.return_python())
+            data = data.replace(cmd, '')
+            cmd = '''nohup  `${shell}` &>/dev/null &'''
+            data = data.replace(cmd, '')
+            cmd = '''disown $!'''
+            data = data.replace(cmd, '')
+            public.WriteFile(self.return_profile(), data)
+            # 检查是否还存在遗留
+            if re.search(self.return_python() + ' /www/server/panel/class/ssh_security.py', data):
+                public.WriteFile(self.return_profile(),
+                                 data.replace(self.return_python() + ' /www/server/panel/class/ssh_security.py login',
+                                              ''))
+            # 遗留的错误信息
             datassss = public.ReadFile(self.return_profile())
-            if re.search(self.return_python(),datassss):
-                public.WriteFile(self.return_profile(),datassss.replace(self.return_python(),''))
+            if re.search(self.return_python(), datassss):
+                public.WriteFile(self.return_profile(), datassss.replace(self.return_python(), ''))
 
             return public.returnMsg(True, public.lang("Closed successfully"))
         else:
             return public.returnMsg(True, public.lang("Closed successfully"))
 
-    #监控状态
-    def get_jian(self,get):
+    # 监控状态
+    def get_jian(self, get):
         data = public.ReadFile(self.return_profile())
-        #if re.search(r'{}\/www\/server\/panel\/class\/ssh_security.py\s+login'.format(r".*python\s+"), data):
+        # if re.search(r'{}\/www\/server\/panel\/class\/ssh_security.py\s+login'.format(r".*python\s+"), data):
         if re.search('/www/server/panel/class/ssh_security.py login', data):
             return public.returnMsg(True, public.lang("1"))
         else:
@@ -504,7 +516,8 @@ class ssh_security:
         ssh_password = r'\n#?PasswordAuthentication\s\w+'
         file = public.readFile(self.__SSH_CONFIG)
         if not file:
-            return public.return_message(-1, 0, public.lang("ERROR: sshd config configuration file does not exist, cannot continue!"))
+            return public.return_message(-1, 0, public.lang(
+                "ERROR: sshd config configuration file does not exist, cannot continue!"))
             # return public.returnMsg(False, public.lang("ERROR: sshd config configuration file does not exist, cannot continue!"))
         if len(re.findall(ssh_password, file)) == 0:
             file_result = file + '\nPasswordAuthentication yes'
@@ -547,7 +560,7 @@ class ssh_security:
             if os.path.exists(i):
                 public.ExecShell(r'sed -i "\~$(cat %s)~d" %s' % (file[0], authorized_keys))
                 os.remove(i)
-        os.system("ssh-keygen -t {s_type} -P '' -f /root/.ssh/id_{s_type} |echo y".format(s_type = s_type))
+        os.system("ssh-keygen -t {s_type} -P '' -f /root/.ssh/id_{s_type} |echo y".format(s_type=s_type))
         if os.path.exists(file[0]):
             public.ExecShell('cat %s >> %s && chmod 600 %s' % (file[0], authorized_keys, authorized_keys))
             rec = r'\n#?RSAAuthentication\s\w+'
@@ -579,7 +592,7 @@ class ssh_security:
 
         # 取SSH信息
 
-    def get_msg_push_list(self,get):
+    def get_msg_push_list(self, get):
         """
         @name 获取消息通道配置列表
         @auther: cjxin
@@ -589,8 +602,9 @@ class ssh_security:
         cpath = 'data/msg.json'
         try:
             if 'force' in get or not os.path.exists(cpath):
-                public.downloadFile('{}/linux/panel/msg/msg.json'.format("https://node.aapanel.com"),cpath)
-        except : pass
+                public.downloadFile('{}/linux/panel/msg/msg.json'.format("https://node.aapanel.com"), cpath)
+        except:
+            pass
 
         data = {}
         if os.path.exists(cpath):
@@ -600,17 +614,18 @@ class ssh_security:
                 x['info'] = False
                 key = x['name']
                 try:
-                    obj =  public.init_msg(x['name'])
+                    obj = public.init_msg(x['name'])
                     if obj:
                         x['setup'] = True
                         x['info'] = obj.get_version_info(None)
-                except :
+                except:
                     print(public.get_error_info())
                     pass
                 data[key] = x
         # return data
         return public.return_message(0, 0, data)
-    def _get_msg_push_list(self,get):
+
+    def _get_msg_push_list(self, get):
         """
         @name 获取消息通道配置列表
         @auther: cjxin
@@ -620,8 +635,9 @@ class ssh_security:
         cpath = 'data/msg.json'
         try:
             if 'force' in get or not os.path.exists(cpath):
-                public.downloadFile('{}/linux/panel/msg/msg.json'.format("https://node.aapanel.com"),cpath)
-        except : pass
+                public.downloadFile('{}/linux/panel/msg/msg.json'.format("https://node.aapanel.com"), cpath)
+        except:
+            pass
 
         data = {}
         if os.path.exists(cpath):
@@ -631,21 +647,19 @@ class ssh_security:
                 x['info'] = False
                 key = x['name']
                 try:
-                    obj =  public.init_msg(x['name'])
+                    obj = public.init_msg(x['name'])
                     if obj:
                         x['setup'] = True
                         x['info'] = obj.get_version_info(None)
-                except :
+                except:
                     print(public.get_error_info())
                     pass
                 data[key] = x
         return data
         # return public.return_message(0, 0, data)
 
-
-
-    #取消告警
-    def clear_login_send(self,get):
+    # 取消告警
+    def clear_login_send(self, get):
 
         # 校验参数
         try:
@@ -657,7 +671,6 @@ class ssh_security:
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
-
 
         login_send_type_conf = "/www/server/panel/data/ssh_send_type.pl"
         os.remove(login_send_type_conf)
@@ -665,8 +678,8 @@ class ssh_security:
         # return public.returnMsg(True, public.lang("Successfully cancel the login alarm！"))
         return public.return_message(0, 0, public.lang("Successfully cancel the login alarm"))
 
-    #设置告警
-    def set_login_send(self,get):
+    # 设置告警
+    def set_login_send(self, get):
         # 校验参数
         try:
             get.validate([
@@ -679,7 +692,7 @@ class ssh_security:
             return public.return_message(-1, 0, str(ex))
 
         login_send_type_conf = "/www/server/panel/data/ssh_send_type.pl"
-        set_type=get.type.strip()
+        set_type = get.type.strip()
 
         msg_configs = self._get_msg_push_list(get)
         # public.print_log("22222 --{}".format(msg_configs.keys()))
@@ -699,13 +712,14 @@ class ssh_security:
         # return public.returnMsg(True, public.lang("Successfully set"))
         return public.return_message(0, 0, public.lang("Successfully set"))
 
-    #查看告警
+    # 查看告警
     def get_login_send(self, get):
+        # 仅返回当前配置的通道
         login_send_type_conf = "/www/server/panel/data/ssh_send_type.pl"
         if os.path.exists(login_send_type_conf):
             send_type = public.readFile(login_send_type_conf).strip()
         else:
-            send_type ="error"
+            send_type = "error"
         # return public.returnMsg(True, send_type)
         return public.return_message(0, 0, send_type)
 
@@ -738,13 +752,12 @@ class ssh_security:
                 status = True
         return status
 
-
     def stop_key(self, get):
         '''
         关闭key
         无需参数传递
         '''
-        is_ssh_status=self.GetSshInfo(get)
+        is_ssh_status = self.GetSshInfo(get)
         rec = r'\n\s*#?\s*RSAAuthentication\s+\w+'
         rec2 = r'\n\s*#?\s*PubkeyAuthentication\s+\w+'
         file = public.readFile(self.__SSH_CONFIG)
@@ -758,11 +771,9 @@ class ssh_security:
         if is_ssh_status:
             self.set_password(get)
             self.restart_ssh()
-        public.WriteLog('SSH management','Disable SSH key login')
+        public.WriteLog('SSH management', 'Disable SSH key login')
         # return public.returnMsg(True, public.lang("Disable successfully"))
         return public.return_message(0, 0, public.lang("Disable successfully"))
-
-
 
     def get_config(self, get):
         '''
@@ -783,7 +794,7 @@ class ssh_security:
         # no = 关闭
         result['rsa_auth'] = 'yes'
         rec = r'^\s*RSAAuthentication\s*(yes|no)'
-        rsa_find = re.findall(rec, file, re.M|re.I)
+        rsa_find = re.findall(rec, file, re.M | re.I)
         if rsa_find and rsa_find[0].lower() == 'no': result['rsa_auth'] = 'no'
 
         # 获取是否开启公钥认证
@@ -791,11 +802,10 @@ class ssh_security:
         # yes = 开启
         # no = 关闭
         result['pubkey'] = 'no'
-        if self._get_key(get)['msg']: # 先检查是否存在可用的公钥
+        if self._get_key(get)['msg']:  # 先检查是否存在可用的公钥
             pubkey = r'^\s*PubkeyAuthentication\s*(yes|no)'
-            pubkey_find = re.findall(pubkey, file, re.M|re.I)
+            pubkey_find = re.findall(pubkey, file, re.M | re.I)
             if pubkey_find and pubkey_find[0].lower() == 'yes': result['pubkey'] = 'yes'
-
 
         # 是否开启密码登录
         # 默认开启
@@ -803,10 +813,10 @@ class ssh_security:
         # no = 关闭
         result['password'] = 'yes'
         ssh_password = r'^\s*PasswordAuthentication\s*([\w\-]+)'
-        ssh_password_find = re.findall(ssh_password, file, re.M|re.I)
+        ssh_password_find = re.findall(ssh_password, file, re.M | re.I)
         if ssh_password_find and ssh_password_find[0].lower() == 'no': result['password'] = 'no'
 
-        #是否允许root登录
+        # 是否允许root登录
         # 默认允许
         # yes = 允许
         # no = 不允许
@@ -814,8 +824,8 @@ class ssh_security:
         # forced-commands-only = 允许，但只允许执行命令，不能使用终端
         result['root_is_login'] = 'yes'
         result['root_login_type'] = 'yes'
-        root_is_login=r'^\s*PermitRootLogin\s*([\w\-]+)'
-        root_is_login_find = re.findall(root_is_login, file, re.M|re.I)
+        root_is_login = r'^\s*PermitRootLogin\s*([\w\-]+)'
+        root_is_login_find = re.findall(root_is_login, file, re.M | re.I)
         if root_is_login_find and root_is_login_find[0].lower() != 'yes':
             result['root_is_login'] = 'no'
             result['root_login_type'] = root_is_login_find[0].lower()
@@ -824,7 +834,6 @@ class ssh_security:
         result['key_type'] = public.ReadFile(self.__key_type_file)
         # return result
         return public.return_message(0, 0, result)
-
 
     def set_root(self, get):
         '''
@@ -850,19 +859,18 @@ class ssh_security:
             return public.return_message(-1, 0, public.lang("Parameter passing error"))
         ssh_password = r'^\s*#?\s*PermitRootLogin\s*([\w\-]+)'
         file = public.readFile(self.__SSH_CONFIG)
-        src_line = re.search(ssh_password, file,re.M)
+        src_line = re.search(ssh_password, file, re.M)
         new_line = 'PermitRootLogin {}'.format(p_type)
         if not src_line:
             file_result = file + '\n{}'.format(new_line)
         else:
-            file_result = file.replace(src_line.group(),new_line)
+            file_result = file.replace(src_line.group(), new_line)
         self.wirte(self.__SSH_CONFIG, file_result)
         self.restart_ssh()
-        msg = public.lang('Set the root login method as: {}',self.__root_login_types[p_type])
-        public.WriteLog('SSH management',msg)
+        msg = public.lang('Set the root login method as: {}', self.__root_login_types[p_type])
+        public.WriteLog('SSH management', msg)
         # return public.returnMsg(True, msg)
         return public.return_message(0, 0, msg)
-
 
     def set_root_password(self, get):
         """
@@ -873,13 +881,15 @@ class ssh_security:
         password = get.password if "password" in get else ""
         username = get.username if "username" in get else ""
         if not password: return public.return_message(-1, 0, public.lang("The password cannot be empty"))
-        if len(password) < 8: return public.return_message(-1, 0, public.lang("The password cannot be less than 8 bits long"))
+        if len(password) < 8: return public.return_message(-1, 0,
+                                                           public.lang("The password cannot be less than 8 bits long"))
         if get.username not in self.get_sys_user(get)['msg']:
             return public.return_message(-1, 0, public.lang("The username already exists"))
 
         has_letter = bool(re.search(r'[a-zA-Z!@#$%^&*()-_+=]', password))
         has_digit_or_symbol = bool(re.search(r'[0-9!@#$%^&*()-_+=]', password))
-        if not has_letter or not has_digit_or_symbol: return public.return_message(-1, 0, public.lang("The password must contain letters and numbers or symbols"))
+        if not has_letter or not has_digit_or_symbol: return public.return_message(-1, 0, public.lang(
+            "The password must contain letters and numbers or symbols"))
 
         if username == "root":
             cmd_result, cmd_err = public.ExecShell("echo root:%s|chpasswd" % password)
@@ -916,7 +926,7 @@ class ssh_security:
             file_result = re.sub(ssh_password, '\nPermitRootLogin no', file)
         self.wirte(self.__SSH_CONFIG, file_result)
         self.restart_ssh()
-        public.WriteLog('SSH management','Set the root login method to: no')
+        public.WriteLog('SSH management', 'Set the root login method to: no')
         return public.returnMsg(True, public.lang("Disable successfully"))
 
     def stop_password(self, get):
@@ -929,7 +939,7 @@ class ssh_security:
         file_result = re.sub(ssh_password, '\nPasswordAuthentication no', file)
         self.wirte(self.__SSH_CONFIG, file_result)
         self.restart_ssh()
-        public.WriteLog('SSH management','Disable password access')
+        public.WriteLog('SSH management', 'Disable password access')
         return public.returnMsg(True, public.lang("Closed successfully"))
 
     def _get_key(self, get):
@@ -940,7 +950,7 @@ class ssh_security:
         if key_type in self.__type_files.keys():
             key_file = self.__type_files[key_type]
             key = public.readFile(key_file)
-            return public.returnMsg(True,key)
+            return public.returnMsg(True, key)
         return public.returnMsg(True, public.lang(""))
 
     def get_key(self, get):
@@ -951,8 +961,9 @@ class ssh_security:
         if key_type in self.__type_files.keys():
             key_file = self.__type_files[key_type]
             key = public.readFile(key_file)
-            return public.return_message(0, 0,key)
+            return public.return_message(0, 0, key)
         return public.return_message(0, 0, public.lang(""))
+
     def download_key(self, get):
         '''
             @name 下载密钥
@@ -971,8 +982,8 @@ class ssh_security:
 
         if not download_file: return public.returnMsg(False, public.lang("Key file not found!"))
         from flask import send_file
-        filename = "{}_{}".format(public.GetHost(),os.path.basename(download_file))
-        return send_file(download_file,download_name=filename)
+        filename = "{}_{}".format(public.GetHost(), os.path.basename(download_file))
+        return send_file(download_file, download_name=filename)
 
     def wirte(self, file, ret):
         result = public.writeFile(file, ret)
@@ -990,98 +1001,102 @@ class ssh_security:
             public.ExecShell("systemctl " + act + " sshd.service")
         else:
             public.ExecShell("/etc/init.d/sshd " + act)
-    #检查是否设置了钉钉
+
+    # 检查是否设置了钉钉
     def check_dingding(self, get):
         '''
         检查是否设置了钉钉
         '''
-        #检查文件是否存在
-        if not os.path.exists('/www/server/panel/data/dingding.json'):return False
-        dingding_config=public.ReadFile('/www/server/panel/data/dingding.json')
-        if not dingding_config:return False
-        #解析json
+        # 检查文件是否存在
+        if not os.path.exists('/www/server/panel/data/dingding.json'): return False
+        dingding_config = public.ReadFile('/www/server/panel/data/dingding.json')
+        if not dingding_config: return False
+        # 解析json
         try:
-            dingding=json.loads(dingding_config)
+            dingding = json.loads(dingding_config)
             if dingding['dingding_url']:
                 return True
         except:
             return False
 
-    #开启SSH双因子认证
+    # 开启SSH双因子认证
     def start_auth_method(self, get):
         '''
         开启SSH双因子认证
         '''
-        #检查是否设置了钉钉
+        # 检查是否设置了钉钉
         import ssh_authentication
-        ssh_class=ssh_authentication.ssh_authentication()
-        return  ssh_class.start_ssh_authentication_two_factors()
+        ssh_class = ssh_authentication.ssh_authentication()
+        return ssh_class.start_ssh_authentication_two_factors()
 
-    #关闭SSH双因子认证
+    # 关闭SSH双因子认证
     def stop_auth_method(self, get):
         '''
         关闭SSH双因子认证
         '''
-        #检查是否设置了钉钉
+        # 检查是否设置了钉钉
         import ssh_authentication
-        ssh_class=ssh_authentication.ssh_authentication()
+        ssh_class = ssh_authentication.ssh_authentication()
         return ssh_class.close_ssh_authentication_two_factors()
 
-    #获取SSH双因子认证状态
+    # 获取SSH双因子认证状态
     def get_auth_method(self, get):
         '''
         获取SSH双因子认证状态
         '''
-        #检查是否设置了钉钉
+        # 检查是否设置了钉钉
         import ssh_authentication
-        ssh_class=ssh_authentication.ssh_authentication()
+        ssh_class = ssh_authentication.ssh_authentication()
         return ssh_class.check_ssh_authentication_two_factors()
 
-    #判断so文件是否存在
+    # 判断so文件是否存在
     def check_so_file(self, get):
         '''
         判断so文件是否存在
         '''
         import ssh_authentication
-        ssh_class=ssh_authentication.ssh_authentication()
+        ssh_class = ssh_authentication.ssh_authentication()
         return ssh_class.is_check_so()
 
-    #下载so文件
+    # 下载so文件
     def get_so_file(self, get):
         '''
         下载so文件
         '''
         import ssh_authentication
-        ssh_class=ssh_authentication.ssh_authentication()
+        ssh_class = ssh_authentication.ssh_authentication()
         return ssh_class.download_so()
 
-    #获取pin
+    # 获取pin
     def get_pin(self, get):
         '''
         获取pin
         '''
         import ssh_authentication
-        ssh_class=ssh_authentication.ssh_authentication()
+        ssh_class = ssh_authentication.ssh_authentication()
         return public.returnMsg(True, ssh_class.get_pin())
 
-    def get_login_record(self,get):
+    def get_login_record(self, get):
         if os.path.exists(self.open_ssh_login):
 
             return public.returnMsg(True, public.lang(""))
         else:
             return public.returnMsg(False, public.lang(""))
-    def start_login_record(self,get):
+
+    def start_login_record(self, get):
         if os.path.exists(self.open_ssh_login):
             return public.returnMsg(True, public.lang(""))
         else:
-            public.writeFile(self.open_ssh_login,"True")
+            public.writeFile(self.open_ssh_login, "True")
             return public.returnMsg(True, public.lang(""))
-    def stop_login_record(self,get):
+
+    def stop_login_record(self, get):
         if os.path.exists(self.open_ssh_login):
             os.remove(self.open_ssh_login)
             return public.returnMsg(True, public.lang(""))
         else:
             return public.returnMsg(True, public.lang(""))
+
     # 获取登录记录列表
     def get_record_list(self, get):
         if 'limit' in get:
@@ -1110,21 +1125,207 @@ class ssh_security:
 
         return data
 
-    def get_file_json(self,get):
+    def get_file_json(self, get):
 
         if os.path.exists(get.path):
-            ret=json.loads(public.ReadFile(get.path))
-            return  ret
+            ret = json.loads(public.ReadFile(get.path))
+            return ret
         else:
             return ''
 
+    @staticmethod
+    def is_redhat():
+        if os.path.exists("/usr/bin/yum") and os.path.exists("/usr/bin/rpm"):
+            return True
+        return False
+
+    @staticmethod
+    def _get_other_conf_list():
+        sshd_conf = []
+        if os.path.isdir("/etc/ssh/sshd_config.d"):
+            for i in os.listdir("/etc/ssh/sshd_config.d"):
+                file_path = "/etc/ssh/sshd_config.d/{}".format(i)
+                # 以".conf"结尾且为文件
+                if i.endswith(".conf") and os.path.isfile(file_path):
+                    tmp_data = public.readFile(file_path)
+                    if isinstance(tmp_data, str):
+                        sshd_conf.append({
+                            "data": tmp_data,
+                            "path": file_path,
+                            "name": i,
+                        })
+        # 按照字母循序加载的
+        sshd_conf.sort(key=lambda x: x["name"])
+        return sshd_conf
+
+    def paser_root_login(self, conf_data: str = None) -> tuple:
+        can_login = 'no'
+        login_type = 'without-password'
+        if self.is_redhat():
+            can_login = 'yes'
+            login_type = 'yes'
+
+        if conf_data is None:
+            conf_data = public.readFile(self.__SSH_CONFIG)
+
+        if not isinstance(conf_data, str):
+            return can_login, login_type
+
+        other_conf = self._get_other_conf_list()
+        sshd_conf = [
+            i["data"] for i in other_conf
+        ]
+        sshd_conf.insert(0, conf_data)
+        test_re = re.compile(r"^\s*PermitRootLogin\s*(?P<target>[\w\-]+)", re.M)
+        is_break = False
+        for cf in sshd_conf:
+            for tmp_res in test_re.finditer(cf):
+                login_type = tmp_res.group("target")
+                is_break = True
+                break
+
+            if is_break:
+                break
+
+        if login_type in ('yes', 'without-password'):
+            can_login = 'yes'
+
+        return can_login, login_type
+
+    def get_sshd_anti_logs(self, get):
+        """
+        @name 获取SSH防爆破日志
+        @param get:
+        @return:
+        """
+        logs_result = public.run_plugin(
+            "fail2ban", "get_status", public.to_dict_obj({"mode": "sshd"})
+        )
+        if logs_result.get("status") is False:
+            return public.fail_v2(logs_result.get("msg", "Failed to get SSH anti-brute-force logs"))
+
+        logs_result = public.find_value_by_key(logs_result, "msg", {})
+        return public.success_v2(
+            {
+                "currently_failed": logs_result.get("currently_failed", "0"),
+                "total_failed": logs_result.get("total_failed", "0"),
+                "currently_banned": logs_result.get("currently_banned", "0"),
+                "total_banned": logs_result.get("total_banned", "0"),
+                "banned_ip_list": logs_result.get("banned_ip_list", [])
+            }
+        )
+
+    def get_anti_conf(self, get):
+        """
+        @name 获取SSH防爆破配置
+        @param get:
+        @return:
+        """
+        result_data = {
+            'maxretry': '30',
+            'findtime': '300',
+            'bantime': '600'
+        }
+        _set_up_path = "/www/server/panel/plugin/fail2ban"
+        _config = _set_up_path + "/config.json"
+        if not os.path.exists(_set_up_path + "/fail2ban_main.py"):
+            return public.fail_v2(public.lang("Not Install Fail2ban Plugin!"))
+
+        if not os.path.exists(_config):
+            return result_data
+
+        _conf_data = json.loads(public.ReadFile(_config))
+        if not "sshd" in _conf_data:
+            return public.success_v2(result_data)
+
+        result_data["maxretry"] = _conf_data["sshd"]["maxretry"]
+        result_data["findtime"] = _conf_data["sshd"]["findtime"]
+        result_data["bantime"] = _conf_data["sshd"]["bantime"]
+        return public.success_v2(result_data)
+
+    def set_anti_conf(self, get):
+        """
+        @name 设置SSH防爆破
+        @param get: act是控制开关, 参数 maxretry, findtime, bantime 修改配置
+        @return:
+        """
+        try:
+            get.validate([
+                Param("act").String(),
+                Param("maxretry").Integer(),
+                Param("findtime").Integer(),
+                Param("bantime").Integer(),
+            ], [public.validate.trim_filter()])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
+        param_dict = {
+            'type': 'edit',
+            'act': 'true',
+            'maxretry': '30',
+            'findtime': '300',
+            'bantime': '600',
+            'port': "{}".format(public.get_sshd_port()),
+            'mode': 'sshd'
+        }
+        _set_up_path = "/www/server/panel/plugin/fail2ban"
+        _config = _set_up_path + "/config.json"
+        if not os.path.exists(_set_up_path + "/fail2ban_main.py"):
+            return public.fail_v2(public.lang("Not Install Fail2ban Plugin!"))
+
+        if not os.path.exists(_config):
+            param_dict["type"] = "add"
+
+        if os.path.exists(_config):
+            _conf_data = json.loads(public.ReadFile(_config))
+
+            if not "sshd" in _conf_data:
+                param_dict["type"] = "add"
+
+            if "sshd" in _conf_data:
+                param_dict["maxretry"] = _conf_data["sshd"]["maxretry"]
+                param_dict["findtime"] = _conf_data["sshd"]["findtime"]
+                param_dict["bantime"] = _conf_data["sshd"]["bantime"]
+
+        if "maxretry" in get:
+            param_dict["maxretry"] = get.maxretry
+        if "findtime" in get:
+            param_dict["findtime"] = get.findtime
+        if "bantime" in get:
+            param_dict["bantime"] = get.bantime
+        if "act" in get:
+            param_dict["act"] = get.act
+
+        param_dict = public.to_dict_obj(param_dict)
+        res = public.run_plugin("fail2ban", "set_anti", param_dict)
+        public.WriteLog(
+            "SSH Manager",
+            f"【Security】-【Server Security】-【Set SSH anti-brute-force status: {res.get('msg', 'fail')}】"
+        )
+        return public.return_message(0 if res.get("status", False) else -1, 0, res.get("msg", "fail"))
+
+    def del_ban_ip(self, get):
+        """
+        删除fail2ban封锁IP
+        @param get:
+        @return:
+        """
+        get.mode = "sshd"
+        get.ip = get.ip
+        import PluginLoader
+        res = PluginLoader.plugin_run('fail2ban', 'ban_ip_release', get)
+        return public.return_message(0 if res.get("status", False) else -1, 0, res.get("msg", "fail"))
+
 if __name__ == '__main__':
     import sys
+
     type = sys.argv[1]
-    if type=='login':
+    if type == 'login':
         try:
             aa = ssh_security()
             aa.login()
-        except:pass
+        except:
+            pass
     else:
         pass

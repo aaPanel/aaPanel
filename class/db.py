@@ -9,6 +9,7 @@
 
 import sqlite3
 import os,time,sys
+from typing import List, Optional
 os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
     sys.path.insert(0,'class/')
@@ -28,6 +29,7 @@ class Sql():
     __OPT_PARAM  = ()              # where值
     __LOCK = '/dev/shm/sqlite_lock.pl'
     ERR_INFO = None
+    __ENCRYPT_KEYS = []            # 新增：加密字段列表，默认空列表（无需加密）
 
     def __init__(self):
         self.__DB_FILE = 'data/default.db'
@@ -350,6 +352,41 @@ class Sql():
         # if os.path.exists(self.__LOCK):
         #     os.remove(self.__LOCK)
 
+    def clear_files(self):
+        """
+        @name 清理空间
+        """
+        import psutil
+        path = public.get_panel_path()
+
+        res = psutil.disk_usage(path)
+        limit = 512 * 1024
+        if res.free > limit:
+            return
+
+        #清理安装日志
+        log_path = '{}/logs/installed'.format(path)
+        if os.path.exists(log_path):
+            total = 0
+            try:
+                flist = []
+                for f in os.listdir(log_path):
+                    sfile = '{}/{}'.format(log_path, f)
+                    if not os.path.isfile(sfile):
+                        continue
+                    flist.append(sfile)
+                flist.sort(key=lambda x: os.path.getmtime(x), reverse=False)
+
+                for f in flist:
+                    total += os.path.getsize(f)
+                    if total >= limit:
+                        os.remove(f)
+                        break
+                    os.remove(f)
+            except:pass
+            if total:
+                print('Jointly released：{}'.format(public.to_size(total)))
+
     def query(self,sql,param = ()):
         self.ERR_INFO = None
         #执行SQL语句返回数据集
@@ -410,3 +447,38 @@ class Sql():
         # 设置数据库名称，用于判断数据库文件
         self.__DB_NAME = name
         return self
+
+    def batch_add(self, keys: List[str], value_list: List[tuple]):
+        # 批量插入数据
+        self.clear_files()
+        self.__GetConn()
+        self.__DB_CONN.text_factory = str
+        need_crypt = any(key in keys for key in self.__ENCRYPT_KEYS)
+        keys_str = ",".join(["`{}`".format(key) for key in keys])
+        for idx, param in enumerate(value_list):
+            if len(param) != len(keys):
+                raise public.PanelError("The data length is inconsistent with the field length")
+            if need_crypt:
+                value_list[idx] = self.en_crypt(keys_str,param)
+        try:
+            values_temp=",".join(["?" for _ in range(len(keys))])
+            sql = "INSERT INTO " + self.__DB_TABLE + "(" + keys_str + ") " + "VALUES(" + values_temp + ")"
+            self.__DB_CONN.executemany(sql, value_list)
+            self._close()
+            self.__DB_CONN.commit()
+            return True
+        except Exception as ex:
+            raise public.PanelError("Database insertion error：" + "error: " + str(ex))
+            # return "error: " + str(ex)
+
+    def batch_insert(self, data_list:List[dict]):
+        keys = list(data_list[0].keys())
+        value_list = []
+        try:
+            for items in data_list:
+                if not isinstance(items, dict):
+                    raise public.PanelError("Data type error")
+                value_list.append(tuple(items[key] for key in keys))
+        except:
+            raise public.PanelError("Data type error")
+        return self.batch_add(keys, value_list)

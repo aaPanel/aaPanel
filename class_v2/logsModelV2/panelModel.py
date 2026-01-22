@@ -15,11 +15,12 @@ import os,re,json,time
 from logsModel.base import logsBase
 import public,db
 from html import unescape,escape
+from public.validate import Param
 
 class main(logsBase):
-
     def __init__(self):
-        pass
+        super().__init__()
+        public.get_client_info_db_obj()
 
 
     def get_logs_info(self,args):
@@ -236,33 +237,6 @@ class main(logsBase):
         # mysql慢日志有顺序问题,倒序显示不利于排查问题
         return public.return_message(0, 0, public.xsssec(public.GetNumLines(path, limit)))
 
-        # find_idx = 0
-        # p_num = 0 #分页计数器
-        # next_file = False
-        # log_list = []
-        # while not next_file:
-        #     if len(log_list) >= limit:
-        #         break
-        #     p_num += 1
-        #     result = self.GetNumLines(path,10001,p_num).replace('\r\n','\n').split('\n')
-        #     if len(result) < 10000:
-        #         next_file = True
-        #     result.reverse()
-
-        #     for _line in result:
-        #         if not _line: continue
-        #         if len(log_list) >= limit:
-        #             break
-
-        #         try:
-        #             if self.find_line_str(_line,search):
-        #                 find_idx += 1
-        #                 if find_idx > (p-1) * limit:
-        #                     info = escape(_line)
-        #                     log_list.append(info)
-        #         except:pass
-        # return log_list
-
     def IP_geolocation(self, get):
         '''
             @name 列出所有IP及其归属地
@@ -321,3 +295,77 @@ class main(logsBase):
                 result.append(line)
 
          return public.return_message(0, 0, result)
+
+    def get_panel_login_log(self, get):
+        """
+        @name 获取面板登录日志
+        @param get
+            search : 关键字
+            login_type: 登陆状态
+            page : 页码
+            limit : 每页显示数量
+        """
+        try:
+            get.validate([
+                Param("p").Integer(),
+                Param("limit").Integer(),
+                Param("search").String(),
+            ], [public.validate.trim_filter()])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.fail_v2(str(ex))
+
+        query_conditions = []
+        query_params = []
+
+        # 处理 login_type 条件
+        if hasattr(get, "login_type"):
+            login_type = get.login_type
+            if isinstance(login_type, bytes):
+                login_type = login_type.decode('utf-8').strip()
+            elif isinstance(login_type, str):
+                login_type = login_type.strip()
+
+            if login_type:
+                query_conditions.append("login_type = ?")
+                query_params.append(login_type)
+
+        # search
+        if hasattr(get, "search"):
+            search = get.search.strip()
+
+            # 处理字节类型的 search
+            if isinstance(search, bytes):
+                search = search.decode('utf-8').strip()
+            elif isinstance(search, str):
+                search = search.strip()
+
+            if search:
+                query_conditions.append("(remote_addr LIKE ? OR user_agent LIKE ?)")
+                search_params = "%{}%".format(search)
+                query_params.extend([search_params, search_params])
+
+        # 构建查询
+        query_string = " AND ".join(query_conditions) if query_conditions else "1=1"
+
+        # 分页处理
+        page = int(get.p) if hasattr(get, 'p') and str(get.p).isdigit() else 1
+        limit = int(get.limit) if hasattr(get, 'limit') and str(get.limit).isdigit() else 10
+        offset = (page - 1) * limit
+
+        # 执行查询  按 login_time 降序排序
+        import db
+        with db.Sql() as db_obj:
+            db_obj._Sql__DB_FILE = "data/db/client_info.db"
+            db_obj.table("client_info")
+            data = db_obj.where(query_string, tuple(query_params)) \
+                .field("id,remote_addr,remote_port,user_agent,login_time,login_type") \
+                .order("login_time DESC") \
+                .limit(str(offset) + ',' + str(limit)) \
+                .select()
+            # 获取总数
+            total = db_obj.where(query_string, tuple(query_params)).count()
+        return public.success_v2({
+            "data": public.return_area(data, "remote_addr"),
+            "total": total
+        })

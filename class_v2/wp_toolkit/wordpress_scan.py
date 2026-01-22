@@ -16,7 +16,7 @@ import sys,os
 if "/www/server/panel/class_v2/wp_toolkit/" not in sys.path:
     sys.path.insert(1, "/www/server/panel/class_v2/wp_toolkit/")
 #进入到
-from . import totle_db
+from wp_toolkit import totle_db
 
 class wordpress_scan:
     wordpress_diff_path = "/www/wordpress_diff_path"

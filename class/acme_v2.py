@@ -3179,17 +3179,12 @@ fullchain.pem       Paste into certificate input box
 
             if is_ip_ssl and ssl.panel_uf == ["panel"]:  # 如果是ip ssl且是面板证书
                 from ssl_domainModelV2.service import apply_panel_ip_ssl_script
-                _, e = apply_panel_ip_ssl_script(ip=",".join(ssl.dns), log_path=ssl.log)
-                if e:
-                    write_log(
-                        f"|- IP Subject:【{ssl.subject}】Http Verification Renewal SSL certificate failed: {e.strip()}"
-                    )
-                else:
-                    write_log(
-                        f"|- IP Subject:【{ssl.subject}】Http Verification "
-                        f"Renewal SSL certificate processed via script, please check log file"
-                    )
-                    reload = True
+                apply_panel_ip_ssl_script(ip=",".join(ssl.dns), log_path=ssl.log)
+                write_log(
+                    f"|- IP Subject:【{ssl.subject}】Http Verification "
+                    f"Renewal SSL certificate processed via script, please check log file"
+                )
+                reload = True
                 continue
 
             auth_type = ssl.auth_info.get("auth_type")

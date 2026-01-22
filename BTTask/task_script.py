@@ -19,13 +19,13 @@ os.chdir("/www/server/panel")
 sys.path.insert(0, os.path.abspath("/www/server/panel"))
 sys.path.insert(0, "/www/server/panel/class/")
 sys.path.insert(0, "/www/server/panel/class_v2/")
+
+from BTTask.conf import logger, CURRENT_TASK_VERSION
+from public.hook_import import hook_import
 try:
-    from public.hook_import import hook_import
-
     hook_import()
-except Exception:
+except:
     pass
-
 
 def task():
     def decorator(func):
@@ -132,6 +132,29 @@ def check_site_monitor():
                               (None, install_name, 'execshell', '0', time.strftime('%Y-%m-%d %H:%M:%S'), execstr))
         public.writeFile('/tmp/panelTask.pl', 'True')
 
+# 节点监控
+@task()
+def node_monitor():
+    import public
+    bin_file = '/www/server/panel/pyenv/bin/python'
+    bin_file2 = '/usr/bin/python'
+    if os.path.exists(bin_file):
+        python_bin = bin_file
+    else:python_bin = bin_file2
+    cmd ='nohup {} /www/server/panel/script/node_monitor.py > /dev/null 2>&1 &'.format(python_bin)
+    os.system(cmd)
+
+# 节点监控依赖包检测
+@task()
+def node_monitor_check():
+    import public
+    # 定义处理h11的命令变量
+    cmd_h11 = "cd /www/server/panel/pyenv/bin && source activate && H11_VERSION=$(./pip3 show h11 | grep -i Version | awk '{print $2}') && if [ \"$H11_VERSION\" != \"0.14.0\" ]; then ./pip3 uninstall h11 -y; fi; ./pip3 install h11==0.14.0"
+
+    # 定义处理wsproto的命令变量
+    cmd_wsproto = "cd /www/server/panel/pyenv/bin && source activate && WSPROTO_VERSION=$(./pip3 show wsproto | grep -i Version | awk '{print $2}') && if [ \"$WSPROTO_VERSION\" != \"1.2.0\" ]; then ./pip3 uninstall wsproto -y; fi; ./pip3 install wsproto==1.2.0"
+    public.ExecShell(cmd_h11)
+    public.ExecShell(cmd_wsproto)
 
 # 多web
 @task()
@@ -480,7 +503,11 @@ def update_vulnerabilities():
             public.writeFile(path_time, json.dumps({"time": int(time.time())}))
             share_ip_info = {"time": 0}
         else:
-            share_ip_info = json.loads(public.readFile(path_time))
+            try:
+                share_ip_info = json.loads(public.readFile(path_time))
+            except Exception:
+                public.ExecShell("rm -f {}".format(path_time))
+                share_ip_info = {"time": 0}
         if (int(time.time()) - share_ip_info["time"]) < 86400:
             return public.returnMsg(False, "未达到时间")
         share_ip_info["time"] = int(time.time())
@@ -506,7 +533,11 @@ def update_vulnerabilities():
             public.writeFile(path_time, json.dumps({"time": int(time.time())}))
             share_ip_info = {"time": 0}
         else:
-            share_ip_info = json.loads(public.readFile(path_time))
+            try:
+                share_ip_info = json.loads(public.readFile(path_time))
+            except Exception:
+                public.ExecShell("rm -f {}".format(path_time))
+                share_ip_info = {"time": 0}
         if (int(time.time()) - share_ip_info["time"]) < 86400:
             return public.returnMsg(False, "未达到时间")
         share_ip_info["time"] = int(time.time())
@@ -543,7 +574,11 @@ def update_vulnerabilities():
             public.writeFile(path_time, json.dumps({"time": int(time.time())}))
             share_ip_info = {"time": 0}
         else:
-            share_ip_info = json.loads(public.readFile(path_time))
+            try:
+                share_ip_info = json.loads(public.readFile(path_time))
+            except Exception:
+                public.ExecShell("rm -f {}".format(path_time))
+                share_ip_info = {"time": 0}
         if (int(time.time()) - share_ip_info["time"]) < 86400:
             return public.returnMsg(False, "未达到时间")
         share_ip_info["time"] = int(time.time())
@@ -574,7 +609,11 @@ def update_vulnerabilities():
             # 如果第一次运行则三天后再运行
             share_ip_info = {"time": int(time.time()) - 86400 * 2}
         else:
-            share_ip_info = json.loads(public.readFile(path_time))
+            try:
+                share_ip_info = json.loads(public.readFile(path_time))
+            except Exception:
+                public.ExecShell("rm -f {}".format(path_time))
+                share_ip_info = {"time": 0}
         if (int(time.time()) - share_ip_info["time"]) < 259200:
             return public.returnMsg(False, "未达到时间")
         share_ip_info["time"] = int(time.time())
@@ -611,6 +650,8 @@ def update_vulnerabilities():
         check_plugin_close()
         get_plugin_update_time()
     except Exception:
+        import traceback
+        public.print_log(traceback.format_exc())
         raise
 
 
@@ -668,7 +709,7 @@ def check502task():
             f_list = os.listdir(sess_path)
             f_num = len(f_list)
             sess_expired_path = f"{public.get_panel_path()}/data/session_timeout.pl"
-            sess_expired = 86400 # default 24H
+            sess_expired = 86400  # default 24H
             if os.path.exists(sess_expired_path):
                 try:
                     sess_expired = int(public.readFile(sess_expired_path).strip())
@@ -874,6 +915,216 @@ def check502task():
     siteEdate()
     sess_expire()
     flush_geoip()
+
+
+@task()
+def count_ssh_logs():
+    """
+        @name 统计SSH登录日志
+        @return None
+    """
+
+    import json
+    import public
+    import re
+    from datetime import datetime
+
+    def parse_journal_disk_usage(output):
+        # 使用正则表达式来提取数字和单位
+        match = re.search(r'take up (\d+(\.\d+)?)\s*([KMGTP]?)', output)
+        total_bytes = 0
+        if match:
+            value = float(match.group(1))  # 数字
+            unit = match.group(3)  # 单位
+            # 将所有单位转换为字节
+            if unit == '':
+                unit_value = 1
+            elif unit == 'K':
+                unit_value = 1024
+            elif unit == 'M':
+                unit_value = 1024 * 1024
+            elif unit == 'G':
+                unit_value = 1024 * 1024 * 1024
+            elif unit == 'T':
+                unit_value = 1024 * 1024 * 1024 * 1024
+            elif unit == 'P':
+                unit_value = 1024 * 1024 * 1024 * 1024 * 1024
+            else:
+                unit_value = 0
+
+            # 计算总字节数
+            total_bytes = value * unit_value
+        return total_bytes
+
+    if os.path.exists("/etc/debian_version"):
+        version = public.readFile('/etc/debian_version')
+        if not version:
+            return
+        version = version.strip()
+        if 'bookworm' in version or 'jammy' in version or 'impish' in version:
+            version = 12
+        else:
+            try:
+                version = float(version)
+            except:
+                version = 11
+
+        if version >= 12:
+            while True:
+                filepath = "/www/server/panel/data/ssh_login_counts.json"
+
+                # 获取今天的日期
+                today = datetime.now().strftime('%Y-%m-%d')
+                result = {
+                    'date': today,  # 添加日期字段
+                    'error': 0,
+                    'success': 0,
+                    'today_error': 0,
+                    'today_success': 0
+                }
+                try:
+                    filedata = public.readFile(filepath) if os.path.exists(filepath) else public.writeFile(filepath,
+                                                                                                           "[]")
+                    try:
+                        data_list = json.loads(filedata)
+                    except:
+                        data_list = []
+
+                    # 检查是否已有今天的记录，避免重复统计
+                    found_today = False
+                    for day in data_list:
+                        if day['date'] == today:
+                            found_today = True
+                            break
+
+                    if found_today:
+                        break  # 如果找到今天的记录，跳出while循环
+
+                    today_err_num1 = int(public.ExecShell(
+                        "journalctl -u ssh --no-pager -S today |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[
+                                             0])
+
+                    today_err_num2 = int(public.ExecShell(
+                        "journalctl -u ssh --no-pager -S today |grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[
+                                             0])
+
+                    today_success = int(
+                        public.ExecShell("journalctl -u ssh --no-pager -S today |grep -a 'Accepted' |wc -l")[0])
+
+                    # 查看文件大小 判断是否超过5G
+                    is_bigfile = False
+
+                    res, err = public.ExecShell("journalctl --disk-usage")
+                    total_bytes = parse_journal_disk_usage(res)
+                    limit_bytes = 5 * 1024 * 1024 * 1024
+                    if total_bytes > limit_bytes:
+                        is_bigfile = True
+
+                    if is_bigfile:
+                        err_num1 = int(public.ExecShell(
+                            "journalctl -u ssh --since '30 days ago' --no-pager | grep -a 'Failed password for' | grep -v 'invalid' | wc -l")[
+                                           0])
+                        err_num2 = int(public.ExecShell(
+                            "journalctl -u ssh --since '30 days ago' --no-pager --grep='Connection closed by authenticating user|preauth' | wc -l")[
+                                           0])
+                        success = int(public.ExecShell(
+                            "journalctl -u ssh --since '30 days ago' --no-pager | grep -a 'Accepted' | wc -l")[0])
+                    else:
+                        # 统计失败登陆次数
+                        err_num1 = int(public.ExecShell(
+                            "journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0])
+                        err_num2 = int(public.ExecShell(
+                            "journalctl -u ssh --no-pager --grep='Connection closed by authenticating user|preauth' |wc -l")[
+                                           0])
+                        success = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
+                    result['error'] = err_num1 + err_num2
+                    # 统计成功登录次数
+                    result['success'] = success
+                    result['today_error'] = today_err_num1 + today_err_num2
+                    result['today_success'] = today_success
+
+                    data_list.insert(0, result)
+                    data_list = data_list[:7]
+                    public.writeFile(filepath, json.dumps(data_list))
+                except:
+                    public.writeFile(filepath, json.dumps([{
+                        'date': today,  # 添加日期字段
+                        'error': 0,
+                        'success': 0,
+                        'today_error': 0,
+                        'today_success': 0
+                    }]))
+                finally:
+                    del filedata, data_list, result
+
+
+def task_version_part():
+    import public
+    import shutil
+    import re
+    BASE_PATH = public.get_panel_path()
+
+    def _run_post_update_tasks(from_version, to_version):
+        """
+        在版本更新后执行一次性任务。
+        :param from_version: 旧版本号
+        :param to_version: 新版本号
+        :return: bool, 任务是否成功
+        """
+        try:
+            if from_version == to_version:
+                logger.info("Current task version is the same as the last version, no update tasks to run.")
+                return True
+
+            logger.info(
+                f"Detected update program start, {from_version} -> {to_version}. Executing one-time update tasks..."
+            )
+
+            if from_version < '1.0.0':
+                dirs_to_clean = [
+                    os.path.join(BASE_PATH, 'logs/sqlite_easy'),
+                    os.path.join(BASE_PATH, 'logs/sql_log')
+                ]
+
+                for dir_path in dirs_to_clean:
+                    if os.path.isdir(dir_path):
+                        try:
+                            shutil.rmtree(dir_path)
+                            logger.info(f"Removed directory: {dir_path}")
+                        except Exception as e:
+                            logger.error(f"Removing directory {dir_path} failed: {str(e)}")
+                    else:
+                        logger.info(f"Directory not exists, skipped: {dir_path}")
+
+            if from_version < '1.0.1':
+                sites = public.M('sites').field('id,name,path').select()
+                pattern = r'<a class="btlink" href="https://www\.aapanel\.com/new/download\.html\?invite_code=aapanele" target="_blank">(.+?)</a>'
+                for site in sites:
+                    temo_dir = [
+                        os.path.join(site['path'], '404.html'),
+                        os.path.join(site['path'], '502.html'),
+                        os.path.join(site['path'], 'index.html'),
+                    ]
+                    for d in temo_dir:
+                        if os.path.exists(d):
+                            html = public.readFile(d)
+                            result = re.sub(pattern, r'\1', html)
+                            public.writeFile(d, result.strip())
+
+            logger.info("All one-time update tasks executed successfully.")
+            return True
+        except Exception as e:
+            logger.error(f"Executing one-time update task failed: {str(e)}")
+            return False
+
+    # run_post_update_tasks
+    version_file = '{}/data/task_version.pl'.format(public.get_panel_path())
+    last_version = "0.0.0"  # 默认为一个很旧的版本
+
+    if os.path.exists(version_file):
+        last_version = public.readFile(version_file) or "0.0.0"
+    if _run_post_update_tasks(last_version, CURRENT_TASK_VERSION):
+        public.writeFile(version_file, CURRENT_TASK_VERSION)
 
 
 if __name__ == '__main__':

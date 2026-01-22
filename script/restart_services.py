@@ -13,7 +13,6 @@ import fcntl
 os.chdir("/www/server/panel")
 sys.path.insert(0, "class/")
 sys.path.insert(0, "class_v2/")
-from public import readFile
 
 SETUP_PATH = "/www/server"
 DATA_PATH = os.path.join(SETUP_PATH, "panel/data")
@@ -23,6 +22,21 @@ DAEMON_SERVICE = os.path.join(DATA_PATH, "daemon_service.pl")
 DAEMON_SERVICE_LOCK = os.path.join(DATA_PATH, "daemon_service_lock.pl")
 DAEMON_RESTART_RECORD = os.path.join(DATA_PATH, "daemon_restart_record.pl")
 MANUAL_FLAG = os.path.join(SETUP_PATH, "panel/data/mod_push_data", "manual_flag.pl")
+
+
+def read_file(filename: str):
+    fp = None
+    try:
+        fp = open(filename, "rb")
+        f_body_bytes: bytes = fp.read()
+        f_body = f_body_bytes.decode("utf-8", errors='ignore')
+        fp.close()
+        return f_body
+    except Exception:
+        return False
+    finally:
+        if fp and not fp.closed:
+            fp.close()
 
 
 def run_command(cmd, timeout=5) -> str:
@@ -213,7 +227,7 @@ SERVICES_MAP = {
         f"{SETUP_PATH}/nginx/version.pl",
     ),
     "openlitespeed": (
-        "litespeed", "/tmp/lshttpd/lsphp.sock", "/usr/local/lsws/bin/lswsctrl",
+        "litespeed", "/tmp/lshttpd/lshttpd.pid", "/usr/local/lsws/bin/lswsctrl",
         "/usr/local/lsws/VERSION",
     ),
     "redis": (
@@ -347,7 +361,12 @@ class ServicesHelper:
             # 进程是否名字匹配
             with open(f"/proc/{pid}/comm", "r") as f:
                 proc_name = f.read().strip()
-            return proc_name == self.nick_name or proc_name == self._serviced
+
+            # 特殊处理 mysql
+            if self.nick_name != "mysql":
+                return proc_name == self._serviced or proc_name == self.nick_name
+            else:
+                return proc_name in ["mysqld", "mariadbd"]
         except (FileNotFoundError, IndexError):
             return False
         except Exception:
@@ -507,10 +526,12 @@ class ServicesHelper:
             else:
                 cmd = [bash_path, act]
 
-            result = run_command(cmd)
-            if not result and act in ["start", "restart"]:
-                write_logs(f"Failed to {act} {self.nick_name}, error: command returned no output.")
-
+            subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
         except Exception as e:
             print(str(e))
             write_logs(f"Failed to {act} {self.nick_name}, error: {e}")
@@ -629,7 +650,7 @@ class DaemonManager:
     def safe_read():
         """服务守护进程服务列表"""
         try:
-            res = readFile(DAEMON_SERVICE)
+            res = read_file(DAEMON_SERVICE)
             return json.loads(res) if res else []
         except:
             return []
@@ -639,7 +660,7 @@ class DaemonManager:
     def manual_safe_read():
         """手动干预服务字典, 0: 需要干预, 1: 被手动关闭的"""
         try:
-            manual = readFile(MANUAL_FLAG)
+            manual = read_file(MANUAL_FLAG)
             return json.loads(manual) if manual else {}
         except:
             return {}
@@ -705,8 +726,8 @@ class RestartServices:
 
     @DaemonManager.read_lock
     def main(self):
-        manaul = readFile(MANUAL_FLAG)
-        services = readFile(DAEMON_SERVICE)
+        manaul = read_file(MANUAL_FLAG)
+        services = read_file(DAEMON_SERVICE)
         try:
             manual_info = json.loads(manaul) if manaul else {}
             check_list = json.loads(services) if services else []
@@ -731,13 +752,9 @@ class RestartServices:
                     write_logs(f"Service [ {obj.nick_name} ] is Not Running, Try to start it...")
 
                 if not self._overhead(obj.nick_name):
-                    obj.script("start")
-                    time.sleep(3)
-                    if not obj.is_running:
-                        if not self._overhead(obj.nick_name):
-                            obj.script("restart")
+                    obj.script("restart")
 
-            if manual_info.get(obj.nick_name) == 1:
+            if obj.is_running and manual_info.get(obj.nick_name) == 1:
                 # service is running, fix the wrong flag
                 manual_info[obj.nick_name] = 0
                 # under lock file read lock

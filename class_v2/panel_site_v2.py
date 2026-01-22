@@ -2494,108 +2494,6 @@ listener Default%s{
             return public.return_message(0, 0, result['runPath'])
         return public.return_message(-1, 0, public.lang(""))
 
-    # 创建Let's Encrypt免费证书
-    def CreateLet(self, get):
-
-        domains = json.loads(get.domains)
-        if not len(domains):
-            return_message = public.return_msg_gettext(False, 'Please choose a domain name')
-            del return_message['status']
-            return public.return_message(-1, 0, return_message['msg'])
-
-        file_auth = True
-        if hasattr(get, 'dnsapi'):
-            file_auth = False
-
-        if not hasattr(get, 'dnssleep'):
-            get.dnssleep = 10
-
-        email = public.M('users').getField('email')
-        if hasattr(get, 'email'):
-            if get.email.find('@') == -1:
-                get.email = email
-            else:
-                get.email = get.email.strip()
-                public.M('users').where('id=?', (1,)).setField('email', get.email)
-        else:
-            get.email = email
-
-        for domain in domains:
-            if public.checkIp(domain): continue
-            if domain.find('*.') >= 0 and file_auth:
-                return_message = public.return_msg_gettext(False,
-                                                           'A generic domain name cannot be used to apply for a certificate using [File Validation]!')
-                del return_message['status']
-                return public.return_message(-1, 0, return_message['msg'])
-
-        if file_auth:
-            get.sitename = get.siteName
-            if self.GetRedirectList(get):
-                return_message = public.return_msg_gettext(False,
-                                                           'Your site has 301 Redirect on，Please turn it off first!')
-                del return_message['status']
-                return public.return_message(-1, 0, return_message['msg'])
-            if self.GetProxyList(get):
-                return_message = public.return_msg_gettext(False,
-                                                           'Sites that have reverse proxy turned on cannot request SSL!')
-                del return_message['status']
-                return public.return_message(-1, 0, return_message['msg'])
-            data = self.get_site_info(get.siteName)
-            get.id = data['id']
-            runPath = self.GetRunPath(get)['message']['result']
-            if runPath != '/':
-                if runPath[:1] != '/': runPath = '/' + runPath
-            else:
-                runPath = ''
-            get.site_dir = data['path'] + runPath
-
-        else:
-            dns_api_list = self.GetDnsApi(get)
-            get.dns_param = None
-            for dns in dns_api_list:
-                if dns['name'] == get.dnsapi:
-                    param = []
-                    if not dns['data']: continue
-                    for val in dns['data']:
-                        param.append(val['value'])
-                    get.dns_param = '|'.join(param)
-            n_list = ['dns', 'dns_bt']
-            if not get.dnsapi in n_list:
-                if len(get.dns_param) < 16:
-                    return_message = public.return_msg_gettext(False, 'No valid DNSAPI key information found',
-                                                               (get.dnsapi,))
-                    del return_message['status']
-                    return public.return_message(-1, 0, return_message['msg'])
-            if get.dnsapi == 'dns_bt':
-                if not os.path.exists('plugin/dns/dns_main.py'):
-                    return_message = public.return_msg_gettext(False,
-                                                               'Please go to the software store to install [Cloud Resolution] and complete the domain name NS binding.')
-                    del return_message['status']
-                    return public.return_message(-1, 0, return_message['msg'])
-
-        self.check_ssl_pack()
-        try:
-            import panel_lets_v2 as panelLets
-            public.mod_reload(panelLets)
-        except Exception as ex:
-            if str(ex).find('No module named requests') != -1:
-                public.ExecShell("pip install requests &")
-                return_message = public.return_msg_gettext(False,
-                                                           'Missing requests component, please try to repair the panel!')
-                del return_message['status']
-                return public.return_message(-1, 0, return_message['msg'])
-            return_message = public.return_msg_gettext(False, str(ex))
-            del return_message['status']
-            return public.return_message(-1, 0, return_message['msg'])
-
-        lets = panelLets.panelLets()
-        result = lets.apple_lest_cert(get)
-        if result['status'] and not 'code' in result:
-            get.onkey = 1
-            path = '/www/server/panel/cert/' + get.siteName
-            if os.path.exists(path + '/certOrderId'): os.remove(path + '/certOrderId')
-            result = self.SetSSLConf(get)
-        return result
 
     def get_site_info(self, siteName):
         data = public.M("sites").where('name=?', siteName).field('id,path,name').find()
@@ -2611,73 +2509,6 @@ listener Default%s{
             import OpenSSL
         except:
             public.ExecShell('btpip install pyOpenSSL')
-
-    # 判断DNS-API是否设置
-    def Check_DnsApi(self, dnsapi):
-        dnsapis = self.GetDnsApi(None)
-        for dapi in dnsapis:
-            if dapi['name'] == dnsapi:
-                if not dapi['data']: return True
-                for d in dapi['data']:
-                    if d['key'] == '': return False
-        return True
-
-    # 获取DNS-API列表
-    def GetDnsApi(self, get):
-        api_path = './config/dns_api.json'
-        api_init = './config/dns_api_init.json'
-        if not os.path.exists(api_path):
-            if os.path.exists(api_init):
-                import shutil
-                shutil.copyfile(api_init, api_path)
-        apis = json.loads(public.ReadFile(api_path))
-
-        path = '/root/.acme.sh'
-        if not os.path.exists(path + '/account.conf'): path = "/.acme.sh"
-        account = public.readFile(path + '/account.conf')
-        if not account: account = ''
-        is_write = False
-        for i in range(len(apis)):
-            if not apis[i]['data']: continue
-            for j in range(len(apis[i]['data'])):
-                if apis[i]['data'][j]['value']: continue
-                search_str = apis[i]['data'][j]['key'] + r"\s*=\s*'(.+)'"
-                match = re.search("" + apis[i]['data'][j]['key'] + r"\s*=\s*'(.+)'", account)
-                if match: apis[i]['data'][j]['value'] = match.groups()[0]
-                if apis[i]['data'][j]['value']: is_write = True
-        if is_write: public.writeFile('./config/dns_api.json', json.dumps(apis))
-        result = []
-        for i in apis:
-            if i['title'] == 'CloudFlare':
-                if os.path.exists('/www/server/panel/data/cf_limit_api.pl'):
-                    i['API_Limit'] = True
-                else:
-                    i['API_Limit'] = False
-            result.insert(0, i)
-        return public.return_message(0, 0, result)
-
-    # 设置DNS-API
-    def SetDnsApi(self, get):
-        pdata = json.loads(get.pdata)
-        cf_limit_api = "/www/server/panel/data/cf_limit_api.pl"
-        if 'API_Limit' in pdata and pdata['API_Limit'] == True and not os.path.exists(cf_limit_api):
-            os.mknod(cf_limit_api)
-        if 'API_Limit' in pdata and pdata['API_Limit'] == False:
-            if os.path.exists(cf_limit_api): os.remove(cf_limit_api)
-        apis = json.loads(public.ReadFile('./config/dns_api.json'))
-        is_write = False
-        for key in pdata.keys():
-            for i in range(len(apis)):
-                if not apis[i]['data']: continue
-                for j in range(len(apis[i]['data'])):
-                    if apis[i]['data'][j]['key'] != key: continue
-                    apis[i]['data'][j]['value'] = pdata[key]
-                    is_write = True
-
-        if is_write: public.writeFile('./config/dns_api.json', json.dumps(apis))
-        return_message = public.return_msg_gettext(True, 'Setup successfully!')
-        del return_message['status']
-        return public.return_message(0, 0, return_message['msg'])
 
     # 获取站点所有域名
     def GetSiteDomains(self, get):
@@ -2720,7 +2551,8 @@ listener Default%s{
     def get_tls13(self):
         nginx_bin = '/www/server/nginx/sbin/nginx'
         nginx_v = public.ExecShell(nginx_bin + ' -V 2>&1')[0]
-        nginx_v_re = re.findall(r"nginx/(\d\.\d+).+OpenSSL\s+(\d\.\d+)", nginx_v, re.DOTALL)
+        # nginx_v_re = re.findall(r"nginx/(\d\.\d+).+OpenSSL\s+(\d\.\d+)", nginx_v, re.DOTALL)
+        nginx_v_re = re.findall(r"(?:nginx|openresty)/(\d\.\d+)\.\d+.+OpenSSL\s+(\d\.\d+)", nginx_v, re.DOTALL)
         if nginx_v_re:
             if nginx_v_re[0][0] in ['1.8', '1.9', '1.7', '1.6', '1.5', '1.4']:
                 return ''
@@ -2754,20 +2586,20 @@ listener Default%s{
         listen_conf = self.setupPath + '/panel/vhost/openlitespeed/listen/443.conf'
         conf = public.readFile(listen_conf)
         ssl_conf = """
-        vhssl {
-          keyFile                 /www/server/panel/vhost/cert/BTDOMAIN/privkey.pem
-          certFile                /www/server/panel/vhost/cert/BTDOMAIN/fullchain.pem
-          certChain               1
-          sslProtocol             24
-          ciphers                 EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:ECDHE-RSA-AES128-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA128:DHE-RSA-AES128-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-GCM-SHA128:ECDHE-RSA-AES128-SHA384:ECDHE-RSA-AES128-SHA128:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA384:AES128-GCM-SHA128:AES128-SHA128:AES128-SHA128:AES128-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4
-          enableECDHE             1
-          renegProtection         1
-          sslSessionCache         1
-          enableSpdy              15
-          enableStapling           1
-          ocspRespMaxAge           86400
-        }
-        """
+vhssl {
+  keyFile                 /www/server/panel/vhost/cert/BTDOMAIN/privkey.pem
+  certFile                /www/server/panel/vhost/cert/BTDOMAIN/fullchain.pem
+  certChain               1
+  sslProtocol             24
+  ciphers                 EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:ECDHE-RSA-AES128-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA128:DHE-RSA-AES128-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-GCM-SHA128:ECDHE-RSA-AES128-SHA384:ECDHE-RSA-AES128-SHA128:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA384:AES128-GCM-SHA128:AES128-SHA128:AES128-SHA128:AES128-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4
+  enableECDHE             1
+  renegProtection         1
+  sslSessionCache         1
+  enableSpdy              15
+  enableStapling           1
+  ocspRespMaxAge           86400
+}
+"""
         ssl_dir = self.setupPath + '/panel/vhost/openlitespeed/detail/ssl/'
         if not os.path.exists(ssl_dir):
             os.makedirs(ssl_dir)
@@ -2828,24 +2660,17 @@ listener SSL443 {{
         if not 'first_domain' in get: get.first_domain = siteName
         if 'isBatch' in get and siteName != get.first_domain: get.first_domain = siteName
 
-        # Nginx配置
+        # ========================== Nginx配置 ===========================
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
 
         # Node项目
-        if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
-        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/java_' + siteName + '.conf'
-        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/go_' + siteName + '.conf'
-        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/other_' + siteName + '.conf'
-        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
-        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/net_' + siteName + '.conf'
-        # if not os.path.exists(file):  file = self.setupPath + '/panel/vhost/nginx/html_' + siteName + '.conf'
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
+
         ng_file = file
         ng_conf = public.readFile(file)
         have_nginx_conf = ng_conf is not False
-        # 是否为子目录设置SSL
-        # if hasattr(get,'binding'):
-        #    allconf = conf;
-        #    conf = re.search("#BINDING-"+get.binding+"-START(.|\n)*#BINDING-"+get.binding+"-END",conf).group()
+
         try:
             if ng_conf:
                 if ng_conf.find('ssl_certificate') == -1:
@@ -2853,18 +2678,18 @@ listener SSL443 {{
                     if not self.is_nginx_http3():
                         http3_header = ""
                     sslStr = """#error_page 404/404.html;
-        ssl_certificate    /www/server/panel/vhost/cert/%s/fullchain.pem;
-        ssl_certificate_key    /www/server/panel/vhost/cert/%s/privkey.pem;
-        ssl_protocols %s;
-        ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
-        ssl_prefer_server_ciphers on;
-        ssl_session_tickets on;
-        ssl_session_cache shared:SSL:10m;
-        ssl_session_timeout 10m;
-        add_header Strict-Transport-Security "max-age=31536000";%s
-        error_page 497  https://$host$request_uri;
-    """ % (get.first_domain, get.first_domain, self.get_tls_protocol(self.get_tls13(), is_apache=False), http3_header)
-                    if (ng_conf.find('ssl_certificate') != -1):
+    ssl_certificate    /www/server/panel/vhost/cert/%s/fullchain.pem;
+    ssl_certificate_key    /www/server/panel/vhost/cert/%s/privkey.pem;
+    ssl_protocols %s;
+    ssl_ciphers EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_tickets on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    add_header Strict-Transport-Security "max-age=31536000";%s
+    error_page 497  https://$host$request_uri;
+""" % (get.first_domain, get.first_domain, self.get_tls_protocol(self.get_tls13(), is_apache=False), http3_header)
+                    if ng_conf.find('ssl_certificate') != -1:
                         if 'isBatch' not in get:
                             public.serviceReload()
                             return public.return_message(0, 0, public.lang("SSL turned on!"))
@@ -2929,30 +2754,6 @@ listener SSL443 {{
                 file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
                 other_project = "node"
 
-            # if not os.path.exists(file):
-            #     file = self.setupPath + '/panel/vhost/apache/java_' + siteName + '.conf'
-            #     other_project = "java"
-            #
-            # if not os.path.exists(file):
-            #     file = self.setupPath + '/panel/vhost/apache/go_' + siteName + '.conf'
-            #     other_project = "go"
-            #
-            # if not os.path.exists(file):
-            #     file = self.setupPath + '/panel/vhost/apache/other_' + siteName + '.conf'
-            #     other_project = "other"
-            #
-            # if not os.path.exists(file):
-            #     file = self.setupPath + '/panel/vhost/apache/python_' + siteName + '.conf'
-            #     other_project = "python"
-            #
-            # if not os.path.exists(file):
-            #     other_project = "net"
-            #     file = self.setupPath + '/panel/vhost/apache/net_' + siteName + '.conf'
-            #
-            # if not os.path.exists(file):
-            #     other_project = "html"
-            #     file = self.setupPath + '/panel/vhost/apache/html_' + siteName + '.conf'
-
             ap_conf = public.readFile(file)
             have_apache_conf = ap_conf is not False
             ap_static_security = self._get_ap_static_security(ap_conf)
@@ -2987,47 +2788,47 @@ listener SSL443 {{
                             else:
                                 return False
                         phpConfig = '''
-        #PHP
-        <FilesMatch \\.php$>
-                SetHandler "proxy:%s"
-        </FilesMatch>
-        ''' % (public.get_php_proxy(version, 'apache'),)
+    #PHP
+    <FilesMatch \\.php$>
+            SetHandler "proxy:%s"
+    </FilesMatch>
+    ''' % (public.get_php_proxy(version, 'apache'),)
                         apaOpt = 'Require all granted'
 
                     sslStr = fr'''%s<VirtualHost *:%s>
-        ServerAdmin webmaster@example.com
-        DocumentRoot "%s"
-        ServerName SSL.%s
-        ServerAlias %s
-        #errorDocument 404 /404.html
-        ErrorLog "%s-error_log"
-        CustomLog "%s-access_log" combined
+    ServerAdmin webmaster@example.com
+    DocumentRoot "%s"
+    ServerName SSL.%s
+    ServerAlias %s
+    #errorDocument 404 /404.html
+    ErrorLog "%s-error_log"
+    CustomLog "%s-access_log" combined
+    %s
+    #SSL
+    SSLEngine On
+    SSLCertificateFile /www/server/panel/vhost/cert/%s/fullchain.pem
+    SSLCertificateKeyFile /www/server/panel/vhost/cert/%s/privkey.pem
+    SSLCipherSuite EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
+    SSLProtocol All -SSLv2 -SSLv3 %s
+    SSLHonorCipherOrder On
+    %s
+    %s
+
+    #DENY FILES
+     <Files ~ (\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)$>
+       Order allow,deny
+       Deny from all
+    </Files>
+
+    #PATH
+    <Directory "%s">
+        SetOutputFilter DEFLATE
+        Options FollowSymLinks
+        AllowOverride All
         %s
-        #SSL
-        SSLEngine On
-        SSLCertificateFile /www/server/panel/vhost/cert/%s/fullchain.pem
-        SSLCertificateKeyFile /www/server/panel/vhost/cert/%s/privkey.pem
-        SSLCipherSuite EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5:ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
-        SSLProtocol All -SSLv2 -SSLv3 %s
-        SSLHonorCipherOrder On
-        %s
-        %s
-    
-        #DENY FILES
-         <Files ~ (\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)$>
-           Order allow,deny
-           Deny from all
-        </Files>
-    
-        #PATH
-        <Directory "%s">
-            SetOutputFilter DEFLATE
-            Options FollowSymLinks
-            AllowOverride All
-            %s
-            DirectoryIndex %s
-        </Directory>
-    </VirtualHost>''' % (vName, ssl_prot, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
+        DirectoryIndex %s
+    </Directory>
+</VirtualHost>''' % (vName, ssl_prot, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
                          public.GetConfigValue('logs_path') + '/' + siteName, ap_proxy,
                          get.first_domain, get.first_domain, self.get_tls_protocol(is_apache=True),
                          ap_static_security, phpConfig, path, apaOpt, index)
@@ -3054,25 +2855,16 @@ listener SSL443 {{
         try:
             self.set_ols_ssl(get, siteName)
             isError = public.checkWebConfig()
-            if (isError != True):
+            if isError is not True:
                 if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, ng_file)
                 if os.path.exists(self.apache_conf_bak): shutil.copyfile(self.apache_conf_bak, file)
                 public.ExecShell("rm -f /tmp/backup_*.conf")
                 return public.returnMsg(False,
                                         'ssl cert wrong: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
-
-            # sql = public.M('firewall')
-            # import firewalls
-            # get.port = ssl_prot
-            # get.ps = 'HTTPS'
-            # if 'isBatch' not in get: firewalls.firewalls().AddAcceptPort(get)
-            # if 'isBatch' not in get: public.serviceReload()
-            self.save_cert(get)
-            public.WriteLog('Site manager', 'Site [{}] turned on SSL successfully!'.format(siteName))
-
         except Exception as ols_err:
             public.print_log(f"set ols conf error: {ols_err}")
-
+        
+        public.WriteLog('Site manager', 'Site [{}] turned on SSL successfully!'.format(siteName))
         result = public.returnMsg(True, 'SITE_SSL_OPEN_SUCCESS')
         result['csr'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/fullchain.pem')
         result['key'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/privkey.pem')
@@ -3080,17 +2872,6 @@ listener SSL443 {{
             return result
         else:
             return public.returnMsg(True, "")
-
-    def save_cert(self, get):
-        # try:
-        import panel_ssl_v2 as panelSSL
-        ss = panelSSL.panelSSL()
-        get.keyPath = '/www/server/panel/vhost/cert/' + get.siteName + '/privkey.pem'
-        get.certPath = '/www/server/panel/vhost/cert/' + get.siteName + '/fullchain.pem'
-        return ss.SaveCert(get)
-        # return public.return_message(0, 0, public.lang(""))
-        # except:
-        # return False;
 
     # HttpToHttps
     def HttpToHttps(self, get):
@@ -3355,10 +3136,7 @@ listener SSL443 {{
         if not os.path.isfile(os.path.join(path, "fullchain.pem")) and not os.path.isfile(
                 os.path.join(path, "privkey.pem")):
             path = os.path.join('/etc/letsencrypt/live/', siteName)
-        type = 0
-        if os.path.exists(path + '/README'):  type = 1
-        if os.path.exists(path + '/partnerOrderId'):  type = 2
-        if os.path.exists(path + '/certOrderId'):  type = 3
+
         csrpath = path + "/fullchain.pem"  # 生成证书路径
         keypath = path + "/privkey.pem"  # 密钥文件路径
         key = public.readFile(keypath)
@@ -3368,24 +3146,6 @@ listener SSL443 {{
         # 是否为node项目
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/node_' + siteName + '.conf'
-
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/java_' + siteName + '.conf'
-
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/go_' + siteName + '.conf'
-
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/other_' + siteName + '.conf'
-
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/python_' + siteName + '.conf'
-
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/net_' + siteName + '.conf'
-
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/html_' + siteName + '.conf'
 
         if public.get_webserver() == "openlitespeed":
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + siteName + '.conf'
@@ -3403,65 +3163,41 @@ listener SSL443 {{
         status = True
         if conf.find(keyText) == -1:
             status = False
-            type = -1
 
         toHttps = self.IsToHttps(siteName)
         id = public.M('sites').where("name=?", (siteName,)).getField('id')
         domains = public.M('domain').where("pid=?", (id,)).field('name').select()
         email = public.M('users').where('id=?', (1,)).getField('email')
         if email == '287962566@qq.com': email = ''
-        index = ''
-        auth_type = 'http'
-        if status is True:
-            if type != 1:
-                import acme_v2
-                acme = acme_v2.acme_v2()
-                index = acme.check_order_exists(csrpath)
-                if index:
-                    if index.find('/') == -1:
-                        auth_type = acme._config['orders'][index]['auth_type']
-                    type = 1
-            else:
-                crontab_file = 'vhost/cert/crontab.json'
-                tmp = public.readFile(crontab_file)
-                if tmp:
-                    crontab_config = json.loads(tmp)
-                    if siteName in crontab_config:
-                        if 'dnsapi' in crontab_config[siteName]:
-                            auth_type = 'dns'
-
-            if os.path.exists(path + '/certOrderId'):  type = 3
-        oid = -1
-        if type == 3:
-            oid = int(public.readFile(path + '/certOrderId'))
 
         # ================== domian ssl v2 part =========================
-        try:
-            from ssl_domainModelV2.service import CertHandler
-            from ssl_domainModelV2.model import DnsDomainSSL
-            ssl = DnsDomainSSL.objects.filter(hash=CertHandler.get_hash(csr)).first()
-            if not ssl:
-                ssl = None
-            res = {
-                'status': status,
-                'oid': oid,
-                'domain': domains,
-                'key': key,
-                'csr': csr,
-                'type': type,
-                'httpTohttps': toHttps,
-                'cert_data': CertHandler.get_cert_info(cert_file_path=csrpath),
-                'email': email,
-                "index": index,
-                'auth_type': auth_type,
-                'tls_versions': self.get_ssl_protocol(get),
-                'push': self.get_site_push_status(None, siteName, 'ssl'),
-                'hash': CertHandler.get_hash(cert_pem=csr),
-                'auto_renew': ssl.auto_renew if ssl else 0,
-            }
-        except Exception as e:
-            return public.fail_v2(e)
+        from ssl_domainModelV2.service import CertHandler
+        from ssl_domainModelV2.model import DnsDomainSSL
+        ssl = DnsDomainSSL.objects.filter(hash=CertHandler.get_hash(csr)).first()
+        if ssl:
+            auto_renew = ssl.auto_renew
+            oid = int(ssl.order_info.get("oid", -1)) if ssl else -1
+            auth_type = ssl.auth_info.get("auth_type", "http") if oid != -1 else "dns"
+        else:
+            auto_renew = -1
+            oid = -1
+            auth_type = 'http'
 
+        res = {
+            'status': status,
+            'oid': oid,
+            'domain': domains,
+            'key': key,
+            'csr': csr,
+            'httpTohttps': toHttps,
+            'cert_data': CertHandler.get_cert_info(cert_file_path=csrpath) if ssl else None,
+            'email': email,
+            'auth_type': auth_type,
+            'tls_versions': self.get_ssl_protocol(get),
+            'push': self.get_site_push_status(None, siteName, 'ssl'),
+            'hash': CertHandler.get_hash(cert_pem=csr),
+            'auto_renew': auto_renew,
+        }
         return public.success_v2(res)
 
     def get_site_push_status(self, get, siteName=None, stype=None):
@@ -8636,32 +8372,40 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     def get_wp_security_status(self, get):
         domain_list = public.S('sites').where_in('project_type', 'WP2').field('id,name,path').select()
         data = []
+
+        # 获取网站waf数据
+        from panel_plugin_v2 import panelPlugin
+        obj = panelPlugin()
+        waf_obj = obj.get_soft_find(public.to_dict_obj({"sName":"btwaf"}))
+        waf_status = waf_obj["message"].get("status") if waf_obj.get("status") in [0, '0'] else False
+
+        waf_data = {}
+        if waf_status:
+            # 先尝试从json中获取数据
+            waf_path = "/www/server/btwaf/site.json"
+            if os.path.exists(waf_path):
+                try:
+                    waf_data = json.loads(public.readFile(waf_path))
+                except:
+                    pass
+
+            # 获取失败尝试从插件中获取
+            try:
+                if not waf_data:
+                    waf_data = public.run_plugin('btwaf', 'get_site_config', None)
+            except:
+                pass
+
         for i in domain_list:
             info = public.to_dict_obj(i)
             info.site_name = info.name
 
-            # try:
-            #     res = self.get_wp_security_info(info)
-            #     if not res["status"] == 0:
-            #         data.append({i['name']: False})
-            #         continue
-            #
-            #     if res['message']["file_status"] == 1 and res['message']["firewall_status"] == 1:
-            #         data.append({i['name']: True})
-            #         continue
-            #
-            #     data.append({i['name']: False})
-            #
-            # except Exception as e:
-            #     data.append({i['name']: False})
-
             # 获取防火墙状态
             firewall_status = 0
             try:
-                result = public.run_plugin('btwaf', 'get_site_config_byname',
-                                           public.to_dict_obj({'siteName': info.site_name}))
-                if result['open']:
-                    firewall_status = 1
+                if info.site_name in waf_data:
+                    if waf_data[info.site_name].get("open") in [True,'true']:
+                        firewall_status = 1
             except:
                 pass
 
@@ -11901,16 +11645,7 @@ server
     #error_page 502 /502.html;
     #ERROR-PAGE-END
     {begin_deny}
-    
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|bmp|webp|woff|woff2|svg)$ {{
-        root {site_path};
-        expires 30d;              
-        access_log off;            
-        add_header Cache-Control "public, no-transform";
-        try_files $uri =404;
-    }}
-    
-    
+
     location / {{
         proxy_pass http://{site_name};
         proxy_http_version 1.1;
@@ -11990,14 +11725,6 @@ server
         #error_page 502 /502.html;
         #ERROR-PAGE-END
         {begin_deny}
-        
-        location ~* \.(js|css|png|jpg|jpeg|gif|ico|bmp|webp|woff|woff2|svg)$ {{
-        root {site_path};
-        expires 30d;              
-        access_log off;            
-        add_header Cache-Control "public, no-transform";
-        try_files $uri =404;
-    }}
     
         location / {{
             proxy_pass http://{site_name};

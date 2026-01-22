@@ -904,7 +904,9 @@ def query_maillog_with_time_section(query: SqliteEasy, start_time: int = -1, end
         end_time = int(time.time())
 
     if end_time < start_time:
-        raise ValueError(public.lang('end_time must greater than start_time'))
+        # raise ValueError(public.lang('end_time must greater than start_time'))
+        # todo 暂时跳过
+        return []
 
     ret = []
 

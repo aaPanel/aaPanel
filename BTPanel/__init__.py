@@ -210,6 +210,7 @@ menu_map = {
         'memu_btwaf': '/btwaf',           # Waf
         'memu_mailsys': '/mail',          # Mail Server
         'memuafiles': '/files',           # Files
+        'menunode': '/node',              # Node Management
         'memualogs': '/logs',             # Logs
         'menu_ssl': '/ssl_domain',        # SSL
         'memuaxterm': '/xterm',           # Terminal
@@ -1518,7 +1519,7 @@ def ajax(pdata=None):
     ajaxObject = ajax.ajax()
     defs = ('get_lines', 'php_info', 'change_phpmyadmin_ssl_port',
             'set_phpmyadmin_ssl', 'get_phpmyadmin_ssl', 'get_pd',
-            'check_user_auth', 'to_not_beta', 'get_beta_logs', 'apple_beta',
+            'check_user_auth', 'to_not_beta', 'get_beta_logs', 'get_version_logs','apple_beta',
             'GetApacheStatus', 'GetCloudHtml', 'get_pay_type',
             'get_load_average', 'GetOpeLogs', 'GetFpmLogs', 'GetFpmSlowLogs',
             'SetMemcachedCache', 'GetMemcachedStatus', 'GetRedisStatus',
@@ -2406,7 +2407,7 @@ def panel_public():
 def panel_other(name=None, fun=None, stype=None):
     # 左侧栏路由
     if name in ('site', 'database', 'docker', 'wp', 'mail', 'security', 'crontab', 'waf', 'setting', 'logs',
-                'monitor/system', 'control', 'binds', 'softs', 'modify_password', 'flow', 'ssl_domain'):
+                'monitor/system', 'control', 'binds', 'softs', 'modify_password', 'flow', 'ssl_domain', 'node'):
         return index_new('{}/{}'.format(name, fun))
 
     # 插件接口
@@ -4049,7 +4050,8 @@ def ssh_security_v2(pdata=None):
             'stop_jian', 'get_jian', 'get_logs', 'set_root', 'stop_root',
             'start_auth_method', 'stop_auth_method', 'get_auth_method',
             'check_so_file', 'get_so_file', 'get_pin', 'set_login_send',
-            'get_login_send', 'get_msg_push_list', 'clear_login_send', 'set_root_password')
+            'get_login_send', 'get_msg_push_list', 'clear_login_send', 'set_root_password',
+            'get_sshd_anti_logs', 'set_anti_conf', 'get_anti_conf', 'del_ban_ip')
     return publicObject(firewallObject, defs, None, pdata, is_csrf)
 
 
@@ -4209,19 +4211,13 @@ def abnormal_v2(pdata=None):
     return publicObject(dataObject, defs, None, pdata)
 
 
-@app.route(route_v2 + '/project/nodejs/<def_name>', methods=method_all)
-@app.route(route_v2 + '/project/nodejs/<def_name>/html', methods=method_all)
-@app.route(route_v2 + '/project/docker/<def_name>', methods=method_all)
-@app.route(route_v2 + '/project/docker/<def_name>/html', methods=method_all)
-@app.route(route_v2 + '/project/quota/<def_name>', methods=method_all)
-@app.route(route_v2 + '/project/quota/<def_name>/html', methods=method_all)
-@app.route(route_v2 + '/project/proxy/<def_name>', methods=method_all)
-@app.route(route_v2 + '/project/proxy/<def_name>/html', methods=method_all)
-@app.route(route_v2 + '/project/webbasicscanning/<def_name>', methods=method_all)
-def project_v2(def_name):
+@app.route(route_v2 + '/project/<mod_name>/<def_name>', methods=method_all)
+@app.route(route_v2 + '/project/<mod_name>/<def_name>/<stype>', methods=method_all)
+def project_v2(mod_name, def_name, stype=None):
+    # ps: classV2 projectModelV2 动态调用
     if request.method not in ['GET', 'POST']: return
-    path_split = request.path.split("/")
-    if len(path_split) < 5: return
+    if not mod_name: return abort(404)
+    if not def_name: return abort(404)
     comReturn = comm.local()
     if comReturn: return comReturn
     from panelProjectControllerV2 import ProjectController
@@ -4229,9 +4225,10 @@ def project_v2(def_name):
     defs = ('model',)
     get = get_input()
     get.action = 'model'
-    get.mod_name = path_split[3]
+    get.mod_name = mod_name
     get.def_name = def_name
-    if request.path.endswith('/html'):
+    get.stype = stype
+    if stype == 'html':
         return project_obj.model(get)
     return publicObject(project_obj, defs, None, get)
 
@@ -4608,7 +4605,7 @@ def ajax_v2(pdata=None):
     ajaxObject = ajax_v2.ajax()
     defs = ('get_lines', 'php_info', 'change_phpmyadmin_ssl_port',
             'set_phpmyadmin_ssl', 'get_phpmyadmin_ssl', 'get_pd',
-            'check_user_auth', 'to_not_beta', 'get_beta_logs', 'apple_beta',
+            'check_user_auth', 'to_not_beta', 'get_beta_logs', 'get_version_logs','apple_beta',
             'GetApacheStatus', 'GetCloudHtml', 'get_pay_type',
             'get_load_average', 'GetOpeLogs', 'GetFpmLogs', 'GetFpmSlowLogs',
             'SetMemcachedCache', 'GetMemcachedStatus', 'GetRedisStatus',
@@ -5517,6 +5514,7 @@ def databaseModel_v2(def_name):
 @app.route(route_v2 + '/safe/security/<def_name>', methods=method_all)
 @app.route(route_v2 + '/safe/ssh/<def_name>', methods=method_all)
 @app.route(route_v2 + '/safe/syslog/<def_name>', methods=method_all)
+@app.route(route_v2 + '/safe/serversafe/<def_name>', methods=method_all)
 def safeModel_v2(def_name):
     if request.method not in ['GET', 'POST']: return
     path_split = request.path.split("/")
@@ -6289,43 +6287,32 @@ def push_v2(pdata=None):
 
 
 # 2024/1/24 上午 11:42 新场景模型的路由
-# def panel_mod_v2(name=None, sub_name=None, fun=None, stype=None):
-@app.route(route_v2 + '/mod/push/msgconf/<fun>', methods=method_all)
-@app.route(route_v2 + '/mod/push/task/<fun>', methods=method_all)
-@app.route(route_v2 + '/mod/proxy/com/<fun>', methods=method_all)
-@app.route(route_v2 + '/mod/proxy/com/<fun>/<path:stype>', methods=method_all)
-@app.route(route_v2 + '/mod/docker/com/<fun>', methods=method_all)
-@app.route(route_v2 + '/mod/docker/com/<fun>/<path:stype>', methods=method_all)
-@app.route(route_v2 + '/mod/ssh/com/<fun>', methods=method_all)
-@app.route(route_v2 + '/mod/ssh/com/<fun>/<path:stype>', methods=method_all)
-@app.route(route_v2 + '/mod/backup_restore/com/<fun>', methods=method_all)
-@app.route(route_v2 + '/mod/backup_restore/com/<fun>/<path:stype>', methods=method_all)
-def panel_mod_v2(fun=None, stype=None):
+@app.route(route_v2 + '/mod/<name>/<sub_name>/<fun>', methods=method_all)
+@app.route(route_v2 + '/mod/<name>/<sub_name>/<fun>/<path:stype>', methods=method_all)
+def panel_mod_v2(name=None, sub_name=None, fun=None, stype=None):
     """
         @name 新场景模型的路由
         @param "data":{"参数名":""} <数据类型> 参数描述
         @return dict{"status":True/False,"msg":"提示信息"}
+
+        PS: mod/project/... 动态调用
+        name为场景名称，如push、proxy、docker, java, php等
+        sub_name为该场景下子模块名称，如push下的 msgconfMod、taskMod等, 不带Mod
+        fun为调用 main类的方法
+        stype为响应类型，json或html，默认json
     """
+    # 取消 /mod/ 路由下的强制绑定账号限制 2025/06/19
     # if not public.is_bind():
     #     return redirect('/bind', 302)
     if public.is_error_path():
         return redirect('/error', 302)
 
-    path_split = request.path.split("/")
-    if len(path_split) < 5: return
-    name = path_split[3]
-    sub_name = path_split[4]
-
-    if not name:
-        return abort(404)
-    if not sub_name:
-        return abort(404)
-    if not re.match(r"^[\w\-]+$", name):
-        return abort(404)
-    if not re.match(r"^[\w\-]+$", sub_name):
-        return abort(404)
-    if fun and not re.match(r"^[\w\-.]+$", fun):
-        return abort(404)
+    if not name: return abort(404)
+    if not sub_name: return abort(404)
+    if sub_name.endswith('Mod'): sub_name = sub_name[:-3]
+    if not re.match(r"^[\w\-]+$", name): return abort(404)
+    if not re.match(r"^[\w\-]+$", sub_name): return abort(404)
+    if fun and not re.match(r"^[\w\-.]+$", fun): return abort(404)
 
     comReturn = comm.local()
     if comReturn: return comReturn

@@ -11,45 +11,97 @@
 # ------------------------------
 # aa Background Schedule Task
 # ------------------------------
-
-import importlib
+import gc
 import json
 import os
-import re
-import shutil
+import subprocess
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime, timedelta
 from typing import Optional
 
 import psutil
 
 sys.path.insert(0, "/www/server/panel/class/")
-import db
-import public
-from panelTask import bt_task
+from public.hook_import import hook_import
 
 try:
-    from public.hook_import import hook_import
-
     hook_import()
-except Exception:
+except:
     pass
 
+import db
+from panelTask import bt_task
+from script.restart_services import RestartServices
 from BTTask.brain import SimpleBrain
 from BTTask.conf import (
     BASE_PATH,
-    CURRENT_TASK_VERSION,
     PYTHON_BIN,
     exlogPath,
     isTask,
     logger,
 )
 
-# 非标准库等任务依赖导入请在函数中延迟导入
 
-global pre
+def write_file(path: str, content: str, mode='w'):
+    try:
+        fp = open(path, mode)
+        fp.write(content)
+        fp.close()
+        return True
+    except:
+        try:
+            fp = open(path, mode, encoding="utf-8")
+            fp.write(content)
+            fp.close()
+            return True
+        except:
+            return False
+
+
+def read_file(filename: str):
+    fp = None
+    try:
+        fp = open(filename, "rb")
+        f_body_bytes: bytes = fp.read()
+        f_body = f_body_bytes.decode("utf-8", errors='ignore')
+        fp.close()
+        return f_body
+    except Exception:
+        return False
+    finally:
+        if fp and not fp.closed:
+            fp.close()
+
+
+def exec_shell(cmdstring, timeout=None, shell=True, cwd=None):
+    """
+        @name 执行命令
+        @param cmdstring 命令 [必传]
+        @param timeout 超时时间
+        @param shell 是否通过shell运行
+        @return 命令执行结果
+    """
+    try:
+        result = subprocess.run(
+            cmdstring,
+            shell=shell,
+            cwd=cwd,
+            timeout=timeout,
+            capture_output=True,
+            text=True,  # 直接以文本模式处理输出
+            encoding='utf-8',
+            errors='ignore',
+            env=os.environ
+        )
+        return result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return 'Timed out', ''
+    except Exception:
+        return '', traceback.format_exc()
+
 
 task_obj = bt_task()
 task_obj.not_web = True
@@ -61,7 +113,7 @@ def task_ExecShell(fucn_name: str, **kw):
     仅运行 /www/server/panel/BTTask/task_script.py 下的包装函数
     可通过 kw 参数扩展前置检查，例如:
       - kw['paths_exists']: List [str]
-      (例如, 检查邮局插件是否存在
+      (例如, 检查邮局插件是否存在, 任何一个检查不存在则不执行
       paths_exists=['/www/server/panel/plugin/mail_sys/mail_sys_main.py', '/www/vmail'])
 
     """
@@ -72,13 +124,13 @@ def task_ExecShell(fucn_name: str, **kw):
         for p in kw["paths_exists"]:
             try:
                 if not os.path.exists(str(p)):
-                    logger.debug(f"Skip task [{fucn_name}]: path exists check failed - '{p}' not found")
+                    logger.debug(f"Skip task [{fucn_name}]: path not exists")
                     return
             except Exception as e:
                 raise ValueError(f"Invalid path in paths_exists: '{p}', error: {e}")
 
     cmd = f"{PYTHON_BIN} /www/server/panel/BTTask/task_script.py {fucn_name}"
-    _, err = public.ExecShell(cmd)
+    _, err = exec_shell(cmd)
     if err:
         raise Exception(err)
     del err, cmd
@@ -87,301 +139,220 @@ def task_ExecShell(fucn_name: str, **kw):
 # 系统监控任务
 # noinspection PyUnusedLocal
 def systemTask():
-    def GetMemUsed():
+    cycle = 60
+    control_conf = f"{BASE_PATH}/data/control.conf"
+
+    def get_mem_used_percent() -> float:
         try:
             mem = psutil.virtual_memory()
-            memInfo = {'memTotal': mem.total / 1024 / 1024, 'memFree': mem.free / 1024 / 1024,
-                       'memBuffers': mem.buffers / 1024 / 1024, 'memCached': mem.cached / 1024 / 1024}
-            tmp = memInfo['memTotal'] - memInfo['memFree'] - \
-                  memInfo['memBuffers'] - memInfo['memCached']
-            tmp1 = memInfo['memTotal'] / 100
-            return tmp / tmp1
-        except:
-            return 1
+            total = mem.total / 1024 / 1024
+            free = mem.free / 1024 / 1024
+            buffers = getattr(mem, "buffers", 0) / 1024 / 1024
+            cached = getattr(mem, "cached", 0) / 1024 / 1024
+            used = total - free - buffers - cached
+            return used / (total / 100.0) if total else 1.0
+        except Exception:
+            return 1.0
 
-    def GetLoadAverage():
-        c = os.getloadavg()
-        data = {
-            'one': float(c[0]),
-            'five': float(c[1]),
-            'fifteen': float(c[2]),
-            'max': psutil.cpu_count() * 2
+    def get_load_average():
+        one, five, fifteen = os.getloadavg()
+        max_v = psutil.cpu_count() * 2
+        return {
+            "one": float(one),
+            "five": float(five),
+            "fifteen": float(fifteen),
+            "max": max_v,
+            "limit": max_v,
+            "safe": max_v * 0.75,
         }
-        data['limit'] = data['max']
-        data['safe'] = data['max'] * 0.75
-        return data
 
-    cycle = 60
-    try:
-        filename = '{}/data/control.conf'.format(BASE_PATH)
+    def ensure_tables():
         with db.Sql() as sql:
-            sql = sql.dbfile('system')
+            sql = sql.dbfile("system")
+            sql.execute(
+                """CREATE TABLE IF NOT EXISTS `load_average`(
+                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
+                    `pro` REAL, `one` REAL, `five` REAL, `fifteen` REAL, `addtime` INTEGER
+                )""",
+                (),
+            )
+            sql.execute(
+                """CREATE TABLE IF NOT EXISTS `network`(
+                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
+                    `up` INTEGER, `down` INTEGER, `total_up` INTEGER, `total_down` INTEGER,
+                    `down_packets` INTEGER, `up_packets` INTEGER, `addtime` INTEGER
+                )""",
+                (),
+            )
+            sql.execute(
+                """CREATE TABLE IF NOT EXISTS `cpuio`(
+                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
+                    `pro` INTEGER, `mem` INTEGER, `addtime` INTEGER
+                )""",
+                (),
+            )
+            sql.execute(
+                """CREATE TABLE IF NOT EXISTS `diskio`(
+                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
+                    `read_count` INTEGER, `write_count` INTEGER,
+                    `read_bytes` INTEGER, `write_bytes` INTEGER,
+                    `read_time` INTEGER, `write_time` INTEGER,
+                    `addtime` INTEGER
+                )""",
+                (),
+            )
 
-            csql = '''CREATE TABLE IF NOT EXISTS `load_average`
-                      (
-                          `id`
-                          INTEGER
-                          PRIMARY
-                          KEY
-                          AUTOINCREMENT,
-                          `pro`
-                          REAL,
-                          `one`
-                          REAL,
-                          `five`
-                          REAL,
-                          `fifteen`
-                          REAL,
-                          `addtime`
-                          INTEGER
-                      )'''
+    def read_keep_days() -> int:
+        try:
+            day = int(read_file(control_conf) or 30)
+            return day if day >= 1 else 0
+        except Exception:
+            return 30
 
-            network_sql = '''CREATE TABLE IF NOT EXISTS `network`
-                             (
-                                 `id`
-                                 INTEGER
-                                 PRIMARY
-                                 KEY
-                                 AUTOINCREMENT,
-                                 `up`
-                                 INTEGER,
-                                 `down`
-                                 INTEGER,
-                                 `total_up`
-                                 INTEGER,
-                                 `total_down`
-                                 INTEGER,
-                                 `down_packets`
-                                 INTEGER,
-                                 `up_packets`
-                                 INTEGER,
-                                 `addtime`
-                                 INTEGER
-                             )'''
+    def collect_network(net_up, net_down):
+        net_io = psutil.net_io_counters(pernic=True)
+        up_total = down_total = 0
+        up = down = 0.0
+        down_packets = {}
+        up_packets = {}
 
-            cpuio_sql = '''CREATE TABLE IF NOT EXISTS `cpuio`
-                           (
-                               `id`
-                               INTEGER
-                               PRIMARY
-                               KEY
-                               AUTOINCREMENT,
-                               `pro`
-                               INTEGER,
-                               `mem`
-                               INTEGER,
-                               `addtime`
-                               INTEGER
-                           )'''
+        for nic, counters in net_io.items():
+            sent, recv = counters[:2]
+            if nic not in net_up:
+                net_up[nic] = sent
+                net_down[nic] = recv
 
-            diskio_sql = '''CREATE TABLE IF NOT EXISTS `diskio`
-                            (
-                                `id`
-                                INTEGER
-                                PRIMARY
-                                KEY
-                                AUTOINCREMENT,
-                                `read_count`
-                                INTEGER,
-                                `write_count`
-                                INTEGER,
-                                `read_bytes`
-                                INTEGER,
-                                `write_bytes`
-                                INTEGER,
-                                `read_time`
-                                INTEGER,
-                                `write_time`
-                                INTEGER,
-                                `addtime`
-                                INTEGER
-                            )'''
+            up_total += sent
+            down_total += recv
 
-            sql.execute(csql, ())
-            sql.execute(network_sql, ())
-            sql.execute(cpuio_sql, ())
-            sql.execute(diskio_sql, ())
+            dp = round(float((recv - net_down[nic]) / 1024) / cycle, 2)
+            up_p = round(float((sent - net_up[nic]) / 1024) / cycle, 2)
+            down_packets[nic] = dp
+            up_packets[nic] = up_p
+            up += up_p
+            down += dp
 
-            sql.close()
+            net_up[nic] = sent
+            net_down[nic] = recv
 
-        count = 0
-        reloadNum = 0
-        diskio_1 = diskio_2 = networkInfo = cpuInfo = diskInfo = None
-        network_up = {}
-        network_down = {}
+        return {
+            "upTotal": up_total,
+            "downTotal": down_total,
+            "up": up,
+            "down": down,
+            "downPackets": down_packets,
+            "upPackets": up_packets,
+        }
+
+    diskstats_exists = os.path.exists("/proc/diskstats")
+    diskio_prev = None
+
+    try:
+        ensure_tables()
         import process_task
         proc_task_obj = process_task.process_task()
-
+        net_up, net_down = {}, {}
         while True:
-            if not os.path.exists(filename):
+            if not os.path.exists(control_conf):
                 time.sleep(10)
                 continue
-
-            day = 30
-            try:
-                day = int(public.readFile(filename))
-                if day < 1:
-                    time.sleep(10)
-                    continue
-            except:
-                day = 30
-
+            keep_days = read_keep_days()
+            if keep_days < 1:
+                time.sleep(10)
+                continue
             addtime = int(time.time())
-            deltime = addtime - (day * 86400)
-            # 取当前CPU Io
-            tmp = {'used': proc_task_obj.get_monitor_list(addtime), 'mem': GetMemUsed()}
-            cpuInfo = tmp
-
-            # 取当前网络Io
-            networkIo_list = psutil.net_io_counters(pernic=True)
-            tmp = {'upTotal': 0, 'downTotal': 0, 'up': 0, 'down': 0, 'downPackets': {}, 'upPackets': {}}
-
-            for k in networkIo_list.keys():
-                networkIo = networkIo_list[k][:4]
-                if not k in network_up.keys():
-                    network_up[k] = networkIo[0]
-                    network_down[k] = networkIo[1]
-
-                tmp['upTotal'] += networkIo[0]
-                tmp['downTotal'] += networkIo[1]
-                tmp['downPackets'][k] = round(
-                    float((networkIo[1] - network_down[k]) / 1024) / cycle, 2)
-                tmp['upPackets'][k] = round(
-                    float((networkIo[0] - network_up[k]) / 1024) / cycle, 2)
-                tmp['up'] += tmp['upPackets'][k]
-                tmp['down'] += tmp['downPackets'][k]
-
-                network_up[k] = networkIo[0]
-                network_down[k] = networkIo[1]
-
-            networkInfo = tmp
-
-            # 取磁盘Io
-            disk_ios = True
+            deltime = addtime - (keep_days * 86400)
             try:
-                if os.path.exists('/proc/diskstats'):
-                    diskio_2 = psutil.disk_io_counters()
+                cpu_used = proc_task_obj.get_monitor_list(addtime)
+                mem_used = get_mem_used_percent()
+                network_info = collect_network(net_up, net_down)
+                disk_info = None
+                disk_ios_ok = True
+                if diskstats_exists:
+                    try:
+                        diskio_now = psutil.disk_io_counters()
+                        if diskio_prev is None:
+                            diskio_prev = diskio_now
+                        disk_info = {
+                            "read_count": int((diskio_now.read_count - diskio_prev.read_count) / cycle),
+                            "write_count": int((diskio_now.write_count - diskio_prev.write_count) / cycle),
+                            "read_bytes": int((diskio_now.read_bytes - diskio_prev.read_bytes) / cycle),
+                            "write_bytes": int((diskio_now.write_bytes - diskio_prev.write_bytes) / cycle),
+                            "read_time": int((diskio_now.read_time - diskio_prev.read_time) / cycle),
+                            "write_time": int((diskio_now.write_time - diskio_prev.write_time) / cycle),
+                        }
+                        diskio_prev = diskio_now
+                    except Exception:
+                        disk_ios_ok = False
+                load_average = get_load_average()
+                lpro = round((load_average["one"] / load_average["max"]) * 100, 2) if load_average["max"] else 0
+                if lpro > 100:
+                    lpro = 100
 
-                    if not diskio_1:
-                        diskio_1 = diskio_2
-                    tmp = {'read_count': int((diskio_2.read_count - diskio_1.read_count) / cycle),
-                           'write_count': int((diskio_2.write_count - diskio_1.write_count) / cycle),
-                           'read_bytes': int((diskio_2.read_bytes - diskio_1.read_bytes) / cycle),
-                           'write_bytes': int((diskio_2.write_bytes - diskio_1.write_bytes) / cycle),
-                           'read_time': int((diskio_2.read_time - diskio_1.read_time) / cycle),
-                           'write_time': int((diskio_2.write_time - diskio_1.write_time) / cycle)}
-
-                    if not diskInfo:
-                        diskInfo = tmp
-
-                    diskInfo['read_count'] = tmp['read_count']
-                    diskInfo['write_count'] = tmp['write_count']
-                    diskInfo['read_bytes'] = tmp['read_bytes']
-                    diskInfo['write_bytes'] = tmp['write_bytes']
-                    diskInfo['read_time'] = tmp['read_time']
-                    diskInfo['write_time'] = tmp['write_time']
-
-                    diskio_1 = diskio_2
-            except:
-                logger.info(public.get_error_info())
-                disk_ios = False
-
-            try:
                 with db.Sql().dbfile("system") as sql:
-                    data = (cpuInfo['used'], cpuInfo['mem'], addtime)
-                    sql.table('cpuio').add('pro,mem,addtime', data)
-                    sql.table('cpuio').where("addtime<?", (deltime,)).delete()
-                    data = (networkInfo['up'], networkInfo['down'], networkInfo['upTotal'], networkInfo['downTotal'],
-                            json.dumps(networkInfo['downPackets']), json.dumps(networkInfo['upPackets']), addtime)
-                    sql.table('network').add('up,down,total_up,total_down,down_packets,up_packets,addtime', data)
-                    sql.table('network').where("addtime<?", (deltime,)).delete()
-                    if os.path.exists('/proc/diskstats') and disk_ios:
-                        data = (diskInfo['read_count'], diskInfo['write_count'], diskInfo['read_bytes'],
-                                diskInfo['write_bytes'], diskInfo['read_time'], diskInfo['write_time'], addtime)
-                        sql.table('diskio').add(
-                            'read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime', data)
-                        sql.table('diskio').where("addtime<?", (deltime,)).delete()
+                    sql.table("cpuio").add("pro,mem,addtime", (cpu_used, mem_used, addtime))
+                    sql.table("cpuio").where("addtime<?", (deltime,)).delete()
 
-                    # LoadAverage
-                    load_average = GetLoadAverage()
-                    lpro = round(
-                        (load_average['one'] / load_average['max']) * 100, 2)
-                    if lpro > 100:
-                        lpro = 100
-                    sql.table('load_average').add('pro,one,five,fifteen,addtime',
-                                                  (lpro, load_average['one'], load_average['five'],
-                                                   load_average['fifteen'],
-                                                   addtime))
-                    sql.table('load_average').where("addtime<?", (deltime,)).delete()
+                    sql.table("network").add(
+                        "up,down,total_up,total_down,down_packets,up_packets,addtime",
+                        (
+                            network_info["up"],
+                            network_info["down"],
+                            network_info["upTotal"],
+                            network_info["downTotal"],
+                            json.dumps(network_info["downPackets"]),
+                            json.dumps(network_info["upPackets"]),
+                            addtime,
+                        ),
+                    )
+                    sql.table("network").where("addtime<?", (deltime,)).delete()
 
-                lpro = None
-                load_average = None
-                cpuInfo = None
-                networkInfo = None
-                diskInfo = None
-                data = None
-                count = 0
-                reloadNum += 1
-                if reloadNum > 1440:
-                    reloadNum = 0
+                    if diskstats_exists and disk_ios_ok and disk_info:
+                        sql.table("diskio").add(
+                            "read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime",
+                            (
+                                disk_info["read_count"],
+                                disk_info["write_count"],
+                                disk_info["read_bytes"],
+                                disk_info["write_bytes"],
+                                disk_info["read_time"],
+                                disk_info["write_time"],
+                                addtime,
+                            ),
+                        )
+                        sql.table("diskio").where("addtime<?", (deltime,)).delete()
+
+                    sql.table("load_average").add(
+                        "pro,one,five,fifteen,addtime",
+                        (lpro, load_average["one"], load_average["five"], load_average["fifteen"], addtime),
+                    )
+                    sql.table("load_average").where("addtime<?", (deltime,)).delete()
             except Exception:
                 import traceback
                 logger.error(traceback.format_exc())
-            del tmp
+            finally:
+                del cpu_used, mem_used, network_info, disk_info, load_average
+                gc.collect()
             time.sleep(cycle)
-            count += 1
     except Exception:
         import traceback
         logger.error(traceback.format_exc())
     finally:
-        import gc
         gc.collect()
 
 
-# 每10分钟, 原来旧的502错误检查线程 (夹杂其他任务)
 def check502Task():
     task_ExecShell("check502task")
-
-
-# todo 计划废弃
-# 每1小时检查面板证书是否有更新
-# def check_panel_ssl():
-#     try:
-#         lets_info = public.ReadFile("{}/ssl/lets.info".format(BASE_PATH))
-#         if not lets_info:
-#             del lets_info
-#             return
-#         os.system(
-#             PYTHON_BIN + " {}/script/panel_ssl_task.py > /dev/null".format(BASE_PATH)
-#         )
-#         del lets_info
-#     except Exception as e:
-#         raise e
-
-# 更新PID文件
-def update_pid_file(pid):
-    pid_file = "{}/logs/panel.pid".format(public.get_panel_path())
-    try:
-        with open(pid_file, 'w') as f:
-            f.write(str(pid))
-        logger.info(f'Updated panel PID file with PID {pid}')
-    except Exception as e:
-        logger.error(f'Error writing to PID file: {e}')
 
 
 # 服务守护
 def daemon_service():
     try:
-        from script import restart_services
-        importlib.reload(restart_services)
-        obj = restart_services.RestartServices()
-        obj.main()
-        del obj
-    except Exception:
-        from script.restart_services import RestartServices
         obj = RestartServices()
         obj.main()
         del obj
+    finally:
+        gc.collect()
 
 
 # 重启面板服务
@@ -408,14 +379,12 @@ def restart_panel():
 def send_mail_time():
     if not os.path.exists('/www/server/panel/plugin/mail_sys/mail_sys_main.py') or not os.path.exists('/www/vmail'):
         return
-    os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/mail_task.py > /dev/null 2>&1 &")
+    exec_shell("{} /www/server/panel/script/mail_task.py".format(PYTHON_BIN))
 
 
 # 面板消息提醒
 def check_panel_msg():
-    os.system(
-        'nohup {} /www/server/panel/script/check_msg.py > /dev/null 2>&1 &'.format(PYTHON_BIN)
-    )
+    exec_shell("{} /www/server/panel/script/check_msg.py".format(PYTHON_BIN))
 
 
 # 面板推送消息
@@ -423,7 +392,7 @@ def push_msg():
     def _read_file(file_path: str) -> Optional[list]:
         if not os.path.exists(file_path):
             return None
-        content = public.readFile(file_path)
+        content = read_file(file_path)
         if not content:
             return None
         try:
@@ -442,14 +411,10 @@ def push_msg():
             break
     if not work:
         return
-
-    task_info = _read_file(task_path) or []
-    if not task_info:
+    if not _read_file(task_path):
         return
+    exec_shell("{} /www/server/panel/script/push_msg.py".format(PYTHON_BIN))
 
-    public.ExecShell(
-        'nohup {} /www/server/panel/script/push_msg.py > /dev/null 2>&1 &'.format(PYTHON_BIN)
-    )
 
 
 # 检测面板授权
@@ -463,7 +428,6 @@ def panel_auth():
         except Exception as e:
             logger.error("Failed to import cache from BTPanel: {}".format(e))
             cache = None
-
         if cache:
             key = 'pro_check_sdfjslk'
             res = cache.get(key)
@@ -476,139 +440,7 @@ def panel_auth():
 
 
 def count_ssh_logs():
-    """
-        @name 统计SSH登录日志
-        @return None
-    """
-
-    import json
-
-    def parse_journal_disk_usage(output):
-        # 使用正则表达式来提取数字和单位
-        match = re.search(r'take up (\d+(\.\d+)?)\s*([KMGTP]?)', output)
-        total_bytes = 0
-        if match:
-            value = float(match.group(1))  # 数字
-            unit = match.group(3)  # 单位
-            # 将所有单位转换为字节
-            if unit == '':
-                unit_value = 1
-            elif unit == 'K':
-                unit_value = 1024
-            elif unit == 'M':
-                unit_value = 1024 * 1024
-            elif unit == 'G':
-                unit_value = 1024 * 1024 * 1024
-            elif unit == 'T':
-                unit_value = 1024 * 1024 * 1024 * 1024
-            elif unit == 'P':
-                unit_value = 1024 * 1024 * 1024 * 1024 * 1024
-            else:
-                unit_value = 0
-
-            # 计算总字节数
-            total_bytes = value * unit_value
-        return total_bytes
-
-    if os.path.exists("/etc/debian_version"):
-        version = public.readFile('/etc/debian_version')
-        if not version:
-            return
-        version = version.strip()
-        if 'bookworm' in version or 'jammy' in version or 'impish' in version:
-            version = 12
-        else:
-            try:
-                version = float(version)
-            except:
-                version = 11
-
-        if version >= 12:
-            while True:
-                filepath = "/www/server/panel/data/ssh_login_counts.json"
-
-                # 获取今天的日期
-                today = datetime.now().strftime('%Y-%m-%d')
-                result = {
-                    'date': today,  # 添加日期字段
-                    'error': 0,
-                    'success': 0,
-                    'today_error': 0,
-                    'today_success': 0
-                }
-                try:
-                    filedata = public.readFile(filepath) if os.path.exists(filepath) else public.writeFile(filepath,
-                                                                                                           "[]")
-                    try:
-                        data_list = json.loads(filedata)
-                    except:
-                        data_list = []
-
-                    # 检查是否已有今天的记录，避免重复统计
-                    found_today = False
-                    for day in data_list:
-                        if day['date'] == today:
-                            found_today = True
-                            break
-
-                    if found_today:
-                        break  # 如果找到今天的记录，跳出while循环
-
-                    today_err_num1 = int(public.ExecShell(
-                        "journalctl -u ssh --no-pager -S today |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[
-                                             0])
-
-                    today_err_num2 = int(public.ExecShell(
-                        "journalctl -u ssh --no-pager -S today |grep -a 'Connection closed by authenticating user' |grep -a 'preauth' |wc -l")[
-                                             0])
-
-                    today_success = int(
-                        public.ExecShell("journalctl -u ssh --no-pager -S today |grep -a 'Accepted' |wc -l")[0])
-
-                    # 查看文件大小 判断是否超过5G
-                    is_bigfile = False
-
-                    res, err = public.ExecShell("journalctl --disk-usage")
-                    total_bytes = parse_journal_disk_usage(res)
-                    limit_bytes = 5 * 1024 * 1024 * 1024
-                    if total_bytes > limit_bytes:
-                        is_bigfile = True
-
-                    if is_bigfile:
-                        err_num1 = int(public.ExecShell(
-                            "journalctl -u ssh --since '30 days ago' --no-pager | grep -a 'Failed password for' | grep -v 'invalid' | wc -l")[
-                                           0])
-                        err_num2 = int(public.ExecShell(
-                            "journalctl -u ssh --since '30 days ago' --no-pager --grep='Connection closed by authenticating user|preauth' | wc -l")[
-                                           0])
-                        success = int(public.ExecShell(
-                            "journalctl -u ssh --since '30 days ago' --no-pager | grep -a 'Accepted' | wc -l")[0])
-                    else:
-                        # 统计失败登陆次数
-                        err_num1 = int(public.ExecShell(
-                            "journalctl -u ssh --no-pager |grep -a 'Failed password for' |grep -v 'invalid' |wc -l")[0])
-                        err_num2 = int(public.ExecShell(
-                            "journalctl -u ssh --no-pager --grep='Connection closed by authenticating user|preauth' |wc -l")[
-                                           0])
-                        success = int(public.ExecShell("journalctl -u ssh --no-pager|grep -a 'Accepted' |wc -l")[0])
-                    result['error'] = err_num1 + err_num2
-                    # 统计成功登录次数
-                    result['success'] = success
-                    result['today_error'] = today_err_num1 + today_err_num2
-                    result['today_success'] = today_success
-
-                    data_list.insert(0, result)
-                    data_list = data_list[:7]
-                    public.writeFile(filepath, json.dumps(data_list))
-                except:
-                    logger.error(public.get_error_info())
-                    public.writeFile(filepath, json.dumps([{
-                        'date': today,  # 添加日期字段
-                        'error': 0,
-                        'success': 0,
-                        'today_error': 0,
-                        'today_success': 0
-                    }]))
+    task_ExecShell("count_ssh_logs")
 
 
 # 每天提交一次昨天的邮局发送总数
@@ -636,7 +468,7 @@ def mailsys_domain_restrictions():
     yesterday = datetime.now() - timedelta(days=1)
     yesterday = yesterday.strftime('%Y-%m-%d')
     cloud_yesterday_submit = '{}/data/{}_update_mailsys_domain_restrictions.pl'.format(
-        public.get_panel_path(), yesterday
+        BASE_PATH, yesterday
     )
     if os.path.exists(cloud_yesterday_submit):
         return
@@ -646,21 +478,21 @@ def mailsys_domain_restrictions():
 
     # 检查版本 检查是否能查询额度  剩余额度
     import public.PluginLoader as plugin_loader
-    bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(public.get_panel_path()))
+    bulk = plugin_loader.get_module('{}/plugin/mail_sys/mail_send_bulk.py'.format(BASE_PATH))
     SendMailBulk = bulk.SendMailBulk
     try:
         SendMailBulk()._get_user_quota()
     except:
-        logger.error(public.get_error_info())
+        logger.error(traceback.format_exc())
         return
 
     # 添加标记
-    public.writeFile(cloud_yesterday_submit, '1')
+    write_file(cloud_yesterday_submit, '1')
     # 删除前天标记
     before_yesterday = datetime.now() - timedelta(days=2)
     before_yesterday = before_yesterday.strftime('%Y-%m-%d')
     cloud_before_yesterday_submit = '{}/data/{}_update_mailsys_domain_restrictions.pl'.format(
-        public.get_panel_path(), before_yesterday
+        BASE_PATH, before_yesterday
     )
     if os.path.exists(cloud_before_yesterday_submit):
         os.remove(cloud_before_yesterday_submit)
@@ -692,9 +524,8 @@ def mailsys_quota_alarm():
         if not os.path.exists(script):
             return
 
-        time.sleep(3600)  # 进入脚本前等待 和更新配额错开时间
         cmd = f"btpython {script}"
-        public.ExecShell(cmd)
+        exec_shell(cmd)
     except:
         pass
 
@@ -710,7 +541,7 @@ def mailsys_update_usage():
         if not os.path.exists(script):
             return
         cmd = f"btpython {script}"
-        public.ExecShell(cmd)
+        exec_shell(cmd)
     except:
         pass
 
@@ -743,13 +574,6 @@ def domain_ssl_service():
     task_ExecShell("make_suer_ssl_task")
 
 
-# 3小时一次检查DNS解析状态
-def dns_checker():
-    os.system(
-        f"{PYTHON_BIN} /www/server/panel/class_v2/ssl_dnsV2/dns_manager.py"
-    )
-
-
 # 每隔20分钟更新一次网站报表数据
 def update_monitor_requests():
     task_ExecShell("update_monitor_requests")
@@ -772,32 +596,6 @@ def multi_web_server_daemon():
 
 def soft_task():
     # 执行面板soft corn之类的安装执行任务, from task.py -> def startTask():
-    global pre
-
-    # 下载文件
-    def DownloadFile(url, filename):
-        try:
-            import urllib
-            import socket
-            socket.setdefaulttimeout(10)
-            # noinspection PyUnresolvedReferences
-            urllib.urlretrieve(url, filename=filename, reporthook=DownloadHook)
-            os.system('chown www.www ' + filename)
-            public.writeFile(exlogPath, 'done')
-        except:
-            public.writeFile(exlogPath, 'done')
-
-    # 下载文件进度回调
-    def DownloadHook(count, blockSize, totalSize):
-        global pre
-        used = count * blockSize
-        pre1 = int((100.0 * used / totalSize))
-        if pre == pre1:
-            return
-        speed = {'total': totalSize, 'used': used, 'pre': pre}
-        public.writeFile(exlogPath, json.dumps(speed))
-        pre = pre1
-
     def ExecShell(cmdstring, cwd=None, shell=True, symbol='&>'):
         try:
             import shlex
@@ -826,20 +624,18 @@ def soft_task():
                 for value in taskArr:
                     start = int(time.time())
                     if not sql.table('tasks').where("id=?", (value['id'],)).count():
-                        public.writeFile(tip_file, str(int(time.time())))
+                        write_file(tip_file, str(int(time.time())))
                         continue
                     sql.table('tasks').where("id=?", (value['id'],)).save('status,start', ('-1', start))
-                    if value['type'] == 'download':
-                        argv = value['execstr'].split('|bt|')
-                        DownloadFile(argv[0], argv[1])
-                    elif value['type'] == 'execshell':
-                        ExecShell(value['execstr'])
+                    if value['type'] != 'execshell':
+                        continue
+                    ExecShell(value['execstr'])
                     end = int(time.time())
                     sql.table('tasks').where("id=?", (value['id'],)).save('status,end', ('1', end))
                     if sql.table('tasks').where("status=?", ('0',)).count() < 1:
                         if os.path.exists(isTask):
                             os.remove(isTask)
-        public.writeFile(tip_file, str(int(time.time())))
+        write_file(tip_file, str(int(time.time())))
     except Exception as e:
         logger.error(f"start_bt_task error: {e}")
 
@@ -847,6 +643,15 @@ def soft_task():
 # 预安装网站监控报表
 def check_site_monitor():
     task_ExecShell("check_site_monitor")
+
+# 节点监控
+def node_monitor():
+    task_ExecShell("node_monitor")
+
+
+# 节点监控
+def node_monitor_check():
+    task_ExecShell("node_monitor_check")
 
 
 # 检测防爆破计划任务
@@ -856,7 +661,12 @@ def breaking_through():
 
 # 找site favicons
 def find_favicons():
-    task_ExecShell("find_favicons")
+    task_ExecShell(
+        "find_favicons",
+        paths_exists=[
+            '/www/server/panel/config/auto_favicon.conf',
+        ]
+    )
 
 
 # 邮件日志
@@ -899,78 +709,20 @@ def refresh_dockerapps():
 
 # 版本更新执行一次性
 def task_version_part():
-    def _run_post_update_tasks(from_version, to_version):
-        """
-        在版本更新后执行一次性任务。
-        :param from_version: 旧版本号
-        :param to_version: 新版本号
-        :return: bool, 任务是否成功
-        """
-        try:
-            if from_version == to_version:
-                logger.info("Current task version is the same as the last version, no update tasks to run.")
-                return True
-
-            logger.info(
-                f"Detected update program start, {from_version} -> {to_version}. Executing one-time update tasks..."
-            )
-
-            if from_version < '1.0.0':
-                dirs_to_clean = [
-                    os.path.join(BASE_PATH, 'logs/sqlite_easy'),
-                    os.path.join(BASE_PATH, 'logs/sql_log')
-                ]
-
-                for dir_path in dirs_to_clean:
-                    if os.path.isdir(dir_path):
-                        try:
-                            shutil.rmtree(dir_path)
-                            logger.info(f"Removed directory: {dir_path}")
-                        except Exception as e:
-                            logger.error(f"Removing directory {dir_path} failed: {str(e)}")
-                    else:
-                        logger.info(f"Directory not exists, skipped: {dir_path}")
-
-            if from_version < '1.0.1':
-                sites = public.M('sites').field('id,name,path').select()
-                pattern = r'<a class="btlink" href="https://www\.aapanel\.com/new/download\.html\?invite_code=aapanele" target="_blank">(.+?)</a>'
-                for site in sites:
-                    temo_dir = [
-                        os.path.join(site['path'], '404.html'),
-                        os.path.join(site['path'], '502.html'),
-                        os.path.join(site['path'], 'index.html'),
-                    ]
-                    for d in temo_dir:
-                        if os.path.exists(d):
-                            html = public.readFile(d)
-                            result = re.sub(pattern, r'\1', html)
-                            public.writeFile(d, result.strip())
-
-            logger.info("All one-time update tasks executed successfully.")
-            return True
-        except Exception as e:
-            logger.error(f"Executing one-time update task failed: {str(e)}")
-            return False
-
-    # run_post_update_tasks
-    version_file = '{}/data/task_version.pl'.format(public.get_panel_path())
-    last_version = "0.0.0"  # 默认为一个很旧的版本
-
-    if os.path.exists(version_file):
-        last_version = public.readFile(version_file) or "0.0.0"
-    if _run_post_update_tasks(last_version, CURRENT_TASK_VERSION):
-        public.writeFile(version_file, CURRENT_TASK_VERSION)
+    task_ExecShell("task_version_part")
 
 
 # ================================ 这是任务分割线 ===============================
 
 
 TASKS = [
-    # <核心任务> 面板重启检查, 面板任务2个, 面板授权检查
-    {"func": [restart_panel, bt_box_task, soft_task, panel_auth], "interval": 2, "is_core": True},
+    # <核心任务> 面板重启检查, 面板授权检查
+    {"func": [restart_panel, panel_auth], "interval": 2, "is_core": True},
+    {"func": soft_task, "interval": 2, "is_core": True},  # 原面板任务
+    {"func": bt_box_task, "interval": 2, "is_core": True},  # 原面板任务
     # <核心任务> 服务守护
     {"func": daemon_service, "interval": 10, "is_core": True},
-    # <核心任务> 系统监控
+    # <核心任务> 原系统监控
     {"func": systemTask, "is_core": True},  # 每1分钟系统监控任务, 常驻, 内置间隔
 
     # ================================ 分割线 ===============================
@@ -982,19 +734,19 @@ TASKS = [
     {"func": multi_web_server_daemon, "interval": 300},  # 每5分钟多服务守护任务
     {"func": check502Task, "interval": 60 * 10},  # 每10分钟 502检查(夹杂若干任务)
     {"func": check_site_monitor, "interval": 60 * 10},  # 每10分钟检查站点安装监控
+    {"func": node_monitor, "interval": 60 },  # 每1分钟节点监控任务
+    {"func": node_monitor_check, "interval": 60*60*24*30 },  # 每月节点监控检测任务
     {"func": update_waf_config, "interval": 60 * 20},  # 每隔20分钟更新一次waf报表数据
     {"func": update_monitor_requests, "interval": 60 * 20},  # 每隔20分钟更新一次网站报表数据
 
     {"func": check_panel_msg, "interval": 3600},  # 每1小时面板消息提醒
-    # {"func": check_panel_ssl, "interval": 60},  # 每1小时面板证书是否有更新
-    {"func": dns_checker, "interval": 3600 * 3},  # 每3小时dns解析验证
     {"func": find_favicons, "interval": 43200},  # 每12小时找favicons
     {"func": domain_ssl_service, "interval": 3600},  # 每6小时进行域名SSL服务(内置时间标记, 可提前检查)
     {"func": malicious_file_scanning, "interval": 60 * 60 * 6},  # 每每6小时进行恶意文件扫描
     {"func": count_ssh_logs, "interval": 3600 * 24},  # 每天统计SSH登录日志
     {"func": submit_module_call_statistics, "interval": 3600},  # 每天一次 提交今天之前的统计数据(内置时间标记, 可提前检查)
 
-    {"func": maillog_event, "interval": 60},  # 邮局日志事件监控 event loop事件, 每60秒一次, 起守护作用
+    {"func": maillog_event, "interval": 60, "loop": True},  # 邮局日志事件监控 event loop事件, 每60秒一次, 起守护作用
     {"func": send_mail_time, "interval": 60 * 3},  # 每3分钟检测邮件信息
     {"func": auto_reply_tasks, "interval": 3600},  # 每1小时自动回复邮件
     {"func": schedule_automations, "interval": 60},  # 每1分钟邮局自动化任务
@@ -1032,6 +784,7 @@ def thread_register(brain: SimpleBrain, is_core: bool = True):
                     task_id=task_id,
                     interval=task.get("interval", 3600),
                     is_core=task.get("is_core", False),
+                    loop=task.get("loop", False),
                 )
         except Exception:
             import traceback
@@ -1042,7 +795,7 @@ def thread_register(brain: SimpleBrain, is_core: bool = True):
     )
 
 
-def main():
+def main(max_workers: int = None):
     main_pid = "logs/task.pid"
     if os.path.exists(main_pid):
         os.system("kill -9 $(cat {}) &> /dev/null".format(main_pid))
@@ -1054,7 +807,7 @@ def main():
     _pid = os.fork()
 
     if _pid:
-        public.writeFile(main_pid, str(_pid))
+        write_file(main_pid, str(_pid))
         sys.exit(0)
 
     sys.stdout.flush()
@@ -1064,7 +817,7 @@ def main():
     time.sleep(5)
     task_version_part()
     # =================== Start ===========================
-    sb = SimpleBrain(cpu_max=50.0)
+    sb = SimpleBrain(cpu_max=30.0, workers=max_workers)
     try:
         # core tasks
         thread_register(brain=sb, is_core=True)
@@ -1076,7 +829,7 @@ def main():
     except Exception:
         import traceback
         logger.error(traceback.format_exc())
-        sb.shutdown()
+        sb._shutdown()
     # =================== End ========================
 
 

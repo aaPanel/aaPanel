@@ -1305,7 +1305,7 @@ class Db:
 
     __DB_ROOT_DIR = '{}/data/'.format(_BASE_DIR)
 
-    def __init__(self, db_name, engine=None):
+    def __init__(self, db_name, engine=None, auto_connect: bool = True):
         '''
             @name 初始化函数
             @author Zhj<2022-12-14>
@@ -1325,7 +1325,8 @@ class Db:
         self.__DEBUG_LOG = False  # 是否开启调试日志
         self.__QUERIES = []  # 查询构造器数量
 
-        self.__connect()
+        if auto_connect:
+            self._connect()
 
     def __del__(self):
         self.close()
@@ -1337,7 +1338,7 @@ class Db:
     def __exit__(self, exc_type, exc_value, exc_trackback):
         self.close()
 
-    def __connect(self):
+    def _connect(self):
         '''
             @name   连接Sqlite数据库
             @author Zhj<2022-07-16>

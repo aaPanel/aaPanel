@@ -683,6 +683,42 @@ class ajax:
             return public.return_message(0,0,data)
         except:
             return public.return_message(-1, 0, public.lang("Fail to connect to the server!"))
+    #
+    def get_version_logs(self,get):
+
+        LOG_TYPE_MAP = {
+            'beta': '/api/panel/getBetaVersionLogs',
+            'official': '/api/panel/getOfficialVersionLogs',
+            'pro': None  # pro 版暂不支持
+        }
+
+        # 确定当前面板类型
+        if os.path.exists('/www/server/panel/data/panel_pro.pl'):
+            log_type = 'pro'
+        elif os.path.exists('/www/server/panel/data/is_beta.pl'):
+            log_type = 'beta'
+        else:
+            log_type = 'official'
+
+
+        # 检查是否支持该类型
+        if log_type not in LOG_TYPE_MAP:
+            return public.return_message(-1, 0, public.lang("Parameter error!"))
+
+        api_path = LOG_TYPE_MAP[log_type]
+
+        # pro 版后续再做
+        if api_path is None:
+            return public.return_message(0, 0, {"list": []})
+
+        url = self.__official_url + api_path
+
+        try:
+            data = json.loads(public.HttpGet(url))
+            return public.return_message(0,0,data)
+        except:
+            return public.return_message(-1, 0, public.lang("Fail to connect to the server!"))
+
 
     def get_other_info(self):
         other = {}

@@ -1851,6 +1851,7 @@ class panelPlugin:
             if size == 0:
                 public.run_thread(self.download_icon,(name,iconFile,downFile))
                 # self.download_icon(name,iconFile,downFile)
+        public.ExecShell('chmod 644 ' + iconFile)
 
     #下载图标
     def download_icon(self,name,iconFile,downFile):

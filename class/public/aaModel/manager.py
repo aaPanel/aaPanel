@@ -5,17 +5,16 @@ import sqlite3 as Engine
 import uuid
 from functools import reduce
 from itertools import chain
-from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable, TYPE_CHECKING, Type
+from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable, Type
 
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
 
-if TYPE_CHECKING:
-    from .model import aaModel
 
 __all__ = ["aaManager", "Q"]
 
+# noinspection PyUnresolvedReferences
 M = TypeVar("M", bound="aaModel")
 
 
@@ -61,6 +60,21 @@ else:
 
 
 # ==================== Patch End ==================
+
+def db_file_connect(db_name: str) -> Db:
+    if not db_name:
+        raise PanelError("db_file_connect_generator error, db_name is empty")
+    if db_name == "default":
+        return Db(db_name=db_name, engine=_ENGINE)
+    else:
+        db_root_dir = "/www/server/panel/data/db"
+        os.makedirs(db_root_dir, exist_ok=True)
+        db_path = os.path.join(db_root_dir, f"{db_name}")
+        new = Db(db_name="", engine=_ENGINE, auto_connect=False)
+        setattr(new, "_Db__DB_NAME", db_path)
+        new._connect()
+        return new
+
 
 class Operator:
     SIMPLE_OP = {
@@ -637,7 +651,7 @@ class QuerySet(Generic[M]):
         self._query.field(*(f"{self._tb}.{f}" for f in field_set))  # db level
         return self
 
-    def first(self) -> Optional[M]:
+    def first(self) -> "Optional[M]":
         """
         获取第一条数据
         :return: QuerySet
@@ -681,6 +695,20 @@ class QuerySet(Generic[M]):
             target = None
         if not target:
             return 0
+        try:
+            if "update_time" not in target:
+                fields = getattr(self._model_class, "__fields__", {}) or {}
+                auto_now = None
+                for name, f in fields.items():
+                    if name == "update_time" and getattr(f, "auto_now", False) is True:
+                        auto_now = name
+                        break
+                if auto_now:
+                    import time
+                    from public.aaModel.fields import ACCURACY
+                    target[auto_now] = round(time.time() * ACCURACY)
+        except:
+            pass
         serlz = self._model_class._get_serialized()
         body = {
             k: (serlz[k].serialized(v, True) if k in serlz else v) for k, v in target.items()
@@ -735,11 +763,20 @@ class aaObjects(Generic[M]):
     管理器
     """
     _queryset_class = QuerySet
-    __m_map__ = {}
+    __m_map__ = {
+        "default": set(),  # 默认使用default.db, default = 表集合
+        "db": dict()  # 指定了db_file的只放在db路径下, db = {db_file: 表集合}
+    }
 
     def __new__(cls, args):
-        if hasattr(args, "__table_name__") and not cls.__m_map__.get(args.__table_name__):
-            cls.__m_map__[args.__table_name__] = aaMigrate(args).run_migrate()
+        if hasattr(args, "__table_name__"):
+            if args.__db_name__ == "default":
+                if args.__table_name__ not in cls.__m_map__["default"]:
+                    cls.__m_map__["default"].add(aaMigrate(args).run_migrate())
+            else:
+                if args.__db_name__ not in cls.__m_map__["db"]:
+                    cls.__m_map__["db"][args.__db_name__] = set()
+                    cls.__m_map__["db"][args.__db_name__].add(aaMigrate(args).run_migrate())
         return super(aaObjects, cls).__new__(cls)
 
     def __init__(self, model: Type[M]):
@@ -758,10 +795,7 @@ class aaObjects(Generic[M]):
     @property
     def _query(self) -> "Db.query":
         if not self.__q:
-            q = Db(
-                db_name=self._model.__db_name__,
-                engine=_ENGINE,
-            ).query()
+            q = db_file_connect(self._model.__db_name__).query()
             self.__q = q.table(self._model.__table_name__)
         return self.__q
 
@@ -857,7 +891,7 @@ class aaMigrate:
         self.__client = None
         self.__query = None
 
-    def run_migrate(self) -> bool | None:
+    def run_migrate(self) -> str | None:
         """
         迁移
         """
@@ -871,9 +905,7 @@ class aaMigrate:
             raise PanelError(f"{self.__model.__class__.__name__} need 'fields'")
 
         try:
-            self.__client = Db(
-                db_name=self.__model.__db_name__, engine=_ENGINE
-            )
+            self.__client: Db = db_file_connect(self.__model.__db_name__)
             self.__table_exists()
             self.__index_exists()
         except Exception as e:
@@ -883,7 +915,7 @@ class aaMigrate:
                 self.__query.close()
             if self.__client:
                 self.__client.close()
-        return True
+        return self.__model.__table_name__
 
     def __new_tb_transform_sql(self, tb_name: str) -> str:
         """
@@ -1032,7 +1064,7 @@ class aaManager:
 
     def __get__(self, instance, cls: Type[M]):
         if instance is not None:
-            raise RuntimeError(
+            raise AttributeError(
                 f"object manager can't accessible from '{cls.__name__}' instances"
             )
         try:

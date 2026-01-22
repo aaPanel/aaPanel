@@ -398,6 +398,7 @@ class userlogin:
                 return public.returnJson(False,'Disk inode has been exhausted, the panel has attempted to release the inode. Please try again ...'),json_header
             public.write_log_gettext('Login','Password is incorrect, Username:{}, Password:{}, Login IP:{}',('****','******',public.GetClientIp()))
             num = self.limit_address('+')
+            public.record_client_info(login_type=0)
             return public.returnJson(False,'Invalid username or password. You have [{}] times left to try!',(str(num),)),json_header
 
 

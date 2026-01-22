@@ -427,7 +427,6 @@ class database(datatool.datatools):
                     Param('active').Require().Bool(),
                     Param('address').Require(),
                     Param('ps').Require().String(),
-                    Param('ssl').String(),
                     Param('dtype').Require().String(),
                 ], [
                     public.validate.trim_filter(),
@@ -446,12 +445,6 @@ class database(datatool.datatools):
             except:
                 pass
 
-            ssl = ""
-            if hasattr(get, "ssl"):
-                ssl = get.ssl
-            if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get)["message"].get("status"):
-
-                return public.return_message(-1, 0, public.lang("SSL is not enabled in the database, please open it in the Mysql manager first"))
             data_name = get['name'].strip().lower()
 
             if self.CheckRecycleBin(data_name):
@@ -654,7 +647,7 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
         return False
 
     # 创建用户
-    def __CreateUsers(self, dbname, username, password, address, ssl=None):
+    def __CreateUsers(self, dbname, username, password, address):
         mysql_obj = public.get_mysql_obj_by_sid(self.sid)
         if not mysql_obj:
             return public.returnMsg(False, public.lang("Failed to connect to the specified database"))
@@ -665,10 +658,6 @@ ssl-key=/www/server/mysql/mysql-test/std_data/server-key.pem
                 "grant SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER,CREATE TEMPORARY TABLES,LOCK TABLES,EXECUTE,CREATE VIEW,SHOW VIEW,EVENT,TRIGGER on `%s`.* to `%s`@`localhost`" % (
                     dbname, username
                 )
-            )
-        if not ssl:
-            mysql_obj.execute(
-                "update mysql.user set ssl_type='' where user='%s' and host='localhost'" % username
             )
 
         for a in address.strip("\n").split(','):
@@ -2443,19 +2432,22 @@ SetLink
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        name = get['name']
-        db_name = public.M('databases').where("username=? AND LOWER(type)=LOWER('mysql')", name).getField('name')
+        name = get['name'].strip()
+        db_info = public.M('databases').where("name=? AND LOWER(type)=LOWER('mysql')", name).find()
+        if not db_info:
+            return public.return_message(-1, 0, "Database does not exist")
+
+        db_name = db_info['name']
+        username = db_info['username']
         mysql_obj = public.get_mysql_obj(db_name)
         if mysql_obj is False:
             return public.return_message(-1, 0, "Failed to connect to database")
-        # todo db ssl_type 计划移除
         users = mysql_obj.query(
-            "select Host, ssl_type from mysql.user where User='" + name + "' AND Host!='localhost'"
+            "select Host from mysql.user where User='" + username + "' AND Host!='localhost'"
         )
         self.__check_mysql_query_error(users)
         try:
             users = self.map_to_list(users)
-            ssl_type = [x[1] for x in users if x[1]]
             if len(users) < 1:
                 permission = "127.0.0.1"
             else:
@@ -2466,9 +2458,8 @@ SetLink
         except Exception as e:
             public.print_log("error info: {}".format(e))
             permission = '127.0.0.1'
-            ssl_type = []
 
-        return public.return_message(0, 0, {'permission': permission, 'ssl': ssl_type})
+        return public.return_message(0, 0, {'permission': permission})
 
     # 设置数据库权限
     def SetDatabaseAccess(self, get):
@@ -2476,10 +2467,7 @@ SetLink
         try:
             get.validate([
                 Param('name').Require().String(),
-                # Param('dataAccess').String().Xss(),
-                # Param('address').String().Xss(),
                 Param('access').Require().String(),
-                Param('ssl').String(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -2499,12 +2487,6 @@ SetLink
                 access = get['access'].strip()
                 if access in ['']:
                     return public.fail_v2(public.lang('IP not found!'))
-                # todo db ssl 计划移除
-                ssl = get.ssl if hasattr(get, 'ssl') else ''
-                if ssl == "REQUIRE SSL" and not self.check_mysql_ssl_status(get)["message"].get("status"):
-                    return public.return_message(-1, 0, public.lang(
-                        "SSL is not enabled in the database, please open it in the Mysql manager first"
-                    ))
 
                 password = public.M('databases').where(
                     "username=? AND LOWER(type)=LOWER('mysql')", (name,)

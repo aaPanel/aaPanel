@@ -17,7 +17,6 @@ import os
 __all__ = [
     "BASE_PATH",
     "CURRENT_TASK_VERSION",
-    "pre",
     "PYTHON_BIN",
     "isTask",
     "exlogPath",
@@ -34,7 +33,6 @@ CURRENT_TASK_VERSION = "1.0.1"
 TASK_LOG_FILE = f"{BASE_PATH}/logs/task.log"
 
 # 旧常量
-pre = 0
 isTask = "/tmp/panelTask.pl"
 exlogPath = "/tmp/panelExec.log"
 
@@ -64,4 +62,11 @@ logging.basicConfig(
     filename=TASK_LOG_FILE,
     filemode="a+",
 )
+logging.getLogger("pyroute2").setLevel(logging.ERROR)
+logging.getLogger("pyroute2").propagate = False
+for name in ("pyroute2.netlink", "pyroute2.netlink.core"):
+    lg = logging.getLogger(name)
+    lg.setLevel(logging.ERROR)
+    lg.propagate = False
+
 logger = logging.getLogger()

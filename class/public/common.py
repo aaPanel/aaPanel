@@ -200,7 +200,9 @@ _LAN_LOG = None
 _LAN_TEMPLATE = None
 
 if sys.version_info[0] == 2:
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     reload(sys)
+    # noinspection PyUnresolvedReferences
     sys.setdefaultencoding('utf8')
 else:
     from importlib import reload
@@ -1284,6 +1286,7 @@ def GetNumLines(path, num: int, p=1):
             return json.loads(result).strip()
         except:
             if pyVersion == 2:
+                # noinspection PyUnresolvedReferences
                 result = result.decode('utf8', errors='ignore')
             else:
                 result = result.encode('utf-8', errors='ignore').decode("utf-8", errors="ignore")
@@ -2347,6 +2350,7 @@ def to_btint(string):
 
 
 def load_module(pluginCode):
+    # noinspection PyUnresolvedReferences
     from imp import new_module
     from BTPanel import cache
     p_tk = 'data/%s' % md5(pluginCode + get_uuid())
@@ -2395,6 +2399,7 @@ def auth_decode(data):
     if signature != data['signature']: return returnMsg(False, 'REQUEST_ERR')
 
     # 返回
+    # noinspection PyUnresolvedReferences
     return json.loads(urllib.unquote(tdata))
 
 
@@ -2408,6 +2413,7 @@ def auth_encode(data):
 
     # 生成signature
     import binascii, hashlib, urllib, hmac, json
+    # noinspection PyUnresolvedReferences
     tdata = urllib.quote(json.dumps(data))
     # 公式  hex(hmac_sha256(data))
     pdata['signature'] = binascii.hexlify(hmac.new(token['secret_key'], tdata, digestmod=hashlib.sha256).digest())
@@ -2536,6 +2542,7 @@ def to_string(lites):
     m_str = ''
     for mu in lites:
         if sys.version_info[0] == 2:
+            # noinspection PyUnresolvedReferences
             m_str += unichr(mu).encode('utf-8')
         else:
             m_str += chr(mu)
@@ -2553,6 +2560,7 @@ def to_ord(string):
 # xss 防御
 def xssencode(text):
     try:
+        # noinspection PyUnresolvedReferences
         from cgi import html
         list = ['`', '~', '&', '#', '/', '*', '$', '@', '<', '>', '\"', '\'', ';', '%', ',', '.', '\\u']
         ret = []
@@ -2575,6 +2583,7 @@ def html_decode(text):
         @return string 返回解码后的HTML
     '''
     try:
+        # noinspection PyUnresolvedReferences
         from cgi import html
         text2 = html.unescape(text)
         return text2
@@ -2590,6 +2599,7 @@ def html_encode(text):
         @return string 返回编码后的HTML
     '''
     try:
+        # noinspection PyUnresolvedReferences
         from cgi import html
         text2 = html.escape(text)
         return text2
@@ -2644,6 +2654,7 @@ def get_mysql_info():
 # xss 防御
 def xssencode2(text):
     try:
+        # noinspection PyUnresolvedReferences
         from cgi import html
         text2 = html.escape(text, quote=True)
         return text2
@@ -2832,14 +2843,15 @@ def get_path_size(path, exclude=[]):
     # print("exclude:"+ str(exclude))
     _exclude = exclude[0:]
     for i, e in enumerate(_exclude):
-        if not e.startswith(path):
-            basename = os.path.basename(path)
-            if not e.startswith(basename):
-                exclude.append(os.path.join(path, e))
-            else:
-                new_exc = e.replace(basename + "/", "")
-                new_exc = os.path.join(path, new_exc)
-                exclude.append(new_exc)
+        if isinstance(e, str):
+            if not e.startswith(path):
+                basename = os.path.basename(path)
+                if not e.startswith(basename):
+                    exclude.append(os.path.join(path, e))
+                else:
+                    new_exc = e.replace(basename + "/", "")
+                    new_exc = os.path.join(path, new_exc)
+                    exclude.append(new_exc)
 
     # print(exclude)
     total_size = 0
@@ -2917,6 +2929,7 @@ def mod_reload(mode):
         if sys.version_info[0] == 2:
             reload(mode)
         else:
+            # noinspection PyUnresolvedReferences
             import imp
             imp.reload(mode)
         return True
@@ -3352,6 +3365,7 @@ def check_domain_panel():
             if check_client_info():
                 try:
                     from flask import render_template
+                    # noinspection PyUnresolvedReferences
                     return render_template('error2.html')
                 except:
                     pass
@@ -3555,10 +3569,13 @@ def reload_mod(mod_name=None):
 
 def de_hexb(data):
     if sys.version_info[0] != 2:
-        if type(data) == str: data = data.encode('utf-8')
+        if type(data) == str:
+            data = data.encode('utf-8')
     pdata = base64.b64encode(data)
     if sys.version_info[0] != 2:
-        if type(pdata) == str: pdata = pdata.encode('utf-8')
+        if type(pdata) == str:
+            # noinspection PyUnresolvedReferences
+            pdata = pdata.encode('utf-8')
     return binascii.hexlify(pdata)
 
 
@@ -3806,6 +3823,7 @@ def url_encode(data):
         pdata = urllib.parse.quote(data)
     else:
         import urllib
+        # noinspection PyUnresolvedReferences
         pdata = urllib.urlencode(data)
     return pdata
 
@@ -3817,6 +3835,7 @@ def url_decode(data):
         pdata = urllib.parse.unquote(data)
     else:
         import urllib
+        # noinspection PyUnresolvedReferences
         pdata = urllib.urldecode(data)
     return pdata
 
@@ -3824,6 +3843,7 @@ def url_decode(data):
 def unicode_encode(data):
     try:
         if sys.version_info[0] == 2:
+            # noinspection PyUnresolvedReferences
             result = unicode(data, errors='ignore')
         else:
             result = data.encode('utf8', errors='ignore')
@@ -3835,6 +3855,7 @@ def unicode_encode(data):
 def unicode_decode(data, charset='utf8'):
     try:
         if sys.version_info[0] == 2:
+            # noinspection PyUnresolvedReferences
             result = unicode(data, errors='ignore')
         else:
             result = data.decode('utf8', errors='ignore')
@@ -3843,6 +3864,7 @@ def unicode_decode(data, charset='utf8'):
         return data
 
 
+# noinspection PyUnresolvedReferences
 def import_cdn_plugin():
     plugin_path = 'plugin/static_cdn'
     if not os.path.exists(plugin_path): return True
@@ -3856,6 +3878,7 @@ def import_cdn_plugin():
 def get_cdn_hosts():
     try:
         if import_cdn_plugin(): return []
+        # noinspection PyUnresolvedReferences
         import static_cdn_main
         return static_cdn_main.static_cdn_main().get_hosts(None)
     except:
@@ -3870,6 +3893,7 @@ def get_cdn_url():
         cdn_url = cache.get('cdn_url')
         if cdn_url: return cdn_url
         if import_cdn_plugin(): return False
+        # noinspection PyUnresolvedReferences
         import static_cdn_main
         cdn_url = static_cdn_main.static_cdn_main().get_url(None)
         cache.set('cdn_url', cdn_url, 3)
@@ -3883,6 +3907,7 @@ def set_cdn_url(cdn_url):
     import_cdn_plugin()
     get = dict_obj()
     get.cdn_url = cdn_url
+    # noinspection PyUnresolvedReferences
     import static_cdn_main
     static_cdn_main.static_cdn_main().set_url(get)
     return True
@@ -4256,6 +4281,7 @@ def _decrypt(data: str) -> str:
     if not isinstance(data, str):
         return data
     if data.startswith('BT-0x:'):
+        # noinspection PyUnresolvedReferences
         res = PluginLoader.db_decrypt(data[6:])['msg']
         return res
     return data
@@ -4711,6 +4737,7 @@ def xssdecode(text):
             import html
             text2 = html.unescape(str_convert)
         else:
+            # noinspection PyUnresolvedReferences
             text2 = cgi.unescape(str_convert)
         return text2
     except:
@@ -5521,11 +5548,13 @@ def login_send_body(is_type, username, login_ip, port):
                    'user': username}
         rdata = object.send_msg('login_panel', check_sms_argv(sm_args))
     else:
+        # noinspection PyUnresolvedReferences
         from panel_msg.collector import SitePushMsgCollect
 
         msg = SitePushMsgCollect.panel_login(plist)
 
         if send_type.strip() == "wx_account":
+            # noinspection PyUnresolvedReferences
             from push.site_push import ToWechatAccountMsg
             object.send_msg(ToWechatAccountMsg.panel_login(
                 name=username,
@@ -6170,6 +6199,7 @@ def error_not_login(e=None, _src=None):
             }
 
             return Response(json.dumps(result), mimetype='application/json', status=200)
+        # noinspection PyUnresolvedReferences
         return render_template('autherr.html')
 
     try:
@@ -7011,6 +7041,7 @@ def get_cloud_ip_info2(ips):
     try:
         for ip in ips:
             ip_area_dict = get_ip_location(ip)
+            # noinspection PyUnresolvedReferences
             if isinstance(ip_area_dict, geoip2.models.City):
                 country = ip_area_dict.raw["country"]
                 country['carrier'] = ''   # 缺少信息
@@ -8713,31 +8744,53 @@ def get_client_info_db_obj():
         db_obj.execute('CREATE INDEX client_ip_index ON client_info(client_ip)')
         db_obj.execute('CREATE INDEX session_id_index ON client_info(session_id)')
         db_obj.execute('CREATE INDEX login_time_index ON client_info(login_time)')
+
+    # 增加字段login_type "登录是否成功"
+    try:
+        hit = False
+        for f in db_obj.table("sqlite_master").query("PRAGMA table_info('client_info');") or []:
+            if f[1] == "login_type":
+                hit = True
+                break
+        if not hit:
+            db_obj.table("sqlite_master").execute(
+                'ALTER TABLE `client_info` ADD COLUMN `login_type` INTEGER DEFAULT 1'
+            )
+    except Exception as e:
+        public.print_log(str(e))
+
     return db_obj
 
 
-def record_client_info():
-    '''
+def record_client_info(login_type: int = 1):
+    """
         @name 记录客户端信息
-        @return void
-    '''
-    from flask import request
-    from BTPanel import cache
-    db_obj = get_client_info_db_obj()
-    remote_addr = GetClientIp()
-    user_agent = request.headers.get('User-Agent', '')
-    pdata = {
-        'remote_addr': remote_addr,
-        'remote_port': request.environ.get('REMOTE_PORT'),
-        'session_id': md5(remote_addr + user_agent),
-        'user_agent': user_agent,
-        'login_time': int(time.time())
-    }
-    db_obj.table('client_info').insert(pdata)
-    db_obj.close()
-
-    # 设置缓存
-    cache.set('last_client_session_id', pdata['session_id'], 86400 * 2)
+        @param login_type int 登录类型 1:成功 0:失败
+        @return None
+    """
+    db_obj = None
+    try:
+        from flask import request
+        from BTPanel import cache
+        db_obj = get_client_info_db_obj()
+        remote_addr = GetClientIp()
+        user_agent = request.headers.get('User-Agent', '')
+        pdata = {
+            'remote_addr': remote_addr,
+            'remote_port': request.environ.get('REMOTE_PORT'),
+            'session_id': md5(remote_addr + user_agent),
+            'user_agent': user_agent,
+            'login_time': int(time.time()),
+            'login_type': int(login_type),
+        }
+        db_obj.table('client_info').insert(pdata)
+        # 设置缓存
+        cache.set('last_client_session_id', pdata['session_id'], 86400 * 2)
+    except Exception as e:
+        public.print_log(f"error record_client_info: {str(e)}")
+    finally:
+        if db_obj:
+            db_obj.close()
 
 
 def check_client_info():
@@ -8849,6 +8902,7 @@ def ws_send(data: str):
     try:
         if '/www/server/panel' not in sys.path:
             sys.path.insert(0, '/www/server/panel')
+        # noinspection PyUnresolvedReferences
         from BTPanel import WS_OBJ
         ws_obj = {i: j for i, j in WS_OBJ.items() if j['timeout'] > int(time.time())}
         if ws_obj == {}: return False
@@ -8941,6 +8995,7 @@ def download_main(upgrade_plugin_name, upgrade_version):
     pdata['os'] = 'Linux'
     pdata['environment_info'] = json.dumps(fetch_env_info(), ensure_ascii=False)
     import config, socket
+    # noinspection PyUnresolvedReferences
     import requests.packages.urllib3.util.connection as urllib3_conn
     _ip_type = config.config().get_request_iptype()
     old_family = urllib3_conn.allowed_gai_family
@@ -9194,6 +9249,45 @@ def readFile(filename, mode='r'):
     '''
     return ReadFile(filename, mode)
 
+
+def read_rare_charset_file(filename: str):
+    """
+    读取文件内容, 返回本信息， 如果出错返回 False，
+    与readFile相比可以处理更多种编码格式。
+    处理python项目中存在奇怪编码问题
+    """
+    import chardet
+    if not os.path.exists(filename):
+        return False
+    fp = None
+    try:
+        fp = open(filename, "rb")
+        f_body_bytes: bytes = fp.read()
+        fp.close()
+    except:
+        if fp and not fp.closed:
+            fp.close()
+        return False
+
+    if hasattr(chardet, "detect_all"):  # 处理部分版本没有detect_all方法的问题
+        tmp_eng_list = chardet.detect_all(f_body_bytes)[:3]
+    else:
+        tmp_eng_list = [chardet.detect(f_body_bytes)]
+    for tmp_eng in tmp_eng_list:
+        try:
+            f_body = f_body_bytes.decode(tmp_eng["encoding"])
+        except:
+            continue
+        return f_body
+
+    for eng in ("utf-8", "GBK", "utf-16", "utf-32", "BIG5"):
+        try:
+            f_body = f_body_bytes.decode(eng, errors="ignore")
+        except:
+            continue
+        return f_body
+
+    return False
 
 # 写入文件
 def WriteFile(filename, s_body, mode='w+'):
@@ -9635,8 +9729,8 @@ def progress_acquire_lock(lock_file):
                     thread_id = int(thread_id_str)
                     # 检查线程是否存在
                     thread_exists = any(
-                        hasattr(thread, '_ident') and thread._ident == thread_id
-                        for thread in threading.enumerate()
+                        thread.ident == thread_id
+                        for thread in threading.enumerate() if thread
                     )
                     # 线程存在则不允许获取锁
                     if thread_exists:
