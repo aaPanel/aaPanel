@@ -565,7 +565,7 @@
 	"CANCEL_IP_LIMIT": "Cancel IP access limit",
 	"CHANGE_MYSQL_PASS_FORCE": "Forcibly change MySQL root password",
 	"GET_PANEL_DEFAULT_MSG": "View panel default info",
-	"CANCEL": "Cacel",
+	"CANCEL": "Cancel",
 	"CLEAR_SYS_RUBBISH": "Clear system rubbish",
 	"CANCELLED": "Cancelled!",
 	"EXECUTING": "Executing ({1})...",
