@@ -2635,15 +2635,27 @@ SetLink
 
     # 获取错误日志
     def GetErrorLog(self, get):
-        path = self.GetMySQLInfo(get)['message'].get('datadir')
-        if not os.path.exists(path):
-            return public.return_message(-1, 0, 'Database directory does not exist, please check if Mysql is installed properly')
         filename = ''
-        for n in os.listdir(path):
-            if len(n) < 5: continue
-            if n.endswith(".err"):
-                filename = os.path.join(path, n)
-                break
+        try:
+            mycnf = public.readFile('/etc/my.cnf')
+            if mycnf:
+                log_match = re.search(r'^\s*(?<!#)log[-_]error\s*=\s*(\S+)', mycnf, re.MULTILINE)
+                if log_match:
+                    path_from_cnf = log_match.group(1).strip().strip('\'"')
+                    if os.path.exists(path_from_cnf):
+                        filename = path_from_cnf
+        except Exception as e:
+            public.print_log("Unable to fetch Logs!: {}".format(str(e)))
+            filename = ''
+        if not filename:
+            path = self.GetMySQLInfo(get)['message'].get('datadir')
+            if not os.path.exists(path):
+                return public.return_message(-1, 0, 'Database directory does not exist, please check if Mysql is installed properly')
+            for n in os.listdir(path):
+                if len(n) < 5: continue
+                if n.endswith(".err"):
+                    filename = os.path.join(path, n)
+                    break
         if not os.path.exists(filename):
             return public.return_message(-1, 0, public.lang("Configuration file not exist"))
         if hasattr(get, 'close'):
@@ -2869,13 +2881,26 @@ SetLink
 
     # 取慢日志
     def GetSlowLogs(self, get):
-        path = self.GetMySQLInfo(get)['message'].get('datadir')
-        if not path:
-            return public.fail_v2("get MySQL datadir fail!")
-        path = path + '/mysql-slow.log'
-        if not os.path.exists(path):
+        filename = ''
+        try:
+            mycnf = public.readFile('/etc/my.cnf')
+            if mycnf:
+                log_match = re.search(r'^\s*(?<!#)slow[-_]query[-_]log[-_]file\s*=\s*(\S+)', mycnf, re.MULTILINE)
+                if log_match:
+                    path_from_cnf = log_match.group(1).strip().strip('\'"')
+                    if os.path.exists(path_from_cnf):
+                        filename = path_from_cnf
+        except Exception as e:
+            public.print_log("Unable to fetch Logs!: {}".format(str(e)))
+            filename = ''
+        if not filename:
+            path = self.GetMySQLInfo(get)['message'].get('datadir')
+            if not path:
+                return public.fail_v2("get MySQL datadir fail!")
+            filename = os.path.join(path, 'mysql-slow.log')
+        if not os.path.exists(filename):
             return public.fail_v2("Log file does NOT exist!")
-        return public.success_v2(public.GetNumLines(path, 100))
+        return public.success_v2(public.GetNumLines(filename, 100))
 
     # 获取binlog文件列表
     def GetMySQLBinlogs(self, get):
