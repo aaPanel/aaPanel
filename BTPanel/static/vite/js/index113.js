@@ -1,1 +1,0 @@
-import{p as s}from"./page_layout.js?v=1769066082311";import{R as t,V as a,q as o}from"./vue.js?v=1769066082311";const e={class:"settings-title"};const r=s({},[["render",function(s,r){return a(),t("div",e,[o(s.$slots,"default",{},void 0,!0)])}],["__scopeId","data-v-2c3acb71"]]);export{r as S};

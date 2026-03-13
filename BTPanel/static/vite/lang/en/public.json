@@ -15,11 +15,11 @@
 			"Second": "Second | Seconds",
 			"Seconds": "Second(s)",
 			"Minute": "Minute | Minutes",
-			"Hour": "Hour | Hours",
+			"Hour": "{0} Hour | {0} Hours",
 			"Hours": "{0} Hour(s)",
 			"Month": "Month | Months",
 			"Year": "Year | Years",
-			"Day": "Day | Days",
+			"Day": "{0} Day | {0} Days",
 			"Days": "{0} Day(s)",
 			"Part": "Part | Part",
 			"Monday": "Monday",
@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Batch delete",
-			"ChooseDel": "Please choose del"
+			"ChooseDel": "Please choose del",
+			"ConfirmWithDesc": "{0}, continue operation?"
 		},
 		"Confirm": {
 			"Title": "Tips",

@@ -316,50 +316,19 @@ class data:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        # # net_flow_type = {
-        # #     "total_flow": "总流量",
-        # #     "7_day_total_flow": "近7天流量",
-        # #     "one_day_total_flow": "近1天流量",
-        # #     "one_hour_total_flow": "近1小时流量"
-        # # }
-        # # net_flow_json_file = "/www/server/panel/plugin/total/panel_net_flow.json"
-        #
-        # if get.table == 'sites':
-        #     if not hasattr(get, 'order'):
-        #         if os.path.exists(self.siteorder_path):
-        #             order = public.readFile(self.siteorder_path)
-        #             if order.split(' ')[0] in self.__SORT_DATA:
-        #                 get.order = order
-        #
-        #     if not hasattr(get, 'limit') or get.limit == '' or int(get.limit) == 0:
-        #         try:
-        #             if os.path.exists(self.limit_path):
-        #                 get.limit = int(public.readFile(self.limit_path))
-        #             else:
-        #                 get.limit = 20
-        #         except:
-        #             get.limit = 20
-        # if "order" in get:
-        #     order = get.order
-        #     if get.table == 'sites':
-        #         public.writeFile(self.siteorder_path, order)
-        #     # o_list = order.split(' ')
-        #     # net_flow_dict = {}
-        #     # order_type = None
-        #     # if o_list[0].strip() in net_flow_type.keys():
-        #     #     # net_flow_dict["flow_type"] = o_list[0].strip()
-        #     #     if len(o_list) > 1:
-        #     #         order_type = o_list[1].strip()
-        #     #     else:
-        #     #         get.order = 'id desc'
-        #     #     # net_flow_dict["order_type"] = order_type
-        #         # public.writeFile(net_flow_json_file, json.dumps(net_flow_dict))
         # 如果网站列表包含 rname 字段排序  先检查表内是否有 rname字段
         if hasattr(get, "order") and get.table == 'sites':
             if get.order.startswith('rname'):
                 data = public.M('sites').find()
                 if 'rname' not in data.keys():
                     public.M('sites').execute("ALTER TABLE 'sites' ADD 'rname' text DEFAULT ''", ())
+        # 先检查tasks表内是否有 install_status、message字段
+        if get.table == 'tasks':
+            data = public.M('tasks').find()
+            if 'install_status' not in data.keys():
+                public.M('tasks').execute("ALTER TABLE 'tasks' ADD 'install_status' INTEGER DEFAULT 1", ())
+            if 'message' not in data.keys():
+                public.M('tasks').execute("ALTER TABLE 'tasks' ADD 'message' TEXT DEFAULT ''", ())
         table = get.table
         data = self.GetSql(get)
         SQL = public.M(table)
@@ -459,7 +428,7 @@ class data:
                     # 按流量排序
                     re_data = None
                     if get.get('re_order'):
-                        re_data =  self.get_site_request()
+                        re_data =  self.get_site_request(public.to_dict_obj({'site_type':'PHP'}))
                         if re_data['status'] == 0:
                             re_data = re_data['message']
 
@@ -1016,7 +985,7 @@ class data:
             'users'     :   "id,username,phone,email,login_ip,login_time",
             'firewall'  :   "id,port,ps,addtime",
             'domain'    :   "id,pid,name,port,addtime",
-            'tasks'     :   "id,name,type,status,addtime,start,end"
+            'tasks'     :   "id,name,type,status,addtime,start,end,install_status"
             }
         try:
             return fields[tableName]
@@ -1195,9 +1164,17 @@ class data:
 
     # 获取网站监控报表数据
     def getSiteThirtyTotal(self, get=None):
+        """
+            2026/2/26 调整由前端传入site_type控制输出
+        """
+        prorject_type = ['PHP','WP2','proxy' , 'Node' , 'Python']
+        if get is not None:
+            if get.get("site_type", None) in prorject_type:
+                prorject_type = [get.get("site_type")]
+
         #检测插件是否安装
         if not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")):
-            site_names = [ i.get('name','') for i in public.M("sites").field("name").select() if i.get('name','') !='' ]
+            site_names = [ i.get('name','') for i in public.S('sites').where_in('project_type',prorject_type).field('name').select() if i.get('name','') !='' ]
             start_date= None if get==None else get.get('start_date',None)
             end_date= None if get==None else get.get('end_date',None)
             return {'status': 0, "timestamp": int(time.time()), "message": self.get_multi_site_stats(site_names=site_names,start_date=start_date,end_date=end_date)}
@@ -1212,7 +1189,6 @@ class data:
             if int(version_list[0])==4 and int(version_list[1])<1 and int(version_list[2])<2:return {'status': 0, "timestamp": int(time.time()), "message": result}
             #取网站域名列表
             try:
-                prorject_type=["PHP","WP2"]
                 domain_list = public.S('sites').where_in('project_type',prorject_type).field('name').select()
             except Exception as ex:
                 domain_list = []
@@ -1273,9 +1249,14 @@ class data:
 
     # 简化版获取网站请求数用于排序
     def get_site_request(self,get=None):
+        project_type = ['PHP','WP2','proxy' , 'Node' , 'Python']
+        if get is not None:
+            if get.get("site_type") and get.get("site_type") in project_type:
+                project_type = [get.get("site_type")]
+
         #保留免费版
         if not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")):
-            site_names = [ i.get('name','') for i in public.M("sites").field("name").select() if i.get('name','') !='' ]
+            site_names = [ i.get('name','') for i in public.S('sites').where_in('project_type',project_type).field('name').select() if i.get('name','') !='' ]
             start_date= None if get==None else get.get('start_date',None)
             end_date= None if get==None else get.get('end_date',None)
             return {'status': 0, "timestamp": int(time.time()), "message": self.get_multi_site_stats(site_names=site_names,start_date=start_date,end_date=end_date)}
@@ -1592,6 +1573,7 @@ class data:
                     's.status',
                     's.addtime',
                     's.ps',
+                    'edate',
                     'project_type',
                     'service_type',
                     'COALESCE(COUNT(wb.id), 0) AS backup_count',
@@ -1606,6 +1588,7 @@ class data:
                     's.status',
                     's.addtime',
                     's.ps',
+                    'edate',
                     'project_type',
                     'service_type'
                 )
@@ -1632,7 +1615,7 @@ class data:
             # 处理网站流量排序
             re_data = None
             if get.get('re_order'):
-                re_data = self.get_site_request()
+                re_data = self.get_site_request(public.to_dict_obj({'site_type': 'WP2'}))
                 if re_data['status'] == 0:
                     re_data = re_data['message']
 
@@ -1731,3 +1714,19 @@ class data:
         except Exception as e:
 
             return public.return_message(-1, 0, str(e))
+
+    # 获取aacloud数据，一次性返回
+    def get_aacloud_data(self,get):
+        webname = public.GetConfigValue("title")
+        version = ''
+        conf_path = os.path.join(public.get_panel_path(), 'class/common.py')
+        try:
+            data = public.readFile(conf_path)
+
+            match = re.search(r"g\.version\s*=\s*['\"](.*?)['\"]", data)
+            if match:
+                version = match.group(1)
+        except:
+            pass
+
+        return {'webname' : webname,'version': version}

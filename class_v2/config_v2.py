@@ -7,7 +7,10 @@
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
 import public, re, os, nginx, apache, json, time, ols
+from public import return_message
 from public.validate import Param
+public.sys_path_append("class_v2/")
+from theme_config import ThemeConfigManager
 try:
     import pyotp
 except:
@@ -44,6 +47,8 @@ class config:
             ssl_dir = os.path.join(self._setup_path, "ssl")
             if not os.path.exists(ssl_dir):
                 os.makedirs(ssl_dir)
+
+            self.themeManager = ThemeConfigManager(self.__panel_asset_config)
 
             self.mail = send_mail.send_mail()
             if not os.path.exists(self.__mail_list_data):
@@ -3821,6 +3826,7 @@ class config:
         path = "/www/server/panel/BTPanel/languages/language.pl"
         public.WriteFile(path, name)
         public.set_module_logs('language', 'set_language', 1)
+        public.set_module_logs('language-info', name, 1)
         # 前端目录更改(重启面板)
         public.restart_panel()
         return public.return_message(0, 0, 'The setup was successful')
@@ -3994,141 +4000,6 @@ class config:
         # public.restart_panel()
         return public.return_message(0, 0, 'The setup was successful')
 
-    # 设置面板界面配置
-    def set_panel_asset(self, get):
-        if cache:
-            cache.delete("panel_asset_config")
-
-        from BTPanel import PANEL_DEFAULT_ASSET
-        # 定义允许的配置字段映射
-        allowed_fields = set(PANEL_DEFAULT_ASSET.keys())
-        try:
-            # 收集请求中的有效配置数据
-            new_data = {
-                key: getattr(get, key) for key in allowed_fields if hasattr(get, key)
-            }
-            # 读取现有配置（如果存在）
-            if os.path.exists(self.__panel_asset_config):
-                existing_data = json.loads(public.readFile(self.__panel_asset_config))
-                existing_data.update(new_data)
-                updated_data = json.dumps(existing_data, indent=2)
-            else:
-                updated_data = json.dumps(new_data, indent=2)
-            # 存储配置
-            public.writeFile(self.__panel_asset_config, updated_data)
-            return public.success_v2(public.lang("Set Asset Successfully!"))
-
-        except Exception as e:
-            return public.fail_v2(public.lang("Set Asset Failed {}", e))
-
-
-    # 获取面板界面配置
-    def get_panel_asset(self, get=None):
-        try:
-            cache_data = cache.get("panel_asset_config")
-            if cache_data:
-                return public.success_v2(cache_data)
-        except Exception as e:
-            public.print_log(f"get_panel_asset cache error: {e}")
-
-        try:
-            from BTPanel import PANEL_DEFAULT_ASSET
-            # 合法的字段和默认值
-            default_values = {
-                k: v for k, v in PANEL_DEFAULT_ASSET.items()
-            }
-        except:
-            default_values = {
-                'favicon': '/static/favicon.ico',  # 默认网站favicon图标
-                'show_login_logo': True,  # 默认不显示登录logo
-                'show_login_bg_images': False,  # 默认不显示登录背景图片
-                'login_logo': '/static/icons/logo-green.svg',  # 默认登录logo图片
-                'login_bg_images': '',  # 默认登录背景图片
-                'login_bg_images_opacity': 100,  # 默认登录背景图片透明度
-                'show_main_bg_images': True,  # 默认不显示主界面背景图
-                'main_bg_images': '/static/icons/main_bg.png',  # 主界面背景图
-                'main_bg_images_opacity': 100,  # 主界面背景图透明度
-                'main_content_opacity': 100,  # 主界面内容透明度
-                'main_shadow_color': '#000000',  # 主界面阴影颜色
-                'main_shadow_opacity': 5,  # 主界面阴影透明度
-                'menu_logo': '/static/icons/menu_logo.png',  # 菜单栏顶部logo图标
-                'menu_bg_opacity': 100,  # 默认侧边栏背景透明度
-                'theme_color': '#3c444d',  # 默认主色
-                'theme_name': 'default',  # 默认主题名称
-                'home_state_font_size': 24,  # 首页概览字体大小
-                'main_bg_images_dark': '/static/icons/main_bg_dark.png',  # 这个是用来搞黑暗模式的
-            }
-        # 旧字段与新字段的映射
-        old_to_new = {
-            'bg_images': 'login_bg_images',
-            'bg_images_opacity': 'login_bg_images_opacity',
-            'tab_logo': 'menu_logo',
-            'main_opacity': 'main_content_opacity',
-            'menu_theme_color': 'theme_color',
-            'menu_theme': 'theme_name',
-            'show_main_bg_image': 'show_main_bg_images',
-            'main_bg_image': 'main_bg_images',
-            'main_bg_image_opacity': 'main_bg_images_opacity',
-        }
-        try:
-            if not os.path.exists(self.__panel_asset_config):
-                return public.success_v2(default_values)
-
-            # 旧配置字段替换成新key
-            cf = public.readFile(self.__panel_asset_config)
-            if not cf: # 空配置
-                public.ExecShell(f"rm -f {self.__panel_asset_config}")
-                return public.success_v2(default_values)
-
-            try:
-                path_data = json.loads(cf)
-            except json.JSONDecodeError: # 配置异常
-                public.ExecShell(f"rm -f {self.__panel_asset_config}")
-                return public.success_v2(default_values)
-
-            for old_key, new_key in old_to_new.items():
-                if old_key in path_data:
-                    path_data[new_key] = path_data.pop(old_key)
-
-            # 更新配置文件
-            public.writeFile(self.__panel_asset_config, json.dumps(path_data, indent=2))
-            result = {}
-            for key, default in default_values.items():
-                value = path_data.get(key, default)
-                # 处理特殊情况
-                if key in [
-                    "login_logo", "login_bg_images", "main_bg_images", "menu_logo"
-                ]:
-                    # 允许空字符串，但不允许 "undefined"
-                    if str(value).strip() == "undefined":
-                        value = default
-                if key in [
-                    "login_bg_images_opacity",
-                    "main_bg_images_opacity",
-                    "main_content_opacity",
-                    "menu_bg_opacity",
-                    "main_shadow_opacity",
-                    "home_state_font_size"
-                ]:
-                    # 转换为整数
-                    try:
-                        value = int(value)
-                    except (ValueError, TypeError):
-                        value = default
-
-                result[key] = value
-                # 将字符串的true和false转换为布尔值
-                if isinstance(value, str):
-                    if value.lower() == 'true':
-                        result[key] = True
-                    elif value.lower() == 'false':
-                        result[key] = False
-            if cache:
-                cache.set("panel_asset_config", result)
-            return public.success_v2(result)
-        except:
-            return public.success_v2(default_values)
-
     # 面板服务监控list
     def get_alarm_services(self, get=None):
         try:
@@ -4183,3 +4054,73 @@ class config:
                 "status": service.is_running,
             })
         return public.success_v2({"data": res,"total": total})
+
+    # =================== 主题, 界面 ========================
+    # 获取面板界面配置
+    def get_panel_theme(self, get=None):
+        try:
+            res =  self.themeManager.get_config()
+            return return_message(0 if res.get("status") else -1, 0, res.get("data") or res.get("msg", ""))
+        except Exception as e:
+            return public.fail_v2("get panel theme config failed: {}".format(str(e)))
+
+    # 设置面板界面配置
+    def set_panel_theme(self, get):
+        try:
+            res = self.themeManager.save_config(get.data)
+            return return_message(0 if res.get("status") else -1, 0, res.get("msg", ""))
+        except Exception as e:
+            return public.fail_v2(f'Set panel theme config failed: {str(e)}')
+
+    # 更新面板界面配置
+    def update_panel_theme(self, get):
+        try:
+            res = self.themeManager.update_config(get)
+            return return_message(0 if res.get("status") else -1, 0, res.get("data") or res.get("msg", ""))
+        except Exception as e:
+            return public.fail_v2("update panel theme config failed: {}".format(str(e)))
+
+    # 验证主题文件
+    def validate_theme_file(self, get):
+        try:
+            if not hasattr(get, 'file_path'):
+                return public.fail_v2("file_path parameter is missing")
+            res = self.themeManager.validate_theme_file(get.file_path)
+            return return_message(0 if res.get("status") else -1, 0, res.get("data") or res.get("msg", "fail"))
+        except Exception as e:
+            return public.fail_v2("validate theme file failed: {}".format(str(e)))
+
+    # 导入主题配置
+    def import_theme_config(self, get):
+        try:
+            if not hasattr(get, 'file_path'):
+                return public.fail_v2("file_path parameter is missing")
+            backup_existing = getattr(get, 'backup_existing', True)
+            if isinstance(backup_existing, str):
+                backup_existing = backup_existing.lower() in ['true', '1', 'yes']
+            res  = self.themeManager.import_theme_config(get.file_path, backup_existing)
+            return return_message(0 if res.get("status") else -1, 0, res.get("msg", ""))
+        except Exception as e:
+            return public.fail_v2("import theme config failed: {}".format(str(e)))
+
+    # 导出主题配置
+    def export_theme_config(self, get):
+        try:
+            export_path = getattr(get, 'export_path', None)
+            res = self.themeManager.export_theme_config(export_path)
+            return return_message(0 if res.get("status") else -1, 0, res.get("data") or res.get("msg", "fail"))
+        except Exception as e:
+            return public.fail_v2("export theme config failed: {}".format(str(e)))
+
+    # 获取导出文件信息
+    def get_export_file_info(self, get):
+        try:
+            if not hasattr(get, 'file_path'):
+                return public.fail_v2("file_path parameter is missing")
+            res = self.themeManager.get_export_file_info(get.file_path)
+            return public.return_message(
+                0 if res.get("status") else -1, 0, res.get("data") or res.get("msg", "fail")
+            )
+        except Exception as e:
+            return public.fail_v2("get export file info failed: {}".format(str(e)))
+    # =================== 主题, 界面 END ========================

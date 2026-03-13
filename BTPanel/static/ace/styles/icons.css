@@ -34,6 +34,11 @@
   font-weight: normal;
   font-style: normal;
 }
+.folder-icon:before {
+	color: #d6ab34;
+	content: '\f016';
+	font-family: octicons;
+}
 .binary-icon:before {
   font-family: "Octicons Regular";
   font-size: 16px;
@@ -152,12 +157,6 @@
   font-size: 16px;
   top: 1px;
   content: "\f011";
-}
-.zip-icon:before {
-  font-family: "Octicons Regular";
-  font-size: 16px;
-  top: 1px;
-  content: "\f013";
 }
 .fa {
   font-family: FontAwesome;
@@ -4925,6 +4924,11 @@
   font-size: 14px;
 }
 .text-icon:before{
+  color: #cccccc;
+  content: '\f011';
+  font-family: octicons;
+}
+.apache_conf-icon:before {
   color: #cccccc;
   content: '\f011';
   font-family: octicons;

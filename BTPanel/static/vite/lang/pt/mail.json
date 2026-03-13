@@ -404,7 +404,8 @@
 			"index_54": "Alerta de IP/domínio na lista negra",
 			"index_55": "Notificar-me quando o serviço de correio estiver inativo",
 			"index_56": "Alerta de Serviço de Correio",
-			"index_57": "Detectar listas negras automaticamente"
+			"index_57": "Detectar listas negras automaticamente",
+			"index_58": "Send email when quota exceeded"
 		},
 		"Api": {
 			"index_1": "Configurando capturar tudo, aguarde...",

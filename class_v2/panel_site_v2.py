@@ -11,6 +11,7 @@
 # 网站管理类
 # ------------------------------
 import re, public, os, sys, shutil, json, hashlib, socket, time
+from datetime import datetime
 from public.hook_import import hook_import
 hook_import()
 
@@ -28,6 +29,7 @@ except:
 from panel_redirect_v2 import panelRedirect
 import site_dir_auth_v2 as site_dir_auth
 from public.validate import Param
+public.sys_path_append("/class_v2")
 
 
 class panelSite(panelRedirect):
@@ -543,8 +545,8 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         except:
             pass
 
-    # 旧版添加站点，保留
-    def AddSite(self, get, multiple=None):
+    @public.try_to_apply_ssl
+    def AddSite(self, get, multiple=None): # php版添加站点
         # 校验参数
         try:
             if not hasattr(get, 'is_create_default_file'):
@@ -566,6 +568,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 Param('ftp').Bool(),
                 Param('is_create_default_file').Bool(),
                 Param('parse_list').String(),  # dns auto
+                Param('ssl_auto').Integer(),  # default ssl auto
             ], [
                 public.validate.trim_filter(),
             ])
@@ -578,11 +581,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             get.is_create_default_file = False
             from git_tools import GitTools
             git = GitTools()
-            # 关闭ssh测试
-            # repo = get.get('repo')
-            # if not git.test_ssh(repo):
-            #     return public.return_message(-1, 0, public.lang('Failed to connect to the remote repository. Please make sure the key is configured correctly!'))
-
             ok, msg = git.check_webhook_install()
             if not ok:
                 return public.return_message(-1, 0, msg)
@@ -933,6 +931,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     'repo': get.get('repo'),
                     'coverage_data': True,
                     'deploy_script': get.get('deploy_script', ''),
+                    'key_path': get.get('key_path', '')
                 }
                 if get.get('deploy_type') == 'ssh':
                     # 校验目录文件
@@ -947,10 +946,22 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
             # ================ git end ======================
 
+            # todo 'parse_list' 为自动化dns流程计划移除. 与默认自动ssl互斥,  ssl_auto拦截非人为自动化测试
+            if hasattr(get, "pid") and not hasattr(get, "parse_list") and getattr(get, "ssl_auto", "0") == "1":
+                data["ssl_site_id"] = get.pid or 0
+
+            if public.get_multi_webservice_status() and get.get('type') in ['PHP','WP2']:
+                conf_list = public.get_default_site_conf()
+                if get.type == 'PHP':
+                    dict_obj = public.to_dict_obj({'site_id': get.get('pid', 0), 'service_type': conf_list['php']})
+                elif public.get_multi_webservice_status() and get.type == 'WP2':
+                    dict_obj = public.to_dict_obj({'site_id': get.get('siteId', 0), 'service_type': conf_list['wp']})
+
+                self.switch_webservice(dict_obj)
+
             return data
         except Exception as e:
             return data
-
 
     # 添加站点
     def add_sites(self, get, app=None, multiple=None):
@@ -960,18 +971,26 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
         progress_log = {
             "status": 0,
-            "parameter_verification": {"ps": public.lang("Verification is underway....."),
-                                       "status": 0, "error": '',
-                                       "title": public.lang("Parameter verification")},
-            "create_website": {"ps": public.lang("{} The website is being created....", get.get('weblog_title', '')),
-                               "status": 2, "error": '',
-                               "title": public.lang("Create website")},
-            "optional_configurations": {"ps": public.lang("Add optional configurations: Database, FTP"),
-                                        "status": 2, "error": '',
-                                        "title": public.lang("Add optional configurations")},
-            "initialize_wp_website": {"ps": public.lang("The wordpress website is being deployed...."),
-                                        "status": 2, "error": '',
-                                        "title": public.lang("Deploy wordpress")},
+            "parameter_verification": {
+                "ps": public.lang("Verification is underway....."),
+                "status": 0, "error": '',
+                "title": public.lang("Parameter verification")
+            },
+            "create_website": {
+                "ps": public.lang("{} The website is being created....", get.get('weblog_title', '')),
+                "status": 2, "error": '',
+                "title": public.lang("Create website")
+            },
+            "optional_configurations": {
+                "ps": public.lang("Add optional configurations: Database, FTP"),
+                "status": 2, "error": '',
+                "title": public.lang("Add optional configurations")
+            },
+            "initialize_wp_website": {
+                "ps": public.lang("The wordpress website is being deployed...."),
+                "status": 2, "error": '',
+                "title": public.lang("Deploy wordpress")
+            }
         }
 
         public.writeFile(task_status, json.dumps(progress_log))
@@ -1022,23 +1041,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 Param('ftp').Bool(),
                 Param('is_create_default_file').Bool(),
                 Param('parse_list').String(),  # dns auto
+                Param('ssl_auto').Integer(),  # default ssl auto
             ], [
                 public.validate.trim_filter(),
             ])
-
-                # parse_list = []
-                # main_domain = {}
-                # if hasattr(get, "parse_list"):
-                #     parse_list = json.loads(get.parse_list)
-                #     if not len(parse_list):
-                #         raise ValueError("domain names not found")
-                #
-                #     main_domain = parse_list.pop(0)
-                #     get.webname = json.dumps({
-                #         "domain": main_domain.get("domain").strip(),
-                #         "domainlist": [x.get("domain", "") for x in parse_list],
-                #         "count": len(parse_list),
-                #     })
 
             if get.get('ftp', False):
                 # 校验参数
@@ -1342,25 +1348,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         if int(data.get('databaseStatus')) != 1:
                             raise ValueError(public.lang("Database creation failed. Please check mysql running status and try again. {}".format(data.get('databaseErrorMsg', ''))))
 
-                # # ================ dns domain  =======================
-                #
-                # if hasattr(get, "parse_list"):
-                #     try:
-                #         import threading
-                #         from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                #         # 添加申请证书, 解析,代理
-                #         new_list = [main_domain] + parse_list
-                #         task_obj = generate_sites_task(main_domain, get.pid)
-                #         task = threading.Thread(
-                #             target=init_sites_dns,
-                #             args=(new_list, task_obj)
-                #         )
-                #         task.start()
-                #         public.set_module_logs("sys_domain", "AddSite_Auto", 1)
-                #     except Exception as e:
-                #         import traceback
-                #         public.print_log(e)
-
                 # ====================================wp创建======================================
             except Exception as e:
                 # 删除站点
@@ -1422,14 +1409,23 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                                 public.print_log(f"error, {e}")
                 # ==============================================================================
 
-                #多服务下默认为ols
+                #多服务下切换默认服务
                 if public.get_multi_webservice_status():
-                    dict_obj = public.to_dict_obj({'site_id' : data.get('siteId', 0),'service_type' : 'openlitespeed'})
+                    conf_list = public.get_default_site_conf()
+                    dict_obj = public.to_dict_obj({'site_id' : data.get('siteId', 0),'service_type' : conf_list['wp']})
                     self.switch_webservice(dict_obj)
 
                 progress_log['initialize_wp_website']['ps'] = public.lang('Success')
                 progress_log['initialize_wp_website']['status'] = 1
                 progress_log['status'] = 1
+
+                # todo 'wp_parse_list' 为自动化dns流程计划移除. 与默认自动ssl互斥,  ssl_auto拦截非人为自动化测试
+                if hasattr(get, "pid") and not hasattr(get, "wp_parse_list") and getattr(get, "ssl_auto", "0") == "1":
+                    @public.try_to_apply_ssl
+                    def _apply_ssl():
+                        return {"ssl_site_id": get.pid or 0}
+                    _apply_ssl()
+
                 public.writeFile(task_status, json.dumps(progress_log))
                 public.progress_release_lock(lock_file)
                 return data
@@ -1445,7 +1441,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.writeFile(task_status, json.dumps(progress_log))
                 public.progress_release_lock(lock_file)
                 return data
-
 
     # 添加WP站点
     def AddWPSite(self, args: public.dict_obj):
@@ -2609,7 +2604,13 @@ vhssl {
             public.writeFile(ssl_file, ssl_conf, "a+")
         include_ssl = '\ninclude {}'.format(ssl_file)
         detail_file = self.setupPath + '/panel/vhost/openlitespeed/detail/{}.conf'.format(siteName)
-        public.writeFile(detail_file, include_ssl, 'a+')
+        # 避免重复添加
+        detail_content = public.readFile(detail_file)
+        if detail_content:
+            if include_ssl not in detail_content:
+                public.writeFile(detail_file, '\n' + include_ssl, 'a+')
+
+        # 调整多域名部署
         if not conf:
             # 判断是否启用多服务
             prot = '443'
@@ -2634,13 +2635,17 @@ listener SSL443 {{
   ocspRespMaxAge           86400
 }}
 """.format(prot=prot)
-
+            domain = ",".join(self._get_site_domains(siteName))
+            conf = conf.replace('BTSITENAME', siteName).replace('BTDOMAIN', domain)
         else:
-            rep = r'listener\s*SSL443\s*{'
-            map = '\n  map {s} {s}'.format(s=siteName)
-            conf = re.sub(rep, 'listener SSL443 {' + map, conf)
-        domain = ",".join(self._get_site_domains(siteName))
-        conf = conf.replace('BTSITENAME', siteName).replace('BTDOMAIN', domain)
+            domain = ",".join(self._get_site_domains(siteName))
+            map_pattern = r'map\s+{}\s+.*'.format(re.escape(siteName))
+            new_map_line = 'map                     {} {}'.format(siteName, domain)
+            conf, count = re.subn(map_pattern, new_map_line, conf)
+
+            if count == 0:
+                rep = r'(listener\s*SSL443\s*{)'
+                conf = re.sub(rep, r'\1\n  ' + new_map_line, conf)
         public.writeFile(listen_conf, conf)
 
     def _get_ap_static_security(self, ap_conf):
@@ -2660,18 +2665,30 @@ listener SSL443 {{
         if not 'first_domain' in get: get.first_domain = siteName
         if 'isBatch' in get and siteName != get.first_domain: get.first_domain = siteName
 
+        site_info = public.S("sites").where("name=?", (siteName,)).field("id,project_type").find()
+        if not site_info:
+            return public.returnMsg(False, "Site [{}] does not exist".format(siteName))
+
+        # 获取项目配置文件前缀
+        site_conf_perfix = ""
+        from ssl_domainModelV2 import SPECIAL_PROJECT_TYPE
+        if site_info["project_type"].lower() in SPECIAL_PROJECT_TYPE:
+            # 其他类型项目
+            site_conf_perfix = site_info["project_type"].lower() + "_"
+        have_nginx_conf = False
+        have_apache_conf = False
+        ng_file = ""
+        apa_file = ""
         # ========================== Nginx配置 ===========================
-        file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
-
-        # Node项目
-        if not os.path.exists(file):
-            file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
-
-        ng_file = file
-        ng_conf = public.readFile(file)
-        have_nginx_conf = ng_conf is not False
-
         try:
+            file = f"{self.setupPath}/panel/vhost/nginx/{site_conf_perfix}{siteName}.conf"
+            if not os.path.exists(file):
+                raise Exception("Site conf: [{}] does not exist".format(file))
+            ng_file = file
+            # 修改前备份
+            shutil.copyfile(file, self.nginx_conf_bak)
+            ng_conf = public.readFile(file)
+            have_nginx_conf = ng_conf is not False
             if ng_conf:
                 if ng_conf.find('ssl_certificate') == -1:
                     http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
@@ -2687,8 +2704,9 @@ listener SSL443 {{
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
     add_header Strict-Transport-Security "max-age=31536000";%s
-    error_page 497  https://$host$request_uri;
-""" % (get.first_domain, get.first_domain, self.get_tls_protocol(self.get_tls13(), is_apache=False), http3_header)
+    error_page 497  https://$host$request_uri;""" % (
+                        get.first_domain, get.first_domain, self.get_tls_protocol(self.get_tls13(), is_apache=False), http3_header
+                    )
                     if ng_conf.find('ssl_certificate') != -1:
                         if 'isBatch' not in get:
                             public.serviceReload()
@@ -2702,7 +2720,7 @@ listener SSL443 {{
                                                        " Please try manually adding a marker or restoring the configuration file.")
 
                     ng_conf = ng_conf.replace('#error_page 404/404.html;', sslStr)
-                    conf = re.sub(r"\s+\#SSL\-END", "\n\t\t#SSL-END", ng_conf)
+                    re.sub(r"\s+#SSL-END", "\n\t\t#SSL-END", ng_conf)
 
                     # 添加端口
                     rep = r"listen.*[\s:]+(\d+).*;"
@@ -2743,17 +2761,22 @@ listener SSL443 {{
                             listen_add_str.append("\n    listen 443 ssl " + default_site + ";")
                         listen_add_str_data = "".join(listen_add_str)
                         ng_conf = ng_conf.replace(listen, listen + listen_add_str_data)
+                # 覆盖配置
+                public.writeFile(file, ng_conf)
         except Exception as ng_err:
+            import traceback
+            public.print_log(traceback.format_exc())
             public.print_log(f"set nginx conf error: {ng_err}")
         # ================================ Apache ========================================
         # Apache配置
         try:
-            file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
-            other_project = ""
+            file = f"{self.setupPath}/panel/vhost/apache/{site_conf_perfix}{siteName}.conf"
             if not os.path.exists(file):
-                file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
-                other_project = "node"
-
+                raise Exception("Site conf: [{}] does not exist".format(file))
+            apa_file = file
+            # 修改前备份
+            shutil.copyfile(file, self.apache_conf_bak)
+            other_project = "" if site_conf_perfix == "" else site_conf_perfix[:-1]
             ap_conf = public.readFile(file)
             have_apache_conf = ap_conf is not False
             ap_static_security = self._get_ap_static_security(ap_conf)
@@ -2828,42 +2851,57 @@ listener SSL443 {{
         %s
         DirectoryIndex %s
     </Directory>
-</VirtualHost>''' % (vName, ssl_prot, path, siteName, domains, public.GetConfigValue('logs_path') + '/' + siteName,
-                         public.GetConfigValue('logs_path') + '/' + siteName, ap_proxy,
-                         get.first_domain, get.first_domain, self.get_tls_protocol(is_apache=True),
-                         ap_static_security, phpConfig, path, apaOpt, index)
+</VirtualHost>''' % (
+                        vName, ssl_prot, path, siteName, domains,
+                        public.GetConfigValue('logs_path') + '/' + siteName,
+                        public.GetConfigValue('logs_path') + '/' + siteName, ap_proxy,
+                        get.first_domain, get.first_domain, self.get_tls_protocol(is_apache=True),
+                        ap_static_security, phpConfig, path, apaOpt, index
+                    )
                     ap_conf = ap_conf + "\n" + sslStr
                     self.apacheAddPort(ssl_prot)
-                    shutil.copyfile(file, self.apache_conf_bak)
                     public.writeFile(file, ap_conf)
-                    if other_project == "node":  # 兼容Nodejs项目
-                        from projectModelV2.nodejsModel import main
-                        m = main()
-                        project_find = m.get_project_find(siteName)
-                        m.set_apache_config(project_find)
-
-            if not have_nginx_conf and not have_apache_conf:
-                return public.returnMsg(False, 'No server configuration file. '
-                                               'Please check if port forwarding has been enabled!')
-
-            if ng_conf:  # 因为未查明原因，Apache配置过程中会删除掉nginx备份文件（估计是重复调用了本类中的init操作导致的）
-                shutil.copyfile(ng_file, self.nginx_conf_bak)
-                public.writeFile(ng_file, ng_conf)
+                    if other_project in SPECIAL_PROJECT_TYPE:
+                        # 兼容 node, python, go, java, net, html, other
+                        try:
+                            import importlib
+                            project_module = importlib.import_module(f"projectModelV2.{other_project}Model")
+                            project_class = getattr(project_module, "main", None)
+                            if project_class:
+                                project_instance = project_class()
+                                project_instance.set_config(siteName)
+                        except ModuleNotFoundError as ef:
+                            public.print_log(
+                                f"Set apache ssl Error, 'projectModelV2.{other_project}Model' not found: {ef}"
+                            )
         except Exception as ap_err:
-            public.print_log(f"set apache conf error: {ap_err}")
+                import traceback
+                public.print_log(traceback.format_exc())
+                public.print_log(f"set apache conf error: {ap_err}")
+
         # ============================= OLS ==================================
         try:
             self.set_ols_ssl(get, siteName)
-            isError = public.checkWebConfig()
-            if isError is not True:
-                if os.path.exists(self.nginx_conf_bak): shutil.copyfile(self.nginx_conf_bak, ng_file)
-                if os.path.exists(self.apache_conf_bak): shutil.copyfile(self.apache_conf_bak, file)
-                public.ExecShell("rm -f /tmp/backup_*.conf")
-                return public.returnMsg(False,
-                                        'ssl cert wrong: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>')
         except Exception as ols_err:
+            import traceback
+            public.print_log(traceback.format_exc())
             public.print_log(f"set ols conf error: {ols_err}")
-        
+
+        # ========================== Final Check =============================
+        if not have_nginx_conf and not have_apache_conf:
+            return public.returnMsg(
+                False, 'No server configuration file. Please check if port forwarding has been enabled!'
+            )
+
+        isError = public.checkWebConfig()
+        if isError is not True: # 回滚ng和apa
+            if os.path.exists(self.nginx_conf_bak) and ng_file: shutil.copyfile(self.nginx_conf_bak, ng_file)
+            if os.path.exists(self.apache_conf_bak) and apa_file: shutil.copyfile(self.apache_conf_bak, apa_file)
+            public.ExecShell("rm -f /tmp/backup_*.conf") # 移除临时备份
+            return public.returnMsg(
+                False, 'ssl cert wrong: <br><a style="color:red;">' + isError.replace("\n", '<br>') + '</a>'
+            )
+
         public.WriteLog('Site manager', 'Site [{}] turned on SSL successfully!'.format(siteName))
         result = public.returnMsg(True, 'SITE_SSL_OPEN_SUCCESS')
         result['csr'] = public.readFile('/www/server/panel/vhost/cert/' + get.siteName + '/fullchain.pem')
@@ -2889,8 +2927,12 @@ listener SSL443 {{
         siteName = get.siteName
         # Nginx配置
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+        # node
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
+        # python
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             if conf.find('ssl_certificate') == -1:
@@ -2957,8 +2999,12 @@ listener SSL443 {{
 
         siteName = get.siteName
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+        # node
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
+        # python
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             rep = "\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"
@@ -2982,7 +3028,16 @@ listener SSL443 {{
         return public.return_message(0, 0, return_message['msg'])
 
     # 是否跳转到https
-    def IsToHttps(self, siteName):
+    def IsToHttps(self, siteName: str = None, file: str = None):
+        if file is not None:
+            conf = public.readFile(file)
+            if conf:
+                if conf.find('HTTP_TO_HTTPS_START') != -1: return True
+                if conf.find('$server_port !~ 443') != -1: return True
+            return False
+
+        if not siteName:
+            return False
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
@@ -3015,8 +3070,13 @@ listener SSL443 {{
         siteName = get.siteName
 
         file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
+        # todo
+        # node
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/node_' + siteName + '.conf'
+        # python
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             rep = "\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"
@@ -3146,6 +3206,9 @@ listener SSL443 {{
         # 是否为node项目
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/node_' + siteName + '.conf'
+        # 是否为py项目
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/python_' + siteName + '.conf'
 
         if public.get_webserver() == "openlitespeed":
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + siteName + '.conf'
@@ -3164,7 +3227,7 @@ listener SSL443 {{
         if conf.find(keyText) == -1:
             status = False
 
-        toHttps = self.IsToHttps(siteName)
+        toHttps = self.IsToHttps(file=file)
         id = public.M('sites').where("name=?", (siteName,)).getField('id')
         domains = public.M('domain').where("pid=?", (id,)).field('name').select()
         email = public.M('users').where('id=?', (1,)).getField('email')
@@ -4849,16 +4912,16 @@ server
         # - 中间允许任意字符（非贪婪模式）
         # - 捕获结尾的 ; 或 /;
         pattern = r'proxy_pass\s+.*?(/?);'
-        
+
         # 在配置内容中查找匹配
         match = re.search(pattern, config_content, re.IGNORECASE)
-        
+
         if not match:
             return 0
-        
+
         # 获取捕获的结尾部分（/; 或 ;）
         ending = match.group(1) + ';'
-        
+
         if ending == '/;':
             return 1
         else:
@@ -5253,7 +5316,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                 Param('advanced').Integer(),
                 Param('cachetime').Integer(),
                 Param('keepuri').Integer(),
-                
+
             ], [
                 public.validate.trim_filter(),
             ])
@@ -5290,7 +5353,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         # project_type = public.M('sites').where('name=?', (get.sitename,)).field('project_type').find()['project_type']
         # if project_type == 'WP':
         #     return public.return_msg_gettext(False, public.lang("Reverse proxies are not currently available for Wordpress sites that use one-click deployment"))
-        
+
         proxyUrl = self.__read_config(self.__proxyfile)
         proxyUrl.append({
             "proxyname": get.proxyname,
@@ -5450,7 +5513,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         """
         # 1. 将字符串按行拆分，保留每行的换行符（splitlines(True) 保留换行符）
         lines = nginx_config_str.splitlines(True)
-        
+
         # 2. 过滤连续空行
         filtered_lines = []
         prev_line_blank = False  # 标记前一行是否为空行（初始为 False）
@@ -5465,7 +5528,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
             # - 空行 → 仅当前一行非空时保留（避免连续空行）
             if not current_line_blank or not prev_line_blank:
                 filtered_lines.append(line)
-            
+
             # 更新“前一行是否为空”的状态，为下一行判断做准备
             prev_line_blank = current_line_blank
 
@@ -5513,7 +5576,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         get.advanced = 0 if get.proxydir=="/" else 1
         if self.__CheckStart(get):
             return self.__CheckStart(get)
-            
+
         conf = self.__read_config(self.__proxyfile)
         random_string = public.GetRandomString(8)
         for i in range(len(conf)):
@@ -5543,7 +5606,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     proxy_site=get.proxysite
                     if int(get.keepuri) == 0:
                         proxy_site+="/"
-                        
+
                     php_pass_proxy = get.proxysite
                     if get.proxysite[-1] == '/' or get.proxysite.count('/') > 2 or '?' in get.proxysite:
                         match = re.search(r'(https?\:\/\/[\w\.]+)', get.proxysite)
@@ -5553,7 +5616,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
 
                     ng_conf = re.sub(r"location\s+[\^\~]*\s?%s" % conf[i]["proxydir"], "location ^~ " + get.proxydir,
                                      ng_conf)
-                    
+
                     ng_conf = re.sub(r"proxy_pass\s+%s" % conf[i]["proxysite"], "proxy_pass " + proxy_site, ng_conf)
                     ng_conf = re.sub(r"proxy_pass\s+%s" % conf[i]["proxysite"]+"/", "proxy_pass " + proxy_site, ng_conf)
                     ng_conf = re.sub("location\\s+\\~\\*\\s+\\\\.\\(php.*\n\\{\\s*proxy_pass\\s+%s.*" % (php_pass_proxy),
@@ -5711,7 +5774,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                     if not hasattr(get, 'notreload'):
                         public.serviceReload()
                     return public.return_message(0, 0, public.lang("Setup successfully!"))
-    
+
     # ## 修改重定向
     # def setRewritedir(self, get):
     #     rewriteconf = ""
@@ -5767,8 +5830,8 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
         #         if not d["dir1"] or not d["dir2"] or d["dir1"] == d["dir2"] or d["dir1"] == "/":
         #             continue
         #         rewriteconf += '\n\trewrite \^{0}/(\.\*)$ {1}\/$1 break;'.format(d["dir1"], d["dir2"])
-        
-            
+
+
 
         # 构造缓存配置
         ng_cache = r"""
@@ -6837,9 +6900,9 @@ location %s
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        import time
-        if public.GetWebServer() in ['openlitespeed']:
-            return public.return_message(-1, 0, public.lang("OpenLiteSpeed does not support setting the default site"))
+        # 支持ols设置PHP与WP的默认站点
+        self.set_ols_default_site(get.name)
+
         default_site_save = 'data/defaultSite.pl'
         # 清理旧的
         defaultSite = public.readFile(default_site_save)
@@ -6906,11 +6969,55 @@ location %s
 
     # 取默认站点
     def GetDefaultSite(self, get):
+        """
+            取默认站点，nginx/apache 支持全部
+                    OLS 仅支持 PHP 与 WP
+        """
         data = {}
-        data['sites'] = public.M('sites').where('project_type=? OR project_type=?', ('PHP', 'WP')).field('name').order(
-            'id desc').select()
+        project_list = ['PHP','WP2','proxy']
+        if public.get_webserver() == 'openlitespeed':
+            project_list = ['PHP', 'WP2']
+        data['sites'] = public.S('sites').where_in('project_type',project_list).field('name').select()
         data['defaultSite'] = public.readFile('data/defaultSite.pl')
         return public.return_message(0, 0, data)
+
+    def set_ols_default_site(self, site_name):
+        '''
+        @name 设置 OLS 监听器的默认站点
+        @param get.name: 站点名称 或 "default"
+        '''
+
+        if site_name == '0':
+            site_name = 'default'
+
+        # OLS 监听器配置文件路径
+        conf_files = [
+            '/www/server/panel/vhost/openlitespeed/listen/80.conf',
+            '/www/server/panel/vhost/openlitespeed/listen/443.conf'
+        ]
+
+        rep = r"map\s+\S+\s+\*"
+
+        for path in conf_files:
+            if not os.path.exists(path): continue
+
+            conf = public.readFile(path)
+            if not conf: continue
+
+            new_map_str = "map\t{}\t*".format(site_name)
+
+            if re.search(rep, conf):
+                conf = re.sub(rep, new_map_str, conf)
+            else:
+                conf = re.sub(r'(\s*\})', "\n\t" + new_map_str + r'\1', conf, count=1, flags=re.M)
+
+            public.writeFile(path, conf)
+
+        if public.get_webserver() == 'openlitespeed':
+            public.webservice_operation('openlitespeed', 'reload')
+
+        return_message = public.return_msg_gettext(True, 'OLS Default site set to [{}] successfully!'.format(site_name))
+        return public.return_message(0, 0, return_message['msg'])
 
     # 扫描站点
     def CheckSafe(self, get):
@@ -7270,51 +7377,190 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             text = text.replace(k, v)
         return public.xssencode2(text)
 
-    # 取网站日志
-    def GetSiteLogs(self, get):
-        # 校验参数
-        try:
-            get.validate([
-                Param('siteName').String(),
-            ], [
-                public.validate.trim_filter(),
-            ])
-        except Exception as ex:
-            public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, str(ex))
-
-        serverType = public.get_webserver()
-        if serverType == "nginx":
-            logPath = '/www/wwwlogs/' + get.siteName + '.log'
-        elif serverType == 'apache':
-            logPath = '/www/wwwlogs/' + get.siteName + '-access_log'
-        else:
-            logPath = '/www/wwwlogs/' + get.siteName + '_ols.access_log'
-        if not os.path.exists(logPath):
-            return_message = public.return_msg_gettext(False, 'Log is empty')
-            del return_message['status']
-            return public.return_message(-1, 0, return_message['msg'])
-        # return public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
-        return_message = public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 100))) # 暂时限制行数，后期加分页
-        del return_message['status']
-        return public.return_message(0, 0, return_message['msg'])
+    # # 取网站日志
+    # def GetSiteLogs(self, get):
+    #     # 校验参数
+    #     try:
+    #         get.validate([
+    #             Param('siteName').String(),
+    #         ], [
+    #             public.validate.trim_filter(),
+    #         ])
+    #         lines = get.get('lines', 1000)
+    #         lines = int(lines)
+    #     except Exception as ex:
+    #         public.print_log("error info: {}".format(ex))
+    #         return public.return_message(-1, 0, str(ex))
+    #
+    #     serverType = public.get_webserver()
+    #     if serverType == "nginx":
+    #         logPath = '/www/wwwlogs/' + get.siteName + '.log'
+    #     elif serverType == 'apache':
+    #         logPath = '/www/wwwlogs/' + get.siteName + '-access_log'
+    #     else:
+    #         logPath = '/www/wwwlogs/' + get.siteName + '_ols.access_log'
+    #     if not os.path.exists(logPath):
+    #         return_message = public.return_msg_gettext(False, 'Log is empty')
+    #         del return_message['status']
+    #         return public.return_message(-1, 0, return_message['msg'])
+    #     # return public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
+    #     return_message = public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, lines)))
+    #     del return_message['status']
+    #     return public.return_message(0, 0, return_message['msg'])
         # if not os.path.exists(logPath): return public.return_message(-1, 0, public.lang("Log is empty"))
         # return public.return_message(0,0, self.xsssec(public.GetNumLines(logPath, 1000)))
 
-    # 取网站日志
-    def get_site_err_log(self, get):
-        # 校验参数
+    def GetSiteLogs(self, get):
+        # 1. 校验参数（保留原有逻辑，新增对 lines, search, time_search 的支持）
         try:
             get.validate([
                 Param('siteName').String(),
             ], [
                 public.validate.trim_filter(),
             ])
+            lines = int(get.get('lines')) if get.get('lines') else 99999 # 默认获取全部
+            search = get.get('search', '')
+            time_search = get.get('time_search', '[]')
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        return_status = 0
+        # 定位日志文件路径
+        serverType = public.get_webserver()
+        if serverType == "nginx":
+            logPath = '/www/wwwlogs/{}.log'.format(get.siteName)
+        elif serverType == 'apache':
+            logPath = '/www/wwwlogs/{}-access_log'.format(get.siteName)
+        else:
+            logPath = '/www/wwwlogs/{}_ols.access_log'.format(get.siteName)
+
+        if not os.path.exists(logPath):
+            return public.return_message(-1, 0, public.lang('The log file does not exist.'))
+
+        # 4. 读取原始日志 (读取指定的行数)
+        logs = public.GetNumLines(logPath, lines)
+        if not logs:
+            return public.return_message(0, 0, '')
+
+        # 5. 执行筛选逻辑 (时间搜索 & 关键词搜索)
+        try:
+            time_list = json.loads(time_search)
+            if (time_list and len(time_list) == 2) or search:
+                import re
+                from datetime import datetime
+
+                s_logs = []
+                log_list = logs.strip().split('\n')
+                start_time = int(time_list[0]) if time_list else 0
+                end_time = int(time_list[1]) if time_list else 0
+
+                for log in log_list:
+                    # 关键词匹配
+                    if search and search not in log:
+                        continue
+
+                    # 时间匹配
+                    if start_time > 0:
+                        try:
+                            # 提取 [12/Dec/2023:10:00:00 +0800] 中的时间部分
+                            time_str = re.findall(r'\[(.*?)\s', log)[0]
+                            log_timestamp = int(datetime.strptime(time_str, '%d/%b/%Y:%H:%M:%S').timestamp())
+                            if not (start_time <= log_timestamp <= end_time):
+                                continue
+                        except:
+                            pass  # 如果解析失败，默认保留或跳过，视业务需求而定
+
+                    s_logs.append(log)
+                logs = '\n'.join(s_logs)
+        except Exception as e:
+            public.print_log("Log filter error: {}".format(e))
+
+        # 6. 地理位置增强 (可选功能)
+        if hasattr(get, 'ip_area') and int(get.ip_area):
+            logs = self.add_iparea(logs)
+
+        # 7. 安全过滤并返回
+        return_msg = self.xsssec(logs)
+        return public.return_message(0, 0, return_msg)
+
+    # 添加IP地址
+    def add_iparea(self, data):
+        try:
+            # ip_pattern = r'\n\b(?:\d{1,3}\.){3}\d{1,3}\b'
+            # ip_addresses = re.findall(ip_pattern, data)
+            # print(ip_addresses)
+            # ip_addresses = list(set(ip_addresses))
+            # ip_addresses = [ip.strip() for ip in ip_addresses]
+
+            # 新
+            ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+            ip_addresses = re.findall(ip_pattern, data)
+            if not ip_addresses:
+                return data
+            # 去重并排序
+            unique_ips = sorted(list(set(ip_addresses)), key=len, reverse=True)
+
+            infos = public.get_ips_area(unique_ips)
+            for key, value in infos.items():
+                if value.get('info') == '内网地址' or value.get('info') == 'Intranet':
+                    data = data.replace(key, '【{}】 {}'.format(value['info'], key))
+                    continue
+                if value.get('info') == '未知归属地' or value.get('info') == 'Unknown':
+                    data = data.replace(key, '【{}】 {}'.format(value['info'], key))
+                    continue
+                try:
+                    data = data.replace(key, '【{} {} {}】 {}'.format(value['continent'], value['country'], value['province'], key))
+                except:
+                    pass
+            return data
+        except:
+            return data
+
+    # 网站日志下载
+    def download_logs(self, get):
+        try:
+            if not (hasattr(get, 'siteName') and hasattr(get, 'logType') and hasattr(get, 'time_search')):
+                return public.return_message(-1,0, public.lang('Parameter error!'))
+            siteName = get.siteName
+            logType = get.logType
+            if logType == 'access':
+                data = self.GetSiteLogs(get)
+                if data['status'] == 0:
+                    path = '/tmp/{}-access.log'.format(siteName)
+                    public.writeFile(path, data['message']['result'])
+                    return public.return_message(0,0, path)
+                else:
+                    return public.return_message(-1,0, public.lang('Failed to export the log.'))
+
+            elif logType == 'error':
+                data = self.get_site_err_log(get)
+                if data['status']  == 0 :
+                    path = '/tmp/{}-error.log'.format(siteName)
+                    public.writeFile(path, data['message']['result'])
+                    return public.return_message(0,0, path)
+                else:
+                    return public.return_message(-1,0, public.lang('Failed to export the log.'))
+            return public.return_message(-1, 0, public.lang('Parameter error!'))
+        except:
+            return public.return_message(-1,0, public.lang('Failed to export the log.'))
+
+    # 取网站错误日志
+    def get_site_err_log(self, get):
+        # 1. 校验参数
+        try:
+            get.validate([
+                Param('siteName').String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            lines = int(get.get('lines', 99999))
+            search = get.get('search', '')
+            time_search = get.get('time_search', '[]')
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        # 2. 定位日志文件路径
         serverType = public.get_webserver()
         if serverType == "nginx":
             logPath = '/www/wwwlogs/' + get.siteName + '.error.log'
@@ -7326,9 +7572,111 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             return_message = public.return_msg_gettext(False, 'Log is empty')
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
-        return_message = public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
+
+        # 3. 读取日志内容
+        logs = public.GetNumLines(logPath, lines)
+        if not logs:
+            return public.return_message(0, 0, "")
+
+        # 4. 解析时间范围参数
+        start_time = 0
+        end_time = 0
+        try:
+            time_list = json.loads(time_search)
+            if time_list and len(time_list) == 2:
+                start_time = int(time_list[0])
+                end_time = int(time_list[1])
+        except:
+            pass
+
+        # 5. 执行筛选逻辑
+        if start_time > 0 or search:
+            s_logs = []
+            log_list = logs.strip().split('\n')
+
+            for log in log_list:
+                if not log.strip(): continue
+
+                is_match = True
+
+                # 关键词过滤
+                if search and search not in log:
+                    is_match = False
+
+                # 时间范围过滤
+                if is_match and start_time > 0:
+                    log_timestamp = 0
+                    try:
+                        if serverType == "nginx":
+                            # Nginx 格式: 2024/01/01 10:00:00
+                            time_str = ' '.join(log.split(' ')[0:2])
+                            log_timestamp = datetime.strptime(time_str, '%Y/%m/%d %H:%M:%S').timestamp()
+
+                        elif serverType == 'apache':
+                            # Apache 格式: [Mon Jan 01 10:00:00.000000 2024]
+                            time_str = re.findall(r'\[(.*?)\]', log)[0]
+                            time_clean = time_str.split('.')[0]
+                            log_timestamp = datetime.strptime(time_clean, '%a %b %d %H:%M:%S %Y').timestamp()
+
+                        else:
+                            # OLS 格式: 2025-12-22 06:56:21.014080
+                            time_str = log[:19]
+                            log_timestamp = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S').timestamp()
+                    except:
+                        log_timestamp = 0
+
+                    # 校验时间区间
+                    if log_timestamp != 0:
+                        if not (start_time <= log_timestamp <= end_time):
+                            is_match = False
+
+                if is_match:
+                    s_logs.append(log)
+
+            logs = '\n'.join(s_logs)
+
+        # 6. 安全过滤并返回
+        return_message = public.return_msg_gettext(True, self.xsssec(logs))
         del return_message['status']
         return public.return_message(0, 0, return_message['msg'])
+
+    def clear_logs(self, get):
+        try:
+            serverType = public.get_webserver()
+            if serverType == "nginx":
+                error_log_file = '/www/wwwlogs/' + get.siteName + '.error.log'
+                access_log_file = '/www/wwwlogs/{}.log'.format(get.siteName)
+            elif serverType == 'apache':
+                error_log_file = '/www/wwwlogs/' + get.siteName + '-error_log'
+                access_log_file = '/www/wwwlogs/{}-access_log'.format(get.siteName)
+            else:
+                error_log_file = '/www/wwwlogs/' + get.siteName + '_ols.error_log'
+                access_log_file = '/www/wwwlogs/{}_ols.access_log'.format(get.siteName)
+            if not (hasattr(get, 'siteName') and hasattr(get, 'logType') and hasattr(get, 'time_search')):
+                return public.return_message(-1,0, 'Parameter error!')
+
+            logType = get.logType
+            if logType == 'access':
+                data = self.GetSiteLogs(get)
+                if data['status'] == 0:
+                    if hasattr(get, 'time_search') and get.time_search != '[]':
+                        public.writeFile(access_log_file, data['message']['result'])
+                        return public.return_message(0,0, 'Cleanup completed successfully!')
+                    else:
+                        public.writeFile(access_log_file, '')
+                        return public.return_message(0,0, 'Cleanup completed successfully!')
+            elif logType == 'error':
+                data = self.get_site_err_log(get)
+                if data['status'] == 0:
+                    if hasattr(get, 'time_search') and get.time_search != '[]':
+                        public.writeFile(error_log_file, data['message']['result'])
+                        return public.return_message(0,0, 'Cleanup completed successfully!')
+                    else:
+                        public.writeFile(error_log_file, '')
+                        return public.return_message(0,0, 'Cleanup completed successfully!')
+            return public.return_message(-1,0, 'Cleanup failed!')
+        except:
+            return public.return_message(-1,0, 'Cleanup failed!')
 
     # 取网站分类
     def get_site_types(self, get):
@@ -8663,7 +9011,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             return public.fail_v2(msg)
 
         return public.success_v2(msg)
-    
+
     @staticmethod
     def get_tls_protocol(tls1_3: str = "TLSv1.3", is_apache=False):
         """获取使用的协议
@@ -9092,7 +9440,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             raise public.HintException(public.lang("Failed to remove Sets"))
 
         return public.success_v2('Success')
-    
+
     # 获取WP整合包中的插件列表or主题列表
     def wp_get_items_from_set(self, args: public.dict_obj):
         # 校验参数
@@ -9340,7 +9688,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         except Exception as e:
             raise public.HintException(public.lang('Database connection failed, please check the database status!'))
 
-    # 获取wp复制进度
+    # 获取wp复制进度, 创建进度
     def get_wp_progress(self, args: public.dict_obj):
         """
             兼容备份部署与数据复制
@@ -9381,7 +9729,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                     # 检查线程是否存在且活跃
                     thread_exists = False
                     for thread in threading.enumerate():
-                        if hasattr(thread, '_ident') and thread._ident == thread_id:
+                        if hasattr(thread, '_ident') and thread.ident == thread_id:
                             thread_exists = True
                             break
 
@@ -11113,7 +11461,11 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             'nginx': False,
             'openlitespeed': False,
             'apache': False,
-            'status':False
+            'status':False,
+            'default': {
+                'php' : 'nginx',
+                'wp'  : 'openlitespeed'
+            }
         }
         for service in ['openlitespeed', 'apache', 'nginx']:
             args = public.to_dict_obj({'name': service})
@@ -11123,7 +11475,41 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                 data[service] = res['message']['s_status']
 
         data['status'] = public.get_multi_webservice_status()
+
+
+        try:
+            data['default'] = public.get_default_site_conf()
+        except:
+            pass
+
         return public.return_message(0, 0, data)
+
+    # 设置多服务默认创建状态
+    def set_default_site_conf(self, get):
+        php = get.get('default_php')
+        wp = get.get('default_wp')
+        conf_path = '/www/server/panel/data/multi_webservice_status.conf'
+        default = {
+            'php': 'nginx',
+            'wp': 'openlitespeed'
+        }
+        conf = public.readFile(conf_path)
+        if conf:
+            try:
+                default = json.loads(conf)
+            except:
+                pass
+
+        if php and php in ['openlitespeed', 'apache', 'nginx']:
+            default['php'] = php
+
+        if wp and wp in ['openlitespeed', 'apache', 'nginx']:
+            default['wp'] = wp
+
+        public.writeFile(conf_path, json.dumps(default))
+
+        time.sleep(0.5)
+        return public.return_message(0, 0, public.lang('Modification successful'))
 
     # 切换多服务状态
     def switch_multi_webservice_status(self, args: public.dict_obj):
@@ -11374,13 +11760,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         # 重启ols
         if is_restart:
+            public.kill_process_strictly('litespeed', True) # 强制杀死进程残留
             ok = public.webservice_operation('openlitespeed')
 
             if not ok:
                 return False, public.lang(
                     "The service restart failed. Please check the openlitespeed configuration file!")
 
-        return True, "The ols configuration modification was successful！"
+        return True, "The ols configuration modification was successful!"
 
     # apache 修改多服务配置文件
     def apache_update_config(self, status, is_restart=True) -> tuple[bool, str]:
@@ -11447,6 +11834,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             content = content.replace(f'Listen {port_80}', f'Listen {new_port_80}')
             content = content.replace(f'Listen {port_443}', f'Listen {new_port_443}')
             content = content.replace(f'ServerName 0.0.0.0:{port_80}', f'ServerName 0.0.0.0:{new_port_80}')
+            # Listen 监听端口去重
+            content = self._remove_apache_duplicate_listens(content)
+
             public.writeFile(main_config, content)
 
         if os.path.exists(httpd_vhosts):
@@ -11469,6 +11859,25 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             if not ok:
                 return False, public.lang("The service restart failed. Please check the apache configuration file!")
         return True, ' '
+
+    # apache主配置文件监听端口去重
+    @classmethod
+    def _remove_apache_duplicate_listens(sefl, conf_content):
+        lines = conf_content.split('\n')
+        new_lines = []
+        seen_ports = set()
+
+        for line in lines:
+            match = re.search(r'^\s*Listen\s+(?:[\d\.]+:|\[[\w:]+\]:)?(\d+)', line, re.I)
+
+            if match:
+                port = match.group(1)
+                if port in seen_ports:
+                    continue
+                seen_ports.add(port)
+
+            new_lines.append(line)
+        return '\n'.join(new_lines)
 
     # nginx 修改多服务配置文件
     def nginx_update_config(self, service_type, config_path, old_type, site_name, site_path, site_id) -> bool:
@@ -11695,100 +12104,78 @@ server
             ssl_port = '8190'
             listen_port = '8188'
 
-            new_block = r"""upstream {site_name} {{
-    server 127.0.0.1:{listen_port};
-    keepalive 64;
-}}
-
-server 
-    {{
+        new_block = r"""server 
+{{
 {listen}
-        {server_name}
+    {server_name}
 {default_document} 
-        root {site_path};   
-        {rert_apply_check}
-    
-        #PHP-INFO-START\s+PHP reference configuration, allowed to be commented, deleted or modified
-        {include_php}
-        #PHP-INFO-END
-    
-        #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
-        {ssl}
-        #SSL-END
-        {referenced_redirect}
-        #REWRITE-START URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel
-        # include /www/server/panel/vhost/rewrite/{site_name}.conf;
-        #REWRITE-END
-    
-        #ERROR-PAGE-START  Error page configuration, allowed to be commented, deleted or modified
-        #error_page 404 /404.html;
-        #error_page 502 /502.html;
-        #ERROR-PAGE-END
-        {begin_deny}
-    
-        location / {{
-            proxy_pass http://{site_name};
-            
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            
-            # The following configuration can be adjusted according to your actual needs
-            set $conn_header "";
-            if ($http_upgrade = "websocket") {{
-                set $conn_header "upgrade";
-            }}
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection $conn_header;
-            
-            proxy_cache_bypass $http_upgrade;
-            proxy_pass_header Set-Cookie;
-            proxy_pass_header Cookie;
-            proxy_pass_header X-LSCACHE;
+    root {site_path};   
+    {rert_apply_check}
 
-            proxy_buffer_size 256k;
-            proxy_buffers 4 128k;
-            proxy_busy_buffers_size 256k;
-            proxy_temp_file_write_size 256k; 
-    
-            proxy_connect_timeout 60s;
-            proxy_send_timeout 60s;
-            proxy_read_timeout 60s;
-        }}
+    #PHP-INFO-START\s+PHP reference configuration, allowed to be commented, deleted or modified
+    {include_php}
+    #PHP-INFO-END
 
-        gzip on;
-        gzip_vary on;
-        gzip_proxied any;
-        gzip_comp_level 6;
-        gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
-        
-        # Forbidden files or directories
-        location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
-        {{
-            return 404;
-        }}
-    
-        location ~ \.well-known{{
-            allow all;
-            root {site_path};
-            try_files $uri =404;
-        }}
-    
-        #Prohibit putting sensitive files in certificate verification directory
-        if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {{
-            return 403;
-        }}
-        
-        access_log {_log}.log;
-        error_log  {_log}.error.log;  
-    
-        {Monitor}
-    }} """.format(server_name=res['server_name'], include_php=res['include_php'],rert_apply_check=res['rert_apply_check'],
-                       listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'],Monitor=res['Monitor'],begin_deny=res['begin_deny'],
-                       site_name=site_name, site_path=site_path,listen=res['listen'],_log=log_path,default_document=res['default_document'],
-                  referenced_redirect=res['referenced_redirect'])
+    #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
+    {ssl}
+    #SSL-END
+    {referenced_redirect}
+    #REWRITE-START URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel
+    # include /www/server/panel/vhost/rewrite/{site_name}.conf;
+    #REWRITE-END
+
+    #ERROR-PAGE-START  Error page configuration, allowed to be commented, deleted or modified
+    #error_page 404 /404.html;
+    #error_page 502 /502.html;
+    #ERROR-PAGE-END
+    {begin_deny}
+
+    location / {{
+        proxy_pass http://127.0.0.1:{listen_port};
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header REMOTE-HOST $remote_addr;
+        proxy_set_header SERVER_PROTOCOL $server_protocol;
+        proxy_set_header HTTPS $https;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $connection_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header REMOTE_ADDR $remote_addr;
+        proxy_set_header REMOTE_PORT $remote_port;
+        add_header Cache-Control no-cache;
+    }}
+
+    # Forbidden files or directories
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+    {{
+        return 404;
+    }}
+
+    location ~ \.well-known{{
+        allow all;
+        root {site_path};
+        try_files $uri =404;
+    }}
+
+    #Prohibit putting sensitive files in certificate verification directory
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {{
+        return 403;
+    }}
+
+    access_log {_log}.log;
+    error_log  {_log}.error.log;  
+
+    {Monitor}
+}} """.format(server_name=res['server_name'], include_php=res['include_php'],
+          rert_apply_check=res['rert_apply_check'],
+          listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'], Monitor=res['Monitor'],
+          begin_deny=res['begin_deny'],
+          site_name=site_name, site_path=site_path, listen=res['listen'], _log=log_path,
+          default_document=res['default_document'],
+          referenced_redirect=res['referenced_redirect'])
         public.writeFile(config_path, new_block)
 
         # 处理apache配置ssl后，强制重定向
@@ -12152,9 +12539,15 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
 
         for site_port in sites_port:
             site_name = public.M('sites').where('id = ?', (site_port['pid'],)).getField('name')
+            project_type = public.M('sites').where('id = ?', (site_port['pid'],)).getField('project_type')
 
-            # 处理apache占用
-            apache_conf_path = os.path.join(apache_path, site_name+'.conf')
+            # 处理apache占用 Python特殊处理
+            apache_conf_path = None
+            if project_type == 'Python':
+                apache_conf_path = os.path.join(apache_path, 'python_' + site_name +'.conf')
+            else:
+                apache_conf_path = os.path.join(apache_path, site_name +'.conf')
+
             if os.path.exists(apache_conf_path):
                 if status =='enable':
                     content = public.readFile(apache_conf_path)
@@ -12313,7 +12706,7 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
             cdn_switch = int(get.get('cdn_switch', 0))
             header_cdn = get.get("header_cdn").strip()
             if not header_cdn and cdn_switch == 1:
-                return False,public.lang("CDN header cannot be empty！")
+                return False,public.lang("CDN header cannot be empty!")
 
             white_ips = get.get("white_ips", "")
             recursive = get.get("recursive", True)
@@ -12407,3 +12800,260 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
 
         return public.return_message(0, 0, "\n".join(all_ips))
     # ========================网站全局设置 end=========================
+
+    # 获取网站安装报告
+    def site_performance_test(self, get):
+        try:
+            get.validate([
+                Param('domain').String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            domain = get.get('domain', '')
+            port = get.get('port', '')
+            site_name = get.get('siteName','')
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        if not domain or not site_name:
+            return public.return_message(-1, 0, "The domain name or website name cannot be left blank.")
+
+        # 禁止使用内网IP
+        if public.is_local_ip(domain):
+            return public.return_message(-1, 0, "No use of internal network IP is permitted.")
+
+        # 判断是否添加了证书
+        is_ssl = False
+        res = self.GetSSL(public.to_dict_obj({'siteName' :site_name }))
+        if res['status'] == 0:
+            if res['message']['status'] != False:
+                for name in res['message']['domain']:
+                    if name['name'] ==  domain:
+                        is_ssl = True
+
+        if is_ssl:
+            domain = 'https://' + domain
+        else:
+            if port and port != '80':
+                domain = 'http://' + domain + ':' + port
+            domain = 'http://' + domain
+
+        lang = 'en'
+        # 获取用户语言设置
+        try:
+            import config_v2
+            lang_res = config_v2.config().get_language()
+            languages = lang_res.get('languages')
+            default = lang_res.get('default')
+            for l in languages:
+                if default == l.get('name'):
+                    lang = l.get('google')
+        except:
+            pass
+
+        # 默认调用手机端
+        re_url = f"https://pagespeed.web.dev/analysis?url={domain}&strategy=mobile&hl={lang}"
+
+        # 数据埋点
+        public.set_module_logs(f'Sites', 'site_performance_test')
+
+        return public.return_message(0, 0, re_url)
+
+    # ======================= 网站分类设置 start =======================
+    def batch_set_site_type(self, get):
+        """
+            @name 批量设置网站分类
+            go, java, net, nodej, other, python, proxy, html, wp特别处理
+        """
+        try:
+            get.validate([
+                Param('id').String().Require(),
+                Param('site_ids').String().Require(),
+                Param('project_type').String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            site_ids = json.loads(get.site_ids)
+            if not isinstance(site_ids, list):
+                raise Exception("site_ids params error")
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        target_id = int(get.get("id", 0))
+
+        if get.project_type == "wp":
+            return self.set_wp_site_type(public.to_dict_obj({
+                "site_type": target_id,
+                "site_ids": json.dumps(site_ids),
+            }))
+
+        from projectModelV2.base import _ProjectSiteType
+        current_types = [
+                            {"id": 0, "name": "Default category", "ps": ""}
+                        ] + _ProjectSiteType().list_by_type(get.project_type)
+
+        if target_id != 0 and target_id not in [int(i["id"]) for i in current_types]:
+            return public.fail_v2("project site type not exists")
+
+        ids = set([int(x) for x in site_ids])
+        sites = public.M('sites').where(
+            f'id IN ({",".join(["?"] * len(ids))})', tuple(ids)
+        ).field('id,name,project_type').select()
+        if not sites or not isinstance(sites, list):
+            return public.fail_v2("no site found")
+        site_sql = public.M("sites")
+        for site in sites:
+            try:
+                if not site:
+                    continue
+                if get.project_type.lower() != site["project_type"].lower():
+                    public.print_log(f"project_type not equal, site= = {site}")
+                    continue
+                site_sql.where("id=?", (site['id'],)).setField("type_id", target_id)
+            except Exception:
+                import traceback
+                public.print_log(traceback.format_exc())
+                continue
+        return public.success_v2('Set successfully')
+
+    def get_project_site_types(self, get):
+        """
+            @name 获取项目网站分类
+            go, java, net, nodej, other, python, proxy, html, wp特别处理
+        """
+        try:
+            get.validate([
+                Param('project_type').String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        if not hasattr(get, "project_type"):
+            return public.success_v2([])
+        get.project_type = get.project_type.lower()
+
+        if get.project_type == "wp":
+            return public.success_v2(public.M("wp_site_types").select() or [])
+
+        from projectModelV2.base import _ProjectSiteType
+        res = _ProjectSiteType().list_by_type(get.project_type)
+        res_data = [{"id": 0, "name": "Default category", "ps": ""}] + res
+        return public.success_v2(res_data)
+
+    def add_project_site_type(self, get):
+        """
+            @name 添加网站分类
+            go, java, net, nodej, other, python, proxy, html, wp特别处理
+        """
+        try:
+            get.validate([
+                Param('project_type').String().Require(),
+                Param('type_name').String().Require(),
+                Param('ps').String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            get.project_type = get.project_type.strip().lower()
+            get.type_name = get.type_name.strip()
+            if not re.match(r'^[a-zA-Z0-9_-]+$', get.type_name):
+                return public.fail_v2("type_name only allows letters, digits, underscores and hyphens")
+            if len(get.type_name) > 16:
+                return public.fail_v2("please do not enter more than 16 characters for the name")
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+        if get.project_type == "php":
+            return public.fail_v2("not support php")
+        if get.project_type == "wp":
+            return self.add_wp_site_type(public.to_dict_obj({
+                "name": get.type_name,
+            }))
+        from projectModelV2.base import _ProjectSiteType
+        flag, msg = _ProjectSiteType().add(get.project_type, get.type_name, get.ps)
+        if not flag:
+            return public.fail_v2(msg)
+        return public.success_v2("Add success")
+
+    def modify_project_site_type(self, get):
+        """
+            @name 修改网站分类
+            go, java, net, nodej, other, python, proxy, html, wp特别处理
+        """
+        try:
+            Param('project_type').String().Require()
+            Param('type_name').String().Require()
+            Param('type_id').Integer().Require()
+            get.project_type = get.project_type.strip().lower()
+            get.type_name = get.type_name.strip()
+            get.type_id = int(get.type_id)
+            if len(get.type_name) > 16:
+                return public.fail_v2("please do not enter more than 16 characters for the name")
+        except (AttributeError, ValueError, TypeError):
+            return public.fail_v2("params error")
+        if get.project_type == "php":
+            return public.fail_v2("not support php")
+        if get.project_type == "wp":
+            return self.edit_wp_site_type(public.to_dict_obj({
+                "id": get.type_id,
+                "name": get.type_name,
+            }))
+        from projectModelV2.base import _ProjectSiteType
+        flag = _ProjectSiteType().modify(get.project_type, get.type_id, get.type_name, get.ps)
+        if not flag:
+            return public.fail_v2("Modify error")
+        return public.success_v2("Modify success")
+
+    def remove_project_site_type(self, get):
+        """
+            @name 移除指定网站分类
+            go, java, net, nodej, other, python, proxy, html, wp特别处理
+        """
+        try:
+            Param('project_type').String().Require()
+            Param('type_id').Integer().Require()
+            get.project_type = get.project_type.strip().lower()
+        except (AttributeError, ValueError, TypeError):
+            return public.fail_v2("params error")
+        if get.project_type == "php":
+            return public.fail_v2("not support php")
+        if get.project_type == "wp":
+            return self.del_wp_site_type(public.to_dict_obj({
+                "id": get.type_id
+            }))
+        project_type_map = {
+            "go": "Go",
+            "java": "Java",
+            "net": "net",
+            "nodejs": "Node",
+            "other": "Other",
+            "python": "Python",
+            "proxy": "proxy",
+            "html": "html",
+        }
+        if get.project_type not in project_type_map:
+            return public.fail_v2("project_type error")
+        from projectModelV2.base import _ProjectSiteType
+        flag = _ProjectSiteType().remove(get.project_type, get.type_id)
+        if not flag:
+            return public.fail_v2("Delete error")
+
+        p_t = project_type_map[get.project_type]
+        projects = public.M('sites').where(
+            'project_type=? AND type_id=?', (p_t, get.type_id)
+        ).field("id").select()
+        if not projects:
+            return public.success_v2("Delete success")
+
+        project_ids = [i["id"] for i in projects]
+        public.M('sites').where(
+            'project_type=? AND id in ({})'.format(",".join(["?"] * len(project_ids))), (p_t, *project_ids)
+        ).update(
+            {"type_id": 0}
+        )
+        return public.success_v2("Delete success")
+    # ======================= 网站分类设置 end =========================

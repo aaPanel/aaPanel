@@ -149,7 +149,21 @@
 			"add_site_56": "Please input deploy script",
 			"add_site_57": "Please input ssh branch",
 			"add_site_58": "This domain does not support automatic resolution, please choose manual resolution",
-			"add_site_59": "Create for Git"
+			"add_site_59": "Create for Git",
+			"index_152": "Performance Check [{0}]",
+			"index_153": "Check",
+			"index_154": "Quick action",
+			"index_155": "Expiration",
+			"index_156": "Requests",
+			"index_157": "If you don't need it, you can turn it off in \"Settings\" - \"Panel Settings\" - \"Site Monitor\".",
+			"index_158": "The monitoring report data will be updated as the website list is refreshed",
+			"index_159": "The monitoring report plugin will use the plugin's data; if it is not installed, free monitoring report data will be used.",
+			"index_160": "Active",
+			"index_161": "WAF",
+			"index_162": "Generate website performance analysis report based on Google PageSpeed Insights",
+			"index_163": "Only supports domains accessible from the external network",
+			"index_164": "Performance Check",
+			"index_165": "Report generated successfully, redirecting to link"
 		},
 		"Proxy": {
 			"index_1": "Hedef",
@@ -722,6 +736,31 @@
 			"index_16": "Genel websocket etkin ve bireysel olarak devre dışı bırakılamaz",
 			"index_17": "Ters proxy projesini sil",
 			"index_18": "Eşleşen tüm anahtar kelimeleri değiştir"
+		},
+		"Git": {
+			"sshKey": "SSH Key",
+			"updateMethod": "Update method",
+			"selectKey": "Select key",
+			"generateNewKey": "Generate new key",
+			"keyList": "Key list",
+			"keyName": "Key name",
+			"sshKeyNamePlaceholder": "Please enter SSH key name",
+			"pleaseInputSshKeyName": "Please enter SSH key name",
+			"pleaseSelectKey": "Please select a key",
+			"generateNewKeySuccess": "New SSH key generated successfully",
+			"updateSshKeyTitle": "Update SSH Key",
+			"coverageData": "Coverage data",
+			"repoAddressPlaceholder": "Please enter repository address",
+			"branchPlaceholder": "Please select a branch",
+			"pleaseInputRepoAddress": "Please enter repository address first",
+			"resolveARecordTip": "Please first resolve the A record of this domain to the server IP address",
+			"repoExample": "e.g. git@github.com:username/repo.git",
+			"branchExample": "e.g. master",
+			"howToCreateWebsiteUsingGit": "How to create website using Git?",
+			"viewDocs": "View",
+			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 Application deployed!\"",
+			"deleteGitConfigTitle": "Delete git configuration",
+			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted."
 		}
 	}
 }

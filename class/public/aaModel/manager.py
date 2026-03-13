@@ -1,5 +1,4 @@
 # coding: utf-8
-import json
 import os
 import sqlite3 as Engine
 import uuid
@@ -7,10 +6,18 @@ from functools import reduce
 from itertools import chain
 from typing import Optional, TypeVar, Generic, Any, List, Dict, Generator, Iterable, Type
 
+try:
+    import ujson as json
+except ImportError:
+    try:
+        os.system("btpip install ujson")
+        import ujson as json
+    except:
+        import json
+
 from public.aaModel.fields import COMPARE
 from public.exceptions import HintException, PanelError
 from public.sqlite_easy import Db
-
 
 __all__ = ["aaManager", "Q"]
 

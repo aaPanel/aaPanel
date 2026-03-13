@@ -723,11 +723,11 @@ def WriteLog(type, logMsg, args=(), not_web=False):
                 rep = '{' + str(i + 1) + '}'
                 logMsg = logMsg.replace(rep, args[i])
         if type in keys: type = _LAN_LOG[type]
-        # try:
-        #     if 'login_address' in session:
-        #         logMsg = '{} {}'.format(session['login_address'], logMsg)
-        # except:
-        #     pass
+        try:
+            if 'login_address' in session:
+                logMsg = '{} {}'.format(session['login_address'], logMsg)
+        except:
+            pass
 
         sql = db.Sql()
         mDate = time.strftime('%Y-%m-%d %X', time.localtime())
@@ -3434,7 +3434,7 @@ def auto_backup_panel():
         os.makedirs(backup_path, 384)
         ignore_list = [
             ignore_system, ignore_default,
-            'wp_package_checksums', 'wp_packages', 'maillog', 'mail', '*.sock'
+            'wp_package_checksums', 'wp_packages', 'maillog', 'mail', '*.sock','hids_data'
         ]
         cp_dir(f"{panel_paeh}/data", f"{backup_path}/data", ignores=ignore_list)
         cp_dir(f"{panel_paeh}/config", f"{backup_path}/config")
@@ -5402,21 +5402,14 @@ def get_free_ip_info(address):
     if ip in ip_info:
         return ip_info[ip]
 
-    # try:
-    #     param = get_user_info()
-    #     param['ip'] = address
-    #     res = json.loads(httpPost('https://wafapi2.aapanel.com/api/ip/info', param))
-    #
-    #     if address in res:
-    #         info = res[address]
-    #         ip_info[ip] = info
-    #         ip_info[ip]['info'] = '{} {} {} {}'.format(info['carrier'], info['country'], info['province'],
-    #                                                    info['city']).strip()
-    #         ip_info[ip]['ip'] = ip
-    #         writeFile(sfile, json.dumps(ip_info))
-    #         return res[address]
-    # except:
-    #     pass
+    try:
+        # 使用英文IP库
+        from safeModel import ipsModel
+        obj = ipsModel.main()
+        res = obj.get_ip_area({'ips' : [ip]})
+        return res[ip]
+    except:
+        pass
 
     return {'info': 'Unknown'}
 
@@ -9999,3 +9992,178 @@ def extract_archive_to_target(archive_path, target_dir):
     finally:
         # 清理临时目录
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+# 任意站点申请ssl装饰器
+def try_to_apply_ssl(func):
+    """
+    返回消息体中带有约定字段 'ssl_site_id' 则尝试申请ssl, 支持 ip ssl,域名ssl
+    尝试创建关联的dns记录.
+    关联site, 在site list页面中显示进度,日志
+    """
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        ssl_site_id = find_value_by_key(result, key="ssl_site_id", default=None)
+        if ssl_site_id:
+            try:
+                print_log(f"Trying To Auto Apply SSL For The Site... Site ID is: {ssl_site_id}")
+                from ssl_domainModelV2.service import apply_ssl_with_siteId
+                apply_ssl_with_siteId(int(ssl_site_id))
+            except Exception as e:
+                import traceback
+                print_log(traceback.format_exc())
+                print_log(f"Auto apply SSL failed: {str(e)}")
+        return result
+    return wrapper
+
+# 清理临时文件缓存
+def clear_tmp_file() -> None:
+    """
+        @name 清理临时文件缓存
+        @return void
+    """
+    # 清理缓存
+    compress_caches_path = '{}/data/compress_caches'.format(get_panel_path())
+    if os.path.exists(compress_caches_path):
+        dir_list = os.listdir(compress_caches_path)
+        for i in dir_list:
+            os.system('rm -rf {}/{}'.format(compress_caches_path, i))
+    # 清理无用的js文件
+    vite_path = 'BTPanel/static/vite/js'
+    if os.path.exists(vite_path):
+        if os.path.exists('{}/loginLogs.js.map'.format(vite_path)):
+            os.system('rm -f {}/*.map'.format(vite_path))
+            os.system('rm -f {}/*.gz'.format(vite_path))
+    # 清理临时文件
+    tmp_path = '{}/tmp'.format(get_panel_path())
+    if os.path.exists(tmp_path):
+        dir_list = os.listdir(tmp_path)
+        for i in dir_list:
+            os.system('rm -rf {}/{}'.format(tmp_path, i))
+    temp_path = '{}/temp'.format(get_panel_path())
+    if os.path.exists(temp_path):
+        dir_list = os.listdir(temp_path)
+        for i in dir_list:
+            os.system('rm -rf {}/{}'.format(temp_path, i))
+
+# 检查磁盘可用状态
+def check_disk_status() -> tuple[int, str]:
+    """
+        @name 检查磁盘状态
+        @return int 1:正常 2:磁盘已满 3:磁盘不可写 4:Inode不足
+    """
+    panel_path = get_panel_path()
+    # 检查Inode是否足够
+    inode = os.statvfs(panel_path)
+    if inode.f_files > 0 and inode.f_favail < 2:
+        return 4, public.lang(
+            "Disk Inode is exhausted, unable to access the panel database. "
+            "Please log in to SSH to manually clean up the disk and try again!"
+        )
+
+    # 检查磁盘是否已满
+    disk = psutil.disk_usage(panel_path)
+    if disk.free < 1024 * 512:
+        return 2, public.lang(
+            "Disk space is insufficient, unable to access the panel database. "
+            "Please log in to SSH to manually clean up the disk and try again!"
+        )
+
+    # 检查磁盘是否可写
+    test_file = '{}/data/db/test.txt'.format(panel_path)
+    if writeFile(test_file, 'test'):
+        if os.path.exists(test_file):
+            try:
+                os.remove(test_file)
+            except Exception as e:
+                print_log("public.check_disk_status error: {}".format(str(e)))
+    else:
+        return 3, public.lang(
+            "Detected that the panel directory is not writable, unable to access the panel database. "
+            "Please login to SSH to check, ensure that the 'panel/data' directory is writable, and then try again!"
+        )
+
+    # 磁盘状态正常
+    return 1, ''
+
+# session过期时间
+def get_session_expired() -> int:
+    sess_expired = 86400  # default 24H
+    sess_expired_path = os.path.join(get_panel_path(), "data/session_timeout.pl")
+    try:
+        if os.path.exists(sess_expired_path):
+                sess_expired_content = readFile(sess_expired_path)
+                if sess_expired_content and sess_expired_content.strip().isdigit():
+                    sess_expired = int(sess_expired_content.strip())
+                else:
+                    raise Exception
+        else:
+            raise Exception
+    except Exception:
+        sess_expired = max(300, sess_expired) # min 300s
+        sess_expired = min(sess_expired, 86400 * 30) # max 30 days
+        writeFile(sess_expired_path, str(sess_expired))
+    return sess_expired
+
+# 通用的杀死进程
+def kill_process_strictly(target, force=False):
+    """
+    参数:
+    :param target: 进程名(str)或进程号(int/str)。必须完全匹配，不支持模糊搜索。
+    :param force:  布尔值。True 为强制杀死 (kill)，False 为温和终止 (terminate)。
+
+    返回:
+    :return: 成功处理的进程数量 (int)
+    """
+    count = 0
+    # 预处理 target 格式
+    target_is_num = isinstance(target, int) or (isinstance(target, str) and target.isdigit())
+    target_pid = int(target) if target_is_num else None
+    target_name = str(target).lower() if not target_is_num else None
+
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            is_match = False
+
+            if target_is_num:
+                # 严格匹配 PID
+                if proc.info['pid'] == target_pid:
+                    is_match = True
+            else:
+                # 严格匹配进程名（去除两端空格，忽略大小写）
+                if proc.info['name'].lower() == target_name:
+                    is_match = True
+
+            if is_match:
+                p = psutil.Process(proc.info['pid'])
+                if force:
+                    p.kill()
+                else:
+                    p.terminate()
+
+                # 等待确认进程已退出
+                p.wait(timeout=3)
+                count += 1
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+        except psutil.TimeoutExpired:
+            continue
+
+    return count
+
+# 获取多服务默认创建状态
+def get_default_site_conf():
+    conf_path = '/www/server/panel/data/multi_webservice_status.conf'
+    default = {
+        'php': 'nginx',
+        'wp': 'openlitespeed'
+    }
+
+    conf = public.readFile(conf_path)
+    if conf:
+        try:
+            default = json.loads(conf)
+        except:
+            pass
+
+    return default

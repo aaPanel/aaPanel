@@ -113,7 +113,7 @@ class Filetransfer:
                     file.status = "failed"
                     file.message = err
                 else:
-                    if res["status"]:
+                    if res.get("status",False) or res.get("status",-1) == 0:
                         file.progress = 100
                         file.status = "complete"
                     else:

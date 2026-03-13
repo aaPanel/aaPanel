@@ -80,6 +80,7 @@ class userLang:
         path = "/www/server/panel/BTPanel/languages/language.pl"
         public.WriteFile(path, name)
         public.set_module_logs('language', 'login_set_language', 1)
+        public.set_module_logs('language-info', name, 1)
         return public.return_message(0, 0, public.lang('The setup was successful'))
 
     # 获取当前设置的语言

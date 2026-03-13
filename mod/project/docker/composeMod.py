@@ -130,9 +130,9 @@ class main(Compose):
         '''
         get.option = "Rebuild"
         command = self.set_type(1).set_path(get.path).get_compose_down()
-        self.exec_logs(get, command)
+        self.status_exec_logs(get, command)
         command = self.set_type(1).set_path(get.path).get_compose_up_remove_orphans()
-        self.exec_logs(get, command)
+        self.status_exec_logs(get, command)
 
     # 2024/6/24 下午10:54 停止指定docker-compose项目
     @check_file

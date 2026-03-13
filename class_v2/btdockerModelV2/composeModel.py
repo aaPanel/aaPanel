@@ -491,10 +491,18 @@ class main(dockerBase):
                     project_name,
                     template_info['path']
                 )
+
+            # 检查容器是否成功执行
+            check_shell = "/usr/bin/docker-compose -p {} ps -q".format(project_name)
+            container_ids, _ = public.ExecShell(check_shell)
+            if not container_ids.strip():
+                raise Exception("Docker deployment failed. Please check logs at: {}".format(self._log_path))
+
             dp.write_log("Project [{}] deployed successfully!".format(public.xsssec(get.project_name)))
             public.set_module_logs('docker', 'add_project', 1)
             return public.return_message(0, 0, public.lang("Successful deployment!"))
         except Exception as ex:
+            dp.sql("stacks").where("name=?", (public.xsssec(get.project_name),)).delete()
             public.print_log(traceback.format_exc())
             return public.return_message(-1, 0, str(ex))
 
@@ -1036,6 +1044,9 @@ class main(dockerBase):
                         "conf_file": "/".join(get.path.split("/") + [i]),
                         "remark": "Add locally"
                     })
+
+        # 去重
+        res = list({item['conf_file']: item for item in res}.values())
 
         return public.return_message(0, 0, res)
 

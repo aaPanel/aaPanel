@@ -127,6 +127,11 @@
 				"untitledFile": "未命名文件"
 			}
 		},
+		"api": {
+			"saving": "正在保存中，请稍候...",
+			"deleting": "正在删除中，请稍候...",
+			"recovering": "正在恢复中，请稍候..."
+		},
 		"fileOperation": {
 			"cut": "剪切",
 			"rename": "重命名",
@@ -417,20 +422,181 @@
 			"title": "视频播放"
 		}
 	},
-	"editor": {
-		"onlineTextEditor": "在线文本编辑器",
-		"save": "保存",
-		"saveAll": "保存全部",
-		"refresh": "刷新",
-		"search": "搜索",
-		"replace": "替换",
-		"jumpline": "跳转行",
-		"font": "字体",
-		"theme": "主题",
-		"set": "设置",
-		"help": "帮助",
-		"directory": "目录",
-		"back": "返回",
-		"new": "新建"
+	"fileEditor": {
+		"common": {
+			"save": "保存"
+		},
+		"title": {
+			"onlineTextEditor": "在线文本编辑器",
+			"minimize": "最小化",
+			"restore": "还原",
+			"restoreDown": "向下还原",
+			"maximize": "最大化",
+			"close": "关闭"
+		},
+		"toolbar": {
+			"save": "保存",
+			"saveAll": "全部保存",
+			"refresh": "刷新",
+			"search": "搜索",
+			"replace": "替换",
+			"jumpLine": "跳转行",
+			"fontSize": "字体大小",
+			"theme": "主题",
+			"setting": "设置",
+			"shortcut": "快捷键",
+			"refreshing": "正在刷新中，请稍候...",
+			"refreshed": "文件内容已更新",
+			"fontSizeSaved": "字体大小设置成功"
+		},
+		"messages": {
+			"noRefresh": "编辑器模式下无法刷新网页，请关闭后重试"
+		},
+		"fileExplorer": {
+			"directory": "目录",
+			"up": "上一级",
+			"refresh": "刷新",
+			"new": "新建",
+			"search": "搜索",
+			"searchPanelTitle": "搜索目录文件",
+			"close": "关闭",
+			"searchPlaceholder": "搜索",
+			"includeSubdir": "包含目录文件",
+			"newFolder": "新建文件夹",
+			"newFile": "新建文件"
+		},
+		"tree": {
+			"newFilePlaceholder": "新建文件",
+			"newFolderPlaceholder": "新建文件夹"
+		},
+		"dialogs": {
+			"encodingTitle": "设置文件保存编码格式",
+			"settingTitle": "编辑器设置",
+			"setting": {
+				"wrap": "自动换行",
+				"enableLiveAutocompletion": "代码自动完成",
+				"enableSnippets": "启用代码段",
+				"showInvisibles": "显示隐藏字符",
+				"showLineNumbers": "显示行号"
+			},
+			"themeTitle": "设置编辑器主题",
+			"theme": {
+				"chrome": "chrome【白色主题】",
+				"monokai": "monokai【黑色主题】"
+			},
+			"goToLineTitle": "跳转到指定行",
+			"goToLineHint": "当前：行{line}，列{column}，输入行数(介于1-{max}之间)",
+			"fontSizeTitle": "设置编辑器字体大小",
+			"tabSizeTitle": "设置制表符",
+			"tabSizeLengthTitle": "设置制表符长度",
+			"tabSize": {
+				"useSpaces": "使用空格缩进",
+				"useTabs": "使用制表符缩进"
+			},
+			"lineEndingTitle": "设置文件保存行结束符",
+			"lineEndingChangeTitle": "更改行结束符",
+			"lineEndingChangeContent1": "确定要将文件 \"{file}\" 的行结束符从 {from} 更改为 {to} 吗？",
+			"lineEndingChangeContent2": "此操作将修改文件中所有的行结束符，并在{save}后生效。",
+			"fileHistory": {
+				"title": "文件历史版本",
+				"time": "版本时间",
+				"actions": "操作",
+				"diff": "文件对比",
+				"recover": "恢复",
+				"delete": "删除",
+				"recoverTitle": "恢复历史文件",
+				"recoverContent": "是否恢复历史文件 {time}？恢复历史文件后，当前文件内容将会被替换！",
+				"deleteTitle": "删除历史文件",
+				"deleteContent": "是否删除历史文件 {time}？删除历史文件后，将无法恢复！",
+				"fileContentUpdated": "文件内容已更新！"
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "温馨提示",
+			"modifiedSaveConfirm": "检测到文件已被修改，是否保存？",
+			"dontSave": "不保存"
+		},
+		"editorFooter": {
+			"fileLocation": "文件位置：{path}",
+			"readOnlyHistory": "只读文件，文件为{path} 历史版本[{time}]",
+			"clickRecoverLeft": "点击恢复左侧历史版本",
+			"lineColumn": "行 {line}, 列 {column}",
+			"historyCount": "历史版本：{count}份",
+			"tabSize": "制表符: {size}",
+			"encoding": "编码：{encoding}",
+			"language": "语言：{language}",
+			"readOnlyMode": "只读模式"
+		},
+		"store": {
+			"untitled": "未命名",
+			"fileTooLarge": "抱歉！文件大小超过3M，暂不支持在线编辑！",
+			"shortcutTabName": "快捷键",
+			"conflictTitle": "冲突警告！",
+			"conflictContentFallback": "此文件正面临潜在的时间戳冲突修改节点或您没有写权限，是否采取强制覆写？",
+			"forceSave": "强制保存",
+			"saveAllLoading": "正在保存所有脏文件状态，请稍候...",
+			"saveAllSuccess": "全部修改已入库",
+			"tabSettingsRefreshed": "配置格式已刷新",
+			"nameRequired": "命名域需提供有效字符",
+			"newFile": "全新文件",
+			"newFolder": "全新文件夹",
+			"createSuccess": "{type}写入成功"
+		},
+		"shortcut": {
+			"common": {
+				"title": "常用快捷键",
+				"saveFile": "保存文件",
+				"copy": "复制内容",
+				"cut": "剪切内容",
+				"paste": "粘贴内容",
+				"selectAll": "全选内容",
+				"undo": "撤销操作",
+				"redo": "反撤销操作",
+				"find": "搜索内容",
+				"replace": "替换内容",
+				"esc": "退出搜索、取消自动提示"
+			},
+			"cursorMove": {
+				"title": "光标移动",
+				"docStartEnd": "光标移动到文档首/尾",
+				"matchingTag": "跳转到匹配的标签",
+				"pageUpDown": "光标上/下翻页",
+				"lineStartEnd": "光标移动到行首/尾"
+			},
+			"selection": {
+				"title": "内容选择",
+				"mouseBox": "鼠标框选",
+				"drag": "拖动",
+				"mouseDrag": "鼠标拖动",
+				"pageSelect": "上下翻页选中",
+				"cursorToStartEnd": "当前光标至头/尾",
+				"blockSelect": "块选择"
+			},
+			"edit": {
+				"title": "编辑",
+				"toggleComment": "注释&取消注释",
+				"indent": "对齐",
+				"outdent": "整体前移",
+				"delete": "删除",
+				"deleteLine": "删除整行",
+				"copyLineUpDown": "复制行并添加到上一行/下一行",
+				"deleteRight": "删除光标右侧内容",
+				"swapLineUpDown": "当前行和上一行/下一行交换",
+				"copyLineDown": "复制行并添加到下面"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "搜索文件/目录",
+		"NewFile": "新建文件",
+		"NewFolder": "新建文件夹",
+		"CurrentSelection": "当前选中：",
+		"Name": "名称",
+		"NamePlaceholder": "请输入名称",
+		"Create": "创建",
+		"ModifyTime": "修改时间",
+		"PermissionOwner": "权限/所有者",
+		"RootDir": "Root dir",
+		"PathPlaceholder": "请输入路径"
 	}
 }

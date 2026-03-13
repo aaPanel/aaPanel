@@ -404,7 +404,8 @@
 			"index_54": "Alerte LP / Domaine sur liste noire",
 			"index_55": "Informez-moi lorsque le service de messagerie est en panne",
 			"index_56": "Alerte de service de courrier",
-			"index_57": "Détecter automatiquement les listes noires"
+			"index_57": "Détecter automatiquement les listes noires",
+			"index_58": "Send email when quota exceeded"
 		},
 		"Api": {
 			"index_1": "Réglage de Catch TOUT, veuillez patienter ...",

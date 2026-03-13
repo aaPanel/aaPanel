@@ -404,7 +404,8 @@
 			"index_54": "LP/ domain peringatan daftar hitam",
 			"index_55": "Beri tahu saya saat layanan surat turun",
 			"index_56": "Peringatan Layanan Surat",
-			"index_57": "Secara otomatis mendeteksi daftar hitam"
+			"index_57": "Secara otomatis mendeteksi daftar hitam",
+			"index_58": "Kirim email bila kuota terlampaui"
 		},
 		"Api": {
 			"index_1": "Pengaturan menangkap semua, tolong tunggu ...",

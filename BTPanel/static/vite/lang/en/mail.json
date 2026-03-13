@@ -404,7 +404,8 @@
 			"index_54": "lP/ domain blacklisted alert",
 			"index_55": "Notify me when mail service is down",
 			"index_56": "Mail Service Alert",
-			"index_57": "Automatically detect blacklists"
+			"index_57": "Automatically detect blacklists",
+			"index_58": "Send email when quota exceeded"
 		},
 		"Api": {
 			"index_1": "Setting catch all, please wait...",

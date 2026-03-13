@@ -1,0 +1,1 @@
+System.register(["./vue-core-legacy-Cn1vuJ3s.js?v=1773287522785"],(function(e,t){"use strict";var n;return{setters:[e=>{n=e.r}],execute:function(){e("u",(function(e=!1){const t=n(e);return{loading:t,setLoading:(e,n=!0)=>{n&&(t.value=e)}}}))}}}));

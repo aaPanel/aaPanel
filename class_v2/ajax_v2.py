@@ -388,8 +388,10 @@ class ajax:
                     for key in fields:
                         tmp1[key.strip('`')] = row[i]
                         i += 1
+                    if tmp1.get("swap_total") == 0:
+                        tmp1["swap_top"] = '[]'
                     tmp.append(tmp1)
-                    del (tmp1)
+                    del tmp1
                 data = tmp
         except:
             return public.return_message(0, 0,[])
@@ -419,16 +421,27 @@ class ajax:
             if len(cols) > 0:
                 cols.append("cpu_top")
                 cols.append("memory_top")
+                cols.append("swap_top")
                 __OPT_FIELD = ','.join(cols)
-            data = public.M('cpuio').dbfile('system').query(
-                "SELECT cpuio.*,process_top_list.cpu_top,process_top_list.memory_top from cpuio inner join process_top_list on cpuio.addtime=process_top_list.addtime where cpuio.addtime>={} AND cpuio.addtime<={} ORDER BY cpuio.addtime desc;"
-                .format(get.start, get.end), ())
+            field = 'cpu_top,swap_top'
+            check_result = public.M('process_top_list').dbfile('system').order("id desc").field(field).limit(1).select()
+            if type(check_result) == str:
+                public.M('process_top_list').dbfile('system').execute("ALTER TABLE 'process_top_list' ADD 'swap_top' REAL DEFAULT '[]'",())
+            sql = """SELECT cpuio.*, 
+            process_top_list.cpu_top, 
+            process_top_list.memory_top, 
+            process_top_list.swap_top 
+            FROM cpuio 
+            LEFT JOIN process_top_list ON cpuio.addtime = process_top_list.addtime 
+            WHERE cpuio.addtime >= {start} AND cpuio.addtime <= {end} 
+            ORDER BY cpuio.addtime DESC"""
+            data = public.M('cpuio').dbfile('system').query(sql.format(start=get.start, end=get.end), ())
             if isinstance(data, str) and data.find(
                     'error: no such table: process_top_list') != -1:
                 return public.return_message(0, 0,public.M('cpuio').dbfile('system').where(
                     "addtime>=? AND addtime<=?",
                     (get.start, get.end
-                     )).field('id,pro,mem,addtime').order('id asc').select())
+                     )).field('id,pro,mem,swap_total,swap_percent,swap_used,swap_free,addtime').order('id asc').select())
             try:
                 if __OPT_FIELD != "*":
                     fields = self.__format_field(__OPT_FIELD.split(','))
@@ -447,6 +460,7 @@ class ajax:
             return self.ToAddtime(data, True, 'cpu')
         except:
             public.print_log(public.get_error_info())
+
     def get_load_average(self, get):
         __OPT_FIELD = "*"
         tmp_cols = public.M('load_average').dbfile('system').query(
@@ -515,6 +529,19 @@ class ajax:
             ).order('id asc').select()
         return self.ToAddtime(data)
 
+    @staticmethod
+    def trans_json(data: str, defualt=None):
+        try:
+            import ujson as json
+        except ImportError:
+            import json
+        try:
+            if data:
+                return json.loads(data)
+            return defualt
+        except Exception:
+            return defualt
+
     def ToAddtime(self, data, tomem=False, types=None):
         import time
         #格式化addtime列
@@ -533,24 +560,29 @@ class ajax:
                     if types:
                         key = '{}_top'.format(types)
                         if key in data[i]:
-                            data[i][key] = json.loads(data[i][key])
+                            data[i][key] = self.trans_json(data[i][key], [])
                         if 'memory_top' in data[i]:
-                            data[i]['memory_top'] = json.loads(
-                                data[i]['memory_top'])
+                            data[i]['memory_top'] = self.trans_json(data[i]['memory_top'], [])
+                        if 'swap_top' in data[i]:
+                            if not data[i]['swap_top']:data[i]['swap_top']=[]
+                            else:
+                                data[i]['swap_top'] = json.loads(
+                                    data[i]['swap_top'])
                     data[i]['addtime'] = time.strftime(
                         '%m/%d %H:%M',
                         time.localtime(float(data[i]['addtime'])))
+                    if 'swap_top' in data[i]:
+                        if not data[i]['swap_top']:
+                            data[i]['swap_top'] = []
+                    else:data[i]['swap_top'] = []
                     if 'process_list' in data[i]:
-                        data[i]['process_list'] = json.loads(
-                            data[i]['process_list'])
-                    if tomem and data[i]['mem'] > 100:
+                        data[i]['process_list'] = self.trans_json(data[i]['process_list'], [])
+                    if tomem and 'mem' in data[i] and data[i]['mem'] > 100:
                         data[i]['mem'] = data[i]['mem'] / mPre
                     if tomem in [None]:
                         if type(data[i]['down_packets']) == str:
-                            data[i]['down_packets'] = json.loads(
-                                data[i]['down_packets'])
-                            data[i]['up_packets'] = json.loads(
-                                data[i]['up_packets'])
+                            data[i]['down_packets'] = self.trans_json(data[i]['down_packets'])
+                            data[i]['up_packets'] = self.trans_json(data[i]['up_packets'])
                 except:
                     continue
             return public.return_message(0, 0, data)
@@ -571,10 +603,16 @@ class ajax:
                             if types:
                                 key = '{}_top'.format(types)
                                 if key in value:
-                                    value[key] = json.loads(value[key])
-                                if 'memory_top' in value:
-                                    value['memory_top'] = json.loads(
-                                        value['memory_top'])
+                                    value[key] = self.trans_json(value[key], [])
+                                if 'memory_top' in value and value['memory_top']:
+                                    value['memory_top'] = self.trans_json(value['memory_top'], [])
+                                if 'swap_top' in value:
+                                    if not value['swap_top']:value['swap_top']=[]
+                                    else:
+                                        value['swap_top'] = json.loads(
+                                            value['swap_top'])
+                                else:
+                                    value['swap_top']=[]
                             value['addtime'] = time.strftime(
                                 '%m/%d %H:%M',
                                 time.localtime(float(value['addtime'])))
@@ -582,23 +620,30 @@ class ajax:
                                 value['mem'] = value['mem'] / mPre
                             if tomem in [None]:
                                 if type(value['down_packets']) == str:
-                                    value['down_packets'] = json.loads(value['down_packets'])
-                                    value['up_packets'] = json.loads(value['up_packets'])
+                                    value['down_packets'] = self.trans_json(value['down_packets'])
+                                    value['up_packets'] = self.trans_json(value['up_packets'])
                             tmp.append(value)
                     continue
                 try:
                     if types:
                         key='{}_top'.format(types)
                         if key in value:
-                            value[key] = json.loads(value[key])
+                            value[key] = self.trans_json(value[key], [])
                         if 'memory_top' in value:
-                            value['memory_top'] = json.loads(value['memory_top'])
+                            value['memory_top'] = self.trans_json(value['memory_top'], [])
+                        if 'swap_top' in value:
+                            if not value['swap_top']:value['swap_top']=[]
+                            else:
+                                value['swap_top'] = json.loads(
+                                    value['swap_top'])
+                        else:
+                            value['swap_top']=[]
                     value['addtime'] = time.strftime('%m/%d %H:%M',time.localtime(float(value['addtime'])))
                     if tomem and 'mem' in value and  value['mem'] > 100: value['mem'] = value['mem'] / mPre
                     if tomem in [None]:
                         if type(value['down_packets']) == str:
-                            value['down_packets'] = json.loads(value['down_packets'])
-                            value['up_packets'] = json.loads(value['up_packets'])
+                            value['down_packets'] = self.trans_json(value['down_packets'])
+                            value['up_packets'] = self.trans_json(value['up_packets'])
                     tmp.append(value)
                     count = 0
                 except: continue
@@ -1698,8 +1743,13 @@ class ajax:
 
     #取指定日志
     def GetOpeLogs(self,get):
+        try:
+            lines = get.get('lines', 1000)
+            lines = int(lines)
+        except Exception as ex:
+            lines = 1000
         if not os.path.exists(get.path): return public.return_message(-1, 0, public.lang("Log file does NOT exist!"))
-        return public.return_message(0, 0, public.xsssec(public.GetNumLines(get.path,1000)))
+        return public.return_message(0, 0, public.xsssec(public.GetNumLines(get.path,lines)))
 
     # 获取授权信息
     def get_pd(self,get):

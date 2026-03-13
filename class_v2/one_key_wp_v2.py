@@ -877,7 +877,8 @@ class one_key_wp:
         # NGINX-CACHE-START
         proxy_cache {site['name'].replace(".", "_")}_cache;
         proxy_cache_key "$scheme$host$request_uri"; 
-        proxy_cache_valid 200 301 302 2m;  
+        proxy_cache_valid 200 2m;  
+        proxy_cache_valid 301 302 0; 
         proxy_cache_valid 404 1m;
         proxy_ignore_headers Cache-Control Expires Vary;
         proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;

@@ -1,0 +1,1 @@
+System.register(["./index-legacy-DQdImDha.js?v=1773287522785"],(function(t,e){"use strict";var n,r;return{setters:[t=>{n=t.bb,r=t.ch}],execute:function(){t({i:function(t,e){const r=n(t),c=n(e);return+r<+c},s:function(){return r(Date.now())}})}}}));

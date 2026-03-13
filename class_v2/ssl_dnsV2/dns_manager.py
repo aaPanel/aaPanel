@@ -380,20 +380,26 @@ class DnsManager:
             answers = resolver.resolve(q_name, record_type)
             found_records = []
             for rdata in answers:
-                record_str = str(rdata)
-                # 格式化
-                if record_type in ["TXT", "CAA"] and self._quotes(record_str):
-                    record_str = record_str[1:-1]
-                elif record_type == "MX":
-                    # rdata.to_text() -> '10 mail.example.com.'
-                    parts = record_str.split(" ", 1)
-                    if len(parts) == 2:
-                        record_str = parts[1]
-                elif record_type == "SRV":
-                    # rdata.to_text() -> '10 5 5060 target.example.com.'
-                    parts = record_str.split(" ", 3)
-                    if len(parts) == 4:
-                        record_str = " ".join(parts)
+                if record_type == "TXT":
+                    record_str = "".join(
+                        s.decode("utf-8", errors="replace") if isinstance(s, bytes) else s
+                        for s in rdata.strings
+                    )
+                else:
+                    record_str = str(rdata)
+                    # 格式化
+                    if record_type == "CAA" and self._quotes(record_str):
+                        record_str = record_str[1:-1]
+                    elif record_type == "MX":
+                        # rdata.to_text() -> '10 mail.example.com.'
+                        parts = record_str.split(" ", 1)
+                        if len(parts) == 2:
+                            record_str = parts[1]
+                    elif record_type == "SRV":
+                        # rdata.to_text() -> '10 5 5060 target.example.com.'
+                        parts = record_str.split(" ", 3)
+                        if len(parts) == 4:
+                            record_str = " ".join(parts)
 
                 found_records.append(record_str.rstrip('.'))
             return found_records
@@ -435,14 +441,24 @@ class DnsManager:
             if action == "delete":  # 对于删除，是成功的
                 return True
 
-        # 被花括号包围时去引号, 去尾点
-        value_to_check_cleaned = value_to_check
-        if self._quotes(value_to_check):
-            value_to_check_cleaned = value_to_check[1:-1]
-        value_to_check_cleaned = value_to_check_cleaned.rstrip(".")
+        # 被花括号包围时去引号, 去尾点, 去空白
+        def _clean_value(v: str) -> str:
+            if not v:
+                return v
+            v = v.strip()
+            if self._quotes(v):
+                v = v[1:-1]
+            v = v.rstrip(".")
+            # TXT记录去除所有空白，用于长值比较
+            if record_type == "TXT":
+                v = v.replace(" ", "").replace("\t", "")
+            return v
+
+        value_to_check_cleaned = _clean_value(value_to_check)
+        found_records_cleaned = [_clean_value(r) for r in found_records]
 
         if action in ["create", "update"]:
-            if value_to_check_cleaned not in found_records:
+            if value_to_check_cleaned not in found_records_cleaned:
                 raise HintException(
                     f"Validation failed: Record {q_name} ({record_type})"
                     f" with value '{value_to_check}' not found after {action}."
@@ -684,7 +700,10 @@ class DnsManager:
 
         elif record_type == "TXT":
             # TXT 记录值如果包含空格，使用引号包裹
-            if " " in value and not self._quotes(value):
+            if (" " in value or ";" in value) and not self._quotes(value):
+                value = f'"{value}"'
+            # TXT 记录值统一使用引号包裹(RFC 推荐)
+            if not self._quotes(value):
                 value = f'"{value}"'
 
         # === 参数追加尾部作为 整体value 写入 conf ===

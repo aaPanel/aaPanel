@@ -3,9 +3,10 @@ import json
 import os
 import pwd
 import re
-from typing import Union
+from typing import Union, Optional, Tuple, List
 
 import public
+
 public.sys_path_append("class_v2")
 from projectModelV2.common import LimitNet, Redirect
 from public.exceptions import HintException
@@ -21,6 +22,125 @@ try:
 except:
     public.ExecShell('btpip install idna')
     import idna
+
+
+class _ProjectSiteType:
+    _CONFIG_FILE = "{}/config/project_site.json".format(public.get_panel_path())
+    allow_type = {"go", "java", "net", "nodejs", "other", "python", "proxy", "html"}
+
+    def __init__(self):
+        self._config = None
+
+    @classmethod
+    def read_conf_file(cls):
+        default_conf = {
+            "go": {},
+            "java": {},
+            "net": {},
+            "nodejs": {},
+            "other": {},
+            "python": {},
+            "proxy": {},
+            "html": {},
+        }
+
+        if not os.path.isfile(cls._CONFIG_FILE):
+            public.writeFile(cls._CONFIG_FILE, json.dumps(default_conf))
+            return default_conf
+
+        conf_data = public.readFile(cls._CONFIG_FILE)
+        if not isinstance(conf_data, str):
+            public.writeFile(cls._CONFIG_FILE, json.dumps(default_conf))
+            return default_conf
+
+        try:
+            conf = json.loads(conf_data)
+        except json.JSONDecodeError:
+            conf = None
+        if not isinstance(conf, dict):
+            public.writeFile(cls._CONFIG_FILE, json.dumps(default_conf))
+            return default_conf
+        return conf
+
+    @property
+    def config(self):
+        if self._config is not None:
+            return self._config
+        self._config = self.read_conf_file()
+        return self._config
+
+    def save_config_to_file(self):
+        if self._config:
+            public.writeFile(self._CONFIG_FILE, json.dumps(self._config))
+
+    def get_next_id(self, p_type: str) -> int:
+        all_ids = [
+            i["id"] for i in self.config[p_type].values()
+        ]
+        return max(all_ids + [0]) + 1
+
+    def add(self, p_type: str, name: str, ps: str) -> Tuple[bool, str]:
+        if p_type not in self.allow_type:
+            return False, "not support type"
+
+        if p_type not in self.config:
+            self.config[p_type] = {}
+
+        for t_info in self.config[p_type].values():
+            if t_info["name"] == name:
+                return False, "name exists"
+
+        next_id = self.get_next_id(p_type)
+        self.config[p_type][str(next_id)] = {
+            "id": next_id,
+            "name": name,
+            "ps": ps
+        }
+        self.save_config_to_file()
+        return True, ""
+
+    def modify(self, p_type: str, t_id: int, name: str, ps: str) -> bool:
+        if p_type not in self.config:
+            return False
+
+        if str(t_id) not in self.config[p_type]:
+            return False
+
+        self.config[p_type][str(t_id)] = {
+            "id": t_id,
+            "name": name,
+            "ps": ps
+        }
+        self.save_config_to_file()
+        return True
+
+    def remove(self, p_type: str, t_id: int) -> bool:
+        if p_type not in self.config:
+            return False
+
+        if str(t_id) not in self.config[p_type]:
+            return False
+
+        del self.config[p_type][str(t_id)]
+
+        self.save_config_to_file()
+        return True
+
+    def find(self, p_type: str, t_id: int) -> Optional[dict]:
+        if p_type not in self.config:
+            return None
+
+        if str(t_id) not in self.config[p_type]:
+            return None
+
+        return self.config[p_type][str(t_id)]
+
+    def list_by_type(self, p_type: str) -> List[dict]:
+        if p_type not in self.config:
+            return []
+        return [
+            i for i in self.config[p_type].values()
+        ]
 
 
 class projectBase(LimitNet, Redirect):
@@ -198,16 +318,12 @@ class projectBase(LimitNet, Redirect):
 
     @staticmethod
     def _check_webserver():
-        setup_path = public.GetConfigValue('setup_path')
+        setup_path = public.get_setup_path()
         ng_path = setup_path + '/nginx/sbin/nginx'
         ap_path = setup_path + '/apache/bin/apachectl'
         op_path = '/usr/local/lsws/bin/lswsctrl'
-        not_server = False
         if not os.path.exists(ng_path) and not os.path.exists(ap_path) and not os.path.exists(op_path):
-            not_server = True
-        if not not_server:
             raise HintException(public.lang("Not Found any Web Server"))
-
         tasks = public.M('tasks').where("status!=? AND type!=?", ('1', 'download')).field('id,name').select()
         for task in tasks:
             name = task["name"].lower()
@@ -251,42 +367,233 @@ class projectBase(LimitNet, Redirect):
         @return
         """
 
-        release = getattr(get, "release_firewall", None)
-        if release in ("0", '', None, False, 0):
+        if getattr(get, "release_firewall", None) in ("0", '', None, False, 0):
             return False, public.lang("PS: port not released in firewall, local access only")
+
         port = getattr(get, "port", None)
-        project_name = getattr(get, "name", "") or getattr(get, "pjname", "") or getattr(get, "project_name", "")
         if port is None:
             return True, ""
-
-        new_get = public.dict_obj()
-        new_get.protocol = "tcp"
-        new_get.ports = str(port)
-        new_get.choose = "all"
-        new_get.address = ""
-        new_get.domain = ""
-        new_get.types = "accept"
-        new_get.brief = "Site Project: " + project_name + " release port "
-        new_get.source = ""
+        project_name = getattr(get, "name", "") or getattr(get, "pjname", "") or getattr(get, "project_name", "")
+        brief = f"Site Project: {public.xsssec(project_name)} release port "
+        fw_body = {
+            "protocol": "tcp",
+            "port": str(port),
+            "choose": "all",
+            "domain": "",
+            "types": "accept",
+            "strategy": "accept",
+            "chain": "INPUT",
+            "brief": brief,
+            "operation": "add",
+        }
         try:
-            res = None
-            from safeModelV2.firewallModel import main as firewall
-            firewall_obj = firewall()
-            get_obj = public.dict_obj()
-            get_obj.p = 1
-            get_obj.limit = 99
-            get_obj.query = str(port)
-            res_data = firewall_obj.get_rules_list(get_obj)  # 查询是否已经有端口
-            res_data = public.find_value_by_key(res_data, key="data", default=[])
-            if len(res_data) == 0:
-                res = firewall_obj.create_rules(new_get)
-            for i in res_data:
-                new_get.id = i.get("id")
-                res = firewall_obj.modify_rules(new_get)
-
-            if res.get("status"):
+            from firewallModelV2.comModel import main as firewall
+            try:
+                ports_exist = firewall().port_rules_list(public.to_dict_obj({
+                    "chain": "ALL",
+                    "query": brief,
+                }))
+                # 尝试移除被该项目占用的旧端口
+                for old_port in public.find_value_by_key(ports_exist, "data", []):
+                    old_port_str = str(old_port.get("Port", ""))
+                    if not old_port_str:
+                        continue
+                    if old_port_str == "80":
+                        continue
+                    if self.IsOpen(old_port):
+                        continue
+                    if old_port.get("Port"):
+                        fw_body["port"] = str(old_port.get("Port", ""))
+                        fw_body["operation"] = "remove"
+                        firewall().set_port_rule(public.to_dict_obj(fw_body))
+            except:
+                pass
+            # add
+            fw_body["port"] = str(port)
+            set_res = firewall().set_port_rule(public.to_dict_obj(fw_body))
+            if set_res.get("status") == 0:
                 return True, ""
-            return False, public.lang("PS: port not released in firewall, local access only")
-        except:
-            return False, public.lang("PS: port not released in firewall, local access only")
+        except Exception as e:
+            import traceback
+            public.print_log(traceback.format_exc())
+            public.print_log("_release_firewall error: {}".format(e))
+        return False, public.lang("PS: port not released in firewall, local access only")
 
+    # todo 废弃
+    def set_daemon_time(self):
+        """设置守护进程重启检测时间"""
+        pass
+
+    # todo 废弃
+    def get_daemon_time(self):
+        """获取守护进程重启检测时间"""
+        pass
+
+    # todo 废弃
+    def _project_mod_type(self) -> Optional[str]:
+        mod_name = self.__class__.__module__
+
+        # "projectModel/javaModel.py" 的格式
+        if "/" in mod_name:
+            mod_name = mod_name.rsplit("/", 1)[1]
+        if mod_name.endswith(".py"):
+            mod_name = mod_name[:-3]
+
+        # "projectModel.javaModel" 的格式
+        if "." in mod_name:
+            mod_name = mod_name.rsplit(".", 1)[1]
+
+        if mod_name.endswith("Model"):
+            return mod_name[:-5]
+        return mod_name
+
+    # todo移除到site通用
+    def project_site_types(self, get=None):
+        p_type = self._project_mod_type()
+        res = _ProjectSiteType().list_by_type(p_type)
+        res_data = [
+                       {"id": 0, "name": "Default category", "ps": ""},
+                   ] + res
+        return public.success_v2(res_data)
+
+    # todo移除到site通用
+    def add_project_site_type(self, get):
+        try:
+            type_name = get.type_name.strip()
+            ps = get.ps.strip()
+        except AttributeError:
+            return public.fail_v2("params error")
+        if not type_name:
+            return public.fail_v2("name can not be empty")
+        if len(type_name) > 16:
+            return public.fail_v2("please do not enter more than 16 characters for the name")
+
+        p_type = self._project_mod_type()
+
+        flag, msg = _ProjectSiteType().add(p_type, type_name, ps)
+        if not flag:
+            return public.fail_v2(msg)
+        return public.success_v2("Add success")
+
+    # todo移除到site通用
+    def modify_project_site_type(self, get):
+        try:
+            type_name = get.type_name.strip()
+            ps = get.ps.strip()
+            type_id = int(get.type_id.strip())
+        except (AttributeError, ValueError, TypeError):
+            return public.fail_v2("params error")
+        if not type_name or not type_id:
+            return public.fail_v2("type_name, type_id can not be empty")
+        if len(type_name) > 16:
+            return public.fail_v2("please do not enter more than 16 characters for the name")
+
+        p_type = self._project_mod_type()
+        flag = _ProjectSiteType().modify(p_type, type_id, type_name, ps)
+        if not flag:
+            return public.fail_v2("modify error")
+        return public.success_v2("Modify success")
+
+    # todo移除到site通用
+    def remove_project_site_type(self, get):
+        try:
+            type_id = int(get.type_id.strip())
+        except (AttributeError, ValueError, TypeError):
+            return public.fail_v2("params error")
+
+        p_type = self._project_mod_type()
+        project_type_map = {
+            "go": "Go",
+            "java": "Java",
+            "net": "net",
+            "nodejs": "Node",
+            "other": "Other",
+            "python": "Python",
+            "proxy": "proxy",
+            "html": "html",
+        }
+        if p_type not in project_type_map:
+            return public.fail_v2("params error")
+
+        flag = _ProjectSiteType().remove(p_type, type_id)
+        if not flag:
+            return public.fail_v2("Delete error")
+
+        p_t = project_type_map[p_type]
+        query_str = 'project_type=? AND type_id=?'
+        projects = public.M('sites').where(query_str, (p_t, type_id)).field("id").select()
+        if not projects:
+            return public.success_v2("Delete success")
+
+        project_ids = [i["id"] for i in projects]
+        update_str = 'project_type=? AND id in ({})'.format(",".join(["?"] * len(project_ids)))
+        public.M('sites').where(update_str, (p_t, *project_ids)).update({"type_id": 0})
+
+        return public.success_v2("Delete success")
+
+    # todo移除到site通用
+    def find_project_site_type(self, type_id: int):
+        if isinstance(type_id, str):
+            try:
+                type_id = int(type_id)
+            except (AttributeError, ValueError, TypeError):
+                return None
+        if type_id == 0:
+            return {
+                "id": 0,
+                "name": "Default category",
+                "ps": ""
+            }
+        p_type = self._project_mod_type()
+        return _ProjectSiteType().find(p_type, type_id)
+
+    # todo移除, 使用batch
+    def set_project_site_type(self, get):
+        try:
+            type_id = int(get.type_id.strip())
+            if isinstance(get.site_ids, str):
+                site_ids = json.loads(get.site_ids.strip())
+            else:
+                site_ids = get.site_ids
+        except (AttributeError, ValueError, TypeError):
+            return public.fail_v2("params error")
+
+        if not isinstance(site_ids, list):
+            return public.fail_v2("params error")
+
+        p_type = self._project_mod_type()
+        project_type_map = {
+            "go": "Go",
+            "java": "Java",
+            "net": "net",
+            "nodejs": "Node",
+            "other": "Other",
+            "python": "Python",
+            "proxy": "proxy",
+            "html": "html",
+        }
+        if p_type not in project_type_map:
+            return public.fail_v2("params error")
+
+        if not self.find_project_site_type(type_id):
+            return public.fail_v2("project site type not exists")
+
+        p_t = project_type_map[p_type]
+        query_str = 'project_type=? AND id in ({})'.format(",".join(["?"] * len(site_ids)))
+        projects = public.M('sites').where(query_str, (p_t, *site_ids)).field("id").select()
+        if not projects:
+            return public.fail_v2("no project found")
+
+        project_ids = [i["id"] for i in projects]
+
+        update_str = 'project_type=? AND id in ({})'.format(",".join(["?"] * len(project_ids)))
+        public.M('sites').where(update_str, (p_t, *project_ids)).update({"type_id": type_id})
+        return public.success_v2("Set success")
+
+    # todo移除废弃
+    def batch_set_site_type(self, get):
+        """
+            @name 批量设置网站分类
+        """
+        # v2 site api -> batch_set_site_type
+        pass

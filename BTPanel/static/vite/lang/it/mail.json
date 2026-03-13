@@ -404,7 +404,8 @@
 			"index_54": "Avviso lp/ dominio nella lista nera",
 			"index_55": "Avvisami quando il servizio di posta è inattiva",
 			"index_56": "Avviso di servizio di posta",
-			"index_57": "Rilevare automaticamente le liste nere"
+			"index_57": "Rilevare automaticamente le liste nere",
+			"index_58": "Send email when quota exceeded"
 		},
 		"Api": {
 			"index_1": "Impostazione cattura tutto, per favore aspetta ...",

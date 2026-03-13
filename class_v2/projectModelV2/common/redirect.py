@@ -119,7 +119,7 @@ rewrite ^%s(.*) %s%s %s;
     # 创建修改配置检测
     def _check_redirect_args(self, get, is_modify=False) -> Union[str, Dict]:
         if public.checkWebConfig() is not True:
-            return '配置文件出错请先排查配置'
+            return public.lang("Config file error; please check the configuration first.")
 
         try:
             site_name = get.sitename.strip()
@@ -152,57 +152,57 @@ rewrite ^%s(.*) %s%s %s;
 
         if not is_modify:
             if not redirect_name:
-                return "参数错误，配置名称不能为空"
+                return public.lang("Parameter error: configuration name cannot be empty")
             # 检测名称是否重复
             if not (3 < len(redirect_name) < 15):
-                return '名称必须大于3小于15个字符串'
+                return public.lang("Name length must be greater than 3 and less than 15 characters")
 
             if self._check_redirect(site_name, redirect_name, error_page == 1):
-                return '指定重定向名称已存在'
+                return public.lang("The specified redirect name already exists")
 
         site_info = public.M('sites').where("name=?", (site_name,)).find()
         if not isinstance(site_info, dict):
-            return "站点信息查询错误"
+            return public.lang("Failed to query site information")
         else:
             site_name = site_info["name"]
 
         # 检测目标URL格式
         rep = r"http(s)?\:\/\/([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+([a-zA-Z0-9][a-zA-Z0-9]{0,62})+.?"
         if to_url and not re.match(rep, to_url):
-            return '目标URL格式不对【%s】' % to_url
+            return public.lang("Invalid target URL format: [%s]") % to_url
 
         # 非404页面de重定向检测项
         if error_page != 1:
             # 检测是否选择域名
             if domain_or_path == "domain":
                 if not redirect_domain:
-                    return '请选择重定向域名'
+                    return public.lang("Please select a redirect domain")
                 # 检测域名是否已经存在配置文件
                 repeat_domain = self._check_redirect_domain_exist(site_name, redirect_domain, redirect_name, is_modify)
                 if repeat_domain:
-                    return '重定向域名重复 %s' % repeat_domain
+                    return public.lang("Redirect domain already exists: %s") % repeat_domain
 
                 # 检查目标URL的域名和被重定向的域名是否一样
                 tu = self._parse_url_domain(to_url)
                 for d in redirect_domain:
                     if d == tu:
-                        return '域名 "%s" 和目标域名一致请取消选择' % d
+                        return public.lang("Domain \"%s\" matches the target domain; please deselect it") % d
             else:
                 if not redirect_path:
-                    return '请输入重定向路径'
+                    return public.lang("Please enter a redirect path")
                 if redirect_path[0] != "/":
-                    return "路径格式不正确，格式为/xxx"
+                    return public.lang("Invalid path format; expected /xxx")
                 # 检测路径是否有存在配置文件
                 if self._check_redirect_path_exist(site_name, redirect_path, redirect_name):
-                    return '重定向路径重复 %s' % redirect_path
+                    return public.lang("Redirect path already exists: %s") % redirect_path
 
                 to_url_path = self._parse_url_path(to_url)
                 if to_url_path.startswith(redirect_path):
-                    return '目标URL[%s]以被重定向的路径[%s]开头，会导致循环匹配' % (to_url_path, redirect_path)
+                    return public.lang("Target URL [%s] starts with the redirect path [%s], which will cause a loop") % (to_url_path, redirect_path)
         # 404页面重定向检测项
         else:
             if not to_url and not to_path:
-                return '首页或自定义页面必须二选一'
+                return public.lang("You must choose either the homepage or a custom page")
             if to_path:
                 to_path = "/"
 
@@ -234,7 +234,7 @@ rewrite ^%s(.*) %s%s %s;
         self.config.append(res_conf)
         self.save_config()
         public.serviceReload()
-        return public.returnMsg(True, '创建成功')
+        return public.returnMsg(True, public.lang("Created successfully"))
 
     def _set_include(self, res_conf) -> Optional[str]:
         flag, msg = self._set_nginx_redirect_include(res_conf)
@@ -299,7 +299,7 @@ rewrite ^%s(.*) %s%s %s;
             self.config.append(res_conf)
         self.save_config()
         public.serviceReload()
-        return public.returnMsg(True, '修改成功')
+        return public.returnMsg(True, public.lang("Modification successful"))
 
     def _set_nginx_redirect_include(self, redirect_conf: dict) -> Tuple[bool, str]:
         ng_redirect_dir = "%s/vhost/nginx/redirect/%s" % (self.setup_path, redirect_conf["sitename"])
@@ -308,25 +308,25 @@ rewrite ^%s(.*) %s%s %s;
             os.makedirs(ng_redirect_dir, 0o600)
         ng_conf = public.readFile(ng_file)
         if not isinstance(ng_conf, str):
-            return False, "nginx配置文件读取失败"
+            return False, public.lang("Failed to read nginx config file")
 
         rep_include = re.compile(r"\sinclude +.*/redirect/.*\*\.conf;", re.M)
         if rep_include.search(ng_conf):
             return True, ""
         redirect_include = (
             "#SSL-END\n"
-            "    #引用重定向规则，注释后配置的重定向代理将无效\n"
+            "    # Include redirect rules, commenting out will disable the configured redirect proxy\n"
             "    include {}/*.conf;"
         ).format(ng_redirect_dir)
 
         if "#SSL-END" not in ng_conf:
-            return False, "添加配置失败，无法定位SSL相关配置的位置"
+            return False, public.lang("Failed to add config: cannot locate SSL config marker")
 
         new_conf = ng_conf.replace("#SSL-END", redirect_include)
         public.writeFile(ng_file, new_conf)
         if self.webserver == "nginx" and public.checkWebConfig() is not True:
             public.writeFile(ng_file, ng_conf)
-            return False, "添加配置失败"
+            return False, public.lang("Failed to add config")
 
         return True, ""
 
@@ -334,7 +334,7 @@ rewrite ^%s(.*) %s%s %s;
         ng_file = "{}/vhost/nginx/{}{}.conf".format(self.setup_path, self.config_prefix, redirect_conf["sitename"])
         ng_conf = public.readFile(ng_file)
         if not isinstance(ng_conf, str):
-            return False, "nginx配置文件读取失败"
+            return False, public.lang("Failed to read nginx config file")
 
         rep_include = re.compile(r"(#(.*)\n)?\s*include +.*/redirect/.*\*\.conf;")
         if not rep_include.search(ng_conf):
@@ -344,7 +344,7 @@ rewrite ^%s(.*) %s%s %s;
         public.writeFile(ng_file, new_conf)
         if self.webserver == "nginx" and public.checkWebConfig() is not True:
             public.writeFile(ng_file, ng_conf)
-            return False, "移除配置失败"
+            return False, public.lang("Failed to remove config")
 
         return True, ""
 
@@ -356,7 +356,7 @@ rewrite ^%s(.*) %s%s %s;
 
         ap_conf = public.readFile(ap_file)
         if not isinstance(ap_conf, str):
-            return False, "apache配置文件读取失败"
+            return False, public.lang("Failed to read apache config file")
 
         rep_include = re.compile(r"\sIncludeOptional +.*/redirect/.*\*\.conf", re.M)
         # public.print_log(list(rep_include.finditer(ap_conf)))
@@ -372,7 +372,7 @@ rewrite ^%s(.*) %s%s %s;
         rep_deny_files = re.compile(r"\n\s*#DENY FILES")
 
         include_conf = (
-            "\n    # 引用重定向规则，注释后配置的重定向代理将无效\n"
+            "\n    # Include redirect rules, commenting out will disable the configured redirect proxy\n"
             "    IncludeOptional {}/*.conf\n"
         ).format(ap_redirect_dir)
 
@@ -406,13 +406,13 @@ rewrite ^%s(.*) %s%s %s;
 
         if set_by_rep_idx(rep_deny_files, True) and rep_include.search(new_conf):
             return True, ""
-        return False, "设置失败"
+        return False, public.lang("Failed to set config")
 
     def _un_set_apache_redirect_include(self, redirect_conf: dict) -> Tuple[bool, str]:
         ap_file = "{}/vhost/apache/{}{}.conf".format(self.setup_path, self.config_prefix, redirect_conf["sitename"])
         ap_conf = public.readFile(ap_file)
         if not isinstance(ap_conf, str):
-            return False, "apache配置文件读取失败"
+            return False, public.lang("Failed to read apache config file")
 
         rep_include = re.compile(r"(#(.*)\n)?\s*IncludeOptional +.*/redirect/.*\*\.conf")
         if not rep_include.search(ap_conf):
@@ -422,7 +422,7 @@ rewrite ^%s(.*) %s%s %s;
         public.writeFile(ap_file, new_conf)
         if self.webserver == "apache" and public.checkWebConfig() is not True:
             public.writeFile(ap_file, ap_conf)
-            return False, "移除配置失败"
+            return False, public.lang("Failed to remove config")
 
         return True, ""
 
@@ -599,19 +599,19 @@ rewrite ^%s(.*) %s%s %s;
             site_name = get.sitename.strip()
             redirect_name = get.redirectname.strip()
         except AttributeError:
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, public.lang("Parameter error"))
         target_idx = None
         have_other_redirect = False
         target_conf = None
-        for i, conf in enumerate(self.config):
+        for i, conf in enumerate(self.config): # index i
             if conf["redirectname"] != redirect_name and conf["sitename"] == site_name:
                 have_other_redirect = True
             if conf["redirectname"] == redirect_name and conf["sitename"] == site_name:
                 target_idx = i
                 target_conf = conf
 
-        if not target_idx:
-            return public.returnMsg(False, '没有指定的配置')
+        if target_idx is None: # target_idx 可以为0
+            return public.returnMsg(False, public.lang("No matching configuration found"))
 
         r_md5_name = self._calc_redirect_name_md5(target_conf["redirectname"])
         public.ExecShell("rm -f %s/vhost/nginx/redirect/%s/%s_%s.conf" % (
@@ -629,14 +629,14 @@ rewrite ^%s(.*) %s%s %s;
         if not multiple:
             public.serviceReload()
 
-        return public.returnMsg(True, '删除成功')
+        return public.returnMsg(True, public.lang("Deleted successfully"))
 
     def mutil_remove_redirect(self, get):
         try:
             redirect_names = json.loads(get.redirectnames.strip())
             site_name = json.loads(get.sitename.strip())
         except (AttributeError, json.JSONDecodeError, TypeError):
-            return public.returnMsg(False, "参数错误")
+            return public.returnMsg(False, public.lang("Parameter error"))
         del_successfully = []
         del_failed = {}
         get_obj = public.dict_obj()
@@ -650,14 +650,17 @@ rewrite ^%s(.*) %s%s %s;
                     continue
                 del_successfully.append(redirect_name)
             except:
-                del_failed[redirect_name] = '删除时出错了，请再试一次'
+                del_failed[redirect_name] = public.lang("An error occurred while deleting; please try again")
 
         public.serviceReload()
+        msg = 'Successfully deleted redirects [ {} ]'.format(','.join(del_successfully))
+        if del_failed:
+            msg += '; Failed to delete redirects: '
+            for k in del_failed:
+                msg += ' {} => {}; '.format(k, del_failed[k])
         return {
             'status': True,
-            'msg': '删除重定向 [ {} ] 成功'.format(','.join(del_successfully)),
-            'error': del_failed,
-            'success': del_successfully
+            'msg': msg,
         }
 
     def get_redirect_list(self, get):
@@ -666,7 +669,7 @@ rewrite ^%s(.*) %s%s %s;
             site_name = get.sitename.strip()
             if "errorpage" in get:
                 error_page = int(get.errorpage)
-        except (AttributeError, ValueError, TypeError):
+        except Exception:
             return public.return_message(-1,0, "parameter error")
         redirect_list = []
         webserver = public.get_webserver()
@@ -685,7 +688,7 @@ rewrite ^%s(.*) %s%s %s;
                 self.setup_path, webserver, site_name, md5_name, site_name)
             conf["type"] = 1 if os.path.isfile(conf["redirect_conf_file"]) else 0
             redirect_list.append(conf)
-        return public.return_message(0,0,redirect_list)
+        return public.returnMsg(True, redirect_list)
 
     def remove_redirect_by_project_name(self, project_name):
         for i in range(len(self.config) - 1, -1, -1):
@@ -756,35 +759,61 @@ class BaseProjectCommon:
         setattr(self, "_config_prefix_cache", prefix)
 
 class Redirect(BaseProjectCommon):
-    # 匹配目标URL的域名并返回
+    """项目重定向管理"""
 
+    @staticmethod
+    def aa_return(fun):
+        """统一返回格式"""
+        def inner(*args, **kwargs):
+            try:
+                res = fun(*args, **kwargs)
+                if res and isinstance(res, dict):
+                    msg = res["msg"] # 故意抛异常
+                    msg = public.gettext_msg(msg) if isinstance(msg, str) else msg
+                    return public.return_message(
+                        0 if res.get("status", False) else -1, 0, msg
+                    )
+                else:
+                    public.print_log("Error: Unexpected return value: {}".format(res))
+                    return public.return_message(0, 0, res)
+            except Exception as e:
+                public.print_log("Redirect return format Error: {}".format(e))
+                return fun(*args, **kwargs)
+        return inner
+
+    @aa_return
     def remove_redirect_by_project_name(self, project_name):
         if not isinstance(self.config_prefix, str):
             return None
         return _RealRedirect(self.config_prefix).remove_redirect_by_project_name(project_name)
 
+    @aa_return
     def create_project_redirect(self, get):
         if not isinstance(self.config_prefix, str):
             return public.returnMsg(False, "Unsupported website type")
         return _RealRedirect(self.config_prefix).create_redirect(get)
 
+    @aa_return
     def modify_project_redirect(self, get):
+        # 批量走site老接口
         if not isinstance(self.config_prefix, str):
             return public.returnMsg(False, "Unsupported website type")
 
         return _RealRedirect(self.config_prefix).modify_redirect(get)
 
+    @aa_return
     def remove_project_redirect(self, get):
         if not isinstance(self.config_prefix, str):
             return public.returnMsg(False, "Unsupported website type")
         return _RealRedirect(self.config_prefix).remove_redirect(get)
 
+    @aa_return
     def mutil_remove_project_redirect(self, get):
         if not isinstance(self.config_prefix, str):
             return public.returnMsg(False, "Unsupported website type")
-
         return _RealRedirect(self.config_prefix).mutil_remove_redirect(get)
 
+    @aa_return
     def get_project_redirect_list(self, get):
         # 校验参数
         try:
@@ -801,6 +830,3 @@ class Redirect(BaseProjectCommon):
         if not isinstance(self.config_prefix, str):
             return public.return_message(-1,0, "Unsupported website type")
         return _RealRedirect(self.config_prefix).get_redirect_list(get)
-
-
-

@@ -1495,20 +1495,18 @@ server {{
         except:
             return -1
 
-    # 2024/4/19 下午10:05 获取所有project_type为proxy的站点，需要做分页配置，按照添加时间排序
+    # 获取反向代理列表
     def get_list(self, get):
         '''
-            @name 获取所有project_type为proxy的站点，需要做分页配置，按照添加时间排序
+            @name 重构获取列表，添加排序机制
             @param get:
             @return:
         '''
-        # 校验参数
         try:
             get.validate([
                 Param('search').String(),
                 Param('p').Integer(),
                 Param('limit').Integer(),
-
             ], [
                 public.validate.trim_filter(),
             ])
@@ -1516,79 +1514,91 @@ server {{
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-
-        get.p = get.get("p/d", 1)
-        get.limit = get.get("limit/d", 10)
-        get.search = get.get("search", "")
+        p = int(get.get("p/d", 1))
+        limit = int(get.get("limit/d", 10))
+        search = get.get("search", "")
+        re_order = get.get('re_order', '') # 流量排序专用
 
         where = "project_type=?"
         param = ["proxy"]
-        if get.search != "":
+        if search != "":
             where += " and (name like ? or ps like ?)"
-            search_pattern = "%{}%".format(get.search)
+            search_pattern = "%{}%".format(search)
             param.append(search_pattern)
             param.append(search_pattern)
-        else:
-            param = ("proxy",)
 
         import db
         sql = db.Sql()
-        count = sql.table('sites').where(where, param).count()
 
-        import page
-        page = page.Page()
-        data = {}
-        info = {}
-        info['count'] = count
-        info['row'] = get.limit
+        all_data = sql.table('sites').where(where, param).field('id,name,path,status,ps,addtime,edate').order(
+            'addtime desc').select()
 
-        info['p'] = 1
-        if hasattr(get, 'p'):
-            info['p'] = int(get['p'])
-            if info['p'] < 1: info['p'] = 1
+        if not all_data:
+            return public.return_message(0, 0, {"data": [], "page": ""})
 
-        try:
-            from flask import request
-            info['uri'] = public.url_encode(request.full_path)
-        except:
-            info['uri'] = ''
-        info['return_js'] = ''
-        data['where'] = where
-        data['page'] = page.GetPage(info)
-
-        sql.table('sites').where(where, param)
-        sql.field('id,name,path,status,ps,addtime,edate').order('id desc')
-        sql.limit(str(page.SHIFT) + ',' + str(page.ROW))
-        data['data'] = sql.select()
+        re_data = None
+        if re_order:
+            import data_v2
+            res = data_v2.data().get_site_request(public.to_dict_obj({'site_type': 'proxy'}))
+            if res.get('status') == 0:
+                re_data = res.get('message')
 
         try:
-            path = '/www/server/btwaf/site.json'
-            waf_res = json.loads(public.readFile(path))
+            waf_res = json.loads(public.readFile('/www/server/btwaf/site.json'))
         except:
             waf_res = {}
 
-        for site in data['data']:
+        for site in all_data:
+            site['re_total'] = 0
+            if re_data and site['name'] in re_data:
+                site['re_total'] = re_data[site['name']]['total']['request']
+
             get.site_name = site["name"]
-            project_config = self.read_json_conf(get)['message']
-            site["healthy"] = 1
-            site["waf"] = {}
+            project_config = self.read_json_conf(get).get('message', {})
+
             if not project_config:
-                site["healthy"] = 0
-                site["conf_path"] = ""
-                site["ssl"] = -1
-                site["proxy_pass"] = ""
+                site.update({"healthy": 0, "conf_path": "", "ssl": -1, "proxy_pass": "", "waf": {}})
                 continue
 
-            site["conf_path"] = public.get_setup_path() + '/panel/vhost/nginx/' + get.site_name + '.conf'
-            site["ssl"] = self.get_site_ssl_info(get.site_name)
-            site["proxy_pass"] = project_config["proxy_info"][0]["proxy_pass"]
+            site["healthy"] = 1
+            site["conf_path"] = public.get_setup_path() + '/panel/vhost/nginx/' + site['name'] + '.conf'
+            site["ssl"] = self.get_site_ssl_info(site['name'])
+            site["proxy_pass"] = project_config.get("proxy_info", [{}])[0].get("proxy_pass", "")
 
-            if waf_res:
-                for waf in waf_res:
-                    if "open" in waf_res[waf]:
-                        site["waf"] = {"status": True}
+            site["waf"] = {"status": True} if (site['name'] in waf_res and waf_res[site['name']].get('open')) else {}
 
-        return public.return_message(0,0,public.returnResult(data=data))
+        if re_order:
+            is_reverse = True if re_order == 'desc' else False
+            all_data = sorted(all_data, key=lambda x: x["re_total"], reverse=is_reverse)
+
+        count = len(all_data)
+        start = (p - 1) * limit
+        end = start + limit
+        paged_data = all_data[start:end]
+
+        import page
+        pg = page.Page()
+        info = {
+            'count': count,
+            'row': limit,
+            'p': p,
+            'return_js': '',
+            'uri': ''
+        }
+        try:
+            from flask import request
+            info['uri'] = public.url_encode(request.full_path)
+
+        except:
+            pass
+
+        return_data = {
+            'data': paged_data,
+            'page': pg.GetPage(info)
+        }
+
+        return public.return_message(0, 0, public.returnResult(data=return_data))
+
 
     # 2024/4/19 下午11:46 给指定网站添加域名
     def add_domain(self, get):

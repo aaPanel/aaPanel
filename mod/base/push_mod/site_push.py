@@ -1,4 +1,3 @@
-import glob
 import hashlib
 import json
 import os
@@ -11,20 +10,26 @@ from typing import Tuple, Union, Optional, List
 
 import psutil
 
-from mod.base.web_conf import RealSSLManger
+import public
+
+public.sys_path_append("class_v2/")
+try:
+    from public.hook_import import hook_import
+
+    hook_import()
+except:
+    pass
 from script.restart_services import manual_flag
-from ssl_domainModelV2.model import DnsDomainSSL
 from .base_task import BaseTask
 from .mods import PUSH_DATA_PATH, TaskConfig, SenderConfig
 from .send_tool import WxAccountMsg, WxAccountLoginMsg
-from .util import read_file, DB, write_file, check_site_status, GET_CLASS, ExecShell, get_config_value, \
+from .util import read_file, DB, write_file, check_site_status, GET_CLASS, get_config_value, \
     public_get_cache_func, \
     public_set_cache_func, get_network_ip, public_get_user_info, public_http_post, panel_version
 
-import public
 import public.PluginLoader as plugin_loader
-class _WebInfo:
 
+class _WebInfo:
     def __init__(self):
         self.last_time = 0
         self._items = None
@@ -40,8 +45,8 @@ class _WebInfo:
         res_list = DB('sites').field('id,name,project_type,project_config').select()
 
         for i in res_list:
-            if not check_site_status(i):
-                continue
+            # if not check_site_status(i):
+            #     continue
             items.append({
                 "title": i["name"] + "[" + i["project_type"] + "]",
                 "value": i["name"]
@@ -73,6 +78,7 @@ class SSLCertificateTask(BaseTask):
         self.template_name = "Certificate (SSL) Expiration"
         self._task_config = TaskConfig()
         self.task_id = None
+        self.domains = []
 
     def get_keyword(self, task_data: dict) -> str:
         return task_data["project"]
@@ -82,7 +88,6 @@ class SSLCertificateTask(BaseTask):
             days = int(task_data.get("cycle", 15))
         except Exception:
             days = 15
-
         # 过滤要告警的对象
         msg_list = []
 
@@ -90,6 +95,7 @@ class SSLCertificateTask(BaseTask):
         mail_list = []  # 邮件模块
 
         # ============= domain ssl manager ================
+        from ssl_domainModelV2.model import DnsDomainSSL
         after_ts = (time.time() + 86400 * days) * 1000
         ssl_obj = DnsDomainSSL.objects.filter(not_after_ts__lt=after_ts)
         for ssl in ssl_obj:
@@ -111,7 +117,7 @@ class SSLCertificateTask(BaseTask):
                             mail_domain_list = [i['domain'] for i in domains]
                             if mail_domain_list:
                                 for domain in mail_domain_list:
-                                
+
                                     cert_path = '/www/server/panel/plugin/mail_sys/cert/{}/fullchain.pem'.format(domain)
                                     if not os.path.exists(cert_path):
                                         continue
@@ -120,11 +126,12 @@ class SSLCertificateTask(BaseTask):
                                         continue
 
                                     # ssl
-                                    main = plugin_loader.get_module('{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
+                                    main = plugin_loader.get_module(
+                                        '{}/plugin/mail_sys/mail_sys_main.py'.format(public.get_panel_path()))
                                     mail_sys_main = main.mail_sys_main
                                     ssl_info = mail_sys_main().get_ssl_info(domain)
                                     endtime = ssl_info.get('endtime', None)
-                                    
+
                                     if endtime and endtime <= 15:
                                         mail_list.append(domain)
                 except:
@@ -136,7 +143,7 @@ class SSLCertificateTask(BaseTask):
             msg_list.append(f"> Domain SSL {domain_list} certificate expired\n")
         if mail_list:
             msg_list.append(f"> Mail Server SSL {mail_list} certificate expired\n")
-
+        self.domains = domain_list + mail_list
         return {"msg_list": msg_list} if msg_list else None
 
     def filter_template(self, template) -> dict:
@@ -161,193 +168,20 @@ class SSLCertificateTask(BaseTask):
         # 构造sms特殊消息体
         return 'ssl_end|aaPanel SSL Expiration Reminder', {
             "name": push_public_data["ip"],
-            # "domain": self.ssl_list[0]['domain'],
-            'time': self.ssl_list[0]["notAfter"],
-            'total': len(self.ssl_list)
+            "domain": self.domains[0],
+            # 'time': self.ssl_list[0]["notAfter"],
+            'total': len(self.domains)
         }
 
     def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
         # 构造wx特殊消息体
         msg = WxAccountMsg.new_msg()
         msg.thing_type = "SSL expiration reminder"
-        msg.msg = "There are {} domains whose certificates will expire, affecting access".format(len(self.ssl_list))
+        msg.msg = "There are {} domains whose certificates will expire, affecting access".format(len(self.domains))
         msg.next_msg = "Please login to the aaPanel and renew in the certificates"
         return msg
 
     # 不需要额外hook
-
-
-# todo 即将弃置
-class SSLTask(BaseTask):
-
-    def __init__(self):
-        super().__init__()
-        self.source_name = "site_ssl"
-        self.template_name = "Site Certificate (SSL) expiration"
-        # self.title = "Site Certificate (SSL) expiration"
-        self._tip_file = "{}/site_ssl.tip".format(PUSH_DATA_PATH)
-        self._tip_data: Optional[dict] = None
-        self._task_config = TaskConfig()
-
-        # 每次任务使用
-        self.ssl_list = []
-        self.push_keys = []
-        self.task_id = None
-
-    @property
-    def tips(self) -> dict:
-        if self._tip_data is not None:
-            return self._tip_data
-        try:
-            self._tip_data = json.loads(read_file(self._tip_file))
-        except:
-            self._tip_data = {}
-        return self._tip_data
-
-    def save_tip(self):
-        write_file(self._tip_file, json.dumps(self.tips))
-
-    def get_keyword(self, task_data: dict) -> str:
-        return task_data["project"]
-
-    def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
-        panelPath = '/www/server/panel/'
-        os.chdir(panelPath)
-        sys.path.insert(0, panelPath)
-        # 过滤单独设置提醒的网站
-        not_push_web = [i["task_data"]["project"] for i in self._task_config.config if i["source"] == self.source_name]
-        sql = DB("sites")
-        total = self._task_config.get_by_id(task_id).get("number_rule", {}).get("total", 1)
-        if "all" in not_push_web:
-            not_push_web.remove("all")
-
-        need_check_list = []
-        if task_data["project"] == "all":
-            # 所有正常网站
-            web_list = sql.where('status=1', ()).select()
-            for web in web_list:
-                if web['name'] in not_push_web:
-                    continue
-                if web['project_type'] != "PHP":
-                    if not check_site_status(web):
-                        continue
-
-                if self.tips.get(task_id, {}).get(web['name'], 0) > total:
-                    continue
-
-                if not web['project_type'].lower() in ['php', 'proxy']:
-                    project_type = web['project_type'].lower() + '_'
-                else:
-                    project_type = ''
-
-                need_check_list.append((web['name'], project_type))
-
-        else:
-            find = sql.where('name=? and status=1', (task_data['project'],)).find()
-            if not find:
-                return None
-
-            if find['project_type'] != "PHP":
-                if not check_site_status(find):
-                    return None
-
-            if not find['project_type'].lower() in ['php', 'proxy']:
-                project_type = find['project_type'].lower() + '_'
-            else:
-                project_type = ''
-
-            need_check_list.append((find['name'], project_type))
-
-        for name, project_type in need_check_list:
-            info = self._check_ssl_end_time(name, task_data['cycle'], project_type)
-            if isinstance(info, dict):  # 返回的是详情，说明需要推送了
-                info['site_name'] = name
-                self.push_keys.append(name)
-                self.ssl_list.append(info)
-
-        if len(self.ssl_list) == 0:
-            return None
-
-        s_list = ['>About to expire: <font color=#ff0000>{} </font>'.format(len(self.ssl_list))]
-        for x in self.ssl_list:
-            s_list.append(">Website: {} Expiration: {}".format(x['site_name'], x['notAfter']))
-
-        self.task_id = task_id
-        self.title = self.get_title(task_data)
-        return {"msg_list": s_list}
-
-    @staticmethod
-    def _check_ssl_end_time(site_name, limit, prefix) -> Optional[dict]:
-        info = RealSSLManger(conf_prefix=prefix).get_site_ssl_info(site_name)
-        if info is not None:
-            end_time = datetime.strptime(info['notAfter'], '%Y-%m-%d')
-            if int((end_time.timestamp() - time.time()) / 86400) <= limit:
-                return info
-        return None
-
-    def get_title(self, task_data: dict) -> str:
-        if task_data["project"] == "all":
-            return "Site Certificate (SSL) expiration -- All"
-        return "Site Certificate (SSL) expiration -- Website [{}]".format(task_data["project"])
-
-    def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
-        return 'ssl_end|aaPanel SSL Expiration Reminder', {
-            "name": push_public_data["ip"],
-            "website": self.ssl_list[0]['site_name'],
-            'time': self.ssl_list[0]["notAfter"],
-            'total': len(self.ssl_list)
-        }
-
-    def to_wx_account_msg(self, push_data: dict, push_public_data: dict) -> WxAccountMsg:
-        msg = WxAccountMsg.new_msg()
-        msg.thing_type = "Website SSL expiration reminder"
-        msg.msg = "There are {} sites whose certificates will expire, affecting access".format(len(self.ssl_list))
-        msg.next_msg = "Please login to the aaPanel and renew in the [Website]"
-        return msg
-
-    def check_task_data(self, task_data: dict) -> Union[dict, str]:
-        task_data["interval"] = 60 * 60 * 24  # 默认检测间隔时间 1 天
-        if not (isinstance(task_data['cycle'], int) and task_data['cycle'] >= 1):
-            return "The remaining time parameter is incorrect, at least 1 day"
-        return task_data
-
-    def filter_template(self, template) -> dict:
-        items, _ = web_info()
-        template["field"][0]["items"].extend(items)
-        return template
-
-    def check_num_rule(self, num_rule: dict) -> Union[dict, str]:
-        num_rule["get_by_func"] = "can_send_by_num_rule"
-        return num_rule
-
-    # 实际的次数检查已在 get_push_data 其他位置完成
-    def can_send_by_num_rule(self, task_id: str, task_data: dict, number_rule: dict, push_data: dict) -> Optional[str]:
-        return None
-
-    def task_run_end_hook(self, res) -> None:
-        if not res["do_send"]:
-            return
-        if self.task_id:
-            if self.task_id not in self.tips:
-                self.tips[self.task_id] = {}
-
-            for w in self.push_keys:
-                if w in self.tips[self.task_id]:
-                    self.tips[self.task_id][w] += 1
-                else:
-                    self.tips[self.task_id][w] = 1
-
-            self.save_tip()
-
-    def task_config_update_hook(self, task: dict) -> None:
-        if task["id"] in self.tips:
-            self.tips.pop(task["id"])
-            self.save_tip()
-
-    def task_config_remove_hook(self, task: dict) -> None:
-        if task["id"] in self.tips:
-            self.tips.pop(task["id"])
-            self.save_tip()
 
 
 class SiteEndTimeTask(BaseTask):
@@ -1203,7 +1037,7 @@ class ProjectStatusTask(BaseTask):
         if "/www/server/panel/class" not in sys.path:
             sys.path.insert(0, "/www/server/panel/class")
 
-        model_obj = import_module(".{}".format(self._to_project_model(task_data["cycle"])), package="projectModel")
+        model_obj = import_module(".{}".format(self._to_project_model(task_data["cycle"])), package="projectModelV2")
         model_main_obj = model_obj.main()
         running, project_name = getattr(model_main_obj, "get_project_status")(task_data["project"])
         if running is not False:
@@ -1218,8 +1052,8 @@ class ProjectStatusTask(BaseTask):
         if int(task_data["count"]) == 1:
             get_obj = GET_CLASS()
             get_obj.project_name = project_name
-            result = getattr(model_main_obj, "start_project")(get_obj)
-            if result["status"] is True:
+            result = getattr(model_main_obj, "StartProject")(get_obj)
+            if result["status"] == 0:
                 self.restart = True
                 s_list[
                     2] = ">Project state: Check that the project status is stopped, and it has been restarted successfully"

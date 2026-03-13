@@ -126,71 +126,118 @@ class main(AppManage, OllamaMod):
         except Exception as e:
             return public.return_message(-1, 0, str(e))
 
-    # 2024/6/26 下午8:55 获取指定compose.yml的docker-compose ps
+    # 2026/2/26 下午8:55 获取指定compose.yml的docker-compose ps  增加异常处理和类型检查，防止WebSocket推送过程中出现错误导致循环崩溃
     def get_project_ps(self, get):
         '''
-            @name 获取指定compose.yml的docker-compose ps
-            @author wzz <2024/6/26 下午8:56>
-            @param "data":{"参数名":""} <数据类型> 参数描述
-            @return dict{"status":True/False,"msg":"提示信息"}
+            @name 获取指定 compose.yml 的 docker-compose ps 实时状态（WebSocket 推送）
+            @author wzz <2026/2/26>
+            @param get.path: compose 项目路径
+            @return dict {"status": True/False, "msg": "..."}
         '''
         try:
-            if self.def_name is None: self.set_def_name(get.def_name)
-            if hasattr(get, '_ws') and hasattr(get._ws, 'btws_get_project_ps_{}'.format(get.path)):
-                return
+            if self.def_name is None:
+                self.set_def_name(get.def_name)
+
+            # 确保 path 存在
+            if not hasattr(get, 'path') or not get.path:
+                return public.return_message(-1, 0, "Missing 'path' parameter")
+
+            ws_flag_attr = f'btws_get_project_ps_{get.path}'
+
+            # 防止重复订阅
+            if hasattr(get, '_ws') and hasattr(get._ws, ws_flag_attr):
+                result = self.wsResult(True, data=[])
+                try:
+                    get._ws.send(json.dumps(result))
+                except:
+                    pass
+                return result
 
             from btdockerModelV2.dockerSock import container
             sk_container = container.dockerContainer()
 
             while True:
-                compose_list = self.ps(get)
-                if len(compose_list) == 0:
+                try:
+                    compose_list = self.ps(get)
+                    # 强制确保是 list
+                    if not isinstance(compose_list, list):
+                        compose_list = []
+
+                    # 发送空结果并退出（无容器）
+                    if len(compose_list) == 0:
+                        if hasattr(get, '_ws'):
+                            try:
+                                get._ws.send(json.dumps(self.wsResult(True, data=[])))
+                            except:
+                                pass
+                        break
+
+                    # 处理每个容器
+                    for l in compose_list:
+                        if not isinstance(l, dict):
+                            continue
+
+                        # 补全 Image
+                        if "Image" not in l:
+                            l["Image"] = ""
+                            if l.get("ID"):
+                                try:
+                                    inspect = sk_container.get_container_inspect(l["ID"])
+                                    l["Image"] = inspect.get("Config", {}).get("Image", "")
+                                except:
+                                    pass  # 忽略 inspect 失败
+
+                        # 补全 Ports 字符串
+                        if "Ports" not in l:
+                            l["Ports"] = ""
+                            publishers = l.get("Publishers")
+                            if publishers and isinstance(publishers, list):
+                                for p in publishers:
+                                    if not isinstance(p, dict):
+                                        continue
+                                    url = p.get("URL", "")
+                                    target = p.get("TargetPort", "")
+                                    proto = p.get("Protocol", "")
+                                    pub_port = p.get("PublishedPort", "")
+                                    if url == "":
+                                        l["Ports"] += f"{target}/{proto},"
+                                    else:
+                                        l["Ports"] += f"{url}:{pub_port}->{target}/{proto},"
+
+                        # 构造结构化 ports（兼容 containerModel.struct_container_ports）
+                        ports_data = {}
+                        publishers = l.get("Publishers")
+                        if publishers and isinstance(publishers, list):
+                            for port in publishers:
+                                if not isinstance(port, dict):
+                                    continue
+                                key = f"{port.get('TargetPort', '')}/{port.get('Protocol', '')}"
+                                host_ip = port.get("URL", "")
+                                host_port = str(port.get("PublishedPort", ""))
+                                entry = {"HostIp": host_ip, "HostPort": host_port}
+                                if key not in ports_data:
+                                    ports_data[key] = [entry] if host_ip else None
+                                elif ports_data[key] is not None:
+                                    ports_data[key].append(entry)
+                        l["ports"] = ports_data
+
+                    # 推送数据
                     if hasattr(get, '_ws'):
-                        get._ws.send(json.dumps(self.wsResult(
-                            True,
-                            data=[],
-                        )))
+                        setattr(get._ws, ws_flag_attr, True)
+                        try:
+                            get._ws.send(json.dumps(self.wsResult(True, data=compose_list)))
+                        except:
+                            # WebSocket 已断开，退出循环
+                            break
+
+                    time.sleep(2)
+
+                except Exception:
+                    # 内部循环异常，安全退出
                     break
 
-                for l in compose_list:
-                    if not "Image" in l:
-                        l["Image"] = ""
-                        if "ID" in l:
-                            l["inspect"] = sk_container.get_container_inspect(l["ID"])
-                            l["Image"] = l["inspect"]["Config"]["Image"]
+            return self.wsResult(True, data=[])
 
-                    if not "Ports" in l:
-                        l["Ports"] = ""
-                        if "Publishers" in l and not l["Publishers"] is None:
-                            for p in l["Publishers"]:
-                                if p["URL"] == "":
-                                    l["Ports"] += "{}/{},".format(p["TargetPort"], p["Protocol"])
-                                    continue
-
-                                l["Ports"] += "{}:{}->{}/{},".format(p["URL"], p["PublishedPort"], p["TargetPort"], p["Protocol"])
-                    #构造容器详情所需的ports 实现参考了containerModel.struct_container_ports
-                    ports_data = dict()
-                    for port in l["Publishers"]:
-                        key = str(port["TargetPort"]) + "/" + port["Protocol"]
-                        if key not in ports_data.keys():
-                            ports_data[str(port["TargetPort"]) + "/" + port["Protocol"]] = [{
-                                "HostIp": port["URL"],
-                                "HostPort": str(port["PublishedPort"])
-                            }] if port["URL"] != "" else None
-                        else:
-                            ports_data[str(port["TargetPort"]) + "/" + port["Protocol"]].append({
-                                "HostIp": port["URL"],
-                                "HostPort": str(port["PublishedPort"])
-                            })
-                    l["ports"] =ports_data
-                if hasattr(get, '_ws'):
-                    setattr(get._ws, 'btws_get_project_ps_{}'.format(get.path), True)
-                    get._ws.send(json.dumps(self.wsResult(
-                        True,
-                        data=compose_list,
-                    )))
-
-                time.sleep(2)
         except Exception as e:
             return public.return_message(-1, 0, str(e))
 

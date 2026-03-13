@@ -418,7 +418,7 @@ class App(composeMod):
 
         try:
             args = public.to_dict_obj({
-                "proxy_pass": "http://{}:{}".format(get.host_ip, get.port_list[0]),
+                "proxy_pass": "http://127.0.0.1:{}".format(get.port_list[0]),
                 "proxy_type": "http",
                 "domains": get.domain,
                 "proxy_host": "$http_host",

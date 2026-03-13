@@ -351,7 +351,9 @@ var bt = {
 				lan.public.return +
 				"</button><div class='place' id='PathPlace'>" +
 				lan.bt.path +
-				"：<span></span></div></div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" +
+				"：<span title=''></span></div>" +
+				"<input type='text' style='width: 140px;' class='bt-input-text' name='search' id='search' placeholder='Enter Search File/Dir'></input>" +
+				"</div><div class='path-con'><div class='path-con-left'><dl><dt id='changecomlist' >" +
 				lan.bt.comp +
 				"</dt></dl></div><div class='path-con-right'><ul class='default' id='computerDefautl'></ul><div class='file-list divtable'><table id='file-list-table' class='table table-hover' style='border:0 none'><thead><tr class='file-list-head'><th width='5%'></th><th width='38%'>" +
 				lan.bt.filename +
@@ -409,6 +411,12 @@ var bt = {
 				}
 				_this.get_file_list(paths, type);
 				bt.fixed_table('file-list-table');
+				$('#search').keyup(function (e) {
+					if (e.keyCode == 13) {
+						var path = $('#PathPlace').find('span').text();
+						_this.get_file_list(path, type);
+					}
+				});
 			},
 		});
 		_this.set_cookie('ChangePath', loadT.form);
@@ -447,7 +455,8 @@ var bt = {
 	get_file_list: function (path, type) {
 		type = type || 'dir';
 		var _that = this;
-		bt.send('GetDir', 'files/GetDir', { path: path, disk: true }, function (rdata) {
+		var search = $('#search').val();
+		bt.send('GetDir', 'files/GetDir', { path: path, disk: true, search: search }, function (rdata) {
 			var d = '',
 				a = '',
 				disk = rdata.DISK;
@@ -534,7 +543,7 @@ var bt = {
 			if (rdata.PATH.substr(rdata.PATH.length - 1, 1) != '/') {
 				rdata.PATH += '/';
 			}
-			$('#PathPlace').find('span').html(rdata.PATH);
+			$('#PathPlace').find('span').html(rdata.PATH).attr('title', rdata.PATH);
 			$('#tbody tr').click(function () {
 				if ($(this).find('td:eq(0) input').length > 0) {
 					if ($(this).hasClass('active')) {
@@ -840,7 +849,7 @@ var bt = {
 			shade: 0.3,
 			icon: 3,
 			area: config.area ? config.area : 'auto',
-			cancel: config.cancel ? config.cancel : function () {},
+			cancel: config.cancel ? config.cancel : function () { },
 		};
 		layer.confirm(
 			config.msg,
@@ -1540,22 +1549,22 @@ var bt = {
 	// ACE编辑配置文件
 	aceEditor: function (obj) {
 		var aEditor = {
-				ACE: ace.edit(obj.el, {
-					theme: obj.theme ? obj.theme : 'ace/theme/chrome', // 主题
-					mode: 'ace/mode/' + (obj.mode || 'nginx'), // 语言类型
-					wrap: true,
-					showInvisibles: false,
-					showPrintMargin: false,
-					showFoldWidgets: false,
-					useSoftTabs: true,
-					tabSize: 2,
-					showPrintMargin: false,
-					readOnly: false,
-				}),
-				path: obj.path,
-				content: '',
-				saveCallback: obj.saveCallback,
-			},
+			ACE: ace.edit(obj.el, {
+				theme: obj.theme ? obj.theme : 'ace/theme/chrome', // 主题
+				mode: 'ace/mode/' + (obj.mode || 'nginx'), // 语言类型
+				wrap: true,
+				showInvisibles: false,
+				showPrintMargin: false,
+				showFoldWidgets: false,
+				useSoftTabs: true,
+				tabSize: 2,
+				showPrintMargin: false,
+				readOnly: false,
+			}),
+			path: obj.path,
+			content: '',
+			saveCallback: obj.saveCallback,
+		},
 			_this = this;
 		$('#' + obj.el).css('fontSize', '12px');
 		aEditor.ACE.commands.addCommand({
@@ -1870,10 +1879,10 @@ bt.pub = {
 		var status = type == 'stop' ? false : true;
 		layer.confirm(
 			'After ' +
-				typeName +
-				'pure-ftpd Logs management,' +
-				(status ? 'all login and operation records of FTP users will be recorded.' : 'it will no longer be possible to record all login and operation records of FTP users. ') +
-				' Do you want to proceed?',
+			typeName +
+			'pure-ftpd Logs management,' +
+			(status ? 'all login and operation records of FTP users will be recorded.' : 'it will no longer be possible to record all login and operation records of FTP users. ') +
+			' Do you want to proceed?',
 			{
 				title: TypeName + serverName + ' logs management',
 				closeBtn: 2,
@@ -3521,7 +3530,7 @@ bt.files = {
 			}
 		}
 	},
-	on_win_access: function () {},
+	on_win_access: function () { },
 	get_right_click: function (type, path, name) {
 		_this = this;
 		var displayZip = bt.check_zip(type);
@@ -3992,18 +4001,18 @@ bt.config = {
 		var msg = status
 			? lan.config.ssl_close_msg
 			: '<a style="font-weight: bolder;font-size: 16px;">' +
-			  lan.config.ssl_open_ps +
-			  '</a><li style="margin-top: 12px;color:red;">' +
-			  lan.config.ssl_open_ps_1 +
-			  '</li><li>' +
-			  lan.config.ssl_open_ps_2 +
-			  '</li><li>' +
-			  lan.config.ssl_open_ps_3 +
-			  '</li><p style="margin-top: 10px;"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' +
-			  lan.config.ssl_open_ps_4 +
-			  '</label><a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-4689-1-1.html" style="float: right;">' +
-			  lan.config.ssl_open_ps_5 +
-			  '</a></p>';
+			lan.config.ssl_open_ps +
+			'</a><li style="margin-top: 12px;color:red;">' +
+			lan.config.ssl_open_ps_1 +
+			'</li><li>' +
+			lan.config.ssl_open_ps_2 +
+			'</li><li>' +
+			lan.config.ssl_open_ps_3 +
+			'</li><p style="margin-top: 10px;"><input type="checkbox" id="checkSSL" /><label style="font-weight: 400;margin: -1px 5px 0px;" for="checkSSL">' +
+			lan.config.ssl_open_ps_4 +
+			'</label><a target="_blank" class="btlink" href="https://www.bt.cn/bbs/thread-4689-1-1.html" style="float: right;">' +
+			lan.config.ssl_open_ps_5 +
+			'</a></p>';
 		layer.confirm(
 			msg,
 			{
@@ -4981,8 +4990,8 @@ bt.soft = {
 					html.append(
 						$(
 							'<p><span class="glyphicon glyphicon-alert" style="color: #f39c12; margin-right: 10px;"></span>' +
-								item.msg +
-								'&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:;" class="set_messages_status" style="color:#777">[ 忽略提示 ]</a></p>'
+							item.msg +
+							'&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:;" class="set_messages_status" style="color:#777">[ 忽略提示 ]</a></p>'
 						).data(item)
 					);
 				});
@@ -5462,20 +5471,20 @@ bt.soft = {
 					$.each(menus, function (index, item) {
 						$el = $(
 							'<div class="libPay-menu-type ' +
-								(item.is_pro ? 'lib_pro' : '') +
-								' ' +
-								(item.active ? 'active' : '') +
-								'">\
+							(item.is_pro ? 'lib_pro' : '') +
+							' ' +
+							(item.active ? 'active' : '') +
+							'">\
 							<p>\
 								' +
-								(item.is_pro ? '<span class="glyphicon glyphicon-vip" style="margin-right: 8px"></span>' : '') +
-								'<span>' +
-								item.title +
-								'</span>\
+							(item.is_pro ? '<span class="glyphicon glyphicon-vip" style="margin-right: 8px"></span>' : '') +
+							'<span>' +
+							item.title +
+							'</span>\
 							</p>\
 							<p>' +
-								item.ps +
-								'</p>\
+							item.ps +
+							'</p>\
 						</div>'
 						).data(item);
 						$('.libPay-menu').append($el);
@@ -6303,16 +6312,16 @@ bt.soft = {
 					_html.append(
 						$(
 							'<li class="pay-cycle-btn ' +
-								(item.active ? 'active' : '') +
-								'">' +
-								(item.recommend ? '<span class="recommend-pay-icon"></span>' : '') +
-								'<span class="item-name pull-left">' +
-								item.title +
-								'</span>' +
-								'<span class="item-info f12 pull-right c7">' +
-								item.ps +
-								'</span>' +
-								'</li>'
+							(item.active ? 'active' : '') +
+							'">' +
+							(item.recommend ? '<span class="recommend-pay-icon"></span>' : '') +
+							'<span class="item-name pull-left">' +
+							item.title +
+							'</span>' +
+							'<span class="item-info f12 pull-right c7">' +
+							item.ps +
+							'</span>' +
+							'</li>'
 						)
 							.data(item)
 							.click(function (ev) {
@@ -6345,14 +6354,14 @@ bt.soft = {
 					_html.append(
 						$(
 							'<li class="pay-cycle-btn ' +
-								(item.active ? 'active' : '') +
-								'"><span data-unit=' +
-								item.cycle_unit +
-								'>' +
-								that.pro.conver_unit(item.cycle + item.cycle_unit) +
-								'</span>' +
-								(item.discount_rate != 1 ? '<em style="width:50px">' + (100 - item.discount_rate * 100) + '% off</em>' : '') +
-								'</li>'
+							(item.active ? 'active' : '') +
+							'"><span data-unit=' +
+							item.cycle_unit +
+							'>' +
+							that.pro.conver_unit(item.cycle + item.cycle_unit) +
+							'</span>' +
+							(item.discount_rate != 1 ? '<em style="width:50px">' + (100 - item.discount_rate * 100) + '% off</em>' : '') +
+							'</li>'
 						)
 							.data(
 								$.extend(
@@ -6378,10 +6387,10 @@ bt.soft = {
 					_html.append(
 						$(
 							'<li class="pay-cycle-btn ' +
-								(item.active ? 'active' : '') +
-								'"><span>' +
-								(item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : item.cycle + that.pro.conver_unit(item.cycle_unit)) +
-								'</span></li>'
+							(item.active ? 'active' : '') +
+							'"><span>' +
+							(item.cycle_unit == 'month' && item.cycle == 999 ? '永久' : item.cycle + that.pro.conver_unit(item.cycle_unit)) +
+							'</span></li>'
 						)
 							.data($.extend({ pid: config.pid }, item))
 							.click(function (ev) {
@@ -6396,21 +6405,21 @@ bt.soft = {
 			case 'alipay':
 				_html = $(
 					'<div class="lib-price-box text-center">' +
-						'<span class="lib-price-name f14"><b>Total</b></span>' +
-						'<span class="price-txt"><b class="sale-price">$' +
-						config.price.toFixed(2) +
-						'</b></span>' +
-						'<s class="cost-price" style="display: ' +
-						(config.market_price > config.price ? 'inline-block' : 'none') +
-						';">$ ' +
-						config.market_price.toFixed(2) +
-						'</s></div>' +
-						'<div class="lib-price-box text-center">' +
-						'<button type="button" id="checkout-button" style="margin-top:30px" class="btn btn-success " data-code="' +
-						config.order_no +
-						'" data-keys="' +
-						config.stripe_publishable_key +
-						'">Pay Now</button>'
+					'<span class="lib-price-name f14"><b>Total</b></span>' +
+					'<span class="price-txt"><b class="sale-price">$' +
+					config.price.toFixed(2) +
+					'</b></span>' +
+					'<s class="cost-price" style="display: ' +
+					(config.market_price > config.price ? 'inline-block' : 'none') +
+					';">$ ' +
+					config.market_price.toFixed(2) +
+					'</s></div>' +
+					'<div class="lib-price-box text-center">' +
+					'<button type="button" id="checkout-button" style="margin-top:30px" class="btn btn-success " data-code="' +
+					config.order_no +
+					'" data-keys="' +
+					config.stripe_publishable_key +
+					'">Pay Now</button>'
 				);
 				// $(_html).find('#PayQcode').qrcode(config.data);
 				$('.libPay-mask').hide();
@@ -6598,7 +6607,7 @@ bt.soft = {
 	re_plugin_pay_other: function (pluginName, pid, type, price) {
 		bt.pub.get_user_info(function (rdata) {
 			if (!rdata.status) {
-				bt.pub.bind_btname(0, function (rdata) {});
+				bt.pub.bind_btname(0, function (rdata) { });
 				return;
 			}
 			var txt = lan.public_backup.buy;
@@ -7525,9 +7534,9 @@ bt.soft = {
 								if (!rdata.status) {
 									layer.msg(rdata.msg, { icon: rdata.status ? 1 : 2 });
 								} else {
-								    if (window.location.pathname != '/soft') {
-								        window.location.reload();
-								    }
+									if (window.location.pathname != '/soft') {
+										window.location.reload();
+									}
 								}
 								setTimeout(function () {
 									if (typeof soft != 'undefined') soft.get_list();
@@ -7602,7 +7611,7 @@ bt.soft = {
 			},
 		});
 	},
-	update_soft: function (name, title, version, min_version, update_msg, type,callback) {
+	update_soft: function (name, title, version, min_version, update_msg, type, callback) {
 		var _this = this;
 		var msg = '<li>' + lan.public_backup.update_tips + '</li>';
 		if (name == 'mysql')
@@ -7759,15 +7768,15 @@ bt.soft = {
 				content: rhtml.replace('"javascript/text"', '"text/javascript"'),
 			});
 			/*rtmp = rhtml.split('<script type="javascript/text">')
-            if (rtmp.length < 2) {
-                rtmp = rhtml.split('<script type="text/javascript">')
-            }
-            rcode = rtmp[1].replace('</script>','');
+			if (rtmp.length < 2) {
+				rtmp = rhtml.split('<script type="text/javascript">')
+			}
+			rcode = rtmp[1].replace('</script>','');
 			setTimeout(function(){
 				if(!!(window.attachEvent && !window.opera)){
-                    execScript(rcode);
+					execScript(rcode);
 				}else{
-                    window.eval(rcode);
+					window.eval(rcode);
 				}
 			},200)*/
 		});
@@ -8587,7 +8596,7 @@ bt.site = {
 			site.reload();
 			if (callback) callback(rdata);
 			setTimeout(() => {
-			    bt.msg(rdata);
+				bt.msg(rdata);
 			}, 100);
 		});
 	},
@@ -10030,7 +10039,7 @@ function setPanelSSL() {
 								loading.close();
 								if (rdata.status) {
 									layer.msg(rdata.msg, { icon: 1 });
-									$.get('/system?action=ReWeb', function () {});
+									$.get('/system?action=ReWeb', function () { });
 									setTimeout(function () {
 										window.location.href = (window.location.protocol.indexOf('https') != -1 ? 'http://' : 'https://') + window.location.host + window.location.pathname;
 									}, 1500);
@@ -10042,7 +10051,7 @@ function setPanelSSL() {
 					},
 				},
 			],
-			end: function () {},
+			end: function () { },
 		};
 
 		var _bs = bt.render_form(_data);

@@ -21,7 +21,7 @@
 	"b55e509c697e4cca0e1d160a7806698f": "Hora",
 	"78d811e98514cd165dda532286610fd2": "Mínimo",
 	"ec211f7c20af43e742bf2570c3cb84f9": "Agregar",
-	"c9cc8cce247e49bae79f15173ce97354": "Ahorrar",
+	"c9cc8cce247e49bae79f15173ce97354": "Guardar",
 	"fa535ffb25e1fd20341652f9be21e06e": "Configuración",
 	"63a6a88c066880c5ac42394a22803ca6": "Refrescar",
 	"5d5b78699e57104f2fa03bbdf7b9197b": "Colocar",
@@ -217,5 +217,7 @@
 	"1c6aac0280240c97962b30423f1f852b": "Reconstruir",
 	"91412465ea9169dfd901dd5e7c96dd99": "Subir",
 	"de3c731be5633838089a07179d301d7b": "Jugar",
-	"97e7c9a7d06eac006a28bf05467fcc8b": "Enlace"
+	"97e7c9a7d06eac006a28bf05467fcc8b": "Enlace",
+	"07aacf1e808b064b21d02ef651ec365f": "{0} Hora | {0} Horas",
+	"896ee8d3afe32ff62520cd99f99baaa2": "{0} Día | {0} días"
 }

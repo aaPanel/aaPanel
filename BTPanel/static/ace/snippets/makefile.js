@@ -1,5 +1,13 @@
-define("ace/snippets/makefile",["require","exports","module"],function(e,t,n){"use strict";t.snippetText="snippet ifeq\n	ifeq (${1:cond0},${2:cond1})\n		${3:code}\n	endif\n",t.scope="makefile"});                (function() {
-                    window.require(["ace/snippets/makefile"], function(m) {
+ace.define("ace/snippets/makefile.snippets",["require","exports","module"], function(require, exports, module){module.exports = "snippet ifeq\n\tifeq (${1:cond0},${2:cond1})\n\t\t${3:code}\n\tendif\n";
+
+});
+
+ace.define("ace/snippets/makefile",["require","exports","module","ace/snippets/makefile.snippets"], function(require, exports, module){"use strict";
+exports.snippetText = require("./makefile.snippets");
+exports.scope = "makefile";
+
+});                (function() {
+                    ace.require(["ace/snippets/makefile"], function(m) {
                         if (typeof module == "object" && typeof exports == "object" && module) {
                             module.exports = m;
                         }

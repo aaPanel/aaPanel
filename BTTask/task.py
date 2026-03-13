@@ -12,22 +12,33 @@
 # aa Background Schedule Task
 # ------------------------------
 import gc
-import json
 import os
+import shutil
+import sqlite3
 import subprocess
 import sys
 import threading
 import time
 import traceback
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 
 import psutil
 
+try:
+    import ujson as json
+except ImportError:
+    try:
+        os.system("btpip install ujson")
+        import ujson as json
+    except:
+        import json
+
 sys.path.insert(0, "/www/server/panel/class/")
-from public.hook_import import hook_import
 
 try:
+    from public.hook_import import hook_import
+
     hook_import()
 except:
     pass
@@ -133,16 +144,46 @@ def task_ExecShell(fucn_name: str, **kw):
     _, err = exec_shell(cmd)
     if err:
         raise Exception(err)
-    del err, cmd
+
+
+# 系统监控全局缓存
+_system_task_state = {
+    "table_ensure": False,
+    # {"timestamp": 0, "total_up": 0, "total_down": 0, "up_packets": {}, "down_packets": {}}
+    "last_network_io": {},
+    # {"timestamp": 0, "read_count": 0, "write_count": 0, "read_bytes": 0, "write_bytes": 0, "read_time": 0, "write_time": 0}
+    "last_disk_io": {},
+    # {pid: (create_time, cpu_time, disk_read, disk_write, timestamp)}
+    "last_process_cache": {},
+    # {pid: (inactive_count, last_check_time)}
+    "inactive_process_cache": {},
+    "last_clear_time": 0,
+    "last_cpu_times": None,
+}
 
 
 # 系统监控任务
-# noinspection PyUnusedLocal
 def systemTask():
-    cycle = 60
-    control_conf = f"{BASE_PATH}/data/control.conf"
+    def get_cpu_percent_smooth() -> float:
+        """窗口时间内CPU占用率"""
+        try:
+            current_times = psutil.cpu_times()
+            last_times = _system_task_state.get("last_cpu_times")
+            if not last_times:
+                _system_task_state["last_cpu_times"] = current_times
+                return psutil.cpu_percent(interval=0.1)
+            all_delta = sum(current_times) - sum(last_times)
+            if all_delta == 0.0:
+                return 0.0
+            idle_delta = getattr(current_times, "idle", 0) - getattr(last_times, "idle", 0)
+            cpu_percent = ((all_delta - idle_delta) / all_delta) * 100
+            _system_task_state["last_cpu_times"] = current_times
+            return max(0.0, min(100.0, cpu_percent))
+        except Exception:
+            return psutil.cpu_percent(interval=0.1)
 
     def get_mem_used_percent() -> float:
+        """内存使用率"""
         try:
             mem = psutil.virtual_memory()
             total = mem.total / 1024 / 1024
@@ -154,190 +195,578 @@ def systemTask():
         except Exception:
             return 1.0
 
-    def get_load_average():
-        one, five, fifteen = os.getloadavg()
-        max_v = psutil.cpu_count() * 2
-        return {
-            "one": float(one),
-            "five": float(five),
-            "fifteen": float(fifteen),
-            "max": max_v,
-            "limit": max_v,
-            "safe": max_v * 0.75,
-        }
-
-    def ensure_tables():
-        with db.Sql() as sql:
-            sql = sql.dbfile("system")
-            sql.execute(
-                """CREATE TABLE IF NOT EXISTS `load_average`(
-                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
-                    `pro` REAL, `one` REAL, `five` REAL, `fifteen` REAL, `addtime` INTEGER
-                )""",
-                (),
-            )
-            sql.execute(
-                """CREATE TABLE IF NOT EXISTS `network`(
-                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
-                    `up` INTEGER, `down` INTEGER, `total_up` INTEGER, `total_down` INTEGER,
-                    `down_packets` INTEGER, `up_packets` INTEGER, `addtime` INTEGER
-                )""",
-                (),
-            )
-            sql.execute(
-                """CREATE TABLE IF NOT EXISTS `cpuio`(
-                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
-                    `pro` INTEGER, `mem` INTEGER, `addtime` INTEGER
-                )""",
-                (),
-            )
-            sql.execute(
-                """CREATE TABLE IF NOT EXISTS `diskio`(
-                    `id` INTEGER PRIMARY KEY KEY AUTOINCREMENT,
-                    `read_count` INTEGER, `write_count` INTEGER,
-                    `read_bytes` INTEGER, `write_bytes` INTEGER,
-                    `read_time` INTEGER, `write_time` INTEGER,
-                    `addtime` INTEGER
-                )""",
-                (),
-            )
-
-    def read_keep_days() -> int:
+    # noinspection PyUnusedLocal,PyTypeChecker
+    def get_swap_used_percent() -> float:
+        """
+        获取Swap内存已占用的百分比（返回0.0~100.0，异常时返回100.0）
+        逻辑：Swap使用率 = (已使用Swap / 总Swap容量) * 100%
+        """
         try:
-            day = int(read_file(control_conf) or 30)
-            return day if day >= 1 else 0
+            # 获取Swap内存信息（psutil.swap_memory()返回namedtuple）
+            swap = psutil.swap_memory()
+
+            # Swap总容量（bytes → MB，和物理内存计算单位保持一致）
+            swap_total = swap.total / 1024 / 1024
+            # Swap已使用量（bytes → MB）
+            swap_used = swap.used / 1024 / 1024
+
+            swap_free = swap.free / 1024 / 1024
+
+            # 避免除以0（无Swap分区时）
+            if swap_total == 0:
+                return 0.0, 0, 0, 0  # 无Swap时默认返回100%（或根据需求改0.0）
+
+            # 计算使用率（保留2位小数，确保返回float类型）
+            used_percent = round((swap_used / swap_total) * 100.0, 2)
+
+            # 边界值修正（防止因系统浮点误差导致超过100%）
+            # return min(used_percent, 100.0),swap.total/1024,swap.used/1024,swap.free/1024
+            return min(used_percent, 100.0), swap.total, swap.used, swap.free
+
+        # 捕获所有异常，返回100%（和物理内存函数的异常返回逻辑一致）
         except Exception:
-            return 30
+            return 100.0, 0, 0, 0
 
-    def collect_network(net_up, net_down):
-        net_io = psutil.net_io_counters(pernic=True)
-        up_total = down_total = 0
-        up = down = 0.0
-        down_packets = {}
-        up_packets = {}
+    def get_load_average() -> Tuple[float, float, float, float]:
+        """负载平均"""
+        try:
+            one, five, fifteen = os.getloadavg()
+            max_v = psutil.cpu_count() * 2
+            lpro = round((one / max_v) * 100, 2) if max_v else 0
+            if lpro > 100:
+                lpro = 100
+            return lpro, float(one), float(five), float(fifteen)
+        except Exception:
+            return 0.0, 0.0, 0.0, 0.0
 
-        for nic, counters in net_io.items():
-            sent, recv = counters[:2]
-            if nic not in net_up:
-                net_up[nic] = sent
-                net_down[nic] = recv
+    def get_network_io() -> Optional[dict]:
+        """网络IO"""
+        try:
+            network_io = psutil.net_io_counters(pernic=True)
+            ret = {
+                'total_up': sum(v.bytes_sent for v in network_io.values()),
+                'total_down': sum(v.bytes_recv for v in network_io.values()),
+                'timestamp': time.time(),
+                'down_packets': {k: v.bytes_recv for k, v in network_io.items()},
+                'up_packets': {k: v.bytes_sent for k, v in network_io.items()}
+            }
 
-            up_total += sent
-            down_total += recv
+            last_io = _system_task_state["last_network_io"]
+            if not last_io:
+                _system_task_state["last_network_io"] = ret
+                return None
 
-            dp = round(float((recv - net_down[nic]) / 1024) / cycle, 2)
-            up_p = round(float((sent - net_up[nic]) / 1024) / cycle, 2)
-            down_packets[nic] = dp
-            up_packets[nic] = up_p
-            up += up_p
-            down += dp
+            diff_t = (ret["timestamp"] - last_io.get("timestamp", 0)) * 1024  # 转KB
+            if diff_t <= 0:
+                return None
 
-            net_up[nic] = sent
-            net_down[nic] = recv
+            res = {
+                'up': round((ret['total_up'] - last_io.get('total_up', 0)) / diff_t, 2),
+                'down': round((ret['total_down'] - last_io.get('total_down', 0)) / diff_t, 2),
+                'total_up': ret['total_up'],
+                'total_down': ret['total_down'],
+                'down_packets': {
+                    k: round((v - last_io.get('down_packets', {}).get(k, 0)) / diff_t, 2)
+                    for k, v in ret['down_packets'].items()
+                },
+                'up_packets': {
+                    k: round((v - last_io.get('up_packets', {}).get(k, 0)) / diff_t, 2)
+                    for k, v in ret['up_packets'].items()
+                }
+            }
+            _system_task_state["last_network_io"] = ret
+            return res
+        except Exception:
+            return None
 
-        return {
-            "upTotal": up_total,
-            "downTotal": down_total,
-            "up": up,
-            "down": down,
-            "downPackets": down_packets,
-            "upPackets": up_packets,
+    def get_disk_io() -> Optional[dict]:
+        """磁盘IO"""
+        if not os.path.exists('/proc/diskstats'):
+            return None
+        try:
+            disk_io = psutil.disk_io_counters()
+            if not disk_io:
+                return None
+
+            ret = {
+                'read_count': disk_io.read_count,
+                'write_count': disk_io.write_count,
+                'read_bytes': disk_io.read_bytes,
+                'write_bytes': disk_io.write_bytes,
+                'read_time': disk_io.read_time,
+                'write_time': disk_io.write_time,
+                'timestamp': time.time()
+            }
+
+            last_io = _system_task_state["last_disk_io"]
+            if not last_io:
+                _system_task_state["last_disk_io"] = ret
+                return None
+
+            diff_t = ret["timestamp"] - last_io.get("timestamp", 0)
+            if diff_t <= 0:
+                return None
+
+            res = {
+                'read_count': int((ret["read_count"] - last_io.get("read_count", 0)) / diff_t),
+                'write_count': int((ret["write_count"] - last_io.get("write_count", 0)) / diff_t),
+                'read_bytes': int((ret["read_bytes"] - last_io.get("read_bytes", 0)) / diff_t),
+                'write_bytes': int((ret["write_bytes"] - last_io.get("write_bytes", 0)) / diff_t),
+                'read_time': int((ret["read_time"] - last_io.get("read_time", 0)) / diff_t),
+                'write_time': int((ret["write_time"] - last_io.get("write_time", 0)) / diff_t),
+            }
+            _system_task_state["last_disk_io"] = ret
+            return res
+        except Exception:
+            return None
+
+    _XSS_TRANS = str.maketrans({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;'
+    })
+
+    def xss_encode(s: str) -> str:
+        """XSS"""
+        if not isinstance(s, str):
+            s = str(s)
+        if not any(c in s for c in '&<>"\''):
+            return s
+        return s.translate(_XSS_TRANS)
+
+    def cut_top_list(process_list, *sort_key, top_num=5) -> list:
+        # """最小堆取前N"""
+        # import heapq
+        # if not process_list or not sort_key:
+        #     return []
+        # try:
+        #     if len(sort_key) == 1:
+        #         return heapq.nlargest(
+        #             top_num, process_list, key=lambda x: x.get(sort_key[0], 0)
+        #         )
+        #     else:
+        #         return heapq.nlargest(
+        #             top_num, process_list, key=lambda x: tuple(x.get(k, 0) for k in sort_key)
+        #         )
+        # except (TypeError, ValueError):
+        #     return []
+        """前N个"""
+        if not process_list or not sort_key:
+            return []
+        tops = sorted(
+            process_list, key=lambda x: tuple(x.get(k, 0) for k in sort_key), reverse=True
+        )
+        return tops[:top_num]
+
+    def get_process_list() -> list:
+        """获取进程列表"""
+        SKIP_NAMES = {
+            'edac-poller', 'devfreq_wq', 'watchdogd', 'kthrotld', 'acpi_thermal_pm', 'charger_manager',
+            'kthreadd', 'rcu_gp', 'rcu_par_gp', 'rcu_sched', 'migration/0', 'cpuhp/0', 'kdevtmpfs',
+            'netns', 'oom_reaper', 'writeback', 'crypto', 'kintegrityd', 'kblockd', 'ata_sff',
         }
 
-    diskstats_exists = os.path.exists("/proc/diskstats")
-    diskio_prev = None
+        try:
+            pids = psutil.pids()
+            current_pid = os.getpid()
+            timer = getattr(time, "monotonic", time.time)
+            cpu_num = psutil.cpu_count() or 1
+            process_list = []
+            new_cache = {}
+            inactive_cache = _system_task_state["inactive_process_cache"]
+            for pid in pids:
+                if pid == current_pid:
+                    continue
+                if pid < 10:  # 核心进程
+                    continue
+                if pid in inactive_cache:
+                    inactive_count, last_check = inactive_cache[pid]
+                    # 5分钟重新检查一次
+                    if time.time() - last_check < 300 and inactive_count >= 3:
+                        inactive_cache[pid] = (inactive_count, time.time())  # 结合后续10分钟清理逻辑
+                        continue
+
+                try:
+                    p = psutil.Process(pid)
+                    if p.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD):  # 休眠/僵尸
+                        continue
+                    process_name = None
+                    try:
+                        process_name = p.name()
+                        if process_name in SKIP_NAMES:
+                            continue
+                    except:
+                        pass
+
+                    with p.oneshot():
+                        create_time = p.create_time()
+                        if not process_name:
+                            try:
+                                process_name = p.name()
+                            except:
+                                process_name = "unknown"
+                        last_cache = _system_task_state["last_process_cache"].get(pid)
+                        if last_cache and last_cache[0] != create_time:  # 进程应该被重启了
+                            last_cache = None
+                            if pid in inactive_cache:
+                                del inactive_cache[pid]
+
+                        p_cpu_time = p.cpu_times()
+                        cpu_time = p_cpu_time.system + p_cpu_time.user
+                        io_counters = p.io_counters()
+                        memory_info = p.memory_info()
+                        current_time = timer()
+                        # 刷新缓存
+                        new_cache[pid] = (
+                            create_time, cpu_time, io_counters.read_bytes, io_counters.write_bytes, current_time
+                        )
+                        if not last_cache:  # 初次处理的进程
+                            continue
+                        diff_t = current_time - last_cache[4]
+                        if diff_t <= 0:
+                            continue
+
+                        cpu_percent = max(round((cpu_time - last_cache[1]) * 100 / diff_t / cpu_num, 2), 0)
+                        disk_read = max(0, int((io_counters.read_bytes - last_cache[2]) / diff_t))
+                        disk_write = max(0, int((io_counters.write_bytes - last_cache[3]) / diff_t))
+                        disk_total = disk_read + disk_write
+
+                        if cpu_percent == 0 and disk_total == 0:
+                            if pid in inactive_cache:
+                                inactive_cache[pid] = (inactive_cache[pid][0] + 1, time.time())
+                            else:
+                                inactive_cache[pid] = (1, time.time())
+                            continue
+
+                        if pid in inactive_cache:
+                            del inactive_cache[pid]
+
+                        # swap占用
+                        try:
+                            swap = p.memory_full_info().swap
+                        except:
+                            swap = 0
+                        # connect_count = len(
+                        #     p.net_connections() if hasattr(p, "net_connections") else p.connections()  # noqa
+                        # )
+                        process_info = {
+                            'pid': pid,
+                            'name': process_name,
+                            'username': p.username(),
+                            'cpu_percent': cpu_percent,
+                            'memory': memory_info.rss,
+                            'swap': swap,
+                            'disk_read': disk_read,
+                            'disk_write': disk_write,
+                            'disk_total': disk_total or 0,
+                            'cmdline': ' '.join(filter(lambda x: x, p.cmdline()))[:500],
+                            'create_time': create_time,
+                            'connect_count': 0,  # future
+                            'net_total': 0,  # future
+                            'up': 0,  # future
+                            'down': 0,  # future
+                            'up_package': 0,  # future
+                            'down_package': 0,  # future
+                        }
+                        # process_info["net_total"] = process_info["up"] + process_info["down"]
+                        process_list.append(process_info)
+                except Exception:
+                    continue
+
+            current_time = time.time()
+            inactive_cache_copy = dict(inactive_cache)
+            for pid, (count, last_check) in inactive_cache_copy.items():
+                remove_flag = False
+                if current_time - last_check > 600:  # 超过 10 分钟
+                    remove_flag = True
+                else:  # 进程残留, pid被复用
+                    try:
+                        current_create = psutil.Process(pid).create_time()
+                        exist_create = None
+                        if pid in _system_task_state["last_process_cache"]:
+                            exist_create = _system_task_state["last_process_cache"][pid][0]
+                        elif pid in new_cache:
+                            exist_create = new_cache[pid][0]
+                        if exist_create and current_create != exist_create:
+                            remove_flag = True  # pid被复用
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                        remove_flag = True
+
+                if remove_flag and pid in inactive_cache:
+                    del inactive_cache[pid]
+
+            _system_task_state["last_process_cache"] = new_cache
+            _system_task_state["inactive_process_cache"] = inactive_cache
+            return process_list
+
+        except Exception:
+            return []
+
+    # 暂无用
+    # def start_process_net_total(self):
+    #     # 进程流量监控，如果文件：/www/server/panel/data/is_net_task.pl 或 /www/server/panel/data/control.conf不存在，则不监控进程流量
+    #     if not (os.path.isfile(self.proc_net_service) and os.path.isfile(self.base_service)):
+    #         return
+    #
+    #     def process_net_total():
+    #         class_path = '{}/class'.format(BASE_PATH)
+    #         if class_path not in sys.path:
+    #             sys.path.insert(0, class_path)
+    #         import process_task
+    #         process_task.process_network_total().start()
+    #
+    #     import threading
+    #     th = threading.Thread(target=process_net_total, daemon=True)
+    #     th.start()
+    def ensure_table(db_file: str) -> None:
+        """表, 字段处理"""
+        if not os.path.isfile(db_file):
+            os.makedirs(os.path.dirname(db_file), exist_ok=True)
+            open(db_file, 'w').close()
+        conn = None
+        cursor = None
+        init_sql = '''
+CREATE TABLE IF NOT EXISTS `cpuio` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `pro` INTEGER, `mem` INTEGER,
+    `swap_percent` INTEGER, `swap_total` INTEGER, `swap_used` INTEGER, `swap_free` INTEGER,
+    `addtime` INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS `network` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `up` INTEGER, `down` INTEGER, `total_up` INTEGER, `total_down` INTEGER,
+    `down_packets` INTEGER, `up_packets` INTEGER, `addtime` INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS `diskio` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `read_count` INTEGER, `write_count` INTEGER,`read_bytes` INTEGER, `write_bytes` INTEGER,
+    `read_time` INTEGER, `write_time` INTEGER, `addtime` INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS `load_average` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `pro` REAL, `one` REAL, `five` REAL, `fifteen` REAL, `addtime` INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS `process_top_list` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `cpu_top` REAL, `memory_top` REAL, `disk_top` REAL, `net_top` REAL, `all_top` REAL,
+    `swap_top` REAL,
+    `addtime` INTEGER
+);
+
+-- 索引
+CREATE INDEX IF NOT EXISTS idx_cpuio_addtime ON cpuio (addtime);
+CREATE INDEX IF NOT EXISTS idx_network_addtime ON network (addtime);
+CREATE INDEX IF NOT EXISTS idx_diskio_addtime ON diskio (addtime);
+CREATE INDEX IF NOT EXISTS idx_load_average_addtime ON load_average (addtime);
+CREATE INDEX IF NOT EXISTS idx_process_top_list_addtime ON process_top_list (addtime);
+'''
+        try:
+            conn = sqlite3.connect(db_file)
+            try:
+                conn.executescript(init_sql)
+                conn.commit()
+            except Exception as e:
+                logger.error("Failed to initialize system.db : {}".format(e))
+
+            # 检测cpuio表是否存在swap字段
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    "SELECT swap_total, swap_percent, swap_used, swap_free FROM cpuio ORDER BY id DESC LIMIT 1"
+                )
+            except sqlite3.OperationalError:
+                # swap字段不存在
+                alter_sql = '''
+    ALTER TABLE cpuio ADD COLUMN swap_percent INTEGER DEFAULT 0;
+    ALTER TABLE cpuio ADD COLUMN swap_total INTEGER DEFAULT 0;
+    ALTER TABLE cpuio ADD COLUMN swap_used INTEGER DEFAULT 0;
+    ALTER TABLE cpuio ADD COLUMN swap_free INTEGER DEFAULT 0;
+    '''
+                try:
+                    conn.executescript(alter_sql)
+                    conn.commit()
+                except sqlite3.OperationalError:
+                    pass
+
+            # 检测process_top_list表是否存在swap_top字段
+            try:
+                cursor.execute("SELECT swap_top FROM process_top_list ORDER BY id DESC LIMIT 1")
+            except sqlite3.OperationalError:
+                try:
+                    conn.execute("ALTER TABLE process_top_list ADD COLUMN swap_top REAL DEFAULT []")
+                    conn.commit()
+                except sqlite3.OperationalError:
+                    pass
+            _system_task_state["table_ensure"] = True
+        except Exception as e:
+            logger.error("Failed to connect to system.db : {}".format(e))
+            _system_task_state["table_ensure"] = False
+        finally:
+            if cursor: cursor.close()
+            if conn: conn.close()
+
+    def clear_expire_data(conn: sqlite3.Connection) -> None:
+        if not _system_task_state.get("last_clear_time"):
+            return
+        now = int(time.time())
+        # 检查是否需要清理（每小时一次）
+        if now - _system_task_state.get("last_clear_time", 0) < 3600:
+            return
+        cur = None
+        try:
+            cur = conn.cursor()
+            deltime = now - (keep_days * 86400)
+            cur.execute("DELETE FROM cpuio WHERE addtime < ?", (deltime,))
+            cur.execute("DELETE FROM network WHERE addtime < ?", (deltime,))
+            cur.execute("DELETE FROM diskio WHERE addtime < ?", (deltime,))
+            cur.execute("DELETE FROM load_average WHERE addtime < ?", (deltime,))
+            cur.execute("DELETE FROM process_top_list WHERE addtime < ?", (deltime,))
+            conn.commit()
+            _system_task_state["last_clear_time"] = now
+        except:
+            pass
+        finally:
+            if cur: cur.close()
+
+    control_conf = f"{BASE_PATH}/data/control.conf"
+    db_file = f"{BASE_PATH}/data/system.db"
+
+    # 表结构检查
+    if not _system_task_state["table_ensure"]:
+        ensure_table(db_file)
+
+    # 是否启用监控, 不存在时为不开启监控, 存在时为监控天数
+    if not os.path.exists(control_conf):
+        return
 
     try:
-        ensure_tables()
-        import process_task
-        proc_task_obj = process_task.process_task()
-        net_up, net_down = {}, {}
-        while True:
-            if not os.path.exists(control_conf):
-                time.sleep(10)
-                continue
-            keep_days = read_keep_days()
-            if keep_days < 1:
-                time.sleep(10)
-                continue
-            addtime = int(time.time())
-            deltime = addtime - (keep_days * 86400)
-            try:
-                cpu_used = proc_task_obj.get_monitor_list(addtime)
-                mem_used = get_mem_used_percent()
-                network_info = collect_network(net_up, net_down)
-                disk_info = None
-                disk_ios_ok = True
-                if diskstats_exists:
-                    try:
-                        diskio_now = psutil.disk_io_counters()
-                        if diskio_prev is None:
-                            diskio_prev = diskio_now
-                        disk_info = {
-                            "read_count": int((diskio_now.read_count - diskio_prev.read_count) / cycle),
-                            "write_count": int((diskio_now.write_count - diskio_prev.write_count) / cycle),
-                            "read_bytes": int((diskio_now.read_bytes - diskio_prev.read_bytes) / cycle),
-                            "write_bytes": int((diskio_now.write_bytes - diskio_prev.write_bytes) / cycle),
-                            "read_time": int((diskio_now.read_time - diskio_prev.read_time) / cycle),
-                            "write_time": int((diskio_now.write_time - diskio_prev.write_time) / cycle),
-                        }
-                        diskio_prev = diskio_now
-                    except Exception:
-                        disk_ios_ok = False
-                load_average = get_load_average()
-                lpro = round((load_average["one"] / load_average["max"]) * 100, 2) if load_average["max"] else 0
-                if lpro > 100:
-                    lpro = 100
-
-                with db.Sql().dbfile("system") as sql:
-                    sql.table("cpuio").add("pro,mem,addtime", (cpu_used, mem_used, addtime))
-                    sql.table("cpuio").where("addtime<?", (deltime,)).delete()
-
-                    sql.table("network").add(
-                        "up,down,total_up,total_down,down_packets,up_packets,addtime",
-                        (
-                            network_info["up"],
-                            network_info["down"],
-                            network_info["upTotal"],
-                            network_info["downTotal"],
-                            json.dumps(network_info["downPackets"]),
-                            json.dumps(network_info["upPackets"]),
-                            addtime,
-                        ),
-                    )
-                    sql.table("network").where("addtime<?", (deltime,)).delete()
-
-                    if diskstats_exists and disk_ios_ok and disk_info:
-                        sql.table("diskio").add(
-                            "read_count,write_count,read_bytes,write_bytes,read_time,write_time,addtime",
-                            (
-                                disk_info["read_count"],
-                                disk_info["write_count"],
-                                disk_info["read_bytes"],
-                                disk_info["write_bytes"],
-                                disk_info["read_time"],
-                                disk_info["write_time"],
-                                addtime,
-                            ),
-                        )
-                        sql.table("diskio").where("addtime<?", (deltime,)).delete()
-
-                    sql.table("load_average").add(
-                        "pro,one,five,fifteen,addtime",
-                        (lpro, load_average["one"], load_average["five"], load_average["fifteen"], addtime),
-                    )
-                    sql.table("load_average").where("addtime<?", (deltime,)).delete()
-            except Exception:
-                import traceback
-                logger.error(traceback.format_exc())
-            finally:
-                del cpu_used, mem_used, network_info, disk_info, load_average
-                gc.collect()
-            time.sleep(cycle)
+        keep_days = int(read_file(control_conf) or 30)
+        if keep_days < 1:
+            return
     except Exception:
-        import traceback
-        logger.error(traceback.format_exc())
+        keep_days = 30
+    conn = None
+    cursor = None
+
+    try:
+        conn = sqlite3.connect(db_file, timeout=3)
+        cursor = conn.cursor()
+        cpu_used = get_cpu_percent_smooth()
+        mem_used = get_mem_used_percent()
+        swap_percent, swap_total, swap_used, swap_free = get_swap_used_percent()
+        lpro, one, five, fifteen = get_load_average()
+        network_io = get_network_io()
+        disk_io = get_disk_io()
+        process_list = get_process_list()
+        proc_net_service = f"{BASE_PATH}/data/is_net_task.pl"
+        addtime = int(time.time())
+
+        # cpu, swap
+        cursor.execute(
+            "INSERT INTO cpuio (pro, mem, swap_percent, swap_total, swap_used, swap_free, addtime) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (cpu_used, mem_used, swap_percent, swap_total, swap_used, swap_free, addtime)
+        )
+        # load
+        cursor.execute(
+            "INSERT INTO load_average (pro, one, five, fifteen, addtime) VALUES (?, ?, ?, ?, ?)",
+            (lpro, one, five, fifteen, addtime)
+        )
+        # network io
+        if network_io:
+            cursor.execute(
+                "INSERT INTO network (up, down, total_up, total_down, down_packets, up_packets, addtime) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    network_io['up'], network_io['down'],
+                    network_io['total_up'], network_io['total_down'],
+                    json.dumps(network_io['down_packets']),
+                    json.dumps(network_io['up_packets']),
+                    addtime
+                )
+            )
+
+        # disk io
+        if disk_io:
+            cursor.execute(
+                "INSERT INTO diskio (read_count, write_count, read_bytes, write_bytes, read_time, write_time, addtime) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    disk_io['read_count'], disk_io['write_count'],
+                    disk_io['read_bytes'], disk_io['write_bytes'],
+                    disk_io['read_time'], disk_io['write_time'],
+                    addtime
+                )
+            )
+
+        # process top list
+        if process_list:
+            all_top_list = cut_top_list(
+                process_list, 'cpu_percent', 'disk_total', 'memory', 'net_total', top_num=5
+            )
+            cpu_top_list = cut_top_list(process_list, 'cpu_percent', top_num=5)
+            disk_top_list = cut_top_list(process_list, 'disk_total', top_num=5)
+            memory_top_list = cut_top_list(process_list, 'memory', top_num=5)
+            swap_top_list = cut_top_list(process_list, 'swap', top_num=5)
+            # net_top_list = all_top_list
+
+            if os.path.isfile(proc_net_service):  # 进程流量监控, 暂无用
+                # net_top_list = top_lists['net_top']
+                pass
+
+            all_top = json.dumps([(
+                p['cpu_percent'], p['disk_read'], p['disk_write'], p['memory'], p['up'], p['down'], p['pid'],
+                xss_encode(p['name']), xss_encode(p['cmdline']), xss_encode(p['username']),
+                p['create_time']
+            ) for p in all_top_list])
+
+            cpu_top = json.dumps([(
+                p['cpu_percent'], p['pid'], xss_encode(p['name']), xss_encode(p['cmdline']),
+                xss_encode(p['username']), p['create_time']
+            ) for p in cpu_top_list])
+
+            disk_top = json.dumps([(
+                p['disk_total'], p['disk_read'], p['disk_write'], p['pid'], xss_encode(p['name']),
+                xss_encode(p['cmdline']), xss_encode(p['username']), p['create_time']
+            ) for p in disk_top_list])
+
+            # net_top = json.dumps([(
+            #     p['net_total'], p['up'], p['down'], p['connect_count'], p['up_package'] + p['down_package'],
+            #     p['pid'], xss_encode(p['name']), xss_encode(p['cmdline']), xss_encode(p['username']),
+            #     p['create_time']
+            # ) for p in net_top_list])
+            net_top = None
+
+            memory_top = json.dumps([(
+                p['memory'], p['pid'], xss_encode(p['name']), xss_encode(p['cmdline']),
+                xss_encode(p['username']), p['create_time']
+            ) for p in memory_top_list])
+
+            swap_top = json.dumps([(
+                p['swap'], p['pid'], xss_encode(p['name']), xss_encode(p['cmdline']),
+                xss_encode(p['username']), p['create_time']
+            ) for p in swap_top_list])
+
+            cursor.execute(
+                "INSERT INTO process_top_list (all_top, cpu_top, disk_top, net_top, memory_top, swap_top, addtime) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (all_top, cpu_top, disk_top, net_top, memory_top, swap_top, addtime)
+            )
+
+        conn.commit()
+        # every 1h check clear old data
+        clear_expire_data(conn)
+    except sqlite3.OperationalError as e:
+        logger.error(f"SQLite OperationalError in systemTask: {e}")
+        ensure_table(db_file)
+        _system_task_state["table_ensure"] = False
+    except Exception:
+        logger.error(f"systemTask error: {traceback.format_exc()}")
     finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
         gc.collect()
 
 
@@ -353,6 +782,11 @@ def daemon_service():
         del obj
     finally:
         gc.collect()
+
+
+# 项目守护
+def project_daemon_service():
+    task_ExecShell("project_daemon_service")
 
 
 # 重启面板服务
@@ -382,11 +816,6 @@ def send_mail_time():
     exec_shell("{} /www/server/panel/script/mail_task.py".format(PYTHON_BIN))
 
 
-# 面板消息提醒
-def check_panel_msg():
-    exec_shell("{} /www/server/panel/script/check_msg.py".format(PYTHON_BIN))
-
-
 # 面板推送消息
 def push_msg():
     def _read_file(file_path: str) -> Optional[list]:
@@ -413,8 +842,7 @@ def push_msg():
         return
     if not _read_file(task_path):
         return
-    exec_shell("{} /www/server/panel/script/push_msg.py".format(PYTHON_BIN))
-
+    task_ExecShell("push_msg")
 
 
 # 检测面板授权
@@ -594,6 +1022,116 @@ def multi_web_server_daemon():
     task_ExecShell("multi_web_server_daemon")
 
 
+def parse_soft_name_of_version(name):
+    """
+        @name 获取软件名称和版本
+        @param name<string> 软件名称
+        @return tuple(string, string) 返回软件名称和版本
+    """
+    if name.find('Docker') != -1:
+        return 'docker', '1.0'
+    return_default = ('', '')
+    l, r = name.find('['), name.find(']')
+    if l == -1 or r == -1 or l > r:
+        return return_default
+    # 去除括号只保留括号中间的软件名称和版本
+    if name[l + 1:r].count("-") == 0:
+        return return_default
+    soft_name, soft_version = name[l + 1:r].split('-')[:2]
+    if soft_name == 'php':
+        soft_version = soft_version.replace('.', '')
+    return soft_name, soft_version
+
+
+def check_install_status(name: str):
+    """
+    @name 检查软件是否安装成功
+    @param name<string> 软件名称
+    @return tuple(bool, string) 返回是否安装成功和安装信息
+    """
+    return_default = (1, 'Installation successful')
+    try:
+        # 获取安装检查配置
+        install_config = json.loads(read_file("{}/config/install_check.json".format(BASE_PATH)))
+    except:
+        return return_default
+    try:
+        # 获取软件名称和版本
+        soft_name, soft_version = parse_soft_name_of_version(name)
+        if not soft_name or not soft_version:
+            return return_default
+
+        if soft_name not in install_config:
+            return return_default
+
+        if os.path.exists("{}/install/{}_not_support.pl".format(BASE_PATH, soft_name)):
+            return 0, 'Not compatible with this system! Please click on the details to explain!'
+
+        if os.path.exists("{}/install/{}_mem_kill.pl".format(BASE_PATH, soft_name)):
+            return 0, 'Insufficient memory installation exception! Please click on the details to explain!'
+
+        soft_config = install_config[soft_name]
+
+        # 取计算机名
+        def get_hostname():
+            try:
+                import socket
+                return socket.gethostname()
+            except:
+                return 'localhost.localdomain'
+
+        # 替换soft_config中所有变量
+        def replace_all(dat: str):
+            if not dat:
+                return dat
+            if dat.find('{') == -1:
+                return dat
+            # 替换安装路径, 替换版本号
+            dat = dat.replace('{SetupPath}', '/www/server').replace('{Version}', soft_version)
+            # 替换主机名
+            if dat.find("{Host") != -1:
+                host_name = get_hostname()
+                host = host_name.split('.')[0]
+                dat = dat.replace("{Hostname}", host_name)
+                dat = dat.replace("{Host}", host)
+            return dat
+
+        # 检查文件是否存在
+        if 'files_exists' in soft_config:
+            for f_name in soft_config['files_exists']:
+                filename = replace_all(f_name)
+                if not os.path.exists(filename):
+                    return 0, 'Installation failed, file does not exist:{}'.format(filename)
+
+        # 检查pid文件是否有效
+        if 'pid' in soft_config and soft_config['pid']:
+            pid_file = replace_all(soft_config['pid'])
+            if not os.path.exists(pid_file):
+                return 0, 'Startup failed, PID file does not exist:{}'.format(pid_file)
+            pid = read_file(pid_file)
+            if not pid:
+                return 0, 'Startup failed, PID file does not exist:{}'.format(pid_file)
+            proc_file = '/proc/{}/cmdline'.format(pid.strip())
+            if not os.path.exists(proc_file):
+                return 0, 'Startup failed, PID file is empty: {}({}) process does not exist'.format(pid_file, pid)
+
+        # 执行命令检查
+        if 'cmd' in soft_config:
+            for cmd in soft_config['cmd']:
+                p = subprocess.Popen(
+                    replace_all(cmd['exec']), shell=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
+                p.wait()
+                res = p.stdout.read() + "\n" + p.stderr.read()
+                if res.find(replace_all(cmd['success'])) == -1:
+                    return 0, '[{}] Abnormal service startup status'.format(soft_name)
+    except:
+        pass
+
+    return return_default
+
+
 def soft_task():
     # 执行面板soft corn之类的安装执行任务, from task.py -> def startTask():
     def ExecShell(cmdstring, cwd=None, shell=True, symbol='&>'):
@@ -614,25 +1152,92 @@ def soft_task():
         except:
             return None
 
+    # def TaskStart(value: dict, start: int = None, time_out: int = None):
+    #     """执行安装任务, 并检测是否已经在执行或超时"""
+    #     def is_time_out(pid: int) -> bool:
+    #         res = int(time.time()) - start > time_out if time_out else False
+    #         if res:
+    #             try:
+    #                 p = psutil.Process(pid)
+    #                 child = p.children(recursive=True)
+    #                 for c in child:
+    #                     try: c.kill()
+    #                     except: continue
+    #                 p.kill()
+    #             except Exception: pass
+    #         return res
+    #
+    #     start = int(time.time()) if not start else start
+    #     try:
+    #         output, _ = exec_shell(f"pgrep -f \"{value['execstr'] + '&>' + exlogPath}\"")
+    #         pids = output.strip().split()
+    #         if pids:
+    #             target_pid = int(pids[0])
+    #             sql.table('tasks').where("id=?", (value['id'],)).save('status', (Running,))
+    #             while not is_time_out(target_pid):
+    #                 try:
+    #                     os.kill(target_pid, 0)
+    #                     time.sleep(1)  # 残留阻塞
+    #                 except ProcessLookupError: break
+    #                 except Exception: break
+    #             if is_time_out(target_pid):
+    #                 raise Exception
+    #         raise Exception
+    #     except Exception:
+    #         sql.table('tasks').where("id=?", (value['id'],)).save('status,start', (Running, start))
+    #         ExecShell(value['execstr'])
+
     tip_file = "/dev/shm/.panelTask.pl"
+    panel_log_path = "/www/server/panel/logs/installed/"
+    if not os.path.exists(panel_log_path):
+        os.mkdir(panel_log_path)
+        os.chmod(panel_log_path, 0o600)
+
+    Waitting = "0"  # 等待
+    Running = "-1"  # 执行中
+    Finished = "1"  # 完成
     try:
         if os.path.exists(isTask):
             with db.Sql() as sql:
-                sql.table('tasks').where(
-                    "status=?", ('-1',)).setField('status', '0')
-                taskArr = sql.table('tasks').where("status=?", ('0',)).field('id,type,execstr').order("id asc").select()
+                # 检测task表是否存在install_status,message字段
+                field = 'id,type,execstr,name,install_status,message'
+                check_result = sql.table('tasks').order("id desc").field(field).select()
+                if type(check_result) == str:
+                    sql.table('tasks').execute("ALTER TABLE 'tasks' ADD 'install_status' INTEGER DEFAULT 1", ())
+                    sql.table('tasks').execute("ALTER TABLE 'tasks' ADD 'message' TEXT DEFAULT ''", ())
+
+                sql.table('tasks').where("status=?", (Running,)).setField('status', Waitting)
+                taskArr = sql.table('tasks').where("status=?", (Waitting,)).field('id,type,execstr,name').order(
+                    "id asc"
+                ).select()
                 for value in taskArr:
-                    start = int(time.time())
+                    if value['type'] != 'execshell':
+                        continue
                     if not sql.table('tasks').where("id=?", (value['id'],)).count():
                         write_file(tip_file, str(int(time.time())))
                         continue
-                    sql.table('tasks').where("id=?", (value['id'],)).save('status,start', ('-1', start))
-                    if value['type'] != 'execshell':
-                        continue
+
+                    start = int(time.time())
+                    # TaskStart(value, start=start, time_out=3600)
+                    sql.table('tasks').where("id=?", (value['id'],)).save('status,start', (Running, start))
                     ExecShell(value['execstr'])
+
+                    # 保存安装日志
+                    target_log_file = '{}/task_{}.log'.format(panel_log_path, value['id'])
+                    shutil.copy(exlogPath, target_log_file)
+                    # 检查软件是否安装成功
                     end = int(time.time())
-                    sql.table('tasks').where("id=?", (value['id'],)).save('status,end', ('1', end))
-                    if sql.table('tasks').where("status=?", ('0',)).count() < 1:
+                    try:
+                        install_status, install_msg = check_install_status(value['name'])
+                    except Exception:
+                        install_status = 1
+                        install_msg = ""
+
+                    sql.table('tasks').where("id=?", (value['id'],)).save(
+                        'status,end,install_status,message',
+                        (Finished, end, install_status, install_msg)
+                    )
+                    if sql.table('tasks').where("status=?", (Waitting,)).count() < 1:
                         if os.path.exists(isTask):
                             os.remove(isTask)
         write_file(tip_file, str(int(time.time())))
@@ -643,6 +1248,7 @@ def soft_task():
 # 预安装网站监控报表
 def check_site_monitor():
     task_ExecShell("check_site_monitor")
+
 
 # 节点监控
 def node_monitor():
@@ -723,7 +1329,8 @@ TASKS = [
     # <核心任务> 服务守护
     {"func": daemon_service, "interval": 10, "is_core": True},
     # <核心任务> 原系统监控
-    {"func": systemTask, "is_core": True},  # 每1分钟系统监控任务, 常驻, 内置间隔
+    {"func": systemTask, "interval": 60, "is_core": True},  # 每1分钟系统监控任务
+    {"func": project_daemon_service, "interval": 120, "is_core": True},  # 每120秒项目守护
 
     # ================================ 分割线 ===============================
     # <普通任务>
@@ -734,12 +1341,11 @@ TASKS = [
     {"func": multi_web_server_daemon, "interval": 300},  # 每5分钟多服务守护任务
     {"func": check502Task, "interval": 60 * 10},  # 每10分钟 502检查(夹杂若干任务)
     {"func": check_site_monitor, "interval": 60 * 10},  # 每10分钟检查站点安装监控
-    {"func": node_monitor, "interval": 60 },  # 每1分钟节点监控任务
-    {"func": node_monitor_check, "interval": 60*60*24*30 },  # 每月节点监控检测任务
+    {"func": node_monitor, "interval": 60},  # 每1分钟节点监控任务
+    {"func": node_monitor_check, "interval": 60 * 60 * 24 * 30},  # 每月节点监控检测任务
     {"func": update_waf_config, "interval": 60 * 20},  # 每隔20分钟更新一次waf报表数据
     {"func": update_monitor_requests, "interval": 60 * 20},  # 每隔20分钟更新一次网站报表数据
 
-    {"func": check_panel_msg, "interval": 3600},  # 每1小时面板消息提醒
     {"func": find_favicons, "interval": 43200},  # 每12小时找favicons
     {"func": domain_ssl_service, "interval": 3600},  # 每6小时进行域名SSL服务(内置时间标记, 可提前检查)
     {"func": malicious_file_scanning, "interval": 60 * 60 * 6},  # 每每6小时进行恶意文件扫描
@@ -817,7 +1423,7 @@ def main(max_workers: int = None):
     time.sleep(5)
     task_version_part()
     # =================== Start ===========================
-    sb = SimpleBrain(cpu_max=30.0, workers=max_workers)
+    sb = SimpleBrain(cpu_max=20.0, workers=max_workers)
     try:
         # core tasks
         thread_register(brain=sb, is_core=True)

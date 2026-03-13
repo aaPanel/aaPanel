@@ -639,6 +639,30 @@
 		"All": {
 			"searchPlaceholder": "Пошук налаштувань",
 			"emptyResult": "Результати пошуку не знайдено"
+		},
+		"Theme": {
+			"Title": "Theme Settings",
+			"Style": "Theme Style",
+			"Auto": "Auto",
+			"Light": "Light",
+			"Dark": "Dark",
+			"StyleDesc": "Select the interface theme style, affecting the overall interface light and dark style",
+			"Mode": "Theme Mode",
+			"NewVersion": "New Version",
+			"OldVersion": "Old Version",
+			"ModeDesc": "Select the interface theme style, affecting the overall interface visual style. Note: Switching will affect some set styles",
+			"Color": "System Theme Color",
+			"ForestGreen": "Forest Green",
+			"EmeraldGreen": "Emerald Green",
+			"Violet": "Violet",
+			"SkyBlue": "Sky Blue",
+			"CherryPink": "Cherry Pink",
+			"DarkGold": "Dark Gold",
+			"Custom": "Custom",
+			"ColorDesc": "Select a preset system theme color scheme or custom color, affecting the overall interface tone",
+			"RestoreDefault": "Restore Default",
+			"GoldNotSupportedDefault": "Dark gold theme is not supported in auto/light mode, automatically switched to default color",
+			"GoldNotSupportedDark": "Dark gold theme is not supported in auto/light mode, automatically switched to dark mode"
 		}
 	}
 }

@@ -6,7 +6,7 @@
 # -------------------------------------------------------------------
 # Author: wzz <wzz@aapanel.com>
 # -------------------------------------------------------------------
-
+import time
 # ------------------------------
 # Docker模型
 # ------------------------------
@@ -46,15 +46,23 @@ def docker_client(url="unix:///var/run/docker.sock"):
     try:
         import docker
     except:
-        public.ExecShell("btpip install docker")
+        public.ExecShell("btpip install --upgrade docker")
         import docker
 
     try:
         client = docker.DockerClient(base_url=url)
         if client:
             return client
-        return False
-    except:
+    except Exception as e:
+        #如果Docker服务是Active状态但连接失败，说明SDK版本不兼容，尝试自动升级
+        if public.ExecShell("systemctl is-active docker")[0].strip() == "active":
+            public.ExecShell("btpip install docker==7.1.0")
+            # 留出升级时间
+            time.sleep(5)
+
+            public.restart_panel()
+        
+        public.print_log(public.get_error_info())
         return False
 
 

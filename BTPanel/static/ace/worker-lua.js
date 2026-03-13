@@ -1,1 +1,3519 @@
-"no use strict";!function(e){function t(e,t){var n=e,r="";while(n){var i=t[n];if(typeof i=="string")return i+r;if(i)return i.location.replace(/\/*$/,"/")+(r||i.main||i.name);if(i===!1)return"";var s=n.lastIndexOf("/");if(s===-1)break;r=n.substr(s)+r,n=n.slice(0,s)}return e}if(typeof e.window!="undefined"&&e.document)return;if(e.require&&e.define)return;e.console||(e.console=function(){var e=Array.prototype.slice.call(arguments,0);postMessage({type:"log",data:e})},e.console.error=e.console.warn=e.console.log=e.console.trace=e.console),e.window=e,e.ace=e,e.onerror=function(e,t,n,r,i){postMessage({type:"error",data:{message:e,data:i.data,file:t,line:n,col:r,stack:i.stack}})},e.normalizeModule=function(t,n){if(n.indexOf("!")!==-1){var r=n.split("!");return e.normalizeModule(t,r[0])+"!"+e.normalizeModule(t,r[1])}if(n.charAt(0)=="."){var i=t.split("/").slice(0,-1).join("/");n=(i?i+"/":"")+n;while(n.indexOf(".")!==-1&&s!=n){var s=n;n=n.replace(/^\.\//,"").replace(/\/\.\//,"/").replace(/[^\/]+\/\.\.\//,"")}}return n},e.require=function(r,i){i||(i=r,r=null);if(!i.charAt)throw new Error("worker.js require() accepts only (parentId, id) as arguments");i=e.normalizeModule(r,i);var s=e.require.modules[i];if(s)return s.initialized||(s.initialized=!0,s.exports=s.factory().exports),s.exports;if(!e.require.tlns)return console.log("unable to load "+i);var o=t(i,e.require.tlns);return o.slice(-3)!=".js"&&(o+=".js"),e.require.id=i,e.require.modules[i]={},importScripts(o),e.require(r,i)},e.require.modules={},e.require.tlns={},e.define=function(t,n,r){arguments.length==2?(r=n,typeof t!="string"&&(n=t,t=e.require.id)):arguments.length==1&&(r=t,n=[],t=e.require.id);if(typeof r!="function"){e.require.modules[t]={exports:r,initialized:!0};return}n.length||(n=["require","exports","module"]);var i=function(n){return e.require(t,n)};e.require.modules[t]={exports:{},factory:function(){var e=this,t=r.apply(this,n.slice(0,r.length).map(function(t){switch(t){case"require":return i;case"exports":return e.exports;case"module":return e;default:return i(t)}}));return t&&(e.exports=t),e}}},e.define.amd={},require.tlns={},e.initBaseUrls=function(t){for(var n in t)require.tlns[n]=t[n]},e.initSender=function(){var n=e.require("ace/lib/event_emitter").EventEmitter,r=e.require("ace/lib/oop"),i=function(){};return function(){r.implement(this,n),this.callback=function(e,t){postMessage({type:"call",id:t,data:e})},this.emit=function(e,t){postMessage({type:"event",name:e,data:t})}}.call(i.prototype),new i};var n=e.main=null,r=e.sender=null;e.onmessage=function(t){var i=t.data;if(i.event&&r)r._signal(i.event,i.data);else if(i.command)if(n[i.command])n[i.command].apply(n,i.args);else{if(!e[i.command])throw new Error("Unknown command:"+i.command);e[i.command].apply(e,i.args)}else if(i.init){e.initBaseUrls(i.tlns),require("ace/lib/es5-shim"),r=e.sender=e.initSender();var s=require(i.module)[i.classname];n=e.main=new s(r)}}}(this),define("ace/lib/oop",[],function(e,t,n){"use strict";t.inherits=function(e,t){e.super_=t,e.prototype=Object.create(t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}})},t.mixin=function(e,t){for(var n in t)e[n]=t[n];return e},t.implement=function(e,n){t.mixin(e,n)}}),define("ace/range",[],function(e,t,n){"use strict";var r=function(e,t){return e.row-t.row||e.column-t.column},i=function(e,t,n,r){this.start={row:e,column:t},this.end={row:n,column:r}};(function(){this.isEqual=function(e){return this.start.row===e.start.row&&this.end.row===e.end.row&&this.start.column===e.start.column&&this.end.column===e.end.column},this.toString=function(){return"Range: ["+this.start.row+"/"+this.start.column+"] -> ["+this.end.row+"/"+this.end.column+"]"},this.contains=function(e,t){return this.compare(e,t)==0},this.compareRange=function(e){var t,n=e.end,r=e.start;return t=this.compare(n.row,n.column),t==1?(t=this.compare(r.row,r.column),t==1?2:t==0?1:0):t==-1?-2:(t=this.compare(r.row,r.column),t==-1?-1:t==1?42:0)},this.comparePoint=function(e){return this.compare(e.row,e.column)},this.containsRange=function(e){return this.comparePoint(e.start)==0&&this.comparePoint(e.end)==0},this.intersects=function(e){var t=this.compareRange(e);return t==-1||t==0||t==1},this.isEnd=function(e,t){return this.end.row==e&&this.end.column==t},this.isStart=function(e,t){return this.start.row==e&&this.start.column==t},this.setStart=function(e,t){typeof e=="object"?(this.start.column=e.column,this.start.row=e.row):(this.start.row=e,this.start.column=t)},this.setEnd=function(e,t){typeof e=="object"?(this.end.column=e.column,this.end.row=e.row):(this.end.row=e,this.end.column=t)},this.inside=function(e,t){return this.compare(e,t)==0?this.isEnd(e,t)||this.isStart(e,t)?!1:!0:!1},this.insideStart=function(e,t){return this.compare(e,t)==0?this.isEnd(e,t)?!1:!0:!1},this.insideEnd=function(e,t){return this.compare(e,t)==0?this.isStart(e,t)?!1:!0:!1},this.compare=function(e,t){return!this.isMultiLine()&&e===this.start.row?t<this.start.column?-1:t>this.end.column?1:0:e<this.start.row?-1:e>this.end.row?1:this.start.row===e?t>=this.start.column?0:-1:this.end.row===e?t<=this.end.column?0:1:0},this.compareStart=function(e,t){return this.start.row==e&&this.start.column==t?-1:this.compare(e,t)},this.compareEnd=function(e,t){return this.end.row==e&&this.end.column==t?1:this.compare(e,t)},this.compareInside=function(e,t){return this.end.row==e&&this.end.column==t?1:this.start.row==e&&this.start.column==t?-1:this.compare(e,t)},this.clipRows=function(e,t){if(this.end.row>t)var n={row:t+1,column:0};else if(this.end.row<e)var n={row:e,column:0};if(this.start.row>t)var r={row:t+1,column:0};else if(this.start.row<e)var r={row:e,column:0};return i.fromPoints(r||this.start,n||this.end)},this.extend=function(e,t){var n=this.compare(e,t);if(n==0)return this;if(n==-1)var r={row:e,column:t};else var s={row:e,column:t};return i.fromPoints(r||this.start,s||this.end)},this.isEmpty=function(){return this.start.row===this.end.row&&this.start.column===this.end.column},this.isMultiLine=function(){return this.start.row!==this.end.row},this.clone=function(){return i.fromPoints(this.start,this.end)},this.collapseRows=function(){return this.end.column==0?new i(this.start.row,0,Math.max(this.start.row,this.end.row-1),0):new i(this.start.row,0,this.end.row,0)},this.toScreenRange=function(e){var t=e.documentToScreenPosition(this.start),n=e.documentToScreenPosition(this.end);return new i(t.row,t.column,n.row,n.column)},this.moveBy=function(e,t){this.start.row+=e,this.start.column+=t,this.end.row+=e,this.end.column+=t}}).call(i.prototype),i.fromPoints=function(e,t){return new i(e.row,e.column,t.row,t.column)},i.comparePoints=r,i.comparePoints=function(e,t){return e.row-t.row||e.column-t.column},t.Range=i}),define("ace/apply_delta",[],function(e,t,n){"use strict";function r(e,t){throw console.log("Invalid Delta:",e),"Invalid Delta: "+t}function i(e,t){return t.row>=0&&t.row<e.length&&t.column>=0&&t.column<=e[t.row].length}function s(e,t){t.action!="insert"&&t.action!="remove"&&r(t,"delta.action must be 'insert' or 'remove'"),t.lines instanceof Array||r(t,"delta.lines must be an Array"),(!t.start||!t.end)&&r(t,"delta.start/end must be an present");var n=t.start;i(e,t.start)||r(t,"delta.start must be contained in document");var s=t.end;t.action=="remove"&&!i(e,s)&&r(t,"delta.end must contained in document for 'remove' actions");var o=s.row-n.row,u=s.column-(o==0?n.column:0);(o!=t.lines.length-1||t.lines[o].length!=u)&&r(t,"delta.range must match delta lines")}t.applyDelta=function(e,t,n){var r=t.start.row,i=t.start.column,s=e[r]||"";switch(t.action){case"insert":var o=t.lines;if(o.length===1)e[r]=s.substring(0,i)+t.lines[0]+s.substring(i);else{var u=[r,1].concat(t.lines);e.splice.apply(e,u),e[r]=s.substring(0,i)+e[r],e[r+t.lines.length-1]+=s.substring(i)}break;case"remove":var a=t.end.column,f=t.end.row;r===f?e[r]=s.substring(0,i)+s.substring(a):e.splice(r,f-r+1,s.substring(0,i)+e[f].substring(a))}}}),define("ace/lib/event_emitter",[],function(e,t,n){"use strict";var r={},i=function(){this.propagationStopped=!0},s=function(){this.defaultPrevented=!0};r._emit=r._dispatchEvent=function(e,t){this._eventRegistry||(this._eventRegistry={}),this._defaultHandlers||(this._defaultHandlers={});var n=this._eventRegistry[e]||[],r=this._defaultHandlers[e];if(!n.length&&!r)return;if(typeof t!="object"||!t)t={};t.type||(t.type=e),t.stopPropagation||(t.stopPropagation=i),t.preventDefault||(t.preventDefault=s),n=n.slice();for(var o=0;o<n.length;o++){n[o](t,this);if(t.propagationStopped)break}if(r&&!t.defaultPrevented)return r(t,this)},r._signal=function(e,t){var n=(this._eventRegistry||{})[e];if(!n)return;n=n.slice();for(var r=0;r<n.length;r++)n[r](t,this)},r.once=function(e,t){var n=this;this.addEventListener(e,function r(){n.removeEventListener(e,r),t.apply(null,arguments)});if(!t)return new Promise(function(e){t=e})},r.setDefaultHandler=function(e,t){var n=this._defaultHandlers;n||(n=this._defaultHandlers={_disabled_:{}});if(n[e]){var r=n[e],i=n._disabled_[e];i||(n._disabled_[e]=i=[]),i.push(r);var s=i.indexOf(t);s!=-1&&i.splice(s,1)}n[e]=t},r.removeDefaultHandler=function(e,t){var n=this._defaultHandlers;if(!n)return;var r=n._disabled_[e];if(n[e]==t)r&&this.setDefaultHandler(e,r.pop());else if(r){var i=r.indexOf(t);i!=-1&&r.splice(i,1)}},r.on=r.addEventListener=function(e,t,n){this._eventRegistry=this._eventRegistry||{};var r=this._eventRegistry[e];return r||(r=this._eventRegistry[e]=[]),r.indexOf(t)==-1&&r[n?"unshift":"push"](t),t},r.off=r.removeListener=r.removeEventListener=function(e,t){this._eventRegistry=this._eventRegistry||{};var n=this._eventRegistry[e];if(!n)return;var r=n.indexOf(t);r!==-1&&n.splice(r,1)},r.removeAllListeners=function(e){this._eventRegistry&&(this._eventRegistry[e]=[])},t.EventEmitter=r}),define("ace/anchor",[],function(e,t,n){"use strict";var r=e("./lib/oop"),i=e("./lib/event_emitter").EventEmitter,s=t.Anchor=function(e,t,n){this.$onChange=this.onChange.bind(this),this.attach(e),typeof n=="undefined"?this.setPosition(t.row,t.column):this.setPosition(t,n)};(function(){function e(e,t,n){var r=n?e.column<=t.column:e.column<t.column;return e.row<t.row||e.row==t.row&&r}function t(t,n,r){var i=t.action=="insert",s=(i?1:-1)*(t.end.row-t.start.row),o=(i?1:-1)*(t.end.column-t.start.column),u=t.start,a=i?u:t.end;return e(n,u,r)?{row:n.row,column:n.column}:e(a,n,!r)?{row:n.row+s,column:n.column+(n.row==a.row?o:0)}:{row:u.row,column:u.column}}r.implement(this,i),this.getPosition=function(){return this.$clipPositionToDocument(this.row,this.column)},this.getDocument=function(){return this.document},this.$insertRight=!1,this.onChange=function(e){if(e.start.row==e.end.row&&e.start.row!=this.row)return;if(e.start.row>this.row)return;var n=t(e,{row:this.row,column:this.column},this.$insertRight);this.setPosition(n.row,n.column,!0)},this.setPosition=function(e,t,n){var r;n?r={row:e,column:t}:r=this.$clipPositionToDocument(e,t);if(this.row==r.row&&this.column==r.column)return;var i={row:this.row,column:this.column};this.row=r.row,this.column=r.column,this._signal("change",{old:i,value:r})},this.detach=function(){this.document.removeEventListener("change",this.$onChange)},this.attach=function(e){this.document=e||this.document,this.document.on("change",this.$onChange)},this.$clipPositionToDocument=function(e,t){var n={};return e>=this.document.getLength()?(n.row=Math.max(0,this.document.getLength()-1),n.column=this.document.getLine(n.row).length):e<0?(n.row=0,n.column=0):(n.row=e,n.column=Math.min(this.document.getLine(n.row).length,Math.max(0,t))),t<0&&(n.column=0),n}}).call(s.prototype)}),define("ace/document",[],function(e,t,n){"use strict";var r=e("./lib/oop"),i=e("./apply_delta").applyDelta,s=e("./lib/event_emitter").EventEmitter,o=e("./range").Range,u=e("./anchor").Anchor,a=function(e){this.$lines=[""],e.length===0?this.$lines=[""]:Array.isArray(e)?this.insertMergedLines({row:0,column:0},e):this.insert({row:0,column:0},e)};(function(){r.implement(this,s),this.setValue=function(e){var t=this.getLength()-1;this.remove(new o(0,0,t,this.getLine(t).length)),this.insert({row:0,column:0},e)},this.getValue=function(){return this.getAllLines().join(this.getNewLineCharacter())},this.createAnchor=function(e,t){return new u(this,e,t)},"aaa".split(/a/).length===0?this.$split=function(e){return e.replace(/\r\n|\r/g,"\n").split("\n")}:this.$split=function(e){return e.split(/\r\n|\r|\n/)},this.$detectNewLine=function(e){var t=e.match(/^.*?(\r\n|\r|\n)/m);this.$autoNewLine=t?t[1]:"\n",this._signal("changeNewLineMode")},this.getNewLineCharacter=function(){switch(this.$newLineMode){case"windows":return"\r\n";case"unix":return"\n";default:return this.$autoNewLine||"\n"}},this.$autoNewLine="",this.$newLineMode="auto",this.setNewLineMode=function(e){if(this.$newLineMode===e)return;this.$newLineMode=e,this._signal("changeNewLineMode")},this.getNewLineMode=function(){return this.$newLineMode},this.isNewLine=function(e){return e=="\r\n"||e=="\r"||e=="\n"},this.getLine=function(e){return this.$lines[e]||""},this.getLines=function(e,t){return this.$lines.slice(e,t+1)},this.getAllLines=function(){return this.getLines(0,this.getLength())},this.getLength=function(){return this.$lines.length},this.getTextRange=function(e){return this.getLinesForRange(e).join(this.getNewLineCharacter())},this.getLinesForRange=function(e){var t;if(e.start.row===e.end.row)t=[this.getLine(e.start.row).substring(e.start.column,e.end.column)];else{t=this.getLines(e.start.row,e.end.row),t[0]=(t[0]||"").substring(e.start.column);var n=t.length-1;e.end.row-e.start.row==n&&(t[n]=t[n].substring(0,e.end.column))}return t},this.insertLines=function(e,t){return console.warn("Use of document.insertLines is deprecated. Use the insertFullLines method instead."),this.insertFullLines(e,t)},this.removeLines=function(e,t){return console.warn("Use of document.removeLines is deprecated. Use the removeFullLines method instead."),this.removeFullLines(e,t)},this.insertNewLine=function(e){return console.warn("Use of document.insertNewLine is deprecated. Use insertMergedLines(position, ['', '']) instead."),this.insertMergedLines(e,["",""])},this.insert=function(e,t){return this.getLength()<=1&&this.$detectNewLine(t),this.insertMergedLines(e,this.$split(t))},this.insertInLine=function(e,t){var n=this.clippedPos(e.row,e.column),r=this.pos(e.row,e.column+t.length);return this.applyDelta({start:n,end:r,action:"insert",lines:[t]},!0),this.clonePos(r)},this.clippedPos=function(e,t){var n=this.getLength();e===undefined?e=n:e<0?e=0:e>=n&&(e=n-1,t=undefined);var r=this.getLine(e);return t==undefined&&(t=r.length),t=Math.min(Math.max(t,0),r.length),{row:e,column:t}},this.clonePos=function(e){return{row:e.row,column:e.column}},this.pos=function(e,t){return{row:e,column:t}},this.$clipPosition=function(e){var t=this.getLength();return e.row>=t?(e.row=Math.max(0,t-1),e.column=this.getLine(t-1).length):(e.row=Math.max(0,e.row),e.column=Math.min(Math.max(e.column,0),this.getLine(e.row).length)),e},this.insertFullLines=function(e,t){e=Math.min(Math.max(e,0),this.getLength());var n=0;e<this.getLength()?(t=t.concat([""]),n=0):(t=[""].concat(t),e--,n=this.$lines[e].length),this.insertMergedLines({row:e,column:n},t)},this.insertMergedLines=function(e,t){var n=this.clippedPos(e.row,e.column),r={row:n.row+t.length-1,column:(t.length==1?n.column:0)+t[t.length-1].length};return this.applyDelta({start:n,end:r,action:"insert",lines:t}),this.clonePos(r)},this.remove=function(e){var t=this.clippedPos(e.start.row,e.start.column),n=this.clippedPos(e.end.row,e.end.column);return this.applyDelta({start:t,end:n,action:"remove",lines:this.getLinesForRange({start:t,end:n})}),this.clonePos(t)},this.removeInLine=function(e,t,n){var r=this.clippedPos(e,t),i=this.clippedPos(e,n);return this.applyDelta({start:r,end:i,action:"remove",lines:this.getLinesForRange({start:r,end:i})},!0),this.clonePos(r)},this.removeFullLines=function(e,t){e=Math.min(Math.max(0,e),this.getLength()-1),t=Math.min(Math.max(0,t),this.getLength()-1);var n=t==this.getLength()-1&&e>0,r=t<this.getLength()-1,i=n?e-1:e,s=n?this.getLine(i).length:0,u=r?t+1:t,a=r?0:this.getLine(u).length,f=new o(i,s,u,a),l=this.$lines.slice(e,t+1);return this.applyDelta({start:f.start,end:f.end,action:"remove",lines:this.getLinesForRange(f)}),l},this.removeNewLine=function(e){e<this.getLength()-1&&e>=0&&this.applyDelta({start:this.pos(e,this.getLine(e).length),end:this.pos(e+1,0),action:"remove",lines:["",""]})},this.replace=function(e,t){e instanceof o||(e=o.fromPoints(e.start,e.end));if(t.length===0&&e.isEmpty())return e.start;if(t==this.getTextRange(e))return e.end;this.remove(e);var n;return t?n=this.insert(e.start,t):n=e.start,n},this.applyDeltas=function(e){for(var t=0;t<e.length;t++)this.applyDelta(e[t])},this.revertDeltas=function(e){for(var t=e.length-1;t>=0;t--)this.revertDelta(e[t])},this.applyDelta=function(e,t){var n=e.action=="insert";if(n?e.lines.length<=1&&!e.lines[0]:!o.comparePoints(e.start,e.end))return;n&&e.lines.length>2e4?this.$splitAndapplyLargeDelta(e,2e4):(i(this.$lines,e,t),this._signal("change",e))},this.$splitAndapplyLargeDelta=function(e,t){var n=e.lines,r=n.length-t+1,i=e.start.row,s=e.start.column;for(var o=0,u=0;o<r;o=u){u+=t-1;var a=n.slice(o,u);a.push(""),this.applyDelta({start:this.pos(i+o,s),end:this.pos(i+u,s=0),action:e.action,lines:a},!0)}e.lines=n.slice(o),e.start.row=i+o,e.start.column=s,this.applyDelta(e,!0)},this.revertDelta=function(e){this.applyDelta({start:this.clonePos(e.start),end:this.clonePos(e.end),action:e.action=="insert"?"remove":"insert",lines:e.lines.slice()})},this.indexToPosition=function(e,t){var n=this.$lines||this.getAllLines(),r=this.getNewLineCharacter().length;for(var i=t||0,s=n.length;i<s;i++){e-=n[i].length+r;if(e<0)return{row:i,column:e+n[i].length+r}}return{row:s-1,column:e+n[s-1].length+r}},this.positionToIndex=function(e,t){var n=this.$lines||this.getAllLines(),r=this.getNewLineCharacter().length,i=0,s=Math.min(e.row,n.length);for(var o=t||0;o<s;++o)i+=n[o].length+r;return i+e.column}}).call(a.prototype),t.Document=a}),define("ace/lib/lang",[],function(e,t,n){"use strict";t.last=function(e){return e[e.length-1]},t.stringReverse=function(e){return e.split("").reverse().join("")},t.stringRepeat=function(e,t){var n="";while(t>0){t&1&&(n+=e);if(t>>=1)e+=e}return n};var r=/^\s\s*/,i=/\s\s*$/;t.stringTrimLeft=function(e){return e.replace(r,"")},t.stringTrimRight=function(e){return e.replace(i,"")},t.copyObject=function(e){var t={};for(var n in e)t[n]=e[n];return t},t.copyArray=function(e){var t=[];for(var n=0,r=e.length;n<r;n++)e[n]&&typeof e[n]=="object"?t[n]=this.copyObject(e[n]):t[n]=e[n];return t},t.deepCopy=function s(e){if(typeof e!="object"||!e)return e;var t;if(Array.isArray(e)){t=[];for(var n=0;n<e.length;n++)t[n]=s(e[n]);return t}if(Object.prototype.toString.call(e)!=="[object Object]")return e;t={};for(var n in e)t[n]=s(e[n]);return t},t.arrayToMap=function(e){var t={};for(var n=0;n<e.length;n++)t[e[n]]=1;return t},t.createMap=function(e){var t=Object.create(null);for(var n in e)t[n]=e[n];return t},t.arrayRemove=function(e,t){for(var n=0;n<=e.length;n++)t===e[n]&&e.splice(n,1)},t.escapeRegExp=function(e){return e.replace(/([.*+?^${}()|[\]\/\\])/g,"\\$1")},t.escapeHTML=function(e){return(""+e).replace(/&/g,"&#38;").replace(/"/g,"&#34;").replace(/'/g,"&#39;").replace(/</g,"&#60;")},t.getMatchOffsets=function(e,t){var n=[];return e.replace(t,function(e){n.push({offset:arguments[arguments.length-2],length:e.length})}),n},t.deferredCall=function(e){var t=null,n=function(){t=null,e()},r=function(e){return r.cancel(),t=setTimeout(n,e||0),r};return r.schedule=r,r.call=function(){return this.cancel(),e(),r},r.cancel=function(){return clearTimeout(t),t=null,r},r.isPending=function(){return t},r},t.delayedCall=function(e,t){var n=null,r=function(){n=null,e()},i=function(e){n==null&&(n=setTimeout(r,e||t))};return i.delay=function(e){n&&clearTimeout(n),n=setTimeout(r,e||t)},i.schedule=i,i.call=function(){this.cancel(),e()},i.cancel=function(){n&&clearTimeout(n),n=null},i.isPending=function(){return n},i}}),define("ace/worker/mirror",[],function(e,t,n){"use strict";var r=e("../range").Range,i=e("../document").Document,s=e("../lib/lang"),o=t.Mirror=function(e){this.sender=e;var t=this.doc=new i(""),n=this.deferredUpdate=s.delayedCall(this.onUpdate.bind(this)),r=this;e.on("change",function(e){var i=e.data;if(i[0].start)t.applyDeltas(i);else for(var s=0;s<i.length;s+=2){if(Array.isArray(i[s+1]))var o={action:"insert",start:i[s],lines:i[s+1]};else var o={action:"remove",start:i[s],end:i[s+1]};t.applyDelta(o,!0)}if(r.$timeout)return n.schedule(r.$timeout);r.onUpdate()})};(function(){this.$timeout=500,this.setTimeout=function(e){this.$timeout=e},this.setValue=function(e){this.doc.setValue(e),this.deferredUpdate.schedule(this.$timeout)},this.getValue=function(e){this.sender.callback(this.doc.getValue(),e)},this.onUpdate=function(){},this.isPending=function(){return this.deferredUpdate.isPending()}}).call(o.prototype)}),define("ace/mode/lua/luaparse",[],function(e,t,n){(function(e,n,r){r(t)})(this,"luaparse",function(e){"use strict";function m(e){if(mt){var t=vt.pop();t.complete(),n.locations&&(e.loc=t.loc),n.ranges&&(e.range=t.range)}return e}function w(e,t,n){for(var r=0,i=e.length;r<i;r++)if(e[r][t]===n)return r;return-1}function E(e){var t=g.call(arguments,1);return e=e.replace(/%(\d)/g,function(e,n){return""+t[n-1]||""}),e}function S(){var e=g.call(arguments),t={},n,r;for(var i=0,s=e.length;i<s;i++){n=e[i];for(r in n)n.hasOwnProperty(r)&&(t[r]=n[r])}return t}function x(e){var t=E.apply(null,g.call(arguments,1)),n,r;throw"undefined"!=typeof e.line?(r=e.range[0]-e.lineStart,n=new SyntaxError(E("[%1:%2] %3",e.line,r,t)),n.line=e.line,n.index=e.range[0],n.column=r):(r=C-D+1,n=new SyntaxError(E("[%1:%2] %3",_,r,t)),n.index=C,n.line=_,n.column=r),n}function T(e,t){x(t,d.expectedToken,e,t.value)}function N(e,t){"undefined"==typeof t&&(t=A.value);if("undefined"!=typeof e.type){var n;switch(e.type){case o:n="string";break;case u:n="keyword";break;case a:n="identifier";break;case f:n="number";break;case l:n="symbol";break;case c:n="boolean";break;case h:return x(e,d.unexpected,"symbol","nil",t)}return x(e,d.unexpected,n,e.value,t)}return x(e,d.unexpected,"symbol",e,t)}function P(){H();while(45===t.charCodeAt(C)&&45===t.charCodeAt(C+1))X(),H();if(C>=r)return{type:s,value:"<eof>",line:_,lineStart:D,range:[C,C]};var e=t.charCodeAt(C),n=t.charCodeAt(C+1);M=C;if(et(e))return B();switch(e){case 39:case 34:return I();case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:return R();case 46:if(Y(n))return R();if(46===n)return 46===t.charCodeAt(C+2)?F():j("..");return j(".");case 61:if(61===n)return j("==");return j("=");case 62:if(61===n)return j(">=");return j(">");case 60:if(61===n)return j("<=");return j("<");case 126:if(61===n)return j("~=");return j("~");case 58:if(58===n)return j("::");return j(":");case 91:if(91===n||61===n)return q();return j("[");case 42:case 47:case 94:case 37:case 44:case 123:case 125:case 93:case 40:case 41:case 59:case 35:case 45:case 43:case 38:case 124:return j(t.charAt(C))}return N(t.charAt(C))}function H(){while(C<r){var e=t.charCodeAt(C);if(Q(e))C++;else{if(!G(e))break;_++,D=++C}}}function B(){var e,n;while(tt(t.charCodeAt(++C)));return e=t.slice(M,C),nt(e)?n=u:"true"===e||"false"===e?(n=c,e="true"===e):"nil"===e?(n=h,e=null):n=a,{type:n,value:e,line:_,lineStart:D,range:[M,C]}}function j(e){return C+=e.length,{type:l,value:e,line:_,lineStart:D,range:[M,C]}}function F(){return C+=3,{type:p,value:"...",line:_,lineStart:D,range:[M,C]}}function I(){var e=t.charCodeAt(C++),n=C,i="",s;while(C<r){s=t.charCodeAt(C++);if(e===s)break;if(92===s)i+=t.slice(n,C-1)+W(),n=C;else if(C>=r||G(s))i+=t.slice(n,C-1),x({},d.unfinishedString,i+String.fromCharCode(s))}return i+=t.slice(n,C-1),{type:o,value:i,line:_,lineStart:D,range:[M,C]}}function q(){var e=V();return!1===e&&x(k,d.expected,"[",k.value),{type:o,value:e,line:_,lineStart:D,range:[M,C]}}function R(){var e=t.charAt(C),n=t.charAt(C+1),r="0"===e&&"xX".indexOf(n||null)>=0?U():z();return{type:f,value:r,line:_,lineStart:D,range:[M,C]}}function U(){var e=0,n=1,r=1,i,s,o,u;u=C+=2,Z(t.charCodeAt(C))||x({},d.malformedNumber,t.slice(M,C));while(Z(t.charCodeAt(C)))C++;i=parseInt(t.slice(u,C),16);if("."===t.charAt(C)){s=++C;while(Z(t.charCodeAt(C)))C++;e=t.slice(s,C),e=s===C?0:parseInt(e,16)/Math.pow(16,C-s)}if("pP".indexOf(t.charAt(C)||null)>=0){C++,"+-".indexOf(t.charAt(C)||null)>=0&&(r="+"===t.charAt(C++)?1:-1),o=C,Y(t.charCodeAt(C))||x({},d.malformedNumber,t.slice(M,C));while(Y(t.charCodeAt(C)))C++;n=t.slice(o,C),n=Math.pow(2,n*r)}return(i+e)*n}function z(){while(Y(t.charCodeAt(C)))C++;if("."===t.charAt(C)){C++;while(Y(t.charCodeAt(C)))C++}if("eE".indexOf(t.charAt(C)||null)>=0){C++,"+-".indexOf(t.charAt(C)||null)>=0&&C++,Y(t.charCodeAt(C))||x({},d.malformedNumber,t.slice(M,C));while(Y(t.charCodeAt(C)))C++}return parseFloat(t.slice(M,C))}function W(){var e=C;switch(t.charAt(C)){case"n":return C++,"\n";case"r":return C++,"\r";case"t":return C++,"	";case"v":return C++,"\x0b";case"b":return C++,"\b";case"f":return C++,"\f";case"z":return C++,H(),"";case"x":if(Z(t.charCodeAt(C+1))&&Z(t.charCodeAt(C+2)))return C+=3,"\\"+t.slice(e,C);return"\\"+t.charAt(C++);default:if(Y(t.charCodeAt(C))){while(Y(t.charCodeAt(++C)));return"\\"+t.slice(e,C)}return t.charAt(C++)}}function X(){M=C,C+=2;var e=t.charAt(C),i="",s=!1,o=C,u=D,a=_;"["===e&&(i=V(),!1===i?i=e:s=!0);if(!s){while(C<r){if(G(t.charCodeAt(C)))break;C++}n.comments&&(i=t.slice(o,C))}if(n.comments){var f=v.comment(i,t.slice(M,C));n.locations&&(f.loc={start:{line:a,column:M-u},end:{line:_,column:C-D}}),n.ranges&&(f.range=[M,C]),O.push(f)}}function V(){var e=0,n="",i=!1,s,o;C++;while("="===t.charAt(C+e))e++;if("["!==t.charAt(C+e))return!1;C+=e+1,G(t.charCodeAt(C))&&(_++,D=C++),o=C;while(C<r){s=t.charAt(C++),G(s.charCodeAt(0))&&(_++,D=C);if("]"===s){i=!0;for(var u=0;u<e;u++)"="!==t.charAt(C+u)&&(i=!1);"]"!==t.charAt(C+e)&&(i=!1)}if(i)break}return n+=t.slice(o,C-1),C+=e+1,n}function $(){L=k,k=A,A=P()}function J(e){return e===k.value?($(),!0):!1}function K(e){e===k.value?$():x(k,d.expected,e,k.value)}function Q(e){return 9===e||32===e||11===e||12===e}function G(e){return 10===e||13===e}function Y(e){return e>=48&&e<=57}function Z(e){return e>=48&&e<=57||e>=97&&e<=102||e>=65&&e<=70}function et(e){return e>=65&&e<=90||e>=97&&e<=122||95===e}function tt(e){return e>=65&&e<=90||e>=97&&e<=122||95===e||e>=48&&e<=57}function nt(e){switch(e.length){case 2:return"do"===e||"if"===e||"in"===e||"or"===e;case 3:return"and"===e||"end"===e||"for"===e||"not"===e;case 4:return"else"===e||"goto"===e||"then"===e;case 5:return"break"===e||"local"===e||"until"===e||"while"===e;case 6:return"elseif"===e||"repeat"===e||"return"===e;case 8:return"function"===e}return!1}function rt(e){return l===e.type?"#-~".indexOf(e.value)>=0:u===e.type?"not"===e.value:!1}function it(e){switch(e.type){case"CallExpression":case"TableCallExpression":case"StringCallExpression":return!0}return!1}function st(e){if(s===e.type)return!0;if(u!==e.type)return!1;switch(e.value){case"else":case"elseif":case"end":case"until":return!0;default:return!1}}function ft(){ot.push(Array.apply(null,ot[ut++]))}function lt(){ot.pop(),ut--}function ct(e){if(-1!==b(ot[ut],e))return;ot[ut].push(e)}function ht(e){ct(e.name),pt(e,!0)}function pt(e,t){!t&&-1===w(at,"name",e.name)&&at.push(e),e.isLocal=t}function dt(e){return-1!==b(ot[ut],e)}function gt(){return new yt(k)}function yt(e){n.locations&&(this.loc={start:{line:e.line,column:e.range[0]-e.lineStart},end:{line:0,column:0}}),n.ranges&&(this.range=[e.range[0],0])}function bt(){mt&&vt.push(gt())}function wt(e){mt&&vt.push(e)}function Et(){$(),bt();var e=St();return s!==k.type&&N(k),mt&&!e.length&&(L=k),m(v.chunk(e))}function St(e){var t=[],r;n.scope&&ft();while(!st(k)){if("return"===k.value){t.push(xt());break}r=xt(),r&&t.push(r)}return n.scope&&lt(),t}function xt(){bt();if(u===k.type)switch(k.value){case"local":return $(),Dt();case"if":return $(),Mt();case"return":return $(),Ot();case"function":$();var e=jt();return Bt(e);case"while":return $(),Lt();case"for":return $(),_t();case"repeat":return $(),At();case"break":return $(),Nt();case"do":return $(),kt();case"goto":return $(),Ct()}if(l===k.type&&J("::"))return Tt();mt&&vt.pop();if(J(";"))return;return Pt()}function Tt(){var e=k.value,t=Ht();return n.scope&&(ct("::"+e+"::"),pt(t,!0)),K("::"),m(v.labelStatement(t))}function Nt(){return m(v.breakStatement())}function Ct(){var e=k.value,t=Ht();return n.scope&&(t.isLabel=dt("::"+e+"::")),m(v.gotoStatement(t))}function kt(){var e=St();return K("end"),m(v.doStatement(e))}function Lt(){var e=qt();K("do");var t=St();return K("end"),m(v.whileStatement(e,t))}function At(){var e=St();K("until");var t=qt();return m(v.repeatStatement(t,e))}function Ot(){var e=[];if("end"!==k.value){var t=It();null!=t&&e.push(t);while(J(","))t=qt(),e.push(t);J(";")}return m(v.returnStatement(e))}function Mt(){var e=[],t,n,r;mt&&(r=vt[vt.length-1],vt.push(r)),t=qt(),K("then"),n=St(),e.push(m(v.ifClause(t,n))),mt&&(r=gt());while(J("elseif"))wt(r),t=qt(),K("then"),n=St(),e.push(m(v.elseifClause(t,n))),mt&&(r=gt());return J("else")&&(mt&&(r=new yt(L),vt.push(r)),n=St(),e.push(m(v.elseClause(n)))),K("end"),m(v.ifStatement(e))}function _t(){var e=Ht(),t;n.scope&&ht(e);if(J("=")){var r=qt();K(",");var i=qt(),s=J(",")?qt():null;return K("do"),t=St(),K("end"),m(v.forNumericStatement(e,r,i,s,t))}var o=[e];while(J(","))e=Ht(),n.scope&&ht(e),o.push(e);K("in");var u=[];do{var a=qt();u.push(a)}while(J(","));return K("do"),t=St(),K("end"),m(v.forGenericStatement(o,u,t))}function Dt(){var e;if(a===k.type){var t=[],r=[];do e=Ht(),t.push(e);while(J(","));if(J("="))do{var i=qt();r.push(i)}while(J(","));if(n.scope)for(var s=0,o=t.length;s<o;s++)ht(t[s]);return m(v.localStatement(t,r))}if(J("function"))return e=Ht(),n.scope&&ht(e),Bt(e,!0);T("<name>",k)}function Pt(){var e=k,t,n;mt&&(n=gt()),t=zt();if(null==t)return N(k);if(",=".indexOf(k.value)>=0){var r=[t],i=[],s;while(J(","))s=zt(),null==s&&T("<expression>",k),r.push(s);K("=");do s=qt(),i.push(s);while(J(","));return wt(n),m(v.assignmentStatement(r,i))}return it(t)?(wt(n),m(v.callStatement(t))):N(e)}function Ht(){bt();var e=k.value;return a!==k.type&&T("<name>",k),$(),m(v.identifier(e))}function Bt(e,t){var r=[];K("(");if(!J(")"))for(;;)if(a===k.type){var i=Ht();n.scope&&ht(i),r.push(i);if(J(","))continue;if(J(")"))break}else{if(p===k.type){r.push(Xt()),K(")");break}T("<name> or '...'",k)}var s=St();return K("end"),t=t||!1,m(v.functionStatement(e,r,t,s))}function jt(){var e,t,r;mt&&(r=gt()),e=Ht(),n.scope&&pt(e,!1);while(J("."))wt(r),t=Ht(),n.scope&&pt(t,!1),e=m(v.memberExpression(e,".",t));return J(":")&&(wt(r),t=Ht(),n.scope&&pt(t,!1),e=m(v.memberExpression(e,":",t))),e}function Ft(){var e=[],t,n;for(;;){bt();if(l===k.type&&J("["))t=qt(),K("]"),K("="),n=qt(),e.push(m(v.tableKey(t,n)));else if(a===k.type)t=qt(),J("=")?(n=qt(),e.push(m(v.tableKeyString(t,n)))):e.push(m(v.tableValue(t)));else{if(null==(n=It())){vt.pop();break}e.push(m(v.tableValue(n)))}if(",;".indexOf(k.value)>=0){$();continue}if("}"===k.value)break}return K("}"),m(v.tableConstructorExpression(e))}function It(){var e=Ut(0);return e}function qt(){var e=It();if(null!=e)return e;T("<expression>",k)}function Rt(e){var t=e.charCodeAt(0),n=e.length;if(1===n)switch(t){case 94:return 10;case 42:case 47:case 37:return 7;case 43:case 45:return 6;case 60:case 62:return 3;case 38:case 124:return 7}else if(2===n)switch(t){case 46:return 5;case 60:case 62:case 61:case 126:return 3;case 111:return 1}else if(97===t&&"and"===e)return 2;return 0}function Ut(e){var t=k.value,n,r;mt&&(r=gt());if(rt(k)){bt(),$();var i=Ut(8);i==null&&T("<expression>",k),n=m(v.unaryExpression(t,i))}null==n&&(n=Xt(),null==n&&(n=zt()));if(null==n)return null;var s;for(;;){t=k.value,s=l===k.type||u===k.type?Rt(t):0;if(s===0||s<=e)break;("^"===t||".."===t)&&s--,$();var o=Ut(s);null==o&&T("<expression>",k),mt&&vt.push(r),n=m(v.binaryExpression(t,n,o))}return n}function zt(){var e,t,r,i;mt&&(r=gt());if(a===k.type)t=k.value,e=Ht(),n.scope&&pt(e,i=dt(t));else{if(!J("("))return null;e=qt(),K(")"),n.scope&&(i=e.isLocal)}var s,u;for(;;)if(l===k.type)switch(k.value){case"[":wt(r),$(),s=qt(),e=m(v.indexExpression(e,s)),K("]");break;case".":wt(r),$(),u=Ht(),n.scope&&pt(u,i),e=m(v.memberExpression(e,".",u));break;case":":wt(r),$(),u=Ht(),n.scope&&pt(u,i),e=m(v.memberExpression(e,":",u)),wt(r),e=Wt(e);break;case"(":case"{":wt(r),e=Wt(e);break;default:return e}else{if(o!==k.type)break;wt(r),e=Wt(e)}return e}function Wt(e){if(l===k.type)switch(k.value){case"(":$();var t=[],n=It();null!=n&&t.push(n);while(J(","))n=qt(),t.push(n);return K(")"),m(v.callExpression(e,t));case"{":bt(),$();var r=Ft();return m(v.tableCallExpression(e,r))}else if(o===k.type)return m(v.stringCallExpression(e,Xt()));T("function arguments",k)}function Xt(){var e=o|f|c|h|p,n=k.value,r=k.type,i;mt&&(i=gt());if(r&e){wt(i);var s=t.slice(k.range[0],k.range[1]);return $(),m(v.literal(r,n,s))}if(u===r&&"function"===n)return wt(i),$(),Bt(null);if(J("{"))return wt(i),Ft()}function Vt(s,o){return"undefined"==typeof o&&"object"==typeof s&&(o=s,s=undefined),o||(o={}),t=s||"",n=S(i,o),C=0,_=1,D=0,r=t.length,ot=[[]],ut=0,at=[],vt=[],n.comments&&(O=[]),n.wait?e:Jt()}function $t(n){return t+=String(n),r=t.length,e}function Jt(e){"undefined"!=typeof e&&$t(e),r=t.length,mt=n.locations||n.ranges,A=P();var i=Et();n.comments&&(i.comments=O),n.scope&&(i.globals=at);if(vt.length>0)throw new Error("Location tracking failed. This is most likely a bug in luaparse");return i}e.version="0.1.4";var t,n,r,i=e.defaultOptions={wait:!1,comments:!0,scope:!1,locations:!1,ranges:!1},s=1,o=2,u=4,a=8,f=16,l=32,c=64,h=128,p=256;e.tokenTypes={EOF:s,StringLiteral:o,Keyword:u,Identifier:a,NumericLiteral:f,Punctuator:l,BooleanLiteral:c,NilLiteral:h,VarargLiteral:p};var d=e.errors={unexpected:"Unexpected %1 '%2' near '%3'",expected:"'%1' expected near '%2'",expectedToken:"%1 expected near '%2'",unfinishedString:"unfinished string near '%1'",malformedNumber:"malformed number near '%1'"},v=e.ast={labelStatement:function(e){return{type:"LabelStatement",label:e}},breakStatement:function(){return{type:"BreakStatement"}},gotoStatement:function(e){return{type:"GotoStatement",label:e}},returnStatement:function(e){return{type:"ReturnStatement",arguments:e}},ifStatement:function(e){return{type:"IfStatement",clauses:e}},ifClause:function(e,t){return{type:"IfClause",condition:e,body:t}},elseifClause:function(e,t){return{type:"ElseifClause",condition:e,body:t}},elseClause:function(e){return{type:"ElseClause",body:e}},whileStatement:function(e,t){return{type:"WhileStatement",condition:e,body:t}},doStatement:function(e){return{type:"DoStatement",body:e}},repeatStatement:function(e,t){return{type:"RepeatStatement",condition:e,body:t}},localStatement:function(e,t){return{type:"LocalStatement",variables:e,init:t}},assignmentStatement:function(e,t){return{type:"AssignmentStatement",variables:e,init:t}},callStatement:function(e){return{type:"CallStatement",expression:e}},functionStatement:function(e,t,n,r){return{type:"FunctionDeclaration",identifier:e,isLocal:n,parameters:t,body:r}},forNumericStatement:function(e,t,n,r,i){return{type:"ForNumericStatement",variable:e,start:t,end:n,step:r,body:i}},forGenericStatement:function(e,t,n){return{type:"ForGenericStatement",variables:e,iterators:t,body:n}},chunk:function(e){return{type:"Chunk",body:e}},identifier:function(e){return{type:"Identifier",name:e}},literal:function(e,t,n){return e=e===o?"StringLiteral":e===f?"NumericLiteral":e===c?"BooleanLiteral":e===h?"NilLiteral":"VarargLiteral",{type:e,value:t,raw:n}},tableKey:function(e,t){return{type:"TableKey",key:e,value:t}},tableKeyString:function(e,t){return{type:"TableKeyString",key:e,value:t}},tableValue:function(e){return{type:"TableValue",value:e}},tableConstructorExpression:function(e){return{type:"TableConstructorExpression",fields:e}},binaryExpression:function(e,t,n){var r="and"===e||"or"===e?"LogicalExpression":"BinaryExpression";return{type:r,operator:e,left:t,right:n}},unaryExpression:function(e,t){return{type:"UnaryExpression",operator:e,argument:t}},memberExpression:function(e,t,n){return{type:"MemberExpression",indexer:t,identifier:n,base:e}},indexExpression:function(e,t){return{type:"IndexExpression",base:e,index:t}},callExpression:function(e,t){return{type:"CallExpression",base:e,arguments:t}},tableCallExpression:function(e,t){return{type:"TableCallExpression",base:e,arguments:t}},stringCallExpression:function(e,t){return{type:"StringCallExpression",base:e,argument:t}},comment:function(e,t){return{type:"Comment",value:e,raw:t}}},g=Array.prototype.slice,y=Object.prototype.toString,b=function(t,n){for(var r=0,i=t.length;r<i;r++)if(t[r]===n)return r;return-1},C,k,L,A,O,M,_,D;e.lex=P;var ot,ut,at,vt=[],mt;yt.prototype.complete=function(){n.locations&&(this.loc.end.line=L.line,this.loc.end.column=L.range[1]-L.lineStart),n.ranges&&(this.range[1]=L.range[1])},e.parse=Vt,e.write=$t,e.end=Jt})}),define("ace/mode/lua_worker",[],function(e,t,n){"use strict";var r=e("../lib/oop"),i=e("../worker/mirror").Mirror,s=e("../mode/lua/luaparse"),o=t.Worker=function(e){i.call(this,e),this.setTimeout(500)};r.inherits(o,i),function(){this.onUpdate=function(){var e=this.doc.getValue(),t=[];try{s.parse(e)}catch(n){n instanceof SyntaxError&&t.push({row:n.line-1,column:n.column,text:n.message,type:"error"})}this.sender.emit("annotate",t)}}.call(o.prototype)}),define("ace/lib/es5-shim",[],function(e,t,n){function r(){}function w(e){try{return Object.defineProperty(e,"sentinel",{}),"sentinel"in e}catch(t){}}function H(e){return e=+e,e!==e?e=0:e!==0&&e!==1/0&&e!==-1/0&&(e=(e>0||-1)*Math.floor(Math.abs(e))),e}function B(e){var t=typeof e;return e===null||t==="undefined"||t==="boolean"||t==="number"||t==="string"}function j(e){var t,n,r;if(B(e))return e;n=e.valueOf;if(typeof n=="function"){t=n.call(e);if(B(t))return t}r=e.toString;if(typeof r=="function"){t=r.call(e);if(B(t))return t}throw new TypeError}Function.prototype.bind||(Function.prototype.bind=function(t){var n=this;if(typeof n!="function")throw new TypeError("Function.prototype.bind called on incompatible "+n);var i=u.call(arguments,1),s=function(){if(this instanceof s){var e=n.apply(this,i.concat(u.call(arguments)));return Object(e)===e?e:this}return n.apply(t,i.concat(u.call(arguments)))};return n.prototype&&(r.prototype=n.prototype,s.prototype=new r,r.prototype=null),s});var i=Function.prototype.call,s=Array.prototype,o=Object.prototype,u=s.slice,a=i.bind(o.toString),f=i.bind(o.hasOwnProperty),l,c,h,p,d;if(d=f(o,"__defineGetter__"))l=i.bind(o.__defineGetter__),c=i.bind(o.__defineSetter__),h=i.bind(o.__lookupGetter__),p=i.bind(o.__lookupSetter__);if([1,2].splice(0).length!=2)if(!function(){function e(e){var t=new Array(e+2);return t[0]=t[1]=0,t}var t=[],n;t.splice.apply(t,e(20)),t.splice.apply(t,e(26)),n=t.length,t.splice(5,0,"XXX"),n+1==t.length;if(n+1==t.length)return!0}())Array.prototype.splice=function(e,t){var n=this.length;e>0?e>n&&(e=n):e==void 0?e=0:e<0&&(e=Math.max(n+e,0)),e+t<n||(t=n-e);var r=this.slice(e,e+t),i=u.call(arguments,2),s=i.length;if(e===n)s&&this.push.apply(this,i);else{var o=Math.min(t,n-e),a=e+o,f=a+s-o,l=n-a,c=n-o;if(f<a)for(var h=0;h<l;++h)this[f+h]=this[a+h];else if(f>a)for(h=l;h--;)this[f+h]=this[a+h];if(s&&e===c)this.length=c,this.push.apply(this,i);else{this.length=c+s;for(h=0;h<s;++h)this[e+h]=i[h]}}return r};else{var v=Array.prototype.splice;Array.prototype.splice=function(e,t){return arguments.length?v.apply(this,[e===void 0?0:e,t===void 0?this.length-e:t].concat(u.call(arguments,2))):[]}}Array.isArray||(Array.isArray=function(t){return a(t)=="[object Array]"});var m=Object("a"),g=m[0]!="a"||!(0 in m);Array.prototype.forEach||(Array.prototype.forEach=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=arguments[1],s=-1,o=r.length>>>0;if(a(t)!="[object Function]")throw new TypeError;while(++s<o)s in r&&t.call(i,r[s],s,n)}),Array.prototype.map||(Array.prototype.map=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=r.length>>>0,s=Array(i),o=arguments[1];if(a(t)!="[object Function]")throw new TypeError(t+" is not a function");for(var u=0;u<i;u++)u in r&&(s[u]=t.call(o,r[u],u,n));return s}),Array.prototype.filter||(Array.prototype.filter=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=r.length>>>0,s=[],o,u=arguments[1];if(a(t)!="[object Function]")throw new TypeError(t+" is not a function");for(var f=0;f<i;f++)f in r&&(o=r[f],t.call(u,o,f,n)&&s.push(o));return s}),Array.prototype.every||(Array.prototype.every=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=r.length>>>0,s=arguments[1];if(a(t)!="[object Function]")throw new TypeError(t+" is not a function");for(var o=0;o<i;o++)if(o in r&&!t.call(s,r[o],o,n))return!1;return!0}),Array.prototype.some||(Array.prototype.some=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=r.length>>>0,s=arguments[1];if(a(t)!="[object Function]")throw new TypeError(t+" is not a function");for(var o=0;o<i;o++)if(o in r&&t.call(s,r[o],o,n))return!0;return!1}),Array.prototype.reduce||(Array.prototype.reduce=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=r.length>>>0;if(a(t)!="[object Function]")throw new TypeError(t+" is not a function");if(!i&&arguments.length==1)throw new TypeError("reduce of empty array with no initial value");var s=0,o;if(arguments.length>=2)o=arguments[1];else do{if(s in r){o=r[s++];break}if(++s>=i)throw new TypeError("reduce of empty array with no initial value")}while(!0);for(;s<i;s++)s in r&&(o=t.call(void 0,o,r[s],s,n));return o}),Array.prototype.reduceRight||(Array.prototype.reduceRight=function(t){var n=F(this),r=g&&a(this)=="[object String]"?this.split(""):n,i=r.length>>>0;if(a(t)!="[object Function]")throw new TypeError(t+" is not a function");if(!i&&arguments.length==1)throw new TypeError("reduceRight of empty array with no initial value");var s,o=i-1;if(arguments.length>=2)s=arguments[1];else do{if(o in r){s=r[o--];break}if(--o<0)throw new TypeError("reduceRight of empty array with no initial value")}while(!0);do o in this&&(s=t.call(void 0,s,r[o],o,n));while(o--);return s});if(!Array.prototype.indexOf||[0,1].indexOf(1,2)!=-1)Array.prototype.indexOf=function(t){var n=g&&a(this)=="[object String]"?this.split(""):F(this),r=n.length>>>0;if(!r)return-1;var i=0;arguments.length>1&&(i=H(arguments[1])),i=i>=0?i:Math.max(0,r+i);for(;i<r;i++)if(i in n&&n[i]===t)return i;return-1};if(!Array.prototype.lastIndexOf||[0,1].lastIndexOf(0,-3)!=-1)Array.prototype.lastIndexOf=function(t){var n=g&&a(this)=="[object String]"?this.split(""):F(this),r=n.length>>>0;if(!r)return-1;var i=r-1;arguments.length>1&&(i=Math.min(i,H(arguments[1]))),i=i>=0?i:r-Math.abs(i);for(;i>=0;i--)if(i in n&&t===n[i])return i;return-1};Object.getPrototypeOf||(Object.getPrototypeOf=function(t){return t.__proto__||(t.constructor?t.constructor.prototype:o)});if(!Object.getOwnPropertyDescriptor){var y="Object.getOwnPropertyDescriptor called on a non-object: ";Object.getOwnPropertyDescriptor=function(t,n){if(typeof t!="object"&&typeof t!="function"||t===null)throw new TypeError(y+t);if(!f(t,n))return;var r,i,s;r={enumerable:!0,configurable:!0};if(d){var u=t.__proto__;t.__proto__=o;var i=h(t,n),s=p(t,n);t.__proto__=u;if(i||s)return i&&(r.get=i),s&&(r.set=s),r}return r.value=t[n],r}}Object.getOwnPropertyNames||(Object.getOwnPropertyNames=function(t){return Object.keys(t)});if(!Object.create){var b;Object.prototype.__proto__===null?b=function(){return{__proto__:null}}:b=function(){var e={};for(var t in e)e[t]=null;return e.constructor=e.hasOwnProperty=e.propertyIsEnumerable=e.isPrototypeOf=e.toLocaleString=e.toString=e.valueOf=e.__proto__=null,e},Object.create=function(t,n){var r;if(t===null)r=b();else{if(typeof t!="object")throw new TypeError("typeof prototype["+typeof t+"] != 'object'");var i=function(){};i.prototype=t,r=new i,r.__proto__=t}return n!==void 0&&Object.defineProperties(r,n),r}}if(Object.defineProperty){var E=w({}),S=typeof document=="undefined"||w(document.createElement("div"));if(!E||!S)var x=Object.defineProperty}if(!Object.defineProperty||x){var T="Property description must be an object: ",N="Object.defineProperty called on non-object: ",C="getters & setters can not be defined on this javascript engine";Object.defineProperty=function(t,n,r){if(typeof t!="object"&&typeof t!="function"||t===null)throw new TypeError(N+t);if(typeof r!="object"&&typeof r!="function"||r===null)throw new TypeError(T+r);if(x)try{return x.call(Object,t,n,r)}catch(i){}if(f(r,"value"))if(d&&(h(t,n)||p(t,n))){var s=t.__proto__;t.__proto__=o,delete t[n],t[n]=r.value,t.__proto__=s}else t[n]=r.value;else{if(!d)throw new TypeError(C);f(r,"get")&&l(t,n,r.get),f(r,"set")&&c(t,n,r.set)}return t}}Object.defineProperties||(Object.defineProperties=function(t,n){for(var r in n)f(n,r)&&Object.defineProperty(t,r,n[r]);return t}),Object.seal||(Object.seal=function(t){return t}),Object.freeze||(Object.freeze=function(t){return t});try{Object.freeze(function(){})}catch(k){Object.freeze=function(t){return function(n){return typeof n=="function"?n:t(n)}}(Object.freeze)}Object.preventExtensions||(Object.preventExtensions=function(t){return t}),Object.isSealed||(Object.isSealed=function(t){return!1}),Object.isFrozen||(Object.isFrozen=function(t){return!1}),Object.isExtensible||(Object.isExtensible=function(t){if(Object(t)===t)throw new TypeError;var n="";while(f(t,n))n+="?";t[n]=!0;var r=f(t,n);return delete t[n],r});if(!Object.keys){var L=!0,A=["toString","toLocaleString","valueOf","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","constructor"],O=A.length;for(var M in{toString:null})L=!1;Object.keys=function I(e){if(typeof e!="object"&&typeof e!="function"||e===null)throw new TypeError("Object.keys called on a non-object");var I=[];for(var t in e)f(e,t)&&I.push(t);if(L)for(var n=0,r=O;n<r;n++){var i=A[n];f(e,i)&&I.push(i)}return I}}Date.now||(Date.now=function(){return(new Date).getTime()});var _="	\n\x0b\f\r \u00a0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000\u2028\u2029\ufeff";if(!String.prototype.trim||_.trim()){_="["+_+"]";var D=new RegExp("^"+_+_+"*"),P=new RegExp(_+_+"*$");String.prototype.trim=function(){return String(this).replace(D,"").replace(P,"")}}var F=function(e){if(e==null)throw new TypeError("can't convert "+e+" to object");return Object(e)}})
+"no use strict";
+!(function(window) {
+if (typeof window.window != "undefined" && window.document)
+    return;
+if (window.require && window.define)
+    return;
+
+if (!window.console) {
+    window.console = function() {
+        var msgs = Array.prototype.slice.call(arguments, 0);
+        postMessage({type: "log", data: msgs});
+    };
+    window.console.error =
+    window.console.warn = 
+    window.console.log =
+    window.console.trace = window.console;
+}
+window.window = window;
+window.ace = window;
+
+window.onerror = function(message, file, line, col, err) {
+    postMessage({type: "error", data: {
+        message: message,
+        data: err && err.data,
+        file: file,
+        line: line, 
+        col: col,
+        stack: err && err.stack
+    }});
+};
+
+window.normalizeModule = function(parentId, moduleName) {
+    // normalize plugin requires
+    if (moduleName.indexOf("!") !== -1) {
+        var chunks = moduleName.split("!");
+        return window.normalizeModule(parentId, chunks[0]) + "!" + window.normalizeModule(parentId, chunks[1]);
+    }
+    // normalize relative requires
+    if (moduleName.charAt(0) == ".") {
+        var base = parentId.split("/").slice(0, -1).join("/");
+        moduleName = (base ? base + "/" : "") + moduleName;
+        
+        while (moduleName.indexOf(".") !== -1 && previous != moduleName) {
+            var previous = moduleName;
+            moduleName = moduleName.replace(/^\.\//, "").replace(/\/\.\//, "/").replace(/[^\/]+\/\.\.\//, "");
+        }
+    }
+    
+    return moduleName;
+};
+
+window.require = function require(parentId, id) {
+    if (!id) {
+        id = parentId;
+        parentId = null;
+    }
+    if (!id.charAt)
+        throw new Error("worker.js require() accepts only (parentId, id) as arguments");
+
+    id = window.normalizeModule(parentId, id);
+
+    var module = window.require.modules[id];
+    if (module) {
+        if (!module.initialized) {
+            module.initialized = true;
+            module.exports = module.factory().exports;
+        }
+        return module.exports;
+    }
+   
+    if (!window.require.tlns)
+        return console.log("unable to load " + id);
+    
+    var path = resolveModuleId(id, window.require.tlns);
+    if (path.slice(-3) != ".js") path += ".js";
+    
+    window.require.id = id;
+    window.require.modules[id] = {}; // prevent infinite loop on broken modules
+    importScripts(path);
+    return window.require(parentId, id);
+};
+function resolveModuleId(id, paths) {
+    var testPath = id, tail = "";
+    while (testPath) {
+        var alias = paths[testPath];
+        if (typeof alias == "string") {
+            return alias + tail;
+        } else if (alias) {
+            return  alias.location.replace(/\/*$/, "/") + (tail || alias.main || alias.name);
+        } else if (alias === false) {
+            return "";
+        }
+        var i = testPath.lastIndexOf("/");
+        if (i === -1) break;
+        tail = testPath.substr(i) + tail;
+        testPath = testPath.slice(0, i);
+    }
+    return id;
+}
+window.require.modules = {};
+window.require.tlns = {};
+
+window.define = function(id, deps, factory) {
+    if (arguments.length == 2) {
+        factory = deps;
+        if (typeof id != "string") {
+            deps = id;
+            id = window.require.id;
+        }
+    } else if (arguments.length == 1) {
+        factory = id;
+        deps = [];
+        id = window.require.id;
+    }
+    
+    if (typeof factory != "function") {
+        window.require.modules[id] = {
+            exports: factory,
+            initialized: true
+        };
+        return;
+    }
+
+    if (!deps.length)
+        // If there is no dependencies, we inject "require", "exports" and
+        // "module" as dependencies, to provide CommonJS compatibility.
+        deps = ["require", "exports", "module"];
+
+    var req = function(childId) {
+        return window.require(id, childId);
+    };
+
+    window.require.modules[id] = {
+        exports: {},
+        factory: function() {
+            var module = this;
+            var returnExports = factory.apply(this, deps.slice(0, factory.length).map(function(dep) {
+                switch (dep) {
+                    // Because "require", "exports" and "module" aren't actual
+                    // dependencies, we must handle them seperately.
+                    case "require": return req;
+                    case "exports": return module.exports;
+                    case "module":  return module;
+                    // But for all other dependencies, we can just go ahead and
+                    // require them.
+                    default:        return req(dep);
+                }
+            }));
+            if (returnExports)
+                module.exports = returnExports;
+            return module;
+        }
+    };
+};
+window.define.amd = {};
+window.require.tlns = {};
+window.initBaseUrls  = function initBaseUrls(topLevelNamespaces) {
+    for (var i in topLevelNamespaces)
+        this.require.tlns[i] = topLevelNamespaces[i];
+};
+
+window.initSender = function initSender() {
+
+    var EventEmitter = window.require("ace/lib/event_emitter").EventEmitter;
+    var oop = window.require("ace/lib/oop");
+    
+    var Sender = function() {};
+    
+    (function() {
+        
+        oop.implement(this, EventEmitter);
+                
+        this.callback = function(data, callbackId) {
+            postMessage({
+                type: "call",
+                id: callbackId,
+                data: data
+            });
+        };
+    
+        this.emit = function(name, data) {
+            postMessage({
+                type: "event",
+                name: name,
+                data: data
+            });
+        };
+        
+    }).call(Sender.prototype);
+    
+    return new Sender();
+};
+
+var main = window.main = null;
+var sender = window.sender = null;
+
+window.onmessage = function(e) {
+    var msg = e.data;
+    if (msg.event && sender) {
+        sender._signal(msg.event, msg.data);
+    }
+    else if (msg.command) {
+        if (main[msg.command])
+            main[msg.command].apply(main, msg.args);
+        else if (window[msg.command])
+            window[msg.command].apply(window, msg.args);
+        else
+            throw new Error("Unknown command:" + msg.command);
+    }
+    else if (msg.init) {
+        window.initBaseUrls(msg.tlns);
+        sender = window.sender = window.initSender();
+        var clazz = this.require(msg.module)[msg.classname];
+        main = window.main = new clazz(sender);
+    }
+};
+})(this);
+
+ace.define("ace/lib/oop",[], function(require, exports, module){"use strict";
+exports.inherits = function (ctor, superCtor) {
+    ctor.super_ = superCtor;
+    ctor.prototype = Object.create(superCtor.prototype, {
+        constructor: {
+            value: ctor,
+            enumerable: false,
+            writable: true,
+            configurable: true
+        }
+    });
+};
+exports.mixin = function (obj, mixin) {
+    for (var key in mixin) {
+        obj[key] = mixin[key];
+    }
+    return obj;
+};
+exports.implement = function (proto, mixin) {
+    exports.mixin(proto, mixin);
+};
+
+});
+
+ace.define("ace/apply_delta",[], function(require, exports, module){"use strict";
+function throwDeltaError(delta, errorText) {
+    console.log("Invalid Delta:", delta);
+    throw "Invalid Delta: " + errorText;
+}
+function positionInDocument(docLines, position) {
+    return position.row >= 0 && position.row < docLines.length &&
+        position.column >= 0 && position.column <= docLines[position.row].length;
+}
+function validateDelta(docLines, delta) {
+    if (delta.action != "insert" && delta.action != "remove")
+        throwDeltaError(delta, "delta.action must be 'insert' or 'remove'");
+    if (!(delta.lines instanceof Array))
+        throwDeltaError(delta, "delta.lines must be an Array");
+    if (!delta.start || !delta.end)
+        throwDeltaError(delta, "delta.start/end must be an present");
+    var start = delta.start;
+    if (!positionInDocument(docLines, delta.start))
+        throwDeltaError(delta, "delta.start must be contained in document");
+    var end = delta.end;
+    if (delta.action == "remove" && !positionInDocument(docLines, end))
+        throwDeltaError(delta, "delta.end must contained in document for 'remove' actions");
+    var numRangeRows = end.row - start.row;
+    var numRangeLastLineChars = (end.column - (numRangeRows == 0 ? start.column : 0));
+    if (numRangeRows != delta.lines.length - 1 || delta.lines[numRangeRows].length != numRangeLastLineChars)
+        throwDeltaError(delta, "delta.range must match delta lines");
+}
+exports.applyDelta = function (docLines, delta, doNotValidate) {
+    var row = delta.start.row;
+    var startColumn = delta.start.column;
+    var line = docLines[row] || "";
+    switch (delta.action) {
+        case "insert":
+            var lines = delta.lines;
+            if (lines.length === 1) {
+                docLines[row] = line.substring(0, startColumn) + delta.lines[0] + line.substring(startColumn);
+            }
+            else {
+                var args = [row, 1].concat(delta.lines);
+                docLines.splice.apply(docLines, args);
+                docLines[row] = line.substring(0, startColumn) + docLines[row];
+                docLines[row + delta.lines.length - 1] += line.substring(startColumn);
+            }
+            break;
+        case "remove":
+            var endColumn = delta.end.column;
+            var endRow = delta.end.row;
+            if (row === endRow) {
+                docLines[row] = line.substring(0, startColumn) + line.substring(endColumn);
+            }
+            else {
+                docLines.splice(row, endRow - row + 1, line.substring(0, startColumn) + docLines[endRow].substring(endColumn));
+            }
+            break;
+    }
+};
+
+});
+
+ace.define("ace/lib/event_emitter",[], function(require, exports, module){"use strict";
+var EventEmitter = {};
+var stopPropagation = function () { this.propagationStopped = true; };
+var preventDefault = function () { this.defaultPrevented = true; };
+EventEmitter._emit =
+    EventEmitter._dispatchEvent = function (eventName, e) {
+        this._eventRegistry || (this._eventRegistry = {});
+        this._defaultHandlers || (this._defaultHandlers = {});
+        var listeners = this._eventRegistry[eventName] || [];
+        var defaultHandler = this._defaultHandlers[eventName];
+        if (!listeners.length && !defaultHandler)
+            return;
+        if (typeof e != "object" || !e)
+            e = {};
+        if (!e.type)
+            e.type = eventName;
+        if (!e.stopPropagation)
+            e.stopPropagation = stopPropagation;
+        if (!e.preventDefault)
+            e.preventDefault = preventDefault;
+        listeners = listeners.slice();
+        for (var i = 0; i < listeners.length; i++) {
+            listeners[i](e, this);
+            if (e.propagationStopped)
+                break;
+        }
+        if (defaultHandler && !e.defaultPrevented)
+            return defaultHandler(e, this);
+    };
+EventEmitter._signal = function (eventName, e) {
+    var listeners = (this._eventRegistry || {})[eventName];
+    if (!listeners)
+        return;
+    listeners = listeners.slice();
+    for (var i = 0; i < listeners.length; i++)
+        listeners[i](e, this);
+};
+EventEmitter.once = function (eventName, callback) {
+    var _self = this;
+    this.on(eventName, function newCallback() {
+        _self.off(eventName, newCallback);
+        callback.apply(null, arguments);
+    });
+    if (!callback) {
+        return new Promise(function (resolve) {
+            callback = resolve;
+        });
+    }
+};
+EventEmitter.setDefaultHandler = function (eventName, callback) {
+    var handlers = this._defaultHandlers;
+    if (!handlers)
+        handlers = this._defaultHandlers = { _disabled_: {} };
+    if (handlers[eventName]) {
+        var old = handlers[eventName];
+        var disabled = handlers._disabled_[eventName];
+        if (!disabled)
+            handlers._disabled_[eventName] = disabled = [];
+        disabled.push(old);
+        var i = disabled.indexOf(callback);
+        if (i != -1)
+            disabled.splice(i, 1);
+    }
+    handlers[eventName] = callback;
+};
+EventEmitter.removeDefaultHandler = function (eventName, callback) {
+    var handlers = this._defaultHandlers;
+    if (!handlers)
+        return;
+    var disabled = handlers._disabled_[eventName];
+    if (handlers[eventName] == callback) {
+        if (disabled)
+            this.setDefaultHandler(eventName, disabled.pop());
+    }
+    else if (disabled) {
+        var i = disabled.indexOf(callback);
+        if (i != -1)
+            disabled.splice(i, 1);
+    }
+};
+EventEmitter.on =
+    EventEmitter.addEventListener = function (eventName, callback, capturing) {
+        this._eventRegistry = this._eventRegistry || {};
+        var listeners = this._eventRegistry[eventName];
+        if (!listeners)
+            listeners = this._eventRegistry[eventName] = [];
+        if (listeners.indexOf(callback) == -1)
+            listeners[capturing ? "unshift" : "push"](callback);
+        return callback;
+    };
+EventEmitter.off =
+    EventEmitter.removeListener =
+        EventEmitter.removeEventListener = function (eventName, callback) {
+            this._eventRegistry = this._eventRegistry || {};
+            var listeners = this._eventRegistry[eventName];
+            if (!listeners)
+                return;
+            var index = listeners.indexOf(callback);
+            if (index !== -1)
+                listeners.splice(index, 1);
+        };
+EventEmitter.removeAllListeners = function (eventName) {
+    if (!eventName)
+        this._eventRegistry = this._defaultHandlers = undefined;
+    if (this._eventRegistry)
+        this._eventRegistry[eventName] = undefined;
+    if (this._defaultHandlers)
+        this._defaultHandlers[eventName] = undefined;
+};
+exports.EventEmitter = EventEmitter;
+
+});
+
+ace.define("ace/range",[], function(require, exports, module){"use strict";
+var Range = /** @class */ (function () {
+    function Range(startRow, startColumn, endRow, endColumn) {
+        this.start = {
+            row: startRow,
+            column: startColumn
+        };
+        this.end = {
+            row: endRow,
+            column: endColumn
+        };
+    }
+    Range.prototype.isEqual = function (range) {
+        return this.start.row === range.start.row &&
+            this.end.row === range.end.row &&
+            this.start.column === range.start.column &&
+            this.end.column === range.end.column;
+    };
+    Range.prototype.toString = function () {
+        return ("Range: [" + this.start.row + "/" + this.start.column +
+            "] -> [" + this.end.row + "/" + this.end.column + "]");
+    };
+    Range.prototype.contains = function (row, column) {
+        return this.compare(row, column) == 0;
+    };
+    Range.prototype.compareRange = function (range) {
+        var cmp, end = range.end, start = range.start;
+        cmp = this.compare(end.row, end.column);
+        if (cmp == 1) {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == 1) {
+                return 2;
+            }
+            else if (cmp == 0) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        }
+        else if (cmp == -1) {
+            return -2;
+        }
+        else {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == -1) {
+                return -1;
+            }
+            else if (cmp == 1) {
+                return 42;
+            }
+            else {
+                return 0;
+            }
+        }
+    };
+    Range.prototype.comparePoint = function (p) {
+        return this.compare(p.row, p.column);
+    };
+    Range.prototype.containsRange = function (range) {
+        return this.comparePoint(range.start) == 0 && this.comparePoint(range.end) == 0;
+    };
+    Range.prototype.intersects = function (range) {
+        var cmp = this.compareRange(range);
+        return (cmp == -1 || cmp == 0 || cmp == 1);
+    };
+    Range.prototype.isEnd = function (row, column) {
+        return this.end.row == row && this.end.column == column;
+    };
+    Range.prototype.isStart = function (row, column) {
+        return this.start.row == row && this.start.column == column;
+    };
+    Range.prototype.setStart = function (row, column) {
+        if (typeof row == "object") {
+            this.start.column = row.column;
+            this.start.row = row.row;
+        }
+        else {
+            this.start.row = row;
+            this.start.column = column;
+        }
+    };
+    Range.prototype.setEnd = function (row, column) {
+        if (typeof row == "object") {
+            this.end.column = row.column;
+            this.end.row = row.row;
+        }
+        else {
+            this.end.row = row;
+            this.end.column = column;
+        }
+    };
+    Range.prototype.inside = function (row, column) {
+        if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column) || this.isStart(row, column)) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        return false;
+    };
+    Range.prototype.insideStart = function (row, column) {
+        if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column)) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        return false;
+    };
+    Range.prototype.insideEnd = function (row, column) {
+        if (this.compare(row, column) == 0) {
+            if (this.isStart(row, column)) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        return false;
+    };
+    Range.prototype.compare = function (row, column) {
+        if (!this.isMultiLine()) {
+            if (row === this.start.row) {
+                return column < this.start.column ? -1 : (column > this.end.column ? 1 : 0);
+            }
+        }
+        if (row < this.start.row)
+            return -1;
+        if (row > this.end.row)
+            return 1;
+        if (this.start.row === row)
+            return column >= this.start.column ? 0 : -1;
+        if (this.end.row === row)
+            return column <= this.end.column ? 0 : 1;
+        return 0;
+    };
+    Range.prototype.compareStart = function (row, column) {
+        if (this.start.row == row && this.start.column == column) {
+            return -1;
+        }
+        else {
+            return this.compare(row, column);
+        }
+    };
+    Range.prototype.compareEnd = function (row, column) {
+        if (this.end.row == row && this.end.column == column) {
+            return 1;
+        }
+        else {
+            return this.compare(row, column);
+        }
+    };
+    Range.prototype.compareInside = function (row, column) {
+        if (this.end.row == row && this.end.column == column) {
+            return 1;
+        }
+        else if (this.start.row == row && this.start.column == column) {
+            return -1;
+        }
+        else {
+            return this.compare(row, column);
+        }
+    };
+    Range.prototype.clipRows = function (firstRow, lastRow) {
+        if (this.end.row > lastRow)
+            var end = { row: lastRow + 1, column: 0 };
+        else if (this.end.row < firstRow)
+            var end = { row: firstRow, column: 0 };
+        if (this.start.row > lastRow)
+            var start = { row: lastRow + 1, column: 0 };
+        else if (this.start.row < firstRow)
+            var start = { row: firstRow, column: 0 };
+        return Range.fromPoints(start || this.start, end || this.end);
+    };
+    Range.prototype.extend = function (row, column) {
+        var cmp = this.compare(row, column);
+        if (cmp == 0)
+            return this;
+        else if (cmp == -1)
+            var start = { row: row, column: column };
+        else
+            var end = { row: row, column: column };
+        return Range.fromPoints(start || this.start, end || this.end);
+    };
+    Range.prototype.isEmpty = function () {
+        return (this.start.row === this.end.row && this.start.column === this.end.column);
+    };
+    Range.prototype.isMultiLine = function () {
+        return (this.start.row !== this.end.row);
+    };
+    Range.prototype.clone = function () {
+        return Range.fromPoints(this.start, this.end);
+    };
+    Range.prototype.collapseRows = function () {
+        if (this.end.column == 0)
+            return new Range(this.start.row, 0, Math.max(this.start.row, this.end.row - 1), 0);
+        else
+            return new Range(this.start.row, 0, this.end.row, 0);
+    };
+    Range.prototype.toScreenRange = function (session) {
+        var screenPosStart = session.documentToScreenPosition(this.start);
+        var screenPosEnd = session.documentToScreenPosition(this.end);
+        return new Range(screenPosStart.row, screenPosStart.column, screenPosEnd.row, screenPosEnd.column);
+    };
+    Range.prototype.moveBy = function (row, column) {
+        this.start.row += row;
+        this.start.column += column;
+        this.end.row += row;
+        this.end.column += column;
+    };
+    return Range;
+}());
+Range.fromPoints = function (start, end) {
+    return new Range(start.row, start.column, end.row, end.column);
+};
+Range.comparePoints = function (p1, p2) {
+    return p1.row - p2.row || p1.column - p2.column;
+};
+exports.Range = Range;
+
+});
+
+ace.define("ace/anchor",[], function(require, exports, module){"use strict";
+var oop = require("./lib/oop");
+var EventEmitter = require("./lib/event_emitter").EventEmitter;
+var Anchor = /** @class */ (function () {
+    function Anchor(doc, row, column) {
+        this.$onChange = this.onChange.bind(this);
+        this.attach(doc);
+        if (typeof row != "number")
+            this.setPosition(row.row, row.column);
+        else
+            this.setPosition(row, column);
+    }
+    Anchor.prototype.getPosition = function () {
+        return this.$clipPositionToDocument(this.row, this.column);
+    };
+    Anchor.prototype.getDocument = function () {
+        return this.document;
+    };
+    Anchor.prototype.onChange = function (delta) {
+        if (delta.start.row == delta.end.row && delta.start.row != this.row)
+            return;
+        if (delta.start.row > this.row)
+            return;
+        var point = $getTransformedPoint(delta, { row: this.row, column: this.column }, this.$insertRight);
+        this.setPosition(point.row, point.column, true);
+    };
+    Anchor.prototype.setPosition = function (row, column, noClip) {
+        var pos;
+        if (noClip) {
+            pos = {
+                row: row,
+                column: column
+            };
+        }
+        else {
+            pos = this.$clipPositionToDocument(row, column);
+        }
+        if (this.row == pos.row && this.column == pos.column)
+            return;
+        var old = {
+            row: this.row,
+            column: this.column
+        };
+        this.row = pos.row;
+        this.column = pos.column;
+        this._signal("change", {
+            old: old,
+            value: pos
+        });
+    };
+    Anchor.prototype.detach = function () {
+        this.document.off("change", this.$onChange);
+    };
+    Anchor.prototype.attach = function (doc) {
+        this.document = doc || this.document;
+        this.document.on("change", this.$onChange);
+    };
+    Anchor.prototype.$clipPositionToDocument = function (row, column) {
+        var pos = {};
+        if (row >= this.document.getLength()) {
+            pos.row = Math.max(0, this.document.getLength() - 1);
+            pos.column = this.document.getLine(pos.row).length;
+        }
+        else if (row < 0) {
+            pos.row = 0;
+            pos.column = 0;
+        }
+        else {
+            pos.row = row;
+            pos.column = Math.min(this.document.getLine(pos.row).length, Math.max(0, column));
+        }
+        if (column < 0)
+            pos.column = 0;
+        return pos;
+    };
+    return Anchor;
+}());
+Anchor.prototype.$insertRight = false;
+oop.implement(Anchor.prototype, EventEmitter);
+function $pointsInOrder(point1, point2, equalPointsInOrder) {
+    var bColIsAfter = equalPointsInOrder ? point1.column <= point2.column : point1.column < point2.column;
+    return (point1.row < point2.row) || (point1.row == point2.row && bColIsAfter);
+}
+function $getTransformedPoint(delta, point, moveIfEqual) {
+    var deltaIsInsert = delta.action == "insert";
+    var deltaRowShift = (deltaIsInsert ? 1 : -1) * (delta.end.row - delta.start.row);
+    var deltaColShift = (deltaIsInsert ? 1 : -1) * (delta.end.column - delta.start.column);
+    var deltaStart = delta.start;
+    var deltaEnd = deltaIsInsert ? deltaStart : delta.end; // Collapse insert range.
+    if ($pointsInOrder(point, deltaStart, moveIfEqual)) {
+        return {
+            row: point.row,
+            column: point.column
+        };
+    }
+    if ($pointsInOrder(deltaEnd, point, !moveIfEqual)) {
+        return {
+            row: point.row + deltaRowShift,
+            column: point.column + (point.row == deltaEnd.row ? deltaColShift : 0)
+        };
+    }
+    return {
+        row: deltaStart.row,
+        column: deltaStart.column
+    };
+}
+exports.Anchor = Anchor;
+
+});
+
+ace.define("ace/document",[], function(require, exports, module){"use strict";
+var oop = require("./lib/oop");
+var applyDelta = require("./apply_delta").applyDelta;
+var EventEmitter = require("./lib/event_emitter").EventEmitter;
+var Range = require("./range").Range;
+var Anchor = require("./anchor").Anchor;
+var Document = /** @class */ (function () {
+    function Document(textOrLines) {
+        this.$lines = [""];
+        if (textOrLines.length === 0) {
+            this.$lines = [""];
+        }
+        else if (Array.isArray(textOrLines)) {
+            this.insertMergedLines({ row: 0, column: 0 }, textOrLines);
+        }
+        else {
+            this.insert({ row: 0, column: 0 }, textOrLines);
+        }
+    }
+    Document.prototype.setValue = function (text) {
+        var len = this.getLength() - 1;
+        this.remove(new Range(0, 0, len, this.getLine(len).length));
+        this.insert({ row: 0, column: 0 }, text || "");
+    };
+    Document.prototype.getValue = function () {
+        return this.getAllLines().join(this.getNewLineCharacter());
+    };
+    Document.prototype.createAnchor = function (row, column) {
+        return new Anchor(this, row, column);
+    };
+    Document.prototype.$detectNewLine = function (text) {
+        var match = text.match(/^.*?(\r\n|\r|\n)/m);
+        this.$autoNewLine = match ? match[1] : "\n";
+        this._signal("changeNewLineMode");
+    };
+    Document.prototype.getNewLineCharacter = function () {
+        switch (this.$newLineMode) {
+            case "windows":
+                return "\r\n";
+            case "unix":
+                return "\n";
+            default:
+                return this.$autoNewLine || "\n";
+        }
+    };
+    Document.prototype.setNewLineMode = function (newLineMode) {
+        if (this.$newLineMode === newLineMode)
+            return;
+        this.$newLineMode = newLineMode;
+        this._signal("changeNewLineMode");
+    };
+    Document.prototype.getNewLineMode = function () {
+        return this.$newLineMode;
+    };
+    Document.prototype.isNewLine = function (text) {
+        return (text == "\r\n" || text == "\r" || text == "\n");
+    };
+    Document.prototype.getLine = function (row) {
+        return this.$lines[row] || "";
+    };
+    Document.prototype.getLines = function (firstRow, lastRow) {
+        return this.$lines.slice(firstRow, lastRow + 1);
+    };
+    Document.prototype.getAllLines = function () {
+        return this.getLines(0, this.getLength());
+    };
+    Document.prototype.getLength = function () {
+        return this.$lines.length;
+    };
+    Document.prototype.getTextRange = function (range) {
+        return this.getLinesForRange(range).join(this.getNewLineCharacter());
+    };
+    Document.prototype.getLinesForRange = function (range) {
+        var lines;
+        if (range.start.row === range.end.row) {
+            lines = [this.getLine(range.start.row).substring(range.start.column, range.end.column)];
+        }
+        else {
+            lines = this.getLines(range.start.row, range.end.row);
+            lines[0] = (lines[0] || "").substring(range.start.column);
+            var l = lines.length - 1;
+            if (range.end.row - range.start.row == l)
+                lines[l] = lines[l].substring(0, range.end.column);
+        }
+        return lines;
+    };
+    Document.prototype.insertLines = function (row, lines) {
+        console.warn("Use of document.insertLines is deprecated. Use the insertFullLines method instead.");
+        return this.insertFullLines(row, lines);
+    };
+    Document.prototype.removeLines = function (firstRow, lastRow) {
+        console.warn("Use of document.removeLines is deprecated. Use the removeFullLines method instead.");
+        return this.removeFullLines(firstRow, lastRow);
+    };
+    Document.prototype.insertNewLine = function (position) {
+        console.warn("Use of document.insertNewLine is deprecated. Use insertMergedLines(position, ['', '']) instead.");
+        return this.insertMergedLines(position, ["", ""]);
+    };
+    Document.prototype.insert = function (position, text) {
+        if (this.getLength() <= 1)
+            this.$detectNewLine(text);
+        return this.insertMergedLines(position, this.$split(text));
+    };
+    Document.prototype.insertInLine = function (position, text) {
+        var start = this.clippedPos(position.row, position.column);
+        var end = this.pos(position.row, position.column + text.length);
+        this.applyDelta({
+            start: start,
+            end: end,
+            action: "insert",
+            lines: [text]
+        }, true);
+        return this.clonePos(end);
+    };
+    Document.prototype.clippedPos = function (row, column) {
+        var length = this.getLength();
+        if (row === undefined) {
+            row = length;
+        }
+        else if (row < 0) {
+            row = 0;
+        }
+        else if (row >= length) {
+            row = length - 1;
+            column = undefined;
+        }
+        var line = this.getLine(row);
+        if (column == undefined)
+            column = line.length;
+        column = Math.min(Math.max(column, 0), line.length);
+        return { row: row, column: column };
+    };
+    Document.prototype.clonePos = function (pos) {
+        return { row: pos.row, column: pos.column };
+    };
+    Document.prototype.pos = function (row, column) {
+        return { row: row, column: column };
+    };
+    Document.prototype.$clipPosition = function (position) {
+        var length = this.getLength();
+        if (position.row >= length) {
+            position.row = Math.max(0, length - 1);
+            position.column = this.getLine(length - 1).length;
+        }
+        else {
+            position.row = Math.max(0, position.row);
+            position.column = Math.min(Math.max(position.column, 0), this.getLine(position.row).length);
+        }
+        return position;
+    };
+    Document.prototype.insertFullLines = function (row, lines) {
+        row = Math.min(Math.max(row, 0), this.getLength());
+        var column = 0;
+        if (row < this.getLength()) {
+            lines = lines.concat([""]);
+            column = 0;
+        }
+        else {
+            lines = [""].concat(lines);
+            row--;
+            column = this.$lines[row].length;
+        }
+        this.insertMergedLines({ row: row, column: column }, lines);
+    };
+    Document.prototype.insertMergedLines = function (position, lines) {
+        var start = this.clippedPos(position.row, position.column);
+        var end = {
+            row: start.row + lines.length - 1,
+            column: (lines.length == 1 ? start.column : 0) + lines[lines.length - 1].length
+        };
+        this.applyDelta({
+            start: start,
+            end: end,
+            action: "insert",
+            lines: lines
+        });
+        return this.clonePos(end);
+    };
+    Document.prototype.remove = function (range) {
+        var start = this.clippedPos(range.start.row, range.start.column);
+        var end = this.clippedPos(range.end.row, range.end.column);
+        this.applyDelta({
+            start: start,
+            end: end,
+            action: "remove",
+            lines: this.getLinesForRange({ start: start, end: end })
+        });
+        return this.clonePos(start);
+    };
+    Document.prototype.removeInLine = function (row, startColumn, endColumn) {
+        var start = this.clippedPos(row, startColumn);
+        var end = this.clippedPos(row, endColumn);
+        this.applyDelta({
+            start: start,
+            end: end,
+            action: "remove",
+            lines: this.getLinesForRange({ start: start, end: end })
+        }, true);
+        return this.clonePos(start);
+    };
+    Document.prototype.removeFullLines = function (firstRow, lastRow) {
+        firstRow = Math.min(Math.max(0, firstRow), this.getLength() - 1);
+        lastRow = Math.min(Math.max(0, lastRow), this.getLength() - 1);
+        var deleteFirstNewLine = lastRow == this.getLength() - 1 && firstRow > 0;
+        var deleteLastNewLine = lastRow < this.getLength() - 1;
+        var startRow = (deleteFirstNewLine ? firstRow - 1 : firstRow);
+        var startCol = (deleteFirstNewLine ? this.getLine(startRow).length : 0);
+        var endRow = (deleteLastNewLine ? lastRow + 1 : lastRow);
+        var endCol = (deleteLastNewLine ? 0 : this.getLine(endRow).length);
+        var range = new Range(startRow, startCol, endRow, endCol);
+        var deletedLines = this.$lines.slice(firstRow, lastRow + 1);
+        this.applyDelta({
+            start: range.start,
+            end: range.end,
+            action: "remove",
+            lines: this.getLinesForRange(range)
+        });
+        return deletedLines;
+    };
+    Document.prototype.removeNewLine = function (row) {
+        if (row < this.getLength() - 1 && row >= 0) {
+            this.applyDelta({
+                start: this.pos(row, this.getLine(row).length),
+                end: this.pos(row + 1, 0),
+                action: "remove",
+                lines: ["", ""]
+            });
+        }
+    };
+    Document.prototype.replace = function (range, text) {
+        if (!(range instanceof Range))
+            range = Range.fromPoints(range.start, range.end);
+        if (text.length === 0 && range.isEmpty())
+            return range.start;
+        if (text == this.getTextRange(range))
+            return range.end;
+        this.remove(range);
+        var end;
+        if (text) {
+            end = this.insert(range.start, text);
+        }
+        else {
+            end = range.start;
+        }
+        return end;
+    };
+    Document.prototype.applyDeltas = function (deltas) {
+        for (var i = 0; i < deltas.length; i++) {
+            this.applyDelta(deltas[i]);
+        }
+    };
+    Document.prototype.revertDeltas = function (deltas) {
+        for (var i = deltas.length - 1; i >= 0; i--) {
+            this.revertDelta(deltas[i]);
+        }
+    };
+    Document.prototype.applyDelta = function (delta, doNotValidate) {
+        var isInsert = delta.action == "insert";
+        if (isInsert ? delta.lines.length <= 1 && !delta.lines[0]
+            : !Range.comparePoints(delta.start, delta.end)) {
+            return;
+        }
+        if (isInsert && delta.lines.length > 20000) {
+            this.$splitAndapplyLargeDelta(delta, 20000);
+        }
+        else {
+            applyDelta(this.$lines, delta, doNotValidate);
+            this._signal("change", delta);
+        }
+    };
+    Document.prototype.$safeApplyDelta = function (delta) {
+        var docLength = this.$lines.length;
+        if (delta.action == "remove" && delta.start.row < docLength && delta.end.row < docLength
+            || delta.action == "insert" && delta.start.row <= docLength) {
+            this.applyDelta(delta);
+        }
+    };
+    Document.prototype.$splitAndapplyLargeDelta = function (delta, MAX) {
+        var lines = delta.lines;
+        var l = lines.length - MAX + 1;
+        var row = delta.start.row;
+        var column = delta.start.column;
+        for (var from = 0, to = 0; from < l; from = to) {
+            to += MAX - 1;
+            var chunk = lines.slice(from, to);
+            chunk.push("");
+            this.applyDelta({
+                start: this.pos(row + from, column),
+                end: this.pos(row + to, column = 0),
+                action: delta.action,
+                lines: chunk
+            }, true);
+        }
+        delta.lines = lines.slice(from);
+        delta.start.row = row + from;
+        delta.start.column = column;
+        this.applyDelta(delta, true);
+    };
+    Document.prototype.revertDelta = function (delta) {
+        this.$safeApplyDelta({
+            start: this.clonePos(delta.start),
+            end: this.clonePos(delta.end),
+            action: (delta.action == "insert" ? "remove" : "insert"),
+            lines: delta.lines.slice()
+        });
+    };
+    Document.prototype.indexToPosition = function (index, startRow) {
+        var lines = this.$lines || this.getAllLines();
+        var newlineLength = this.getNewLineCharacter().length;
+        for (var i = startRow || 0, l = lines.length; i < l; i++) {
+            index -= lines[i].length + newlineLength;
+            if (index < 0)
+                return { row: i, column: index + lines[i].length + newlineLength };
+        }
+        return { row: l - 1, column: index + lines[l - 1].length + newlineLength };
+    };
+    Document.prototype.positionToIndex = function (pos, startRow) {
+        var lines = this.$lines || this.getAllLines();
+        var newlineLength = this.getNewLineCharacter().length;
+        var index = 0;
+        var row = Math.min(pos.row, lines.length);
+        for (var i = startRow || 0; i < row; ++i)
+            index += lines[i].length + newlineLength;
+        return index + pos.column;
+    };
+    Document.prototype.$split = function (text) {
+        return text.split(/\r\n|\r|\n/);
+    };
+    return Document;
+}());
+Document.prototype.$autoNewLine = "";
+Document.prototype.$newLineMode = "auto";
+oop.implement(Document.prototype, EventEmitter);
+exports.Document = Document;
+
+});
+
+ace.define("ace/lib/deep_copy",[], function(require, exports, module){exports.deepCopy = function deepCopy(obj) {
+    if (typeof obj !== "object" || !obj)
+        return obj;
+    var copy;
+    if (Array.isArray(obj)) {
+        copy = [];
+        for (var key = 0; key < obj.length; key++) {
+            copy[key] = deepCopy(obj[key]);
+        }
+        return copy;
+    }
+    if (Object.prototype.toString.call(obj) !== "[object Object]")
+        return obj;
+    copy = {};
+    for (var key in obj)
+        copy[key] = deepCopy(obj[key]);
+    return copy;
+};
+
+});
+
+ace.define("ace/lib/lang",[], function(require, exports, module){"use strict";
+exports.last = function (a) {
+    return a[a.length - 1];
+};
+exports.stringReverse = function (string) {
+    return string.split("").reverse().join("");
+};
+exports.stringRepeat = function (string, count) {
+    var result = '';
+    while (count > 0) {
+        if (count & 1)
+            result += string;
+        if (count >>= 1)
+            string += string;
+    }
+    return result;
+};
+var trimBeginRegexp = /^\s\s*/;
+var trimEndRegexp = /\s\s*$/;
+exports.stringTrimLeft = function (string) {
+    return string.replace(trimBeginRegexp, '');
+};
+exports.stringTrimRight = function (string) {
+    return string.replace(trimEndRegexp, '');
+};
+exports.copyObject = function (obj) {
+    var copy = {};
+    for (var key in obj) {
+        copy[key] = obj[key];
+    }
+    return copy;
+};
+exports.copyArray = function (array) {
+    var copy = [];
+    for (var i = 0, l = array.length; i < l; i++) {
+        if (array[i] && typeof array[i] == "object")
+            copy[i] = this.copyObject(array[i]);
+        else
+            copy[i] = array[i];
+    }
+    return copy;
+};
+exports.deepCopy = require("./deep_copy").deepCopy;
+exports.arrayToMap = function (arr) {
+    var map = {};
+    for (var i = 0; i < arr.length; i++) {
+        map[arr[i]] = 1;
+    }
+    return map;
+};
+exports.createMap = function (props) {
+    var map = Object.create(null);
+    for (var i in props) {
+        map[i] = props[i];
+    }
+    return map;
+};
+exports.arrayRemove = function (array, value) {
+    for (var i = 0; i <= array.length; i++) {
+        if (value === array[i]) {
+            array.splice(i, 1);
+        }
+    }
+};
+exports.escapeRegExp = function (str) {
+    return str.replace(/([.*+?^${}()|[\]\/\\])/g, '\\$1');
+};
+exports.escapeHTML = function (str) {
+    return ("" + str).replace(/&/g, "&#38;").replace(/"/g, "&#34;").replace(/'/g, "&#39;").replace(/</g, "&#60;");
+};
+exports.getMatchOffsets = function (string, regExp) {
+    var matches = [];
+    string.replace(regExp, function (str) {
+        matches.push({
+            offset: arguments[arguments.length - 2],
+            length: str.length
+        });
+    });
+    return matches;
+};
+exports.deferredCall = function (fcn) {
+    var timer = null;
+    var callback = function () {
+        timer = null;
+        fcn();
+    };
+    var deferred = function (timeout) {
+        deferred.cancel();
+        timer = setTimeout(callback, timeout || 0);
+        return deferred;
+    };
+    deferred.schedule = deferred;
+    deferred.call = function () {
+        this.cancel();
+        fcn();
+        return deferred;
+    };
+    deferred.cancel = function () {
+        clearTimeout(timer);
+        timer = null;
+        return deferred;
+    };
+    deferred.isPending = function () {
+        return timer;
+    };
+    return deferred;
+};
+exports.delayedCall = function (fcn, defaultTimeout) {
+    var timer = null;
+    var callback = function () {
+        timer = null;
+        fcn();
+    };
+    var _self = function (timeout) {
+        if (timer == null)
+            timer = setTimeout(callback, timeout || defaultTimeout);
+    };
+    _self.delay = function (timeout) {
+        timer && clearTimeout(timer);
+        timer = setTimeout(callback, timeout || defaultTimeout);
+    };
+    _self.schedule = _self;
+    _self.call = function () {
+        this.cancel();
+        fcn();
+    };
+    _self.cancel = function () {
+        timer && clearTimeout(timer);
+        timer = null;
+    };
+    _self.isPending = function () {
+        return timer;
+    };
+    return _self;
+};
+exports.supportsLookbehind = function () {
+    try {
+        new RegExp('(?<=.)');
+    }
+    catch (e) {
+        return false;
+    }
+    return true;
+};
+exports.skipEmptyMatch = function (line, last, supportsUnicodeFlag) {
+    return supportsUnicodeFlag && line.codePointAt(last) > 0xffff ? 2 : 1;
+};
+
+});
+
+ace.define("ace/worker/mirror",[], function(require, exports, module) {
+"use strict";
+
+var Document = require("../document").Document;
+var lang = require("../lib/lang");
+    
+var Mirror = exports.Mirror = function(sender) {
+    this.sender = sender;
+    var doc = this.doc = new Document("");
+    
+    var deferredUpdate = this.deferredUpdate = lang.delayedCall(this.onUpdate.bind(this));
+    
+    var _self = this;
+    sender.on("change", function(e) {
+        var data = e.data;
+        if (data[0].start) {
+            doc.applyDeltas(data);
+        } else {
+            for (var i = 0; i < data.length; i += 2) {
+                var d, err; 
+                if (Array.isArray(data[i+1])) {
+                    d = {action: "insert", start: data[i], lines: data[i+1]};
+                } else {
+                    d = {action: "remove", start: data[i], end: data[i+1]};
+                }
+                
+                if ((d.action == "insert" ? d.start : d.end).row >= doc.$lines.length) {
+                    err = new Error("Invalid delta");
+                    err.data = {
+                        path: _self.$path,
+                        linesLength: doc.$lines.length,
+                        start: d.start,
+                        end: d.end
+                    };
+                    throw err;
+                }
+
+                doc.applyDelta(d, true);
+            }
+        }
+        if (_self.$timeout)
+            return deferredUpdate.schedule(_self.$timeout);
+        _self.onUpdate();
+    });
+};
+
+(function() {
+    
+    this.$timeout = 500;
+    
+    this.setTimeout = function(timeout) {
+        this.$timeout = timeout;
+    };
+    
+    this.setValue = function(value) {
+        this.doc.setValue(value);
+        this.deferredUpdate.schedule(this.$timeout);
+    };
+    
+    this.getValue = function(callbackId) {
+        this.sender.callback(this.doc.getValue(), callbackId);
+    };
+    
+    this.onUpdate = function() {
+    };
+    
+    this.isPending = function() {
+        return this.deferredUpdate.isPending();
+    };
+    
+}).call(Mirror.prototype);
+
+});
+
+ace.define("ace/mode/lua/luaparse",[], function(require, exports, module) {
+
+(function (root, name, factory) {
+   factory(exports)
+}(this, 'luaparse', function (exports) {
+  'use strict';
+
+  exports.version = "0.3.1";
+
+  var input, options, length, features, encodingMode;
+  var defaultOptions = exports.defaultOptions = {
+      wait: false
+    , comments: true
+    , scope: false
+    , locations: false
+    , ranges: false
+    , onCreateNode: null
+    , onCreateScope: null
+    , onDestroyScope: null
+    , onLocalDeclaration: null
+    , luaVersion: '5.3'
+    , encodingMode: 'none'
+  };
+
+  function encodeUTF8(codepoint, highMask) {
+    highMask = highMask || 0;
+
+    if (codepoint < 0x80) {
+      return String.fromCharCode(codepoint);
+    } else if (codepoint < 0x800) {
+      return String.fromCharCode(
+        highMask | 0xc0 |  (codepoint >>  6)        ,
+        highMask | 0x80 | ( codepoint        & 0x3f)
+      );
+    } else if (codepoint < 0x10000) {
+      return String.fromCharCode(
+        highMask | 0xe0 |  (codepoint >> 12)        ,
+        highMask | 0x80 | ((codepoint >>  6) & 0x3f),
+        highMask | 0x80 | ( codepoint        & 0x3f)
+      );
+    } else /* istanbul ignore else */ if (codepoint < 0x110000) {
+      return String.fromCharCode(
+        highMask | 0xf0 |  (codepoint >> 18)        ,
+        highMask | 0x80 | ((codepoint >> 12) & 0x3f),
+        highMask | 0x80 | ((codepoint >>  6) & 0x3f),
+        highMask | 0x80 | ( codepoint        & 0x3f)
+      );
+    } else {
+      return null;
+    }
+  }
+
+  function toHex(num, digits) {
+    var result = num.toString(16);
+    while (result.length < digits)
+      result = '0' + result;
+    return result;
+  }
+
+  function checkChars(rx) {
+    return function (s) {
+      var m = rx.exec(s);
+      if (!m)
+        return s;
+      raise(null, errors.invalidCodeUnit, toHex(m[0].charCodeAt(0), 4).toUpperCase());
+    };
+  }
+
+  var encodingModes = {
+    'pseudo-latin1': {
+      fixup: checkChars(/[^\x00-\xff]/),
+      encodeByte: function (value) {
+        if (value === null)
+          return '';
+        return String.fromCharCode(value);
+      },
+      encodeUTF8: function (codepoint) {
+        return encodeUTF8(codepoint);
+      },
+    },
+    'x-user-defined': {
+      fixup: checkChars(/[^\x00-\x7f\uf780-\uf7ff]/),
+      encodeByte: function (value) {
+        if (value === null)
+          return '';
+        if (value >= 0x80)
+          return String.fromCharCode(value | 0xf700);
+        return String.fromCharCode(value);
+      },
+      encodeUTF8: function (codepoint) {
+        return encodeUTF8(codepoint, 0xf700);
+      }
+    },
+    'none': {
+      discardStrings: true,
+      fixup: function (s) {
+        return s;
+      },
+      encodeByte: function (value) {
+        return '';
+      },
+      encodeUTF8: function (codepoint) {
+        return '';
+      }
+    }
+  };
+
+  var EOF = 1, StringLiteral = 2, Keyword = 4, Identifier = 8
+    , NumericLiteral = 16, Punctuator = 32, BooleanLiteral = 64
+    , NilLiteral = 128, VarargLiteral = 256;
+
+  exports.tokenTypes = { EOF: EOF, StringLiteral: StringLiteral
+    , Keyword: Keyword, Identifier: Identifier, NumericLiteral: NumericLiteral
+    , Punctuator: Punctuator, BooleanLiteral: BooleanLiteral
+    , NilLiteral: NilLiteral, VarargLiteral: VarargLiteral
+  };
+
+  var errors = exports.errors = {
+      unexpected: 'unexpected %1 \'%2\' near \'%3\''
+    , unexpectedEOF: 'unexpected symbol near \'<eof>\''
+    , expected: '\'%1\' expected near \'%2\''
+    , expectedToken: '%1 expected near \'%2\''
+    , unfinishedString: 'unfinished string near \'%1\''
+    , malformedNumber: 'malformed number near \'%1\''
+    , decimalEscapeTooLarge: 'decimal escape too large near \'%1\''
+    , invalidEscape: 'invalid escape sequence near \'%1\''
+    , hexadecimalDigitExpected: 'hexadecimal digit expected near \'%1\''
+    , braceExpected: 'missing \'%1\' near \'%2\''
+    , tooLargeCodepoint: 'UTF-8 value too large near \'%1\''
+    , unfinishedLongString: 'unfinished long string (starting at line %1) near \'%2\''
+    , unfinishedLongComment: 'unfinished long comment (starting at line %1) near \'%2\''
+    , ambiguousSyntax: 'ambiguous syntax (function call x new statement) near \'%1\''
+    , noLoopToBreak: 'no loop to break near \'%1\''
+    , labelAlreadyDefined: 'label \'%1\' already defined on line %2'
+    , labelNotVisible: 'no visible label \'%1\' for <goto>'
+    , gotoJumpInLocalScope: '<goto %1> jumps into the scope of local \'%2\''
+    , cannotUseVararg: 'cannot use \'...\' outside a vararg function near \'%1\''
+    , invalidCodeUnit: 'code unit U+%1 is not allowed in the current encoding mode'
+  };
+
+  var ast = exports.ast = {
+      labelStatement: function(label) {
+      return {
+          type: 'LabelStatement'
+        , label: label
+      };
+    }
+
+    , breakStatement: function() {
+      return {
+          type: 'BreakStatement'
+      };
+    }
+
+    , gotoStatement: function(label) {
+      return {
+          type: 'GotoStatement'
+        , label: label
+      };
+    }
+
+    , returnStatement: function(args) {
+      return {
+          type: 'ReturnStatement'
+        , 'arguments': args
+      };
+    }
+
+    , ifStatement: function(clauses) {
+      return {
+          type: 'IfStatement'
+        , clauses: clauses
+      };
+    }
+    , ifClause: function(condition, body) {
+      return {
+          type: 'IfClause'
+        , condition: condition
+        , body: body
+      };
+    }
+    , elseifClause: function(condition, body) {
+      return {
+          type: 'ElseifClause'
+        , condition: condition
+        , body: body
+      };
+    }
+    , elseClause: function(body) {
+      return {
+          type: 'ElseClause'
+        , body: body
+      };
+    }
+
+    , whileStatement: function(condition, body) {
+      return {
+          type: 'WhileStatement'
+        , condition: condition
+        , body: body
+      };
+    }
+
+    , doStatement: function(body) {
+      return {
+          type: 'DoStatement'
+        , body: body
+      };
+    }
+
+    , repeatStatement: function(condition, body) {
+      return {
+          type: 'RepeatStatement'
+        , condition: condition
+        , body: body
+      };
+    }
+
+    , localStatement: function(variables, init) {
+      return {
+          type: 'LocalStatement'
+        , variables: variables
+        , init: init
+      };
+    }
+
+    , assignmentStatement: function(variables, init) {
+      return {
+          type: 'AssignmentStatement'
+        , variables: variables
+        , init: init
+      };
+    }
+
+    , callStatement: function(expression) {
+      return {
+          type: 'CallStatement'
+        , expression: expression
+      };
+    }
+
+    , functionStatement: function(identifier, parameters, isLocal, body) {
+      return {
+          type: 'FunctionDeclaration'
+        , identifier: identifier
+        , isLocal: isLocal
+        , parameters: parameters
+        , body: body
+      };
+    }
+
+    , forNumericStatement: function(variable, start, end, step, body) {
+      return {
+          type: 'ForNumericStatement'
+        , variable: variable
+        , start: start
+        , end: end
+        , step: step
+        , body: body
+      };
+    }
+
+    , forGenericStatement: function(variables, iterators, body) {
+      return {
+          type: 'ForGenericStatement'
+        , variables: variables
+        , iterators: iterators
+        , body: body
+      };
+    }
+
+    , chunk: function(body) {
+      return {
+          type: 'Chunk'
+        , body: body
+      };
+    }
+
+    , identifier: function(name) {
+      return {
+          type: 'Identifier'
+        , name: name
+      };
+    }
+
+    , literal: function(type, value, raw) {
+      type = (type === StringLiteral) ? 'StringLiteral'
+        : (type === NumericLiteral) ? 'NumericLiteral'
+        : (type === BooleanLiteral) ? 'BooleanLiteral'
+        : (type === NilLiteral) ? 'NilLiteral'
+        : 'VarargLiteral';
+
+      return {
+          type: type
+        , value: value
+        , raw: raw
+      };
+    }
+
+    , tableKey: function(key, value) {
+      return {
+          type: 'TableKey'
+        , key: key
+        , value: value
+      };
+    }
+    , tableKeyString: function(key, value) {
+      return {
+          type: 'TableKeyString'
+        , key: key
+        , value: value
+      };
+    }
+    , tableValue: function(value) {
+      return {
+          type: 'TableValue'
+        , value: value
+      };
+    }
+
+
+    , tableConstructorExpression: function(fields) {
+      return {
+          type: 'TableConstructorExpression'
+        , fields: fields
+      };
+    }
+    , binaryExpression: function(operator, left, right) {
+      var type = ('and' === operator || 'or' === operator) ?
+        'LogicalExpression' :
+        'BinaryExpression';
+
+      return {
+          type: type
+        , operator: operator
+        , left: left
+        , right: right
+      };
+    }
+    , unaryExpression: function(operator, argument) {
+      return {
+          type: 'UnaryExpression'
+        , operator: operator
+        , argument: argument
+      };
+    }
+    , memberExpression: function(base, indexer, identifier) {
+      return {
+          type: 'MemberExpression'
+        , indexer: indexer
+        , identifier: identifier
+        , base: base
+      };
+    }
+
+    , indexExpression: function(base, index) {
+      return {
+          type: 'IndexExpression'
+        , base: base
+        , index: index
+      };
+    }
+
+    , callExpression: function(base, args) {
+      return {
+          type: 'CallExpression'
+        , base: base
+        , 'arguments': args
+      };
+    }
+
+    , tableCallExpression: function(base, args) {
+      return {
+          type: 'TableCallExpression'
+        , base: base
+        , 'arguments': args
+      };
+    }
+
+    , stringCallExpression: function(base, argument) {
+      return {
+          type: 'StringCallExpression'
+        , base: base
+        , argument: argument
+      };
+    }
+
+    , comment: function(value, raw) {
+      return {
+          type: 'Comment'
+        , value: value
+        , raw: raw
+      };
+    }
+  };
+
+  function finishNode(node) {
+    if (trackLocations) {
+      var location = locations.pop();
+      location.complete();
+      location.bless(node);
+    }
+    if (options.onCreateNode) options.onCreateNode(node);
+    return node;
+  }
+
+  var slice = Array.prototype.slice
+    , toString = Object.prototype.toString
+    ;
+
+  var indexOf = /* istanbul ignore next */ function (array, element) {
+    for (var i = 0, length = array.length; i < length; ++i) {
+      if (array[i] === element) return i;
+    }
+    return -1;
+  };
+  if (Array.prototype.indexOf)
+    indexOf = function (array, element) {
+      return array.indexOf(element);
+    };
+
+  function indexOfObject(array, property, element) {
+    for (var i = 0, length = array.length; i < length; ++i) {
+      if (array[i][property] === element) return i;
+    }
+    return -1;
+  }
+
+  function sprintf(format) {
+    var args = slice.call(arguments, 1);
+    format = format.replace(/%(\d)/g, function (match, index) {
+      return '' + args[index - 1] || /* istanbul ignore next */ '';
+    });
+    return format;
+  }
+
+  var assign = /* istanbul ignore next */ function (dest) {
+    var args = slice.call(arguments, 1)
+      , src, prop;
+
+    for (var i = 0, length = args.length; i < length; ++i) {
+      src = args[i];
+      for (prop in src)
+        if (Object.prototype.hasOwnProperty.call(src, prop)) {
+          dest[prop] = src[prop];
+        }
+    }
+
+    return dest;
+  };
+  if (Object.assign)
+    assign = Object.assign;
+
+  exports.SyntaxError = SyntaxError;
+
+  function fixupError(e) {
+    if (!Object.create)
+      return e;
+    return Object.create(e, {
+      'line': { 'writable': true, value: e.line },
+      'index': { 'writable': true, value: e.index },
+      'column': { 'writable': true, value: e.column }
+    });
+  }
+
+  function raise(token) {
+    var message = sprintf.apply(null, slice.call(arguments, 1))
+      , error, col;
+
+    if (token === null || typeof token.line === 'undefined') {
+      col = index - lineStart + 1;
+      error = fixupError(new SyntaxError(sprintf('[%1:%2] %3', line, col, message)));
+      error.index = index;
+      error.line = line;
+      error.column = col;
+    } else {
+      col = token.range[0] - token.lineStart;
+      error = fixupError(new SyntaxError(sprintf('[%1:%2] %3', token.line, col, message)));
+      error.line = token.line;
+      error.index = token.range[0];
+      error.column = col;
+    }
+    throw error;
+  }
+
+  function tokenValue(token) {
+    var raw = input.slice(token.range[0], token.range[1]);
+    if (raw)
+      return raw;
+    return token.value;
+  }
+
+  function raiseUnexpectedToken(type, token) {
+    raise(token, errors.expectedToken, type, tokenValue(token));
+  }
+
+  function unexpected(found) {
+    var near = tokenValue(lookahead);
+    if ('undefined' !== typeof found.type) {
+      var type;
+      switch (found.type) {
+        case StringLiteral:   type = 'string';      break;
+        case Keyword:         type = 'keyword';     break;
+        case Identifier:      type = 'identifier';  break;
+        case NumericLiteral:  type = 'number';      break;
+        case Punctuator:      type = 'symbol';      break;
+        case BooleanLiteral:  type = 'boolean';     break;
+        case NilLiteral:
+          return raise(found, errors.unexpected, 'symbol', 'nil', near);
+        case EOF:
+          return raise(found, errors.unexpectedEOF);
+      }
+      return raise(found, errors.unexpected, type, tokenValue(found), near);
+    }
+    return raise(found, errors.unexpected, 'symbol', found, near);
+  }
+
+  var index
+    , token
+    , previousToken
+    , lookahead
+    , comments
+    , tokenStart
+    , line
+    , lineStart;
+
+  exports.lex = lex;
+
+  function lex() {
+    skipWhiteSpace();
+    while (45 === input.charCodeAt(index) &&
+           45 === input.charCodeAt(index + 1)) {
+      scanComment();
+      skipWhiteSpace();
+    }
+    if (index >= length) return {
+        type : EOF
+      , value: '<eof>'
+      , line: line
+      , lineStart: lineStart
+      , range: [index, index]
+    };
+
+    var charCode = input.charCodeAt(index)
+      , next = input.charCodeAt(index + 1);
+    tokenStart = index;
+    if (isIdentifierStart(charCode)) return scanIdentifierOrKeyword();
+
+    switch (charCode) {
+      case 39: case 34: // '"
+        return scanStringLiteral();
+
+      case 48: case 49: case 50: case 51: case 52: case 53:
+      case 54: case 55: case 56: case 57: // 0-9
+        return scanNumericLiteral();
+
+      case 46: // .
+        if (isDecDigit(next)) return scanNumericLiteral();
+        if (46 === next) {
+          if (46 === input.charCodeAt(index + 2)) return scanVarargLiteral();
+          return scanPunctuator('..');
+        }
+        return scanPunctuator('.');
+
+      case 61: // =
+        if (61 === next) return scanPunctuator('==');
+        return scanPunctuator('=');
+
+      case 62: // >
+        if (features.bitwiseOperators)
+          if (62 === next) return scanPunctuator('>>');
+        if (61 === next) return scanPunctuator('>=');
+        return scanPunctuator('>');
+
+      case 60: // <
+        if (features.bitwiseOperators)
+          if (60 === next) return scanPunctuator('<<');
+        if (61 === next) return scanPunctuator('<=');
+        return scanPunctuator('<');
+
+      case 126: // ~
+        if (61 === next) return scanPunctuator('~=');
+        if (!features.bitwiseOperators)
+          break;
+        return scanPunctuator('~');
+
+      case 58: // :
+        if (features.labels)
+          if (58 === next) return scanPunctuator('::');
+        return scanPunctuator(':');
+
+      case 91: // [
+        if (91 === next || 61 === next) return scanLongStringLiteral();
+        return scanPunctuator('[');
+
+      case 47: // /
+        if (features.integerDivision)
+          if (47 === next) return scanPunctuator('//');
+        return scanPunctuator('/');
+
+      case 38: case 124: // & |
+        if (!features.bitwiseOperators)
+          break;
+      case 42: case 94: case 37: case 44: case 123: case 125:
+      case 93: case 40: case 41: case 59: case 35: case 45:
+      case 43: // * ^ % , { } ] ( ) ; # - +
+        return scanPunctuator(input.charAt(index));
+    }
+
+    return unexpected(input.charAt(index));
+  }
+
+  function consumeEOL() {
+    var charCode = input.charCodeAt(index)
+      , peekCharCode = input.charCodeAt(index + 1);
+
+    if (isLineTerminator(charCode)) {
+      if (10 === charCode && 13 === peekCharCode) ++index;
+      if (13 === charCode && 10 === peekCharCode) ++index;
+      ++line;
+      lineStart = ++index;
+
+      return true;
+    }
+    return false;
+  }
+
+  function skipWhiteSpace() {
+    while (index < length) {
+      var charCode = input.charCodeAt(index);
+      if (isWhiteSpace(charCode)) {
+        ++index;
+      } else if (!consumeEOL()) {
+        break;
+      }
+    }
+  }
+
+  function scanIdentifierOrKeyword() {
+    var value, type;
+    while (isIdentifierPart(input.charCodeAt(++index)));
+    value = encodingMode.fixup(input.slice(tokenStart, index));
+    if (isKeyword(value)) {
+      type = Keyword;
+    } else if ('true' === value || 'false' === value) {
+      type = BooleanLiteral;
+      value = ('true' === value);
+    } else if ('nil' === value) {
+      type = NilLiteral;
+      value = null;
+    } else {
+      type = Identifier;
+    }
+
+    return {
+        type: type
+      , value: value
+      , line: line
+      , lineStart: lineStart
+      , range: [tokenStart, index]
+    };
+  }
+
+  function scanPunctuator(value) {
+    index += value.length;
+    return {
+        type: Punctuator
+      , value: value
+      , line: line
+      , lineStart: lineStart
+      , range: [tokenStart, index]
+    };
+  }
+
+  function scanVarargLiteral() {
+    index += 3;
+    return {
+        type: VarargLiteral
+      , value: '...'
+      , line: line
+      , lineStart: lineStart
+      , range: [tokenStart, index]
+    };
+  }
+
+  function scanStringLiteral() {
+    var delimiter = input.charCodeAt(index++)
+      , beginLine = line
+      , beginLineStart = lineStart
+      , stringStart = index
+      , string = encodingMode.discardStrings ? null : ''
+      , charCode;
+
+    for (;;) {
+      charCode = input.charCodeAt(index++);
+      if (delimiter === charCode) break;
+      if (index > length || isLineTerminator(charCode)) {
+        string += input.slice(stringStart, index - 1);
+        raise(null, errors.unfinishedString, input.slice(tokenStart, index - 1));
+      }
+      if (92 === charCode) { // backslash
+        if (!encodingMode.discardStrings) {
+          var beforeEscape = input.slice(stringStart, index - 1);
+          string += encodingMode.fixup(beforeEscape);
+        }
+        var escapeValue = readEscapeSequence();
+        if (!encodingMode.discardStrings)
+          string += escapeValue;
+        stringStart = index;
+      }
+    }
+    if (!encodingMode.discardStrings) {
+      string += encodingMode.encodeByte(null);
+      string += encodingMode.fixup(input.slice(stringStart, index - 1));
+    }
+
+    return {
+        type: StringLiteral
+      , value: string
+      , line: beginLine
+      , lineStart: beginLineStart
+      , lastLine: line
+      , lastLineStart: lineStart
+      , range: [tokenStart, index]
+    };
+  }
+
+  function scanLongStringLiteral() {
+    var beginLine = line
+      , beginLineStart = lineStart
+      , string = readLongString(false);
+    if (false === string) raise(token, errors.expected, '[', tokenValue(token));
+
+    return {
+        type: StringLiteral
+      , value: encodingMode.discardStrings ? null : encodingMode.fixup(string)
+      , line: beginLine
+      , lineStart: beginLineStart
+      , lastLine: line
+      , lastLineStart: lineStart
+      , range: [tokenStart, index]
+    };
+  }
+
+  function scanNumericLiteral() {
+    var character = input.charAt(index)
+      , next = input.charAt(index + 1);
+
+    var literal = ('0' === character && 'xX'.indexOf(next || null) >= 0) ?
+      readHexLiteral() : readDecLiteral();
+
+    var foundImaginaryUnit = readImaginaryUnitSuffix()
+      , foundInt64Suffix = readInt64Suffix();
+
+    if (foundInt64Suffix && (foundImaginaryUnit || literal.hasFractionPart)) {
+      raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+    }
+
+    return {
+        type: NumericLiteral
+      , value: literal.value
+      , line: line
+      , lineStart: lineStart
+      , range: [tokenStart, index]
+    };
+  }
+
+  function readImaginaryUnitSuffix() {
+    if (!features.imaginaryNumbers) return;
+    if ('iI'.indexOf(input.charAt(index) || null) >= 0) {
+      ++index;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  function readInt64Suffix() {
+    if (!features.integerSuffixes) return;
+
+    if ('uU'.indexOf(input.charAt(index) || null) >= 0) {
+      ++index;
+      if ('lL'.indexOf(input.charAt(index) || null) >= 0) {
+        ++index;
+        if ('lL'.indexOf(input.charAt(index) || null) >= 0) {
+          ++index;
+          return 'ULL';
+        } else {
+          raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+        }
+      } else {
+        raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+      }
+    } else if ('lL'.indexOf(input.charAt(index) || null) >= 0) {
+        ++index;
+        if ('lL'.indexOf(input.charAt(index) || null) >= 0) {
+          ++index;
+          return 'LL';
+        } else {
+          raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+        }
+    }
+  }
+
+  function readHexLiteral() {
+    var fraction = 0 // defaults to 0 as it gets summed
+      , binaryExponent = 1 // defaults to 1 as it gets multiplied
+      , binarySign = 1 // positive
+      , digit, fractionStart, exponentStart, digitStart;
+
+    digitStart = index += 2; // Skip 0x part
+    if (!isHexDigit(input.charCodeAt(index)))
+      raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+
+    while (isHexDigit(input.charCodeAt(index))) ++index;
+    digit = parseInt(input.slice(digitStart, index), 16);
+    var foundFraction = false;
+    if ('.' === input.charAt(index)) {
+      foundFraction = true;
+      fractionStart = ++index;
+
+      while (isHexDigit(input.charCodeAt(index))) ++index;
+      fraction = input.slice(fractionStart, index);
+      fraction = (fractionStart === index) ? 0
+        : parseInt(fraction, 16) / Math.pow(16, index - fractionStart);
+    }
+    var foundBinaryExponent = false;
+    if ('pP'.indexOf(input.charAt(index) || null) >= 0) {
+      foundBinaryExponent = true;
+      ++index;
+      if ('+-'.indexOf(input.charAt(index) || null) >= 0)
+        binarySign = ('+' === input.charAt(index++)) ? 1 : -1;
+
+      exponentStart = index;
+      if (!isDecDigit(input.charCodeAt(index)))
+        raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+
+      while (isDecDigit(input.charCodeAt(index))) ++index;
+      binaryExponent = input.slice(exponentStart, index);
+      binaryExponent = Math.pow(2, binaryExponent * binarySign);
+    }
+
+    return {
+      value: (digit + fraction) * binaryExponent,
+      hasFractionPart: foundFraction || foundBinaryExponent
+    };
+  }
+
+  function readDecLiteral() {
+    while (isDecDigit(input.charCodeAt(index))) ++index;
+    var foundFraction = false;
+    if ('.' === input.charAt(index)) {
+      foundFraction = true;
+      ++index;
+      while (isDecDigit(input.charCodeAt(index))) ++index;
+    }
+    var foundExponent = false;
+    if ('eE'.indexOf(input.charAt(index) || null) >= 0) {
+      foundExponent = true;
+      ++index;
+      if ('+-'.indexOf(input.charAt(index) || null) >= 0) ++index;
+      if (!isDecDigit(input.charCodeAt(index)))
+        raise(null, errors.malformedNumber, input.slice(tokenStart, index));
+
+      while (isDecDigit(input.charCodeAt(index))) ++index;
+    }
+
+    return {
+      value: parseFloat(input.slice(tokenStart, index)),
+      hasFractionPart: foundFraction || foundExponent
+    };
+  }
+
+  function readUnicodeEscapeSequence() {
+    var sequenceStart = index++;
+
+    if (input.charAt(index++) !== '{')
+      raise(null, errors.braceExpected, '{', '\\' + input.slice(sequenceStart, index));
+    if (!isHexDigit(input.charCodeAt(index)))
+      raise(null, errors.hexadecimalDigitExpected, '\\' + input.slice(sequenceStart, index));
+
+    while (input.charCodeAt(index) === 0x30) ++index;
+    var escStart = index;
+
+    while (isHexDigit(input.charCodeAt(index))) {
+      ++index;
+      if (index - escStart > 6)
+        raise(null, errors.tooLargeCodepoint, '\\' + input.slice(sequenceStart, index));
+    }
+
+    var b = input.charAt(index++);
+    if (b !== '}') {
+      if ((b === '"') || (b === "'"))
+        raise(null, errors.braceExpected, '}', '\\' + input.slice(sequenceStart, index--));
+      else
+        raise(null, errors.hexadecimalDigitExpected, '\\' + input.slice(sequenceStart, index));
+    }
+
+    var codepoint = parseInt(input.slice(escStart, index - 1) || '0', 16);
+    var frag = '\\' + input.slice(sequenceStart, index);
+
+    if (codepoint > 0x10ffff) {
+      raise(null, errors.tooLargeCodepoint, frag);
+    }
+
+    return encodingMode.encodeUTF8(codepoint, frag);
+  }
+  function readEscapeSequence() {
+    var sequenceStart = index;
+    switch (input.charAt(index)) {
+      case 'a': ++index; return '\x07';
+      case 'n': ++index; return '\n';
+      case 'r': ++index; return '\r';
+      case 't': ++index; return '\t';
+      case 'v': ++index; return '\x0b';
+      case 'b': ++index; return '\b';
+      case 'f': ++index; return '\f';
+      case '\r':
+      case '\n':
+        consumeEOL();
+        return '\n';
+
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+        while (isDecDigit(input.charCodeAt(index)) && index - sequenceStart < 3) ++index;
+
+        var frag = input.slice(sequenceStart, index);
+        var ddd = parseInt(frag, 10);
+        if (ddd > 255) {
+          raise(null, errors.decimalEscapeTooLarge, '\\' + ddd);
+        }
+        return encodingMode.encodeByte(ddd, '\\' + frag);
+
+      case 'z':
+        if (features.skipWhitespaceEscape) {
+          ++index;
+          skipWhiteSpace();
+          return '';
+        }
+        break;
+
+      case 'x':
+        if (features.hexEscapes) {
+          if (isHexDigit(input.charCodeAt(index + 1)) &&
+              isHexDigit(input.charCodeAt(index + 2))) {
+            index += 3;
+            return encodingMode.encodeByte(parseInt(input.slice(sequenceStart + 1, index), 16), '\\' + input.slice(sequenceStart, index));
+          }
+          raise(null, errors.hexadecimalDigitExpected, '\\' + input.slice(sequenceStart, index + 2));
+        }
+        break;
+
+      case 'u':
+        if (features.unicodeEscapes)
+          return readUnicodeEscapeSequence();
+        break;
+
+      case '\\': case '"': case "'":
+        return input.charAt(index++);
+    }
+
+    if (features.strictEscapes)
+      raise(null, errors.invalidEscape, '\\' + input.slice(sequenceStart, index + 1));
+    return input.charAt(index++);
+  }
+
+  function scanComment() {
+    tokenStart = index;
+    index += 2; // --
+
+    var character = input.charAt(index)
+      , content = ''
+      , isLong = false
+      , commentStart = index
+      , lineStartComment = lineStart
+      , lineComment = line;
+
+    if ('[' === character) {
+      content = readLongString(true);
+      if (false === content) content = character;
+      else isLong = true;
+    }
+    if (!isLong) {
+      while (index < length) {
+        if (isLineTerminator(input.charCodeAt(index))) break;
+        ++index;
+      }
+      if (options.comments) content = input.slice(commentStart, index);
+    }
+
+    if (options.comments) {
+      var node = ast.comment(content, input.slice(tokenStart, index));
+      if (options.locations) {
+        node.loc = {
+            start: { line: lineComment, column: tokenStart - lineStartComment }
+          , end: { line: line, column: index - lineStart }
+        };
+      }
+      if (options.ranges) {
+        node.range = [tokenStart, index];
+      }
+      if (options.onCreateNode) options.onCreateNode(node);
+      comments.push(node);
+    }
+  }
+
+  function readLongString(isComment) {
+    var level = 0
+      , content = ''
+      , terminator = false
+      , character, stringStart, firstLine = line;
+
+    ++index; // [
+    while ('=' === input.charAt(index + level)) ++level;
+    if ('[' !== input.charAt(index + level)) return false;
+
+    index += level + 1;
+    if (isLineTerminator(input.charCodeAt(index))) consumeEOL();
+
+    stringStart = index;
+    while (index < length) {
+      while (isLineTerminator(input.charCodeAt(index))) consumeEOL();
+
+      character = input.charAt(index++);
+      if (']' === character) {
+        terminator = true;
+        for (var i = 0; i < level; ++i) {
+          if ('=' !== input.charAt(index + i)) terminator = false;
+        }
+        if (']' !== input.charAt(index + level)) terminator = false;
+      }
+      if (terminator) {
+        content += input.slice(stringStart, index - 1);
+        index += level + 1;
+        return content;
+      }
+    }
+
+    raise(null, isComment ?
+                errors.unfinishedLongComment :
+                errors.unfinishedLongString,
+          firstLine, '<eof>');
+  }
+
+  function next() {
+    previousToken = token;
+    token = lookahead;
+    lookahead = lex();
+  }
+
+  function consume(value) {
+    if (value === token.value) {
+      next();
+      return true;
+    }
+    return false;
+  }
+
+  function expect(value) {
+    if (value === token.value) next();
+    else raise(token, errors.expected, value, tokenValue(token));
+  }
+
+  function isWhiteSpace(charCode) {
+    return 9 === charCode || 32 === charCode || 0xB === charCode || 0xC === charCode;
+  }
+
+  function isLineTerminator(charCode) {
+    return 10 === charCode || 13 === charCode;
+  }
+
+  function isDecDigit(charCode) {
+    return charCode >= 48 && charCode <= 57;
+  }
+
+  function isHexDigit(charCode) {
+    return (charCode >= 48 && charCode <= 57) || (charCode >= 97 && charCode <= 102) || (charCode >= 65 && charCode <= 70);
+  }
+
+  function isIdentifierStart(charCode) {
+    if ((charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122) || 95 === charCode)
+      return true;
+    if (features.extendedIdentifiers && charCode >= 128)
+      return true;
+    return false;
+  }
+
+  function isIdentifierPart(charCode) {
+    if ((charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122) || 95 === charCode || (charCode >= 48 && charCode <= 57))
+      return true;
+    if (features.extendedIdentifiers && charCode >= 128)
+      return true;
+    return false;
+  }
+
+  function isKeyword(id) {
+    switch (id.length) {
+      case 2:
+        return 'do' === id || 'if' === id || 'in' === id || 'or' === id;
+      case 3:
+        return 'and' === id || 'end' === id || 'for' === id || 'not' === id;
+      case 4:
+        if ('else' === id || 'then' === id)
+          return true;
+        if (features.labels && !features.contextualGoto)
+          return ('goto' === id);
+        return false;
+      case 5:
+        return 'break' === id || 'local' === id || 'until' === id || 'while' === id;
+      case 6:
+        return 'elseif' === id || 'repeat' === id || 'return' === id;
+      case 8:
+        return 'function' === id;
+    }
+    return false;
+  }
+
+  function isUnary(token) {
+    if (Punctuator === token.type) return '#-~'.indexOf(token.value) >= 0;
+    if (Keyword === token.type) return 'not' === token.value;
+    return false;
+  }
+
+  function isBlockFollow(token) {
+    if (EOF === token.type) return true;
+    if (Keyword !== token.type) return false;
+    switch (token.value) {
+      case 'else': case 'elseif':
+      case 'end': case 'until':
+        return true;
+      default:
+        return false;
+    }
+  }
+  var scopes
+    , scopeDepth
+    , globals;
+  function createScope() {
+    var scope = scopes[scopeDepth++].slice();
+    scopes.push(scope);
+    if (options.onCreateScope) options.onCreateScope();
+  }
+  function destroyScope() {
+    var scope = scopes.pop();
+    --scopeDepth;
+    if (options.onDestroyScope) options.onDestroyScope();
+  }
+  function scopeIdentifierName(name) {
+    if (options.onLocalDeclaration) options.onLocalDeclaration(name);
+    if (-1 !== indexOf(scopes[scopeDepth], name)) return;
+    scopes[scopeDepth].push(name);
+  }
+  function scopeIdentifier(node) {
+    scopeIdentifierName(node.name);
+    attachScope(node, true);
+  }
+  function attachScope(node, isLocal) {
+    if (!isLocal && -1 === indexOfObject(globals, 'name', node.name))
+      globals.push(node);
+
+    node.isLocal = isLocal;
+  }
+  function scopeHasName(name) {
+    return (-1 !== indexOf(scopes[scopeDepth], name));
+  }
+
+  var locations = []
+    , trackLocations;
+
+  function createLocationMarker() {
+    return new Marker(token);
+  }
+
+  function Marker(token) {
+    if (options.locations) {
+      this.loc = {
+          start: {
+            line: token.line
+          , column: token.range[0] - token.lineStart
+        }
+        , end: {
+            line: 0
+          , column: 0
+        }
+      };
+    }
+    if (options.ranges) this.range = [token.range[0], 0];
+  }
+  Marker.prototype.complete = function() {
+    if (options.locations) {
+      this.loc.end.line = previousToken.lastLine || previousToken.line;
+      this.loc.end.column = previousToken.range[1] - (previousToken.lastLineStart || previousToken.lineStart);
+    }
+    if (options.ranges) {
+      this.range[1] = previousToken.range[1];
+    }
+  };
+
+  Marker.prototype.bless = function (node) {
+    if (this.loc) {
+      var loc = this.loc;
+      node.loc = {
+        start: {
+          line: loc.start.line,
+          column: loc.start.column
+        },
+        end: {
+          line: loc.end.line,
+          column: loc.end.column
+        }
+      };
+    }
+    if (this.range) {
+      node.range = [
+        this.range[0],
+        this.range[1]
+      ];
+    }
+  };
+  function markLocation() {
+    if (trackLocations) locations.push(createLocationMarker());
+  }
+  function pushLocation(marker) {
+    if (trackLocations) locations.push(marker);
+  }
+
+  function FullFlowContext() {
+    this.scopes = [];
+    this.pendingGotos = [];
+  }
+
+  FullFlowContext.prototype.isInLoop = function () {
+    var i = this.scopes.length;
+    while (i --> 0) {
+      if (this.scopes[i].isLoop)
+        return true;
+    }
+    return false;
+  };
+
+  FullFlowContext.prototype.pushScope = function (isLoop) {
+    var scope = {
+      labels: {},
+      locals: [],
+      deferredGotos: [],
+      isLoop: !!isLoop
+    };
+    this.scopes.push(scope);
+  };
+
+  FullFlowContext.prototype.popScope = function () {
+    for (var i = 0; i < this.pendingGotos.length; ++i) {
+      var theGoto = this.pendingGotos[i];
+      if (theGoto.maxDepth >= this.scopes.length)
+        if (--theGoto.maxDepth <= 0)
+          raise(theGoto.token, errors.labelNotVisible, theGoto.target);
+    }
+
+    this.scopes.pop();
+  };
+
+  FullFlowContext.prototype.addGoto = function (target, token) {
+    var localCounts = [];
+
+    for (var i = 0; i < this.scopes.length; ++i) {
+      var scope = this.scopes[i];
+      localCounts.push(scope.locals.length);
+      if (Object.prototype.hasOwnProperty.call(scope.labels, target))
+        return;
+    }
+
+    this.pendingGotos.push({
+      maxDepth: this.scopes.length,
+      target: target,
+      token: token,
+      localCounts: localCounts
+    });
+  };
+
+  FullFlowContext.prototype.addLabel = function (name, token) {
+    var scope = this.currentScope();
+
+    if (Object.prototype.hasOwnProperty.call(scope.labels, name)) {
+      raise(token, errors.labelAlreadyDefined, name, scope.labels[name].line);
+    } else {
+      var newGotos = [];
+
+      for (var i = 0; i < this.pendingGotos.length; ++i) {
+        var theGoto = this.pendingGotos[i];
+
+        if (theGoto.maxDepth >= this.scopes.length && theGoto.target === name) {
+          if (theGoto.localCounts[this.scopes.length - 1] < scope.locals.length) {
+            scope.deferredGotos.push(theGoto);
+          }
+          continue;
+        }
+
+        newGotos.push(theGoto);
+      }
+
+      this.pendingGotos = newGotos;
+    }
+
+    scope.labels[name] = {
+      localCount: scope.locals.length,
+      line: token.line
+    };
+  };
+
+  FullFlowContext.prototype.addLocal = function (name, token) {
+    this.currentScope().locals.push({
+      name: name,
+      token: token
+    });
+  };
+
+  FullFlowContext.prototype.currentScope = function () {
+    return this.scopes[this.scopes.length - 1];
+  };
+
+  FullFlowContext.prototype.raiseDeferredErrors = function () {
+    var scope = this.currentScope();
+    var bads = scope.deferredGotos;
+    for (var i = 0; i < bads.length; ++i) {
+      var theGoto = bads[i];
+      raise(theGoto.token, errors.gotoJumpInLocalScope, theGoto.target, scope.locals[theGoto.localCounts[this.scopes.length - 1]].name);
+    }
+  };
+
+  function LoopFlowContext() {
+    this.level = 0;
+    this.loopLevels = [];
+  }
+
+  LoopFlowContext.prototype.isInLoop = function () {
+    return !!this.loopLevels.length;
+  };
+
+  LoopFlowContext.prototype.pushScope = function (isLoop) {
+    ++this.level;
+    if (isLoop)
+      this.loopLevels.push(this.level);
+  };
+
+  LoopFlowContext.prototype.popScope = function () {
+    var levels = this.loopLevels;
+    var levlen = levels.length;
+    if (levlen) {
+      if (levels[levlen - 1] === this.level)
+        levels.pop();
+    }
+    --this.level;
+  };
+
+  LoopFlowContext.prototype.addGoto =
+  LoopFlowContext.prototype.addLabel =
+  function () { throw new Error('This should never happen'); };
+
+  LoopFlowContext.prototype.addLocal =
+  LoopFlowContext.prototype.raiseDeferredErrors =
+  function () {};
+
+  function makeFlowContext() {
+    return features.labels ? new FullFlowContext() : new LoopFlowContext();
+  }
+
+  function parseChunk() {
+    next();
+    markLocation();
+    if (options.scope) createScope();
+    var flowContext = makeFlowContext();
+    flowContext.allowVararg = true;
+    flowContext.pushScope();
+    var body = parseBlock(flowContext);
+    flowContext.popScope();
+    if (options.scope) destroyScope();
+    if (EOF !== token.type) unexpected(token);
+    if (trackLocations && !body.length) previousToken = token;
+    return finishNode(ast.chunk(body));
+  }
+
+  function parseBlock(flowContext) {
+    var block = []
+      , statement;
+
+    while (!isBlockFollow(token)) {
+      if ('return' === token.value || (!features.relaxedBreak && 'break' === token.value)) {
+        block.push(parseStatement(flowContext));
+        break;
+      }
+      statement = parseStatement(flowContext);
+      consume(';');
+      if (statement) block.push(statement);
+    }
+    return block;
+  }
+
+  function parseStatement(flowContext) {
+    markLocation();
+
+    if (Punctuator === token.type) {
+      if (consume('::')) return parseLabelStatement(flowContext);
+    }
+    if (features.emptyStatement) {
+      if (consume(';')) {
+        if (trackLocations) locations.pop();
+        return;
+      }
+    }
+
+    flowContext.raiseDeferredErrors();
+
+    if (Keyword === token.type) {
+      switch (token.value) {
+        case 'local':    next(); return parseLocalStatement(flowContext);
+        case 'if':       next(); return parseIfStatement(flowContext);
+        case 'return':   next(); return parseReturnStatement(flowContext);
+        case 'function': next();
+          var name = parseFunctionName();
+          return parseFunctionDeclaration(name);
+        case 'while':    next(); return parseWhileStatement(flowContext);
+        case 'for':      next(); return parseForStatement(flowContext);
+        case 'repeat':   next(); return parseRepeatStatement(flowContext);
+        case 'break':    next();
+          if (!flowContext.isInLoop())
+            raise(token, errors.noLoopToBreak, token.value);
+          return parseBreakStatement();
+        case 'do':       next(); return parseDoStatement(flowContext);
+        case 'goto':     next(); return parseGotoStatement(flowContext);
+      }
+    }
+
+    if (features.contextualGoto &&
+        token.type === Identifier && token.value === 'goto' &&
+        lookahead.type === Identifier && lookahead.value !== 'goto') {
+      next(); return parseGotoStatement(flowContext);
+    }
+    if (trackLocations) locations.pop();
+
+    return parseAssignmentOrCallStatement(flowContext);
+  }
+
+  function parseLabelStatement(flowContext) {
+    var nameToken = token
+      , label = parseIdentifier();
+
+    if (options.scope) {
+      scopeIdentifierName('::' + nameToken.value + '::');
+      attachScope(label, true);
+    }
+
+    expect('::');
+
+    flowContext.addLabel(nameToken.value, nameToken);
+    return finishNode(ast.labelStatement(label));
+  }
+
+  function parseBreakStatement() {
+    return finishNode(ast.breakStatement());
+  }
+
+  function parseGotoStatement(flowContext) {
+    var name = token.value
+      , gotoToken = previousToken
+      , label = parseIdentifier();
+
+    flowContext.addGoto(name, gotoToken);
+    return finishNode(ast.gotoStatement(label));
+  }
+
+  function parseDoStatement(flowContext) {
+    if (options.scope) createScope();
+    flowContext.pushScope();
+    var body = parseBlock(flowContext);
+    flowContext.popScope();
+    if (options.scope) destroyScope();
+    expect('end');
+    return finishNode(ast.doStatement(body));
+  }
+
+  function parseWhileStatement(flowContext) {
+    var condition = parseExpectedExpression(flowContext);
+    expect('do');
+    if (options.scope) createScope();
+    flowContext.pushScope(true);
+    var body = parseBlock(flowContext);
+    flowContext.popScope();
+    if (options.scope) destroyScope();
+    expect('end');
+    return finishNode(ast.whileStatement(condition, body));
+  }
+
+  function parseRepeatStatement(flowContext) {
+    if (options.scope) createScope();
+    flowContext.pushScope(true);
+    var body = parseBlock(flowContext);
+    expect('until');
+    flowContext.raiseDeferredErrors();
+    var condition = parseExpectedExpression(flowContext);
+    flowContext.popScope();
+    if (options.scope) destroyScope();
+    return finishNode(ast.repeatStatement(condition, body));
+  }
+
+  function parseReturnStatement(flowContext) {
+    var expressions = [];
+
+    if ('end' !== token.value) {
+      var expression = parseExpression(flowContext);
+      if (null != expression) expressions.push(expression);
+      while (consume(',')) {
+        expression = parseExpectedExpression(flowContext);
+        expressions.push(expression);
+      }
+      consume(';'); // grammar tells us ; is optional here.
+    }
+    return finishNode(ast.returnStatement(expressions));
+  }
+
+  function parseIfStatement(flowContext) {
+    var clauses = []
+      , condition
+      , body
+      , marker;
+    if (trackLocations) {
+      marker = locations[locations.length - 1];
+      locations.push(marker);
+    }
+    condition = parseExpectedExpression(flowContext);
+    expect('then');
+    if (options.scope) createScope();
+    flowContext.pushScope();
+    body = parseBlock(flowContext);
+    flowContext.popScope();
+    if (options.scope) destroyScope();
+    clauses.push(finishNode(ast.ifClause(condition, body)));
+
+    if (trackLocations) marker = createLocationMarker();
+    while (consume('elseif')) {
+      pushLocation(marker);
+      condition = parseExpectedExpression(flowContext);
+      expect('then');
+      if (options.scope) createScope();
+      flowContext.pushScope();
+      body = parseBlock(flowContext);
+      flowContext.popScope();
+      if (options.scope) destroyScope();
+      clauses.push(finishNode(ast.elseifClause(condition, body)));
+      if (trackLocations) marker = createLocationMarker();
+    }
+
+    if (consume('else')) {
+      if (trackLocations) {
+        marker = new Marker(previousToken);
+        locations.push(marker);
+      }
+      if (options.scope) createScope();
+      flowContext.pushScope();
+      body = parseBlock(flowContext);
+      flowContext.popScope();
+      if (options.scope) destroyScope();
+      clauses.push(finishNode(ast.elseClause(body)));
+    }
+
+    expect('end');
+    return finishNode(ast.ifStatement(clauses));
+  }
+
+  function parseForStatement(flowContext) {
+    var variable = parseIdentifier()
+      , body;
+
+    if (options.scope) {
+      createScope();
+      scopeIdentifier(variable);
+    }
+    if (consume('=')) {
+      var start = parseExpectedExpression(flowContext);
+      expect(',');
+      var end = parseExpectedExpression(flowContext);
+      var step = consume(',') ? parseExpectedExpression(flowContext) : null;
+
+      expect('do');
+      flowContext.pushScope(true);
+      body = parseBlock(flowContext);
+      flowContext.popScope();
+      expect('end');
+      if (options.scope) destroyScope();
+
+      return finishNode(ast.forNumericStatement(variable, start, end, step, body));
+    }
+    else {
+      var variables = [variable];
+      while (consume(',')) {
+        variable = parseIdentifier();
+        if (options.scope) scopeIdentifier(variable);
+        variables.push(variable);
+      }
+      expect('in');
+      var iterators = [];
+      do {
+        var expression = parseExpectedExpression(flowContext);
+        iterators.push(expression);
+      } while (consume(','));
+
+      expect('do');
+      flowContext.pushScope(true);
+      body = parseBlock(flowContext);
+      flowContext.popScope();
+      expect('end');
+      if (options.scope) destroyScope();
+
+      return finishNode(ast.forGenericStatement(variables, iterators, body));
+    }
+  }
+
+  function parseLocalStatement(flowContext) {
+    var name
+      , declToken = previousToken;
+
+    if (Identifier === token.type) {
+      var variables = []
+        , init = [];
+
+      do {
+        name = parseIdentifier();
+
+        variables.push(name);
+        flowContext.addLocal(name.name, declToken);
+      } while (consume(','));
+
+      if (consume('=')) {
+        do {
+          var expression = parseExpectedExpression(flowContext);
+          init.push(expression);
+        } while (consume(','));
+      }
+      if (options.scope) {
+        for (var i = 0, l = variables.length; i < l; ++i) {
+          scopeIdentifier(variables[i]);
+        }
+      }
+
+      return finishNode(ast.localStatement(variables, init));
+    }
+    if (consume('function')) {
+      name = parseIdentifier();
+      flowContext.addLocal(name.name, declToken);
+
+      if (options.scope) {
+        scopeIdentifier(name);
+        createScope();
+      }
+      return parseFunctionDeclaration(name, true);
+    } else {
+      raiseUnexpectedToken('<name>', token);
+    }
+  }
+
+  function parseAssignmentOrCallStatement(flowContext) {
+    var previous = token
+      , marker, startMarker;
+    var lvalue, base, name;
+
+    var targets = [];
+
+    if (trackLocations) startMarker = createLocationMarker();
+
+    do {
+      if (trackLocations) marker = createLocationMarker();
+
+      if (Identifier === token.type) {
+        name = token.value;
+        base = parseIdentifier();
+        if (options.scope) attachScope(base, scopeHasName(name));
+        lvalue = true;
+      } else if ('(' === token.value) {
+        next();
+        base = parseExpectedExpression(flowContext);
+        expect(')');
+        lvalue = false;
+      } else {
+        return unexpected(token);
+      }
+
+      both: for (;;) {
+        var newBase;
+
+        switch (StringLiteral === token.type ? '"' : token.value) {
+        case '.':
+        case '[':
+          lvalue = true;
+          break;
+        case ':':
+        case '(':
+        case '{':
+        case '"':
+          lvalue = null;
+          break;
+        default:
+          break both;
+        }
+
+        base = parsePrefixExpressionPart(base, marker, flowContext);
+      }
+
+      targets.push(base);
+
+      if (',' !== token.value)
+        break;
+
+      if (!lvalue) {
+        return unexpected(token);
+      }
+
+      next();
+    } while (true);
+
+    if (targets.length === 1 && lvalue === null) {
+      pushLocation(marker);
+      return finishNode(ast.callStatement(targets[0]));
+    } else if (!lvalue) {
+      return unexpected(token);
+    }
+
+    expect('=');
+
+    var values = [];
+
+    do {
+      values.push(parseExpectedExpression(flowContext));
+    } while (consume(','));
+
+    pushLocation(startMarker);
+    return finishNode(ast.assignmentStatement(targets, values));
+  }
+
+  function parseIdentifier() {
+    markLocation();
+    var identifier = token.value;
+    if (Identifier !== token.type) raiseUnexpectedToken('<name>', token);
+    next();
+    return finishNode(ast.identifier(identifier));
+  }
+
+  function parseFunctionDeclaration(name, isLocal) {
+    var flowContext = makeFlowContext();
+    flowContext.pushScope();
+
+    var parameters = [];
+    expect('(');
+    if (!consume(')')) {
+      while (true) {
+        if (Identifier === token.type) {
+          var parameter = parseIdentifier();
+          if (options.scope) scopeIdentifier(parameter);
+
+          parameters.push(parameter);
+
+          if (consume(',')) continue;
+        }
+        else if (VarargLiteral === token.type) {
+          flowContext.allowVararg = true;
+          parameters.push(parsePrimaryExpression(flowContext));
+        } else {
+          raiseUnexpectedToken('<name> or \'...\'', token);
+        }
+        expect(')');
+        break;
+      }
+    }
+
+    var body = parseBlock(flowContext);
+    flowContext.popScope();
+    expect('end');
+    if (options.scope) destroyScope();
+
+    isLocal = isLocal || false;
+    return finishNode(ast.functionStatement(name, parameters, isLocal, body));
+  }
+
+  function parseFunctionName() {
+    var base, name, marker;
+
+    if (trackLocations) marker = createLocationMarker();
+    base = parseIdentifier();
+
+    if (options.scope) {
+      attachScope(base, scopeHasName(base.name));
+      createScope();
+    }
+
+    while (consume('.')) {
+      pushLocation(marker);
+      name = parseIdentifier();
+      base = finishNode(ast.memberExpression(base, '.', name));
+    }
+
+    if (consume(':')) {
+      pushLocation(marker);
+      name = parseIdentifier();
+      base = finishNode(ast.memberExpression(base, ':', name));
+      if (options.scope) scopeIdentifierName('self');
+    }
+
+    return base;
+  }
+
+  function parseTableConstructor(flowContext) {
+    var fields = []
+      , key, value;
+
+    while (true) {
+      markLocation();
+      if (Punctuator === token.type && consume('[')) {
+        key = parseExpectedExpression(flowContext);
+        expect(']');
+        expect('=');
+        value = parseExpectedExpression(flowContext);
+        fields.push(finishNode(ast.tableKey(key, value)));
+      } else if (Identifier === token.type) {
+        if ('=' === lookahead.value) {
+          key = parseIdentifier();
+          next();
+          value = parseExpectedExpression(flowContext);
+          fields.push(finishNode(ast.tableKeyString(key, value)));
+        } else {
+          value = parseExpectedExpression(flowContext);
+          fields.push(finishNode(ast.tableValue(value)));
+        }
+      } else {
+        if (null == (value = parseExpression(flowContext))) {
+          locations.pop();
+          break;
+        }
+        fields.push(finishNode(ast.tableValue(value)));
+      }
+      if (',;'.indexOf(token.value) >= 0) {
+        next();
+        continue;
+      }
+      break;
+    }
+    expect('}');
+    return finishNode(ast.tableConstructorExpression(fields));
+  }
+
+  function parseExpression(flowContext) {
+    var expression = parseSubExpression(0, flowContext);
+    return expression;
+  }
+
+  function parseExpectedExpression(flowContext) {
+    var expression = parseExpression(flowContext);
+    if (null == expression) raiseUnexpectedToken('<expression>', token);
+    else return expression;
+  }
+
+  function binaryPrecedence(operator) {
+    var charCode = operator.charCodeAt(0)
+      , length = operator.length;
+
+    if (1 === length) {
+      switch (charCode) {
+        case 94: return 12; // ^
+        case 42: case 47: case 37: return 10; // * / %
+        case 43: case 45: return 9; // + -
+        case 38: return 6; // &
+        case 126: return 5; // ~
+        case 124: return 4; // |
+        case 60: case 62: return 3; // < >
+      }
+    } else if (2 === length) {
+      switch (charCode) {
+        case 47: return 10; // //
+        case 46: return 8; // ..
+        case 60: case 62:
+            if('<<' === operator || '>>' === operator) return 7; // << >>
+            return 3; // <= >=
+        case 61: case 126: return 3; // == ~=
+        case 111: return 1; // or
+      }
+    } else if (97 === charCode && 'and' === operator) return 2;
+    return 0;
+  }
+
+  function parseSubExpression(minPrecedence, flowContext) {
+    var operator = token.value
+      , expression, marker;
+
+    if (trackLocations) marker = createLocationMarker();
+    if (isUnary(token)) {
+      markLocation();
+      next();
+      var argument = parseSubExpression(10, flowContext);
+      if (argument == null) raiseUnexpectedToken('<expression>', token);
+      expression = finishNode(ast.unaryExpression(operator, argument));
+    }
+    if (null == expression) {
+      expression = parsePrimaryExpression(flowContext);
+      if (null == expression) {
+        expression = parsePrefixExpression(flowContext);
+      }
+    }
+    if (null == expression) return null;
+
+    var precedence;
+    while (true) {
+      operator = token.value;
+
+      precedence = (Punctuator === token.type || Keyword === token.type) ?
+        binaryPrecedence(operator) : 0;
+
+      if (precedence === 0 || precedence <= minPrecedence) break;
+      if ('^' === operator || '..' === operator) --precedence;
+      next();
+      var right = parseSubExpression(precedence, flowContext);
+      if (null == right) raiseUnexpectedToken('<expression>', token);
+      if (trackLocations) locations.push(marker);
+      expression = finishNode(ast.binaryExpression(operator, expression, right));
+
+    }
+    return expression;
+  }
+
+  function parsePrefixExpressionPart(base, marker, flowContext) {
+    var expression, identifier;
+
+    if (Punctuator === token.type) {
+      switch (token.value) {
+        case '[':
+          pushLocation(marker);
+          next();
+          expression = parseExpectedExpression(flowContext);
+          expect(']');
+          return finishNode(ast.indexExpression(base, expression));
+        case '.':
+          pushLocation(marker);
+          next();
+          identifier = parseIdentifier();
+          return finishNode(ast.memberExpression(base, '.', identifier));
+        case ':':
+          pushLocation(marker);
+          next();
+          identifier = parseIdentifier();
+          base = finishNode(ast.memberExpression(base, ':', identifier));
+          pushLocation(marker);
+          return parseCallExpression(base, flowContext);
+        case '(': case '{': // args
+          pushLocation(marker);
+          return parseCallExpression(base, flowContext);
+      }
+    } else if (StringLiteral === token.type) {
+      pushLocation(marker);
+      return parseCallExpression(base, flowContext);
+    }
+
+    return null;
+  }
+
+  function parsePrefixExpression(flowContext) {
+    var base, name, marker;
+
+    if (trackLocations) marker = createLocationMarker();
+    if (Identifier === token.type) {
+      name = token.value;
+      base = parseIdentifier();
+      if (options.scope) attachScope(base, scopeHasName(name));
+    } else if (consume('(')) {
+      base = parseExpectedExpression(flowContext);
+      expect(')');
+    } else {
+      return null;
+    }
+    for (;;) {
+      var newBase = parsePrefixExpressionPart(base, marker, flowContext);
+      if (newBase === null)
+        break;
+      base = newBase;
+    }
+
+    return base;
+  }
+
+  function parseCallExpression(base, flowContext) {
+    if (Punctuator === token.type) {
+      switch (token.value) {
+        case '(':
+          if (!features.emptyStatement) {
+            if (token.line !== previousToken.line)
+              raise(null, errors.ambiguousSyntax, token.value);
+          }
+          next();
+          var expressions = [];
+          var expression = parseExpression(flowContext);
+          if (null != expression) expressions.push(expression);
+          while (consume(',')) {
+            expression = parseExpectedExpression(flowContext);
+            expressions.push(expression);
+          }
+
+          expect(')');
+          return finishNode(ast.callExpression(base, expressions));
+
+        case '{':
+          markLocation();
+          next();
+          var table = parseTableConstructor(flowContext);
+          return finishNode(ast.tableCallExpression(base, table));
+      }
+    } else if (StringLiteral === token.type) {
+      return finishNode(ast.stringCallExpression(base, parsePrimaryExpression(flowContext)));
+    }
+
+    raiseUnexpectedToken('function arguments', token);
+  }
+
+  function parsePrimaryExpression(flowContext) {
+    var literals = StringLiteral | NumericLiteral | BooleanLiteral | NilLiteral | VarargLiteral
+      , value = token.value
+      , type = token.type
+      , marker;
+
+    if (trackLocations) marker = createLocationMarker();
+
+    if (type === VarargLiteral && !flowContext.allowVararg) {
+      raise(token, errors.cannotUseVararg, token.value);
+    }
+
+    if (type & literals) {
+      pushLocation(marker);
+      var raw = input.slice(token.range[0], token.range[1]);
+      next();
+      return finishNode(ast.literal(type, value, raw));
+    } else if (Keyword === type && 'function' === value) {
+      pushLocation(marker);
+      next();
+      if (options.scope) createScope();
+      return parseFunctionDeclaration(null);
+    } else if (consume('{')) {
+      pushLocation(marker);
+      return parseTableConstructor(flowContext);
+    }
+  }
+
+  exports.parse = parse;
+
+  var versionFeatures = {
+    '5.1': {
+    },
+    '5.2': {
+      labels: true,
+      emptyStatement: true,
+      hexEscapes: true,
+      skipWhitespaceEscape: true,
+      strictEscapes: true,
+      relaxedBreak: true
+    },
+    '5.3': {
+      labels: true,
+      emptyStatement: true,
+      hexEscapes: true,
+      skipWhitespaceEscape: true,
+      strictEscapes: true,
+      unicodeEscapes: true,
+      bitwiseOperators: true,
+      integerDivision: true,
+      relaxedBreak: true
+    },
+    'LuaJIT': {
+      labels: true,
+      contextualGoto: true,
+      hexEscapes: true,
+      skipWhitespaceEscape: true,
+      strictEscapes: true,
+      unicodeEscapes: true,
+      imaginaryNumbers: true,
+      integerSuffixes: true
+    }
+  };
+
+  function parse(_input, _options) {
+    if ('undefined' === typeof _options && 'object' === typeof _input) {
+      _options = _input;
+      _input = undefined;
+    }
+    if (!_options) _options = {};
+
+    input = _input || '';
+    options = assign({}, defaultOptions, _options);
+    index = 0;
+    line = 1;
+    lineStart = 0;
+    length = input.length;
+    scopes = [[]];
+    scopeDepth = 0;
+    globals = [];
+    locations = [];
+
+    if (!Object.prototype.hasOwnProperty.call(versionFeatures, options.luaVersion)) {
+      throw new Error(sprintf("Lua version '%1' not supported", options.luaVersion));
+    }
+
+    features = assign({}, versionFeatures[options.luaVersion]);
+    if (options.extendedIdentifiers !== void 0)
+      features.extendedIdentifiers = !!options.extendedIdentifiers;
+
+    if (!Object.prototype.hasOwnProperty.call(encodingModes, options.encodingMode)) {
+      throw new Error(sprintf("Encoding mode '%1' not supported", options.encodingMode));
+    }
+
+    encodingMode = encodingModes[options.encodingMode];
+
+    if (options.comments) comments = [];
+    if (!options.wait) return end();
+    return exports;
+  }
+  exports.write = write;
+
+  function write(_input) {
+    input += String(_input);
+    length = input.length;
+    return exports;
+  }
+  exports.end = end;
+
+  function end(_input) {
+    if ('undefined' !== typeof _input) write(_input);
+    if (input && input.substr(0, 2) === '#!') input = input.replace(/^.*/, function (line) {
+      return line.replace(/./g, ' ');
+    });
+
+    length = input.length;
+    trackLocations = options.locations || options.ranges;
+    lookahead = lex();
+
+    var chunk = parseChunk();
+    if (options.comments) chunk.comments = comments;
+    if (options.scope) chunk.globals = globals;
+    if (locations.length > 0)
+      throw new Error('Location tracking failed. This is most likely a bug in luaparse');
+
+    return chunk;
+  }
+
+}));
+
+});
+
+ace.define("ace/mode/lua_worker",[], function(require, exports, module) {
+"use strict";
+
+var oop = require("../lib/oop");
+var Mirror = require("../worker/mirror").Mirror;
+var luaparse = require("../mode/lua/luaparse");
+
+var Worker = exports.Worker = function(sender) {
+    Mirror.call(this, sender);
+    this.setTimeout(500);
+};
+
+oop.inherits(Worker, Mirror);
+
+(function() {
+
+    this.onUpdate = function() {
+        var value = this.doc.getValue();
+        var errors = [];
+        try {
+            luaparse.parse(value);
+        } catch(e) {
+            if (e instanceof luaparse.SyntaxError) {
+                errors.push({
+                    row: e.line - 1,
+                    column: e.column,
+                    text: e.message,
+                    type: "error"
+                });
+            }
+        }
+        this.sender.emit("annotate", errors);
+    };
+
+}).call(Worker.prototype);
+
+});

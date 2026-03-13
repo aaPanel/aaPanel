@@ -130,6 +130,11 @@
 				"untitledFile": "Untitled -Datei"
 			}
 		},
+		"api": {
+			"saving": "Speichern, bitte warten...",
+			"deleting": "Löschen, bitte warten ...",
+			"recovering": "Wiederherstellen, bitte warten ..."
+		},
 		"fileOperation": {
 			"cut": "Schneiden",
 			"rename": "Umbenennen",
@@ -420,20 +425,181 @@
 			"title": "Videoplayer"
 		}
 	},
-	"editor": {
-		"title": "Online -Texteditor",
-		"save": "Speichern",
-		"saveAll": "Rette alles",
-		"refresh": "Aktualisieren",
-		"search": "Suchen",
-		"replace": "Ersetzen",
-		"jumpLine": "Sprunglinie",
-		"font": "Schriftart",
-		"theme": "Thema",
-		"settings": "Einstellungen",
-		"help": "Helfen",
-		"directory": "Verzeichnis",
-		"back": "Zurück",
-		"new": "Neu"
+	"fileEditor": {
+		"common": {
+			"save": "Speichern"
+		},
+		"title": {
+			"onlineTextEditor": "Online -Texteditor",
+			"minimize": "Minimieren",
+			"restore": "Wiederherstellen",
+			"restoreDown": "Wiederherstellen",
+			"maximize": "Maximieren",
+			"close": "Schließen"
+		},
+		"toolbar": {
+			"save": "Speichern",
+			"saveAll": "Rette alles",
+			"refresh": "Aktualisieren",
+			"search": "Suchen",
+			"replace": "Ersetzen",
+			"jumpLine": "Sprunglinie",
+			"fontSize": "Schriftgröße",
+			"theme": "Thema",
+			"setting": "Einstellungen",
+			"shortcut": "Verknüpfungen",
+			"refreshing": "Erfrischend, bitte warten...",
+			"refreshed": "Dateiinhalt aktualisiert",
+			"fontSizeSaved": "Schriftgröße aktualisiert"
+		},
+		"messages": {
+			"noRefresh": "Diese Seite kann im Editormodus nicht aktualisiert werden. Schließen Sie den Editor und versuchen Sie es erneut."
+		},
+		"fileExplorer": {
+			"directory": "Verzeichnis",
+			"up": "Hoch",
+			"refresh": "Aktualisieren",
+			"new": "Neu",
+			"search": "Suchen",
+			"searchPanelTitle": "Verzeichnisdateien durchsuchen",
+			"close": "Schließen",
+			"searchPlaceholder": "Suchen",
+			"includeSubdir": "Unterverzeichnisse einschließen",
+			"newFolder": "Neuer Ordner",
+			"newFile": "Neue Datei"
+		},
+		"tree": {
+			"newFilePlaceholder": "Neue Datei",
+			"newFolderPlaceholder": "Neuer Ordner"
+		},
+		"dialogs": {
+			"encodingTitle": "Legen Sie die Dateikodierung fest",
+			"settingTitle": "Editor-Einstellungen",
+			"setting": {
+				"wrap": "Zeilenumbruch",
+				"enableLiveAutocompletion": "Live-Autovervollständigung",
+				"enableSnippets": "Snippets aktivieren",
+				"showInvisibles": "Unsichtbares zeigen",
+				"showLineNumbers": "Zeilennummern anzeigen"
+			},
+			"themeTitle": "Legen Sie das Editor-Thema fest",
+			"theme": {
+				"chrome": "Chrom (Hell)",
+				"monokai": "Monokai (Dunkel)"
+			},
+			"goToLineTitle": "Gehen Sie zur Zeile",
+			"goToLineHint": "Aktuell: Zeile {line}, Spalte {column}. Geben Sie eine Zeilennummer ein (1-{max}).",
+			"fontSizeTitle": "Stellen Sie die Schriftgröße des Editors ein",
+			"tabSizeTitle": "Tab-Einstellungen",
+			"tabSizeLengthTitle": "Tab-Größe",
+			"tabSize": {
+				"useSpaces": "Mit Leerzeichen einrücken",
+				"useTabs": "Mit Tabulatoren einrücken"
+			},
+			"lineEndingTitle": "Zeilenende festlegen",
+			"lineEndingChangeTitle": "Zeilenende ändern",
+			"lineEndingChangeContent1": "Die Zeile „{file}“ der Datei, die von {from} endet, in {to} ändern?",
+			"lineEndingChangeContent2": "Dadurch werden alle Zeilenenden in der Datei neu geschrieben und nach {save} wirksam.",
+			"fileHistory": {
+				"title": "Dateiverlauf",
+				"time": "Zeit",
+				"actions": "Aktionen",
+				"diff": "Diff",
+				"recover": "Wiederherstellen",
+				"delete": "Löschen",
+				"recoverTitle": "Verlauf wiederherstellen",
+				"recoverContent": "Verlaufsversion {time} wiederherstellen? Der aktuelle Dateiinhalt wird überschrieben.",
+				"deleteTitle": "Verlauf löschen",
+				"deleteContent": "Verlaufsversion {time} löschen? Dies kann nicht rückgängig gemacht werden.",
+				"fileContentUpdated": "Dateiinhalt aktualisiert."
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "Hinweis",
+			"modifiedSaveConfirm": "Diese Datei wurde geändert. Änderungen speichern?",
+			"dontSave": "Nicht speichern"
+		},
+		"editorFooter": {
+			"fileLocation": "Datei: {Pfad}",
+			"readOnlyHistory": "Schreibgeschützte Datei: {path} Verlauf [{time}]",
+			"clickRecoverLeft": "Linke Verlaufsversion wiederherstellen",
+			"lineColumn": "Ln {Zeile}, Col {Spalte}",
+			"historyCount": "Verlauf: {count}",
+			"tabSize": "Tab: {Größe}",
+			"encoding": "Kodierung: {Kodierung}",
+			"language": "Sprache: {Sprache}",
+			"readOnlyMode": "Schreibgeschützt"
+		},
+		"store": {
+			"untitled": "Ohne Titel",
+			"fileTooLarge": "Entschuldigung! Dateien, die größer als 3 MB sind, werden für die Online-Bearbeitung nicht unterstützt.",
+			"shortcutTabName": "Verknüpfungen",
+			"conflictTitle": "Konfliktwarnung",
+			"conflictContentFallback": "In dieser Datei liegt möglicherweise ein Zeitstempelkonflikt vor, oder Sie verfügen nicht über die Schreibberechtigung. Speichern erzwingen?",
+			"forceSave": "Speichern erzwingen",
+			"saveAllLoading": "Alle geänderten Dateien werden gespeichert, bitte warten...",
+			"saveAllSuccess": "Alle Änderungen gespeichert.",
+			"tabSettingsRefreshed": "Einstellungen aktualisiert.",
+			"nameRequired": "Bitte geben Sie einen gültigen Namen ein.",
+			"newFile": "Neue Datei",
+			"newFolder": "Neuer Ordner",
+			"createSuccess": "{type} erfolgreich erstellt."
+		},
+		"shortcut": {
+			"common": {
+				"title": "Gemeinsame Abkürzungen",
+				"saveFile": "Datei speichern",
+				"copy": "Kopie",
+				"cut": "Schneiden",
+				"paste": "Paste",
+				"selectAll": "Alles auswählen",
+				"undo": "Rückgängig machen",
+				"redo": "Wiederholen",
+				"find": "Finden",
+				"replace": "Ersetzen",
+				"esc": "Suche beenden / Vorschläge abbrechen"
+			},
+			"cursorMove": {
+				"title": "Cursorbewegung",
+				"docStartEnd": "Bewegen Sie den Cursor zum Anfang/Ende des Dokuments",
+				"matchingTag": "Zum passenden Tag springen",
+				"pageUpDown": "Seite hoch/runter",
+				"lineStartEnd": "Bewegen Sie den Cursor zum Zeilenanfang/-ende"
+			},
+			"selection": {
+				"title": "Auswahl",
+				"mouseBox": "Mausauswahl",
+				"drag": "Ziehen",
+				"mouseDrag": "Maus ziehen",
+				"pageSelect": "Beim Auf-/Abblättern auswählen",
+				"cursorToStartEnd": "Vom Cursor bis zum Anfang/Ende",
+				"blockSelect": "Blockauswahl"
+			},
+			"edit": {
+				"title": "Bearbeiten",
+				"toggleComment": "Kommentar umschalten",
+				"indent": "Einzug",
+				"outdent": "Ausrücken",
+				"delete": "Löschen",
+				"deleteLine": "Zeile löschen",
+				"copyLineUpDown": "Doppelte Zeile nach oben/unten",
+				"deleteRight": "Rechts vom Cursor löschen",
+				"swapLineUpDown": "Aktuelle Zeile mit vorheriger/nächster Zeile tauschen",
+				"copyLineDown": "Doppelte Zeile unten"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "Datei/Verzeichnis durchsuchen",
+		"NewFile": "Neue Datei",
+		"NewFolder": "Neuer Ordner",
+		"CurrentSelection": "Aktuelle Auswahl:",
+		"Name": "Name",
+		"NamePlaceholder": "Bitte Namen eingeben",
+		"Create": "Erstellen",
+		"ModifyTime": "Änderungszeit",
+		"PermissionOwner": "Berechtigungen/Eigentümer",
+		"RootDir": "Wurzel Dir",
+		"PathPlaceholder": "Bitte geben Sie den Pfad ein"
 	}
 }

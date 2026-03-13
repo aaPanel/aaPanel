@@ -1,4 +1,4 @@
-import importlib
+import os
 import sys
 from typing import Optional, Type, TypeVar
 import traceback
@@ -61,6 +61,13 @@ def load_task_cls_by_function(
 
 def load_task_cls_by_path(path: str, cls_name: str) -> Optional[Type[T_CLS]]:
     try:
+        # 插件优先检测路径
+        path_sep = path.split(".")
+        if len(path_sep) >= 2 and path_sep[0] == "plugin":
+            plugin_path = "/www/server/panel/plugin/{}".format(path_sep[1])
+            if not os.path.isdir(plugin_path):
+                return None
+
         module = import_module(path)
         cls = getattr(module, cls_name, None)
         if issubclass(cls, BaseTask):
@@ -68,14 +75,17 @@ def load_task_cls_by_path(path: str, cls_name: str) -> Optional[Type[T_CLS]]:
         elif isinstance(cls, BaseTask):
             return cls.__class__
         else:
+            debug_log("Error: The loaded class is not a subclass of BaseTask")
             return None
     except ModuleNotFoundError as e:
-        # 忽略 ssl_push
+        # todo暂时忽略 ssl_push
         if 'mod.base.push_mod.ssl_push' in str(e):
             return None
         else:
+            debug_log(traceback.format_exc())
+            debug_log("ModuleNotFoundError: {}".format(str(e)))
             return None
-    except Exception as e:
+    except Exception:
         print(traceback.format_exc())
         print(sys.path)
         debug_log(traceback.format_exc())

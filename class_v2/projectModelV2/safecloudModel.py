@@ -208,7 +208,7 @@ rm -f /tmp/install_yara.lock
             return public.returnMsg(False, 'Dependency module not installed, please try again later')
 
         try:
-            # 删除规则包
+            # 删除规则包，存在误报不启用
             self.delete_rule()
 
             # 确保基础规则目录存在
@@ -4196,42 +4196,130 @@ class main(projectBase):
                 # public.print_log("读取恶意文件日志失败: {}".format(str(e)))
                 pass
 
-            # # 2. 获取入侵检测事件 未适配
-            # try:
-            #     risk_list = public.M('risk').dbfile('bt_hids').order('id desc').limit(100).select()
-            #     for risk in risk_list:
-            #         try:
-            #             # 转换时间字符串为时间戳
-            #             try:
-            #                 risk_time_str = risk.get('time', '')
-            #                 if isinstance(risk_time_str, str) and risk_time_str:
-            #                     risk_time = int(time.mktime(time.strptime(risk_time_str, '%Y-%m-%d %H:%M:%S')))
-            #                 else:
-            #                     risk_time = int(time.time())
-            #             except:
-            #                 risk_time = int(time.time())
-            #             # 转换风险等级
-            #             level = 4 if risk['level'] == 'serious' else 3 if risk['level'] == 'high' else 2
-            #             events.append({
-            #                 'type': 'hids',
-            #                 'behavior': risk.get('type', 'Unknown risk'),
-            #                 'level': level,
-            #                 'time': risk_time,
-            #                 'scan_type': 'Host intrusion detection',
-            #                 'description': risk.get('msg', ''),
-            #                 'solution': risk.get('solution', 'Please promptly address this security risk'),
-            #                 'file_path': risk.get('file_path', ''),
-            #                 'detect_type': risk.get('risk_type', '')
-            #             })
-            #         except Exception as e:
-            #             # public.print_log("处理入侵检测事件失败: {}".format(str(e)))
-            #             continue
-            # except Exception as e:
-            #     # public.print_log("获取入侵检测事件失败: {}".format(str(e)))
-            #     pass
+            # 2. 获取入侵检测事件
+            try:
+                risk_list = public.M('risk').dbfile('bt_hids').order('id desc').limit(100).select()
+                for risk in risk_list:
+                    try:
+                        # 转换时间字符串为时间戳
+                        try:
+                            risk_time_str = risk.get('time', '')
+                            if isinstance(risk_time_str, str) and risk_time_str:
+                                risk_time = int(time.mktime(time.strptime(risk_time_str, '%Y-%m-%d %H:%M:%S')))
+                            else:
+                                risk_time = int(time.time())
+                        except:
+                            risk_time = int(time.time())
+                        # 转换风险等级
+                        level = 4 if risk['level'] == 'serious' else 3 if risk['level'] == 'high' else 2
+                        events.append({
+                            'type': 'hids',
+                            'behavior': risk.get('type', 'Unknown risk'),
+                            'level': level,
+                            'time': risk_time,
+                            'scan_type': 'Host intrusion detection',
+                            'description': risk.get('msg', ''),
+                            'solution': risk.get('solution', 'Please promptly address this security risk'),
+                            'file_path': risk.get('file_path', ''),
+                            'detect_type': risk.get('risk_type', '')
+                        })
+                    except Exception as e:
+                        # public.print_log("处理入侵检测事件失败: {}".format(str(e)))
+                        continue
+            except Exception as e:
+                # public.print_log("获取入侵检测事件失败: {}".format(str(e)))
+                pass
 
             # 确保所有时间戳都是整数类型
             events = [event for event in events if isinstance(event['time'], int)]
+
+            #  3. 获取网站漏洞扫描事件
+            try:
+                sf = '/www/server/panel/data/scanning.json'
+                if os.path.exists(sf):
+                    s = public.readFile(sf)
+                    if s and s != -1:
+                        data = json.loads(s)
+                        t = data.get('time', int(time.time()))
+                        try:
+                            t_int = int(t)
+                        except:
+                            t_int = int(time.time())
+                        info_list = data.get('info', [])
+                        for site in info_list:
+                            cms_list = site.get('cms', [])
+                            for cms in cms_list:
+                                lv = cms.get('dangerous', 0)
+                                try:
+                                    lv_int = int(lv)
+                                except:
+                                    lv_int = 0
+                                site_name = site.get('name', '')
+                                site_path = site.get('path', '')
+                                events.append({
+                                    'type': 'vul_scan',
+                                    'behavior': 'Website vulnerability',
+                                    'level': lv_int,
+                                    'time': t_int,
+                                    'scan_type': 'Website vulnerability scanning',
+                                    'description': 'The website {} is {}'.format(site_name, cms.get('name', '')),
+                                    'solution': cms.get('repair', ''),
+                                    'file_path': site_path,
+                                    'detect_type': ''
+                                })
+            except Exception as e:
+                pass
+
+            # 4. 首页风险检测
+            try:
+                rf = '/www/server/panel/data/warning/resultresult.json'
+                if os.path.exists(rf):
+                    s = public.readFile(rf)
+                    if s and s != -1:
+                        data = json.loads(s)
+                        for r in data.get('risk', []):
+                            if not isinstance(r, dict):
+                                continue
+                            if r.get('status', True):
+                                continue
+                            lv = r.get('level', 0)
+                            try:
+                                lv_int = int(lv)
+                            except:
+                                if lv == 'serious':
+                                    lv_int = 4
+                                elif lv == 'high':
+                                    lv_int = 3
+                                elif lv == 'medium':
+                                    lv_int = 2
+                                else:
+                                    lv_int = 1
+                            ct = r.get('check_time', int(time.time()))
+                            try:
+                                ct_int = int(ct)
+                            except:
+                                try:
+                                    ct_int = int(time.mktime(time.strptime(str(ct), '%Y-%m-%d %H:%M:%S')))
+                                except:
+                                    ct_int = int(time.time())
+                            tips = r.get('tips', '')
+                            if isinstance(tips, list):
+                                sol = '；'.join([str(x) for x in tips])
+                            else:
+                                sol = str(tips) if tips is not None else ''
+                            events.append({
+                                'type': 'homepage_risk',
+                                'behavior': 'Home Page Risk',
+                                'level': lv_int,
+                                'time': ct_int,
+                                'scan_type': 'Home Page Risk Detection',
+                                'description': r.get('msg', ''),
+                                'solution': sol,
+                                'file_path': '',
+                                'detect_type': ''
+                            })
+            except Exception as e:
+                pass
 
             # 按时间排序（降序）
             events.sort(key=lambda x: x['time'], reverse=True)

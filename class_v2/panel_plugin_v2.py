@@ -545,6 +545,9 @@ class panelPlugin:
             except:
                 return public.return_message(-1,0,public.lang("In Multi-WebServer Hosting,  only nginx 1.24 and above versions are supported!"))
 
+        if get.sName in ['nginx', 'apache' , 'openlitespeed'] and public.get_multi_webservice_status() and get.get('upgrade'):
+            get.Skip = True
+
         pluginInfo = self.get_soft_find(get.sName)['message']
         get.pluginInfo = pluginInfo
         check_result = self.check_install_limit(get)
@@ -693,8 +696,8 @@ class panelPlugin:
 
         # 多服务下，强制修改端口
         if public.get_multi_webservice_status():
-            execstr += ' && /www/server/panel/pyenv/bin/python3 /www/server/panel/script/modify_ports_multiple_services.py'
-        # public.print_log(execstr)
+            execstr += ' &>> /tmp/panelExec.log && /www/server/panel/pyenv/bin/python3 /www/server/panel/script/modify_ports_multiple_services.py '
+
         public.M('tasks').add('id,name,type,status,addtime,execstr',(None, mmsg + '['+get.sName+'-'+get.version+']','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
         cache.delete('install_task')
         public.writeFile('/tmp/panelTask.pl','True')
@@ -727,9 +730,9 @@ class panelPlugin:
             if get.sName == 'monitor':
                 self.clear_site_config()
 
-            # 删除clamav 定时任务
-            if get.sName == 'clamav':
-                self.clear_clamav()
+            # 卸载ols清空端口占用
+            if get.sName == 'openlitespeed':
+                public.kill_process_strictly('litespeed', True)
 
             # 兼容pg卸载
             if get.sName == 'pgsql_manager':

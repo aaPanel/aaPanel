@@ -130,6 +130,11 @@
 				"untitledFile": "Tệp không có tiêu đề"
 			}
 		},
+		"api": {
+			"saving": "Đang lưu, vui lòng đợi...",
+			"deleting": "Xóa, vui lòng đợi ...",
+			"recovering": "Khôi phục, vui lòng đợi ..."
+		},
 		"fileOperation": {
 			"cut": "Cắt",
 			"rename": "Đổi tên",
@@ -420,20 +425,181 @@
 			"title": "Trình phát video"
 		}
 	},
-	"editor": {
-		"title": "Biên tập văn bản trực tuyến",
-		"save": "Cứu",
-		"saveAll": "Lưu tất cả",
-		"refresh": "Làm cho khỏe lại",
-		"search": "Tìm kiếm",
-		"replace": "Thay thế",
-		"jumpLine": "Dòng nhảy",
-		"font": "Phông chữ",
-		"theme": "Chủ đề",
-		"settings": "Cài đặt",
-		"help": "Giúp đỡ",
-		"directory": "Thư mục",
-		"back": "Mặt sau",
-		"new": "Mới"
+	"fileEditor": {
+		"common": {
+			"save": "Cứu"
+		},
+		"title": {
+			"onlineTextEditor": "Biên tập văn bản trực tuyến",
+			"minimize": "Giảm thiểu",
+			"restore": "Khôi phục",
+			"restoreDown": "Khôi phục xuống",
+			"maximize": "Tối đa hóa",
+			"close": "Đóng"
+		},
+		"toolbar": {
+			"save": "Cứu",
+			"saveAll": "Lưu tất cả",
+			"refresh": "Làm cho khỏe lại",
+			"search": "Tìm kiếm",
+			"replace": "Thay thế",
+			"jumpLine": "Dòng nhảy",
+			"fontSize": "Cỡ chữ",
+			"theme": "Chủ đề",
+			"setting": "Cài đặt",
+			"shortcut": "Phím tắt",
+			"refreshing": "Đang làm mới, vui lòng đợi...",
+			"refreshed": "Đã cập nhật nội dung tệp",
+			"fontSizeSaved": "Đã cập nhật cỡ chữ"
+		},
+		"messages": {
+			"noRefresh": "Trang này không thể được làm mới trong chế độ soạn thảo. Đóng trình chỉnh sửa và thử lại."
+		},
+		"fileExplorer": {
+			"directory": "Thư mục",
+			"up": "Hướng lên",
+			"refresh": "Làm cho khỏe lại",
+			"new": "Mới",
+			"search": "Tìm kiếm",
+			"searchPanelTitle": "Tìm kiếm tập tin thư mục",
+			"close": "Đóng",
+			"searchPlaceholder": "Tìm kiếm",
+			"includeSubdir": "Bao gồm các thư mục con",
+			"newFolder": "Thư mục mới",
+			"newFile": "Tệp mới"
+		},
+		"tree": {
+			"newFilePlaceholder": "Tập tin mới",
+			"newFolderPlaceholder": "Thư mục mới"
+		},
+		"dialogs": {
+			"encodingTitle": "Đặt mã hóa tập tin",
+			"settingTitle": "Cài đặt trình chỉnh sửa",
+			"setting": {
+				"wrap": "gói từ",
+				"enableLiveAutocompletion": "Tự động hoàn thành trực tiếp",
+				"enableSnippets": "Bật đoạn trích",
+				"showInvisibles": "Hiển thị ẩn",
+				"showLineNumbers": "Hiển thị số dòng"
+			},
+			"themeTitle": "Đặt chủ đề soạn thảo",
+			"theme": {
+				"chrome": "crom (Ánh sáng)",
+				"monokai": "monokai (Tối)"
+			},
+			"goToLineTitle": "Đi đến dòng",
+			"goToLineHint": "Hiện tại: dòng {line}, cột {column}. Nhập số dòng (1-{max}).",
+			"fontSizeTitle": "Đặt kích thước phông chữ của trình soạn thảo",
+			"tabSizeTitle": "Cài đặt tab",
+			"tabSizeLengthTitle": "Kích thước tab",
+			"tabSize": {
+				"useSpaces": "Thụt lề bằng cách sử dụng dấu cách",
+				"useTabs": "Thụt lề bằng cách sử dụng tab"
+			},
+			"lineEndingTitle": "Đặt kết thúc dòng",
+			"lineEndingChangeTitle": "Thay đổi kết thúc dòng",
+			"lineEndingChangeContent1": "Thay đổi dòng kết thúc \"{file}\" của tệp từ {from} thành {to}?",
+			"lineEndingChangeContent2": "Thao tác này sẽ ghi lại tất cả các kết thúc dòng trong tệp và có hiệu lực sau {save}.",
+			"fileHistory": {
+				"title": "Lịch sử tập tin",
+				"time": "thời gian",
+				"actions": "hành động",
+				"diff": "Khác biệt",
+				"recover": "Khôi phục",
+				"delete": "Xóa bỏ",
+				"recoverTitle": "Khôi phục lịch sử",
+				"recoverContent": "Khôi phục phiên bản lịch sử {time}? Nội dung tập tin hiện tại sẽ bị ghi đè.",
+				"deleteTitle": "Xóa lịch sử",
+				"deleteContent": "Xóa phiên bản lịch sử {time}? Điều này không thể hoàn tác được.",
+				"fileContentUpdated": "Nội dung tập tin được cập nhật."
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "thông báo",
+			"modifiedSaveConfirm": "Tập tin này đã được sửa đổi. Lưu thay đổi?",
+			"dontSave": "Không lưu"
+		},
+		"editorFooter": {
+			"fileLocation": "Tệp: {đường dẫn}",
+			"readOnlyHistory": "Tệp chỉ đọc: {path} Lịch sử [{time}]",
+			"clickRecoverLeft": "Khôi phục phiên bản lịch sử còn lại",
+			"lineColumn": "Ln {dòng}, Col {cột}",
+			"historyCount": "Lịch sử: {đếm}",
+			"tabSize": "Thẻ: {kích thước}",
+			"encoding": "Mã hóa: {mã hóa}",
+			"language": "Ngôn ngữ: {ngôn ngữ}",
+			"readOnlyMode": "Chỉ đọc"
+		},
+		"store": {
+			"untitled": "Không có tiêu đề",
+			"fileTooLarge": "Xin lỗi! Các tệp lớn hơn 3 MB không được hỗ trợ để chỉnh sửa trực tuyến.",
+			"shortcutTabName": "Phím tắt",
+			"conflictTitle": "Cảnh báo xung đột",
+			"conflictContentFallback": "Tệp này có thể có xung đột dấu thời gian hoặc bạn không có quyền ghi. Buộc lưu?",
+			"forceSave": "Buộc lưu",
+			"saveAllLoading": "Đang lưu tất cả các tệp đã sửa đổi, vui lòng đợi...",
+			"saveAllSuccess": "Đã lưu tất cả thay đổi.",
+			"tabSettingsRefreshed": "Đã cập nhật cài đặt.",
+			"nameRequired": "Vui lòng nhập tên hợp lệ.",
+			"newFile": "Tập tin mới",
+			"newFolder": "Thư mục mới",
+			"createSuccess": "{type} được tạo thành công."
+		},
+		"shortcut": {
+			"common": {
+				"title": "Phím tắt phổ biến",
+				"saveFile": "Lưu tập tin",
+				"copy": "Sao chép",
+				"cut": "Cắt",
+				"paste": "Dán",
+				"selectAll": "Chọn tất cả",
+				"undo": "Hoàn tác",
+				"redo": "Làm lại",
+				"find": "Tìm",
+				"replace": "Thay thế",
+				"esc": "Thoát tìm kiếm/hủy đề xuất"
+			},
+			"cursorMove": {
+				"title": "Chuyển động con trỏ",
+				"docStartEnd": "Di chuyển con trỏ đến đầu/cuối tài liệu",
+				"matchingTag": "Chuyển đến thẻ phù hợp",
+				"pageUpDown": "Trang lên/xuống",
+				"lineStartEnd": "Di chuyển con trỏ đến đầu/cuối dòng"
+			},
+			"selection": {
+				"title": "Lựa chọn",
+				"mouseBox": "Chọn chuột",
+				"drag": "Kéo",
+				"mouseDrag": "Kéo chuột",
+				"pageSelect": "Chọn trong khi phân trang lên/xuống",
+				"cursorToStartEnd": "Từ con trỏ đến đầu/cuối",
+				"blockSelect": "Lựa chọn khối"
+			},
+			"edit": {
+				"title": "Biên tập",
+				"toggleComment": "Chuyển đổi nhận xét",
+				"indent": "thụt lề",
+				"outdent": "Nhô ra",
+				"delete": "Xóa bỏ",
+				"deleteLine": "Xóa dòng",
+				"copyLineUpDown": "Dòng trùng lặp lên/xuống",
+				"deleteRight": "Xóa bên phải con trỏ",
+				"swapLineUpDown": "Hoán đổi dòng hiện tại với dòng trước/tiếp theo",
+				"copyLineDown": "Dòng trùng lặp bên dưới"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "Tìm kiếm tập tin/thư mục",
+		"NewFile": "Tập tin mới",
+		"NewFolder": "Thư mục mới",
+		"CurrentSelection": "Lựa chọn hiện tại:",
+		"Name": "Tên",
+		"NamePlaceholder": "Vui lòng nhập tên",
+		"Create": "Tạo nên",
+		"ModifyTime": "Thời gian sửa đổi",
+		"PermissionOwner": "Quyền/Chủ sở hữu",
+		"RootDir": "Root Dir",
+		"PathPlaceholder": "Vui lòng nhập đường dẫn"
 	}
 }

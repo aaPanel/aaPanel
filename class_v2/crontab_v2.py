@@ -168,14 +168,14 @@ class crontab:
             query = db_obj.order("id desc").field(self.field)
             # 根据类型筛选任务
             if type_id:
-                query=self._filter_by_type_id(query,type_id)
+                query = self._filter_by_type_id(query,type_id)
             # 获取所有任务数据
             all_tasks = query.select()
             # 获取置顶任务列表
             top_list = self.set_task_top()['list']
             top_data, other_data = self._partition_tasks(all_tasks, top_list)
-            top_data=self._sort_tasks(top_data,get)
-            other_data=self._sort_tasks(other_data,get)
+            top_data = self._sort_tasks(top_data,get)
+            other_data = self._sort_tasks(other_data,get)
 
             # 重新组织任务顺序
             data = top_data + other_data
@@ -218,7 +218,6 @@ class crontab:
             return public.return_message(0,0,result)
     
         except Exception as e:
-            # print(traceback.format_exc())
             return public.return_message(-1,0, public.lang('Query failed: ' + str(e)))
 
 
@@ -243,6 +242,22 @@ class crontab:
         # 获取 other_data
         other_data = [task for task in all_tasks if str(task['id']) not in top_set]
         return top_data, other_data
+
+    def get_type_name(self, task):
+        name = task.get('name', '')
+        type_id = task.get('type_id', '')
+        type_names = []
+        if type_id == 0:
+            if name and isinstance(name, str):
+                if 'do not delete' in name.lower():
+                    type_names.append('System Task')
+                else:
+                    type_names.append('Default')
+        type_name = public.M('crontab_types').where("id=?", (type_id,)).getField('name')
+        if type_name:
+            type_names.append(type_name)
+
+        return ', '.join(type_names)
     
     def _sort_tasks(self,tasks,get):
         order_param=getattr(get,'order_param',None)
@@ -253,6 +268,10 @@ class crontab:
                     for task in tasks:
                         if not task.get('rname'):
                             task['rname'] = task['name']  # 将没有值的 rname 设置为 name 的值
+            if "addtime" in order_param:
+                for task in tasks:
+                    task['addtime']=self.get_addtime(task)
+                    task['addtime_calculated'] = True
             return sorted(tasks,key=lambda x:x[sort_key],reverse=reverse_order)
         return tasks 
   
@@ -277,9 +296,11 @@ class crontab:
         for task in paged_data:
             task['type_zh']=self._get_task_type_zh(task)
             task['cycle']=self.generate_cycle(task['type'],task['where1'],task['where_hour'],task['where_minute'],task['sType'],task['second'])
-            task['addtime']=self.get_addtime(task)
+            if not task.get('addtime_calculated'):
+                task['addtime'] = self.get_addtime(task)
             task['backup_mode']=1 if task['backup_mode']=="1" else 0
-            task['db_backup_path']=task.get('db_backup_path') or "/www/backup"
+            db_backup_path = public.M('config').where("id=?", ('1',)).getField('backup_path')
+            task['db_backup_path'] = task.get('db_backup_path') or db_backup_path
             task['rname'] = task.get('rname') or task['name']
             task['sort'] = 1 if str(task["id"]) in top_set else 0
             try:
@@ -299,8 +320,13 @@ class crontab:
                     task['status'] == 0
                     public.M('crontab').where('id = ?', (task['id'],)).update({'status': 0})
                 task['cycle'] = public.lang("{} Execute once", task['where1'])
+
             self.get_mysql_increment_save(task)
             self.format_cycle(task)
+
+            if not task['type_id']:
+                task['type_id']=0
+            task['type_name'] = self.get_type_name(task)  # 添加分类名称
 
     def _get_task_type_zh(self,task):
         if task['type'] == "day":                        
@@ -2305,12 +2331,12 @@ rm -f {cronFile}
             if crontab_data_list:
                 crontab_data = crontab_data_list[0]
                 status = crontab_data['status']
-                return public.returnMsg(True, crontab_data)
+                return public.success_v2(crontab_data)
             else:
-                return public.returnMsg(False, public.lang("Failed to create scheduled task {}, please check if system hardening is enabled or disk condition",task_name))
+                return public.fail_v2(public.lang("Failed to create scheduled task {}, please check if system hardening is enabled or disk condition",task_name))
         except Exception as e:
-            return public.returnMsg(False, public.lang("Acquisition failed："+str(e)))
-    
+            return public.fail_v2(public.lang("Acquisition failed："+str(e)))
+
     def set_restart_project(self,get):
         try:
             status=get.status
@@ -2325,15 +2351,14 @@ rm -f {cronFile}
                 public.M('crontab').where('name=?', (task_name,)).setField('status', status)
                 public.M('crontab').where('name=?', (task_name,)).setField('where_hour', hour)
                 public.M('crontab').where('name=?', (task_name,)).setField('where_minute', minute)
-                if  get.status=="1":
-                        return public.returnMsg(True, public.lang("Successfully opened"))
+                if get.status=="1":
+                    return public.success_v2(public.lang("Successfully opened"))
                 else:
-                    return public.returnMsg(True, public.lang("Close successfully"))
+                    return public.success_v2(public.lang("Successfully closed"))
             else:
-                return public.returnMsg(False, public.lang("Failed to create scheduled task {}, please check if system hardening is enabled or disk condition",task_name))
-
+                return public.fail_v2(public.lang("Failed to set scheduled task {}, please check if system hardening is enabled or disk condition",task_name))
         except Exception as e:
-            return public.returnMsg(False, public.lang("Opening failed"+str(e)))
+            return public.fail_v2(public.lang("Setting failed："+str(e)))
 
 
     def modify_values(self, cronName, new_time_type, new_special_time, new_time_list):

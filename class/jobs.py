@@ -101,6 +101,13 @@ def install_packages():
         public.print_log("install_packages error:", str(e))
 
     try:
+        import ujson
+    except ImportError:
+        public.ExecShell(f"{public.get_panel_path()}/pyenv/bin/pip3 install ujson")
+    except Exception as e:
+        public.print_log("install_packages error:", str(e))
+
+    try:
         install_pycountry()
     except Exception as e:
         public.print_log("install pycountry error:", str(e))
@@ -415,9 +422,14 @@ def sql_pacth():
       `oauth_token_type` TEXT,
       `branch` TEXT,
       `repo` TEXT,
+      `key_path` TEXT,  
       `number_copies` INTEGER DEFAULT 5
 )"""
         sql.execute(csql, ())
+
+    # 添加密钥路径
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'git_sites_auth','%key_path%')).count():
+        public.M('crontab').execute("ALTER TABLE 'git_sites_auth' ADD 'key_path' TEXT",())
 
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_deploy_status')).count():
         csql = r"""
@@ -845,6 +857,12 @@ def clear_fastcgi_safe():
 
 #设置文件权限
 def files_set_mode():
+    tips_file = '/tmp/last_files_set_mode.pl'
+    if os.path.exists(tips_file): # 1小时
+        if time.time() - os.path.getmtime(tips_file) < 3600:
+            return
+    # 提前写入文件，避免重启重复执行
+    public.writeFile(tips_file, str(time.time()))
     rr = {True:'-R',False:''}
     m_paths = [
         ["/www/server/total","/*.lua","root",755,False],
@@ -854,6 +872,7 @@ def files_set_mode():
         ["/www/server/speed","/*.lua","root",755,False],
         ["/www/server/speed/total","","www",755,True],
         ["/www/server/btwaf","/*.lua","root",755,False],
+
         ["/www/backup","","root",600,True],
         ["/www/wwwlogs","","www",700,True],
         ["/www/enterprise_backup","","root",600,True],
@@ -863,6 +882,7 @@ def files_set_mode():
         ["/www/server/stop","","root",755,True],
         ["/www/server/redis","","redis",700,True],
         ["/www/server/redis/redis.conf","","redis",600,False],
+
         ["/www/server/panel/class","","root",600,True],
         ["/www/server/panel/data","","root",600,True],
         ["/www/server/panel/plugin","","root",600,False],
@@ -882,12 +902,18 @@ def files_set_mode():
         ["/www/server/panel/BT-Task","","root",700,False],
         ["/www/server/panel","/*.py","root",600,False],
         ["/www/server/panel","","root",755,False],
+
+        ["/www/server/panel/BTPanel/__init__.py","","root",600,False],
+        ["/www/server/panel/BTPanel/templates","","root",600,True],
+
         ["/dev/shm/session.db","","root",600,False],
         ["/dev/shm/session_py3","","root",600,True],
         ["/dev/shm/session_py2","","root",600,True],
+
         ["/www/server/phpmyadmin","","root",755,True],
         ["/www/server/adminer","","root",755,True],
         ["/www/server/coll","","root",700,True],
+
         ["/www/server/panel/init.sh","","root",600,False],
         ["/www/server/panel/license.txt","","root",600,False],
         ["/www/server/panel/requirements.txt","","root",600,False],
@@ -895,6 +921,7 @@ def files_set_mode():
         ["/www/server/panel/default.pl","","root",600,False],
         ["/www/server/panel/hooks","","root",600,True],
         ["/www/server/panel/cache","","root",600,True],
+
         ["/root","","root",550,False],
         ["/root/.ssh","","root",700,False],
         ["/root/.ssh/authorized_keys","","root",600,False],

@@ -1,0 +1,1 @@
+System.register([],(function(t,r){"use strict";return{execute:function(){t("g",(function(t=12){const r=new Uint8Array(t);return crypto.getRandomValues(r),Array.from(r,(t=>t.toString(16).padStart(2,"0"))).join("").slice(0,t)}))}}}));

@@ -1,0 +1,1 @@
+import{aO as l,m as s,a3 as e}from"./index-BTglIPU2.js?v=1773287522785";const i=async o=>{const{copy:a,isSupported:t}=l({legacy:!0});t.value?(a(o),s.success(e.global.t("Utils.Copy.index_1"))):s.error(e.global.t("Utils.Copy.index_2"))};export{i as c};

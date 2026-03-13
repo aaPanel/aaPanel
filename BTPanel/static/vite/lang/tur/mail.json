@@ -404,7 +404,8 @@
 			"index_54": "IP/alan adı kara listeye alındı uyarısı",
 			"index_55": "Posta hizmeti kapandığında beni bilgilendir",
 			"index_56": "Posta Hizmeti Uyarısı",
-			"index_57": "Kara listeleri otomatik olarak algıla"
+			"index_57": "Kara listeleri otomatik olarak algıla",
+			"index_58": "Send email when quota exceeded"
 		},
 		"Api": {
 			"index_1": "Tümünü yakala ayarlanıyor, lütfen bekleyin...",

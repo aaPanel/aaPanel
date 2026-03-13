@@ -149,7 +149,21 @@
 			"add_site_56": "Silakan masukkan skrip penerapan",
 			"add_site_57": "Silakan masukkan cabang ssh",
 			"add_site_58": "Domain ini tidak mendukung resolusi otomatis, silakan pilih resolusi manual",
-			"add_site_59": "Buat untuk Git"
+			"add_site_59": "Buat untuk Git",
+			"index_152": "Pemeriksaan Kinerja [{0}]",
+			"index_153": "Periksa",
+			"index_154": "Tindakan cepat",
+			"index_155": "Kedaluwarsa",
+			"index_156": "Permintaan",
+			"index_157": "Jika Anda tidak membutuhkannya, Anda dapat mematikannya di \"Pengaturan\" - \"Pengaturan Panel\" - \"Monitor Situs\".",
+			"index_158": "Data laporan pemantauan akan diperbarui seiring dengan penyegaran daftar situs web",
+			"index_159": "Plugin laporan pemantauan akan menggunakan data plugin; jika tidak diinstal, data laporan pemantauan gratis akan digunakan.",
+			"index_160": "Aktif",
+			"index_161": "Waf",
+			"index_162": "Hasilkan laporan analisis kinerja situs web berdasarkan Google PageSpeed Insights",
+			"index_163": "Hanya mendukung domain yang dapat diakses dari jaringan eksternal",
+			"index_164": "Pemeriksaan Kinerja",
+			"index_165": "Laporan berhasil dibuat, dialihkan ke tautan"
 		},
 		"Proxy": {
 			"index_1": "Target",
@@ -722,6 +736,31 @@
 			"index_16": "Websocket global diaktifkan dan tidak diizinkan dinonaktifkan secara individual",
 			"index_17": "Hapus proyek proxy terbalik",
 			"index_18": "Ganti semua kata kunci yang cocok"
+		},
+		"Git": {
+			"sshKey": "Kunci SSH",
+			"updateMethod": "Metode pembaruan",
+			"selectKey": "Pilih kunci",
+			"generateNewKey": "Hasilkan kunci baru",
+			"keyList": "Daftar kunci",
+			"keyName": "Nama kunci",
+			"sshKeyNamePlaceholder": "Silakan masukkan nama kunci SSH",
+			"pleaseInputSshKeyName": "Silakan masukkan nama kunci SSH",
+			"pleaseSelectKey": "Silakan pilih kunci",
+			"generateNewKeySuccess": "Kunci SSH baru berhasil dibuat",
+			"updateSshKeyTitle": "Perbarui Kunci SSH",
+			"coverageData": "Data cakupan",
+			"repoAddressPlaceholder": "Silakan masukkan alamat repositori",
+			"branchPlaceholder": "Silakan pilih cabang",
+			"pleaseInputRepoAddress": "Silakan masukkan alamat repositori terlebih dahulu",
+			"resolveARecordTip": "Harap selesaikan terlebih dahulu catatan A domain ini ke alamat IP server",
+			"repoExample": "misalnya  ",
+			"branchExample": "misalnya tuan",
+			"howToCreateWebsiteUsingGit": "Bagaimana cara membuat situs web menggunakan Git?",
+			"viewDocs": "Melihat",
+			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull asal master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 Aplikasi dikerahkan!\"",
+			"deleteGitConfigTitle": "Hapus konfigurasi git",
+			"deleteGitConfigContent": "Anda dapat menghapus repositori di sini. Perhatikan bahwa direktori .git dan catatan penerapan akan dihapus."
 		}
 	}
 }

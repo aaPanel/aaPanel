@@ -7,7 +7,6 @@ except ImportError:  # pragma: no cover
     import pickle
 
 from cachelib.base import BaseCache
-import io
 import builtins
 
 safe_builtins = {
@@ -55,7 +54,6 @@ class SimpleCacheSession(BaseCache):
 
     def _prune(self):
         if len(self._cache) > self._threshold:
-            import public
             now = time()
             toremove = []
             for idx, (key, (expires, _)) in enumerate(self._cache.items()):

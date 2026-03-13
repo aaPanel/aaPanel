@@ -120,7 +120,10 @@ def del_bak(bak_file: str) -> aap_t_simple_result:
 
 
 # 创建PHP站点
-def create_php_site_with_mysql(domain: str, site_path: str, php_ver_short: str, db_user: str, db_pwd: str, another_domains: typing.List = (), is_clone=False) -> aap_t_simple_site_info:
+def create_php_site_with_mysql(
+        domain: str, site_path: str, php_ver_short: str, db_user: str, db_pwd: str,
+        another_domains: typing.List = (), is_clone=False, **kwargs
+) -> aap_t_simple_site_info:
     """
     :param domain: str              网站主域名
     :param site_path: str           网站根目录（绝对路径）
@@ -146,7 +149,8 @@ def create_php_site_with_mysql(domain: str, site_path: str, php_ver_short: str, 
         'datapassword': db_pwd,
         'codeing': 'utf8mb4',
         'ps': domain.replace('.', '_').replace('-', '_'),
-        'is_clone' : is_clone
+        'is_clone' : is_clone,
+        'ssl_auto': kwargs.get('ssl_auto', 0),
     }))
     if int(data.get('status', 0)) != 0:
         raise HintException(data.get('message', {})['result'])
@@ -154,6 +158,7 @@ def create_php_site_with_mysql(domain: str, site_path: str, php_ver_short: str, 
     data = data['message']
     if int(data.get('databaseStatus', 0)) != 1:
         if data['siteId'] is not None:
+            # noinspection PyUnresolvedReferences
             from public import websitemgr
             websitemgr.remove_site(data['siteId'])
 

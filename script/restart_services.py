@@ -318,11 +318,11 @@ SERVICES_MAP = {
 
 
 # 日志
-def write_logs(msg: str):
+def write_logs(msg: str, logger_name: str = "Service Daemon"):
     try:
         from public import M
         t = time.strftime('%Y-%m-%d %X', time.localtime())
-        M("logs").add("uid,username,type,log,addtime", (1, "system", "Service Daemon", msg, t))
+        M("logs").add("uid,username,type,log,addtime", (1, "system", logger_name, msg, t))
     except:
         pass
 
@@ -499,7 +499,7 @@ class ServicesHelper:
         # not str and not int
         return False
 
-    def script(self, act: str) -> None:
+    def script(self, act: str, logger_name: str = "Service Daemon") -> None:
         if not self.is_install or act not in ["start", "stop", "restart", "status"]:
             return
         try:
@@ -507,13 +507,13 @@ class ServicesHelper:
             self._init_info()
             bash_path = self._bash if self._bash else f"/etc/init.d/{self._serviced}"
 
-            if isinstance(self.pid, str) and (
-                    self.pid.endswith(".sock") or self.pid.endswith(".pid")
-            ):
-                try:
-                    os.remove(self.pid)
-                except:
-                    pass
+            # if isinstance(self.pid, str) and (
+            #         self.pid.endswith(".sock") or self.pid.endswith(".pid")
+            # ):
+            #     try:
+            #         os.remove(self.pid)
+            #     except:
+            #         pass
 
             if self.nick_name == "panel":
                 if not os.path.exists(f"{SETUP_PATH}/panel/init.sh"):
@@ -532,15 +532,20 @@ class ServicesHelper:
                 stderr=subprocess.DEVNULL,
                 start_new_session=True
             )
+            write_logs(f"Service [ {self.nick_name} ] {act}", logger_name)
         except Exception as e:
             print(str(e))
-            write_logs(f"Failed to {act} {self.nick_name}, error: {e}")
+            write_logs(f"Failed to {act} {self.nick_name}, error: {e}", logger_name)
 
 
 # 守护服务管理
 class DaemonManager:
+    _ensured = False
+
     @classmethod
     def __ensure(cls):
+        if cls._ensured:
+            return
         if not os.path.exists(DAEMON_SERVICE_LOCK):
             with open(DAEMON_SERVICE_LOCK, "w") as _:
                 pass
@@ -554,6 +559,7 @@ class DaemonManager:
         if not os.path.exists(DAEMON_SERVICE):
             with open(DAEMON_SERVICE, "w") as fm:
                 fm.write(json.dumps([]))
+        cls._ensured = True
 
     @staticmethod
     def read_lock(func):
@@ -563,10 +569,9 @@ class DaemonManager:
             with open(DAEMON_SERVICE_LOCK, "r") as lock_file:
                 fcntl.flock(lock_file, fcntl.LOCK_SH)
                 try:
-                    result = func(*args, **kwargs)
+                    return func(*args, **kwargs)
                 finally:
                     fcntl.flock(lock_file, fcntl.LOCK_UN)
-                return result
 
         return wrapper
 
@@ -578,10 +583,9 @@ class DaemonManager:
             with open(DAEMON_SERVICE_LOCK, "r+") as lock_file:
                 fcntl.flock(lock_file, fcntl.LOCK_EX)
                 try:
-                    result = func(*args, **kwargs)
+                    return func(*args, **kwargs)
                 finally:
                     fcntl.flock(lock_file, fcntl.LOCK_UN)
-                return result
 
         return wrapper
 
@@ -748,8 +752,8 @@ class RestartServices:
                 if int(manual_info.get(obj.nick_name, 0)) == 1:
                     # service closed maually, skip
                     continue
-                if obj.nick_name != "panel":
-                    write_logs(f"Service [ {obj.nick_name} ] is Not Running, Try to start it...")
+                # if obj.nick_name != "panel":
+                #     write_logs(f"Service [ {obj.nick_name} ] is Not Running, Try to start it...")
 
                 if not self._overhead(obj.nick_name):
                     obj.script("restart")
@@ -793,4 +797,20 @@ def first_time_installed(data: dict) -> None:
 
 
 if __name__ == "__main__":
-    pass
+    if len(sys.argv) == 2:
+        service_name = sys.argv[1]
+        if service_name in SERVICES_MAP:
+            helper = ServicesHelper(service_name)
+            print(f"Attempting to restart service: {service_name}")
+            helper.script("restart")
+            print(f"'{service_name}' restart.")
+            write_logs(f"Service [ {service_name} ] restart ...")
+        else:
+            print(f"Error: Service '{service_name}' not found.")
+            print("Available services are:")
+            for key in SERVICES_MAP.keys():
+                print(f"  - {key}")
+    elif len(sys.argv) == 1:
+        pass
+    else:
+        print("Usage: python restart_services.py [service_name]")

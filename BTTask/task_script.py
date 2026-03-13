@@ -22,15 +22,21 @@ sys.path.insert(0, "/www/server/panel/class_v2/")
 
 from BTTask.conf import logger, CURRENT_TASK_VERSION
 from public.hook_import import hook_import
+
 try:
     hook_import()
 except:
     pass
 
+
 def task():
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            import warnings
+            os.environ["PYTHONWARNINGS"] = "ignore"
+            warnings.simplefilter("ignore")
+
             pid_dir = "/tmp/brain_task_pids/"
             os.makedirs(pid_dir, exist_ok=True)
             pid = os.path.join(pid_dir, f"{func.__name__}.pid")
@@ -55,11 +61,25 @@ def task():
 # 使用task装饰器
 # 所有导入请在函数中进行, 异常由顶层处理记录task.log
 # ======================================================
-# 守护服务
+
+# 项目守护进程
+@task()
+def project_daemon_service():
+    from script.project_daemon import main as daemon_main
+    daemon_main()
+
+# ssl服务
 @task()
 def make_suer_ssl_task():
     from ssl_domainModelV2.service import make_suer_ssl_task
     make_suer_ssl_task()
+
+
+# push msg 服务
+@task()
+def push_msg():
+    from script.push_msg import main
+    main()
 
 
 # site 图标
@@ -92,7 +112,7 @@ def update_waf_config():
 def update_monitor_requests():
     import class_v2.data_v2 as data_v2
     dataObject = data_v2.data()
-    dataObject.getSiteThirtyTotal()
+    dataObject.getSiteThirtyTotal(get=None)
     del dataObject
 
 
@@ -132,17 +152,21 @@ def check_site_monitor():
                               (None, install_name, 'execshell', '0', time.strftime('%Y-%m-%d %H:%M:%S'), execstr))
         public.writeFile('/tmp/panelTask.pl', 'True')
 
+
 # 节点监控
 @task()
 def node_monitor():
-    import public
-    bin_file = '/www/server/panel/pyenv/bin/python'
-    bin_file2 = '/usr/bin/python'
-    if os.path.exists(bin_file):
-        python_bin = bin_file
-    else:python_bin = bin_file2
-    cmd ='nohup {} /www/server/panel/script/node_monitor.py > /dev/null 2>&1 &'.format(python_bin)
-    os.system(cmd)
+    # cmd ='nohup {} /www/server/panel/script/node_monitor.py > /dev/null 2>&1 &'.format(python_bin)
+    import time
+    import traceback
+    try:
+        from mod.project.node.nodeutil import monitor_all_node_status
+        monitor_all_node_status()
+    except Exception:
+        with open('/tmp/node_monitor.pl', 'w') as f:
+            f.write(str(int(time.time())))
+            f.write("{}".format(traceback.format_exc()))
+
 
 # 节点监控依赖包检测
 @task()
@@ -155,6 +179,7 @@ def node_monitor_check():
     cmd_wsproto = "cd /www/server/panel/pyenv/bin && source activate && WSPROTO_VERSION=$(./pip3 show wsproto | grep -i Version | awk '{print $2}') && if [ \"$WSPROTO_VERSION\" != \"1.2.0\" ]; then ./pip3 uninstall wsproto -y; fi; ./pip3 install wsproto==1.2.0"
     public.ExecShell(cmd_h11)
     public.ExecShell(cmd_wsproto)
+
 
 # 多web
 @task()
@@ -680,7 +705,7 @@ def check502task():
     import time
     import psutil
     import public
-    from BTTask.conf import logger, PYTHON_BIN, BASE_PATH
+    from BTTask.conf import logger, BASE_PATH, PYTHON_BIN
 
     def siteEdate():
         mEdate = time.strftime('%Y-%m-%d', time.localtime())
@@ -692,7 +717,18 @@ def check502task():
             mEdate = time.strftime('%Y-%m-%d', time.localtime())
             if oldEdate == mEdate:
                 return False
-            os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/site_task.py > /dev/null 2>&1 &")
+            # os.system("nohup " + PYTHON_BIN + " /www/server/panel/script/site_task.py > /dev/null 2>&1 &")
+            edateSites = public.M('sites').where(
+                'edate>? AND edate<? AND status=?', ('0000-00-00', mEdate, 1)
+            ).field('id,name').select()
+            import panelSite
+            siteObject = panelSite.panelSite()
+            for site in edateSites:
+                get = public.dict_obj()
+                get.id = site['id']
+                get.name = site['name']
+                siteObject.SiteStop(get)
+            public.writeFile('data/edate.pl', mEdate)
         except Exception:
             logger.info(public.get_error_info())
         finally:

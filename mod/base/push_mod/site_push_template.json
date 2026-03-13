@@ -423,6 +423,116 @@
       "tg"
     ],
     "unique": true
+  },
+  {
+    "id": "9",
+    "ver": "1",
+    "used": true,
+    "source": "project_status",
+    "title": "Project Stop Alert",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.site_push",
+      "name": "ProjectStatusTask"
+    },
+    "template": {
+      "field": [
+        {
+          "attr": "cycle",
+          "name": "project type",
+          "type": "select",
+          "default": 1,
+          "items": [
+            {
+              "title": "Node Project",
+              "value": 2
+            },
+            {
+              "title": "Go Project",
+              "value": 3
+            },
+            {
+              "title": "Python Project",
+              "value": 4
+            },
+            {
+              "title": "Other Project",
+              "value": 5
+            }
+          ]
+        },
+        {
+          "attr": "project",
+          "name": "Project name",
+          "type": "select",
+          "default": null,
+          "all_items": null,
+          "items": [
+          ]
+        },
+        {
+          "attr": "interval",
+          "name": "interval",
+          "type": "number",
+          "unit": "second(s)",
+          "suffix": "more than  ",
+          "default": 600
+        },
+        {
+          "attr": "count",
+          "name": "Auto-restart",
+          "type": "radio",
+          "suffix": "",
+          "default": 1,
+          "items": [
+            {
+              "title": "Automatically attempt to restart the project",
+              "value": 1
+            },
+            {
+              "title": "Do not attempt to restart",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "sorted": [
+        [
+          "cycle"
+        ],
+        [
+          "project"
+        ],
+        [
+          "interval"
+        ],
+        [
+          "count"
+        ]
+      ]
+    },
+    "default": {
+      "cycle": 1,
+      "project": "",
+      "interval": 600,
+      "count": 2
+    },
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": [
+      "dingding",
+      "feishu",
+      "mail",
+      "weixin",
+      "webhook",
+      "sms",
+      "tg"
+    ],
+    "unique": false,
+    "tags": ["site", "common"]
   }
 ]
 

@@ -3064,6 +3064,7 @@ class config:
         path = "/www/server/panel/BTPanel/languages/language.pl"
         public.WriteFile(path, name)
         public.set_module_logs('language', 'set_language', 1)
+        public.set_module_logs('language-info', name, 1)
         # 前端目录更改(重启面板)
         public.restart_panel()
         return public.returnMsg(True, 'The setup was successful')

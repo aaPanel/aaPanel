@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -10,13 +9,11 @@ from typing import Tuple, Union, Optional, List
 
 import psutil
 
-from .send_tool import WxAccountMsg
 from .base_task import BaseTask
 from .mods import PUSH_DATA_PATH
-from .util import read_file, write_file, get_config_value
-
-
+from .send_tool import WxAccountMsg
 from .system import WAIT_TASK_LIST
+from .util import read_file, write_file, get_config_value, generate_fields
 
 try:
     if "/www/server/panel/class" not in sys.path:
@@ -35,7 +32,6 @@ def _get_panel_name() -> str:
 
 
 class PanelSysDiskTask(BaseTask):
-
     def __init__(self):
         super().__init__()
         self.source_name = "system_disk"
@@ -147,7 +143,6 @@ class PanelSysDiskTask(BaseTask):
 
 
 class PanelSysCPUTask(BaseTask):
-
     def __init__(self):
         super().__init__()
         self.source_name = "system_cpu"
@@ -223,6 +218,7 @@ class PanelSysCPUTask(BaseTask):
         }
 
     def filter_template(self, template: dict) -> Optional[dict]:
+        template = generate_fields(template, "restart")
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
@@ -240,7 +236,6 @@ class PanelSysCPUTask(BaseTask):
 
 
 class PanelSysLoadTask(BaseTask):
-
     def __init__(self):
         super().__init__()
         self.source_name = "system_load"
@@ -276,7 +271,7 @@ class PanelSysLoadTask(BaseTask):
             avg_data = now_load[0]
             need_push = True
 
-        if need_push is False:
+        if not need_push:
             return None
 
         self.avg_data = avg_data
@@ -290,6 +285,7 @@ class PanelSysLoadTask(BaseTask):
         }
 
     def filter_template(self, template: dict) -> Optional[dict]:
+        template = generate_fields(template, "restart")
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
@@ -307,7 +303,6 @@ class PanelSysLoadTask(BaseTask):
 
 
 class PanelSysMEMTask(BaseTask):
-
     def __init__(self):
         super().__init__()
         self.source_name = "system_mem"
@@ -374,6 +369,7 @@ class PanelSysMEMTask(BaseTask):
         }
 
     def filter_template(self, template: dict) -> Optional[dict]:
+        template = generate_fields(template, "restart")
         return template
 
     def to_sms_msg(self, push_data: dict, push_public_data: dict) -> Tuple[str, dict]:
@@ -395,7 +391,8 @@ class ViewMsgFormat(object):
         "20": (
             lambda x: "<span>Triggered by {} disk mounted on {}</span>".format(
                 x.get("project"),
-                "The margin is less than %.1f G" % round(x.get("count"), 1) if x.get("cycle") == 1 else "ake up more than %d%%" % x.get("count"),
+                "The margin is less than %.1f G" % round(x.get("count"), 1) if x.get(
+                    "cycle") == 1 else "ake up more than %d%%" % x.get("count"),
             )
         ),
         "21": (

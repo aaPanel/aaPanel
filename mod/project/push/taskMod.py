@@ -9,8 +9,9 @@
 # 新告警通道管理模块
 # ------------------------------
 import json
-import traceback
-import os, sys
+import os
+import sys
+
 if "/www/server/panel/class" not in sys.path:
     sys.path.insert(0, "/www/server/panel/class")
 import public
@@ -24,12 +25,13 @@ from mod.base.msg import update_mod_push_msg
 from mod.base.push_mod.rsync_push import load_rsync_template
 from mod.base.push_mod.task_manager_push import load_task_manager_template
 from mod.base.push_mod.load_push import load_load_template
-from mod.base.push_mod import PUSH_DATA_PATH
 
 def update_mod():
+    # todo 缺少移除弃用模板的操作
+    template_ver = "8"
     try:
         with open(UPDATE_VERSION_FILE, 'r') as f:
-            if f.read() == "6":
+            if f.read() == template_ver:
                 pl = False
             else:
                 pl = True
@@ -37,13 +39,13 @@ def update_mod():
         pl = True
 
     if pl:
-        # print("========================rewrite=====================")
+        # 更新标志pl存在时, 只强制更新以下模板的最新配置, 其他不更新
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/site_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/system_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/database_push_template.json")
         load_task_template_by_file("/www/server/panel/mod/base/push_mod/domain_blcheck_push_template.json")
         with open(UPDATE_VERSION_FILE, "w") as f:
-            f.write("6")
+            f.write(template_ver)
 
     if not os.path.exists(UPDATE_MOD_PUSH_FILE):
         update_mod_push_msg()
@@ -60,7 +62,6 @@ del update_mod
 
 
 class main(PushManager):
-
     def get_task_list(self, get=None):
 
         # 通道类型映射，包含模糊匹配规则
@@ -197,6 +198,7 @@ class main(PushManager):
     @staticmethod
     def get_task_template_list(get=None):
 
+        # todo 弃用表
         public.check_table('ssl_domains', """CREATE TABLE IF NOT EXISTS `ssl_domains` (
               	`id` INTEGER PRIMARY KEY AUTOINCREMENT,
               	`domain` TEXT,

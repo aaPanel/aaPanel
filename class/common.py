@@ -24,21 +24,17 @@ from BTPanel import (
 
 PANEL_PATH = public.get_panel_path()
 public.sys_path_append("class_v2/")
+from theme_config import ThemeConfigManager
 
 
 class panelSetup:
-    def __init_panel_asset(self) -> None:
-        from config_v2 import config as config_v2
-        try:
-            panel_asset = config_v2().get_panel_asset()
-            if panel_asset.get("status") == 0:
-                g.panel_asset = panel_asset.get("message")
-                return
-        except Exception as ex:
-            public.print_log("init_panel_asset error: {}".format(str(ex)))
-
-        from BTPanel import PANEL_DEFAULT_ASSET
-        g.panel_asset = PANEL_DEFAULT_ASSET
+    def __init_panel_theme(self) -> None:
+        # 初始化主题配置管理器（默认检测是否存在配置文件，并新建）
+        theme_manager = ThemeConfigManager()
+        # 获取主题配置数据
+        theme_manager_data = theme_manager.get_config()
+        # 获取主题配置
+        g.panel_theme = theme_manager_data.get("data", {})
 
 
     def init(self):
@@ -51,13 +47,13 @@ class panelSetup:
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '7.65.0'
+        g.version = '8.3.0'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
         g.pyversion = sys.version_info[0]
         session['version'] = g.version
-        self.__init_panel_asset()  # 初始化面板asset资源
+        self.__init_panel_theme()  # 初始化面板主题配置
 
         if not public.get_improvement(): session['is_flush_soft_list'] = 1
         if request.method == 'GET':

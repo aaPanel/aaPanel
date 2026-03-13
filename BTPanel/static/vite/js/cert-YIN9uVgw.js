@@ -1,0 +1,1 @@
+var l=(o=>(o[o.NotDeploy=-1]="NotDeploy",o[o.SaveOrHolderDeploy=0]="SaveOrHolderDeploy",o[o.LetsEncryptDeploy=1]="LetsEncryptDeploy",o[o.TestDeploy=2]="TestDeploy",o[o.BusinessDeploy=3]="BusinessDeploy",o))(l||{});export{l as C};

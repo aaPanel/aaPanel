@@ -73,7 +73,7 @@
 			"index_8": "Display",
 			"overviewTitle": "Resource Overview",
 			"containerCount": "Containers",
-			"spaceUsed": "Space used",
+			"spaceUsed": "Space used ",
 			"composeCount": "Compose",
 			"composeProjects": "Docker Compose Projects",
 			"imageCount": "Images",

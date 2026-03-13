@@ -301,6 +301,7 @@ class ServerNode:
             'Content-Type': 'application/x-www-form-urlencoded',
             "User-Agent": "Bt-Panel/Node Manager"
         }
+        source_action=["DeleteDir","DeleteFile","CreateDir", "get_path_size"]
         try:
             resp = requests.post(url, data=bt_p, headers=header, verify=False, timeout=self.timeout)
             if not resp.status_code == 200:
@@ -308,7 +309,9 @@ class ServerNode:
                     resp.status_code)
             if self.app_key:
                 real_data = public.aes_decrypt(resp.text, self.app_key.app_key)
+                if action in source_action:return json.loads(real_data), ""
                 return json.loads(real_data).get('message',{}), ""
+            if action in source_action:return resp.json(), ""
             return resp.json().get('message',{}), ""
         except Exception as e:
             # public.print_error()
@@ -667,16 +670,18 @@ class ServerNode:
             #     if ver_list[0] > 11 or (ver_list[0] == 11 and ver_list[1] >= 1):
             #         return "Node {} version is lower than [11.1.0], unable to use app link, please upgrade node version".format(self.show_name())
 
-            if ver_list[0] == 7 and ver_list[1] >= 65:
+            if ver_list[0] >=8:
+                return ""
+            elif ver_list[0] == 7 and ver_list[1] >= 65:
                 return ""
             elif ver_list[0] == 7 and ver_list[1] == 0 and ver_list[2] >= 30:
                 return ""
             elif ver_list[0] ==2 and ver_list[1] >= 15:
                 return ""
-            return "Please upgrade the panel version to 【 7.65.0/7.0.30/2.15.0 】 or above before using it"
+            return "Please upgrade the panel version to 【8.0.0/7.65.0/7.0.30/2.15.0】 or above before using it"
         except:
             pass
-        return "Please upgrade the panel version to 【 7.65.0/7.0.30/2.15.0 】 or above before using it"
+        return "Please upgrade the panel version to 【8.0.0/7.65.0/7.0.30/2.15.0】 or above before using it"
 
 
     def node_create_filetransfer_task(self, source_node: dict,

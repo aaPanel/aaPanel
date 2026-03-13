@@ -613,18 +613,27 @@ class CloudFlareDns(BaseDns):
                     response=self.log_response(find_dns_zone_response),
                 )
             )
-
         result = find_dns_zone_response.json()["result"]
-        for i in result:
-            if i["name"] == domain_name:  # 完全匹配
-                setattr(self, "cf_zone_id", i["id"])
-                return
+
+        domain = domain_name.lstrip("*.")
+        matched_zones = [
+            x for x in result if domain == x.get("name") or domain.endswith("." + x.get("name"))
+        ]
+        if not matched_zones:
+            raise HintException(
+                "Error unable to get DNS zone for domain={domain}".format(
+                    domain=domain
+                )
+            )
+        # 优先最长匹配, max时len相等, 即eq, not eq时max为最精确
+        best_match = max(matched_zones, key=lambda x: len(x.get("name", "")))
+        setattr(self, "cf_zone_id", best_match.get("id"))
 
         if self.cf_zone_id is None:
             raise HintException(
-                "Error unable to get DNS zone for domain_name={domain_name} "
+                "Error unable to get DNS zone for domain={domain} "
                 ", please check your Api Account and Password: status_code={status_code} response={response}".format(
-                    domain_name=domain_name,
+                    domain=domain,
                     status_code=find_dns_zone_response.status_code,
                     response=self.log_response(find_dns_zone_response),
                 )

@@ -149,7 +149,21 @@
 			"add_site_56": "Vui lòng nhập tập lệnh triển khai",
 			"add_site_57": "Vui lòng nhập chi nhánh ssh",
 			"add_site_58": "Miền này không hỗ trợ độ phân giải tự động, vui lòng chọn độ phân giải thủ công",
-			"add_site_59": "Tạo cho Git"
+			"add_site_59": "Tạo cho Git",
+			"index_152": "Kiểm tra hiệu suất [{0}]",
+			"index_153": "Kiểm tra",
+			"index_154": "Hành động nhanh",
+			"index_155": "Hết hạn",
+			"index_156": "Yêu cầu",
+			"index_157": "Nếu không cần, bạn có thể tắt nó trong \"Cài đặt\" - \"Cài đặt bảng điều khiển\" - \"Giám sát trang web\".",
+			"index_158": "Dữ liệu báo cáo giám sát sẽ được cập nhật khi danh sách trang web được làm mới",
+			"index_159": "Plugin báo cáo giám sát sẽ sử dụng dữ liệu của plugin; nếu nó chưa được cài đặt, dữ liệu báo cáo giám sát miễn phí sẽ được sử dụng.",
+			"index_160": "Tích cực",
+			"index_161": "WAF",
+			"index_162": "Tạo báo cáo phân tích hiệu suất trang web dựa trên Google PageSpeed Insights",
+			"index_163": "Chỉ hỗ trợ các miền có thể truy cập từ mạng bên ngoài",
+			"index_164": "Kiểm tra hiệu suất",
+			"index_165": "Báo cáo được tạo thành công, chuyển hướng đến liên kết"
 		},
 		"Proxy": {
 			"index_1": "Mục tiêu",
@@ -722,6 +736,31 @@
 			"index_16": "WebSocket toàn cầu được bật và không được phép bị vô hiệu hóa riêng lẻ",
 			"index_17": "Xóa dự án proxy ngược",
 			"index_18": "Thay thế tất cả các từ khóa phù hợp"
+		},
+		"Git": {
+			"sshKey": "Khóa SSH",
+			"updateMethod": "Phương pháp cập nhật",
+			"selectKey": "Chọn phím",
+			"generateNewKey": "Tạo khóa mới",
+			"keyList": "Danh sách khóa",
+			"keyName": "Tên khóa",
+			"sshKeyNamePlaceholder": "Vui lòng nhập tên khóa SSH",
+			"pleaseInputSshKeyName": "Vui lòng nhập tên khóa SSH",
+			"pleaseSelectKey": "Vui lòng chọn một phím",
+			"generateNewKeySuccess": "Khóa SSH mới được tạo thành công",
+			"updateSshKeyTitle": "Cập nhật khóa SSH",
+			"coverageData": "Dữ liệu bảo hiểm",
+			"repoAddressPlaceholder": "Vui lòng nhập địa chỉ kho lưu trữ",
+			"branchPlaceholder": "Vui lòng chọn chi nhánh",
+			"pleaseInputRepoAddress": "Vui lòng nhập địa chỉ kho lưu trữ trước",
+			"resolveARecordTip": "Trước tiên hãy giải quyết bản ghi A của miền này thành địa chỉ IP của máy chủ",
+			"repoExample": "ví dụ.",
+			"branchExample": "ví dụ: bậc thầy",
+			"howToCreateWebsiteUsingGit": "Làm cách nào để tạo trang web bằng Git?",
+			"viewDocs": "Xem",
+			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull Origin master\necho \"\" | sudo -S service php8.3-fpm tải lại\necho \"🚀 Ứng dụng đã được triển khai!\"",
+			"deleteGitConfigTitle": "Xóa cấu hình git",
+			"deleteGitConfigContent": "Bạn có thể xóa kho lưu trữ ở đây. Lưu ý rằng cả thư mục .git và bản ghi triển khai sẽ bị xóa."
 		}
 	}
 }

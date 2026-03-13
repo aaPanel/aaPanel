@@ -404,7 +404,8 @@
 			"index_54": "Alerta de LP/ Dominio en la lista negra",
 			"index_55": "Notificarme cuando el servicio de correo esté inactivo",
 			"index_56": "Alerta de servicio de correo",
-			"index_57": "Detectar automáticamente listas negras"
+			"index_57": "Detectar automáticamente listas negras",
+			"index_58": "Enviar correo electrónico cuando se supere la cuota"
 		},
 		"Api": {
 			"index_1": "Establecer atrapar todo, por favor espera ...",

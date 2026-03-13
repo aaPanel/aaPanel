@@ -1,0 +1,1 @@
+import{c as t}from"./index-BTglIPU2.js?v=1773287522785";import{$ as s,Z as o,q as c}from"./vue-core-DJjvd5ZC.js?v=1773287522785";const n={},r={class:"settings-title"};function a(e,d){return s(),o("div",r,[c(e.$slots,"default",{},void 0,!0)])}const l=t(n,[["render",a],["__scopeId","data-v-00adcb85"]]);export{l as S};

@@ -404,7 +404,8 @@
 			"index_54": "LP/ DIALLED Danh sách đen",
 			"index_55": "Thông báo cho tôi khi dịch vụ thư bị giảm",
 			"index_56": "Thông báo dịch vụ thư",
-			"index_57": "Tự động phát hiện danh sách đen"
+			"index_57": "Tự động phát hiện danh sách đen",
+			"index_58": "Gửi email khi vượt quá hạn ngạch"
 		},
 		"Api": {
 			"index_1": "Cài đặt bắt tất cả, vui lòng đợi ...",

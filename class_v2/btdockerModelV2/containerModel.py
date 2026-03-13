@@ -1434,60 +1434,81 @@ class main(dockerBase):
         except Exception:
             return public.return_message(0, 0, res)
 
-
     def get_logs(self, get):
         """
-        获取指定容器日志
+        获取指定容器日志100行 (优化性能 )
         :param get:
         :return:
         """
-        res = {
-            "logs": "",
-        }
+        res = {"logs": ""}
 
         try:
-            # 获取容器信息   名称 日志路径  大小
             container_info = self.docker_client(self._url).containers.get(get.id)
+            log_path = container_info.attrs['LogPath']
 
-            if not os.path.exists(container_info.attrs['LogPath']):
+            if not os.path.exists(log_path):
                 return public.return_message(0, 0, "")
 
-            since = ""
-            until = ""
-            tail = ""
-            if hasattr(get, 'time_search') and get.time_search != '':
-                time_search = json.loads(str(get.time_search))
-                since = int(time_search[0])
-                until = int(time_search[1])
-                size = os.stat(container_info.attrs['LogPath']).st_size
-                if size > 1048576:
-                    tail = int(get.tail) if "tail" in get else 10000
+            size = os.stat(log_path).st_size
 
-            options = {
-                "since": since,
-                "until": until,
-                "tail": tail
-              }
+            # 处理时间范围
+            since = None
+            until = None
+            if hasattr(get, 'time_search') and get.time_search:
+                try:
+                    time_search = json.loads(str(get.time_search))
+                    since = int(time_search[0])
+                    until = int(time_search[1])
+                except (json.JSONDecodeError, ValueError, TypeError, IndexError):
+                    pass  # 忽略无效时间参数
+
+            # 处理 tail
+            tail = 0
+            if size > 1048576:  # >1MB
+                default_tail = 10000 if since is not None else 1000
+                try:
+                    tail = int(get.tail) if hasattr(get, 'tail') and get.tail else default_tail
+                    if tail <= 0:
+                        tail = default_tail
+                except (ValueError, TypeError):
+                    tail = default_tail
+
+            # 构建 options
+            options = {}
+            if since is not None:
+                options["since"] = since
+            if until is not None:
+                options["until"] = until
+            if tail > 0:
+                options["tail"] = tail
+
             from btdockerModelV2.dockerSock import container
-
             sk_container = container.dockerContainer()
-            sk_container_logs = sk_container.get_container_logs(get.id,options)
-            if hasattr(get, 'search') and get.search != '':
-                if get.search:
-                    sk_container_logs = sk_container_logs.split("\n")
-                    sk_container_logs = [i for i in sk_container_logs if get.search in i]
-                    sk_container_logs = "\n".join(sk_container_logs)
+            sk_container_logs = sk_container.get_container_logs(get.id, options)
+
+            # 搜索过滤
+            if hasattr(get, 'search') and get.search:
+                lines = sk_container_logs.split("\n")
+                lines = [line for line in lines if get.search in line]
+                sk_container_logs = "\n".join(lines)
 
             res["logs"] = sk_container_logs
             res['id'] = get.id
-            res['name'] = dp.rename(container_info.attrs['Name'][1:])
-            res['logs_path'] = container_info.attrs['LogPath']
-            res['size'] = os.stat(container_info.attrs['LogPath']).st_size
+            # 🔧 修复：移除未定义的 dp.rename
+            res['name'] = container_info.attrs['Name'].lstrip('/')
+            res['logs_path'] = log_path
+            res['size'] = size
 
             return public.return_message(0, 0, res)
 
-        except Exception:
+        except docker.errors.NotFound:
+            return public.return_message(-1, 0, public.lang("The container doesn't exist!"))
+        except Exception as e:
+            public.print_log(traceback.format_exc())
             return public.return_message(0, 0, res)
+
+
+
 
     def get_logs_all(self, get):
         """

@@ -149,7 +149,21 @@
 			"add_site_56": "請輸入部署腳本",
 			"add_site_57": "請輸入 SSH 分支",
 			"add_site_58": "該域名不支持自動解析，請選擇手動解析",
-			"add_site_59": "Git部署"
+			"add_site_59": "Git部署",
+			"index_152": "性能檢測【{0}】",
+			"index_153": "檢測",
+			"index_154": "快捷操作",
+			"index_155": "接近時間",
+			"index_156": "請求數",
+			"index_157": "如果不需要，可以在“設置”-“面板設置”-“站點監控”中關閉。",
+			"index_158": "監控報告數據將隨著網站列表的刷新和更新",
+			"index_159": "監控報告插件將使用插件的數據；如果未安裝，將使用免費的監控報告數據。",
+			"index_160": "啟用",
+			"index_161": "WAF防火牆",
+			"index_162": "基於Google PageSpeed Insights生成網站性能分析報告",
+			"index_163": "主要支持外網可訪問域名",
+			"index_164": "性能檢測",
+			"index_165": "報告生成成功，正在跳轉鏈接"
 		},
 		"Proxy": {
 			"index_1": "目標",
@@ -722,6 +736,31 @@
 			"index_16": "全局 WebSocket 已啟用，不允許單獨禁用",
 			"index_17": "刪除反向代理項目",
 			"index_18": "替換所有匹配的關鍵詞"
+		},
+		"Git": {
+			"sshKey": "SSH 金鑰",
+			"updateMethod": "更改方式",
+			"selectKey": "選擇密鑰",
+			"generateNewKey": "產生新密鑰",
+			"keyList": "密鑰列表",
+			"keyName": "密鑰名稱",
+			"sshKeyNamePlaceholder": "請輸入 SSH 金鑰名稱",
+			"pleaseInputSshKeyName": "請輸入 SSH 金鑰名稱",
+			"pleaseSelectKey": "請選擇密鑰",
+			"generateNewKeySuccess": "產生新密鑰成功",
+			"updateSshKeyTitle": "更改 SSH 金鑰",
+			"coverageData": "覆蓋數據",
+			"repoAddressPlaceholder": "請輸入倉庫位址",
+			"branchPlaceholder": "請選擇分支",
+			"pleaseInputRepoAddress": "請先填寫倉庫地址",
+			"resolveARecordTip": "請先網域的A記錄解析到伺服器IP位址",
+			"repoExample": "例如：",
+			"branchExample": "例如：master",
+			"howToCreateWebsiteUsingGit": "如何使用 Git 建立網站？",
+			"viewDocs": "查看",
+			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 部署完成！\"",
+			"deleteGitConfigTitle": "刪除 Git 配置",
+			"deleteGitConfigContent": "您可以在此刪除倉庫。注意：.git 目錄以及部署記錄都會被刪除。"
 		}
 	}
 }

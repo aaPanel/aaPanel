@@ -25,6 +25,7 @@ import re
 import uuid
 import psutil
 import zipfile
+import types
 
 panel_path = '/www/server/panel'
 if not os.name in ['nt']:
@@ -85,13 +86,15 @@ app.secret_key = public.md5(
     str(psutil.boot_time()))  # uuid.UUID(int=uuid.getnode()).hex[-12:]
 local_ip = None
 my_terms = {}
-app.config['SESSION_MEMCACHED'] = SimpleCacheSession(1000, 86400)
+
+SESSION_TTL = public.get_session_expired()
+app.config['SESSION_MEMCACHED'] = SimpleCacheSession(1000, SESSION_TTL)
 app.config['SESSION_TYPE'] = 'memcached'
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'BT_:'
 app.config['SESSION_COOKIE_NAME'] = public.md5(app.secret_key)
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30
+app.config['PERMANENT_SESSION_LIFETIME'] = SESSION_TTL
 app.config['SESSION_COOKIE_SAMESITE'] = None
 
 if app.config['SSL']:
@@ -233,31 +236,6 @@ except Exception as e:
     public.print_log(f"menu config error, {e}")
 
 # ========================== Menu Map End ============================
-
-# ====================== Panel Settings Asset Default =================
-PANEL_DEFAULT_ASSET = {
-    'favicon': '/static/favicon.ico',  # 默认网站favicon图标
-    'show_login_logo': True,  # 默认不显示登录logo
-    'show_login_bg_images': False,  # 默认不显示登录背景图片
-    'login_logo': '/static/icons/logo-green.svg',  # 默认登录logo图片
-    'login_bg_images': '',  # 默认登录背景图片
-    'login_bg_images_opacity': 100,  # 默认登录背景图片透明度
-    'show_main_bg_images': True,  # 默认不显示主界面背景图
-    'main_bg_images': '/static/icons/main_bg.png',  # 主界面背景图
-    'main_bg_images_opacity': 100,  # 主界面背景图透明度
-    'main_content_opacity': 100,  # 主界面内容透明度
-    'main_shadow_color': '#000000',  # 主界面阴影颜色
-    'main_shadow_opacity': 5,  # 主界面阴影透明度
-    'menu_logo': '/static/icons/menu_logo.png',  # 菜单栏顶部logo图标
-    'menu_bg_opacity': 100,  # 默认侧边栏背景透明度
-    'theme_color': '#3c444d',  # 默认主色
-    'theme_name': 'default',  # 默认主题名称
-    'home_state_font_size': 24,  # 首页概览字体大小
-    'main_bg_images_dark': '/static/icons/main_bg_dark.png',  # 这个是用来搞黑暗模式的
-}
-
-# ============================== Asset End ============================
-
 
 
 # ===================================Flask HOOK========================#
@@ -3333,6 +3311,38 @@ def webssh(ws):
     return 'False'
 
 
+@sockets.route(route_v2 + '/pyenv_webssh')
+def python_env_ssh(ws):
+    # py环境终端
+    comReturn = comm.local()
+    if comReturn:
+        ws.send(str(comReturn))
+        return
+    if not ws:
+        return 'False'
+    get = ws.receive()
+    if not get:
+        return
+    get = json.loads(get)
+    if not check_csrf_websocket(ws, get):
+        return
+
+    import ssh_terminal_v2 as ssh_terminal
+    from projectModelV2.pythonModel import PyenvSshTerminal
+
+    sp = ssh_terminal.ssh_host_admin()
+    ssh_info = sp.get_ssh_info('127.0.0.1')
+    if not ssh_info: ssh_info = sp.get_ssh_info('localhost')
+    if not ssh_info: ssh_info = {"host": "127.0.0.1"}
+    ssh_info['port'] = public.get_ssh_port()
+
+    p = PyenvSshTerminal()
+    p.run(ws, ssh_info)
+    del p
+    if ws.connected:
+        ws.close()
+    return 'False'
+
 # ---------------------    websocket END    -------------------------- #
 
 
@@ -3447,7 +3457,6 @@ def push(pdata=None):
     result = publicObject(toObject, defs, None, pdata)
     return result
 
-
 # ===========================================================v2路由区start===========================================================#
 # docker模块内用到的ws
 @sockets.route(route_v2 + '/ws_model')
@@ -3524,11 +3533,33 @@ def ws_modsoc(ws):
             raise Exception('json load error !')
         get._ws = ws
         get.model_index = "mod"
-        p = threading.Thread(target=ws_mod_thread, args=(model_obj, get))
+        p = threading.Thread(target=ws_mod_thread_v2, args=(model_obj, get))
         p.start()
     # except:
     #     import traceback
     #     public.print_log(traceback.format_exc())
+
+
+def ws_mod_thread_v2(_obj, get):
+    '''
+        @name 模型控制器ws线程
+        @author hwliang<2021-07-24>
+        @param _obj<Controller> 控制器对像
+        @param get<dict> 请求参数
+        @return void
+    '''
+    try:
+        mod_result = _obj.model(get)
+        if mod_result is None:
+            return
+        result = {'callback': get.get("ws_callback", get.get("callback", "")), 'result': mod_result}
+        if get._ws.connected:
+            get._ws.send(public.getJson(result))
+        
+    except:
+        if public.is_debug():
+            public.print_error()
+        return
 
 # ======================普通路由区start============================#
 
@@ -3630,6 +3661,8 @@ def site_v2(pdata=None):
         'export_domains',
         'import_domains',
         'GetSiteLogs',
+        'clear_logs',
+        'download_logs',
         'GetSiteDomains',
         'GetSecurity',
         'SetSecurity',
@@ -3792,14 +3825,22 @@ def site_v2(pdata=None):
         'get_cdn_ip',
         'set_site_global',
         'get_site_global',
+        'site_performance_test',
         # 新增多服务
+        'set_default_site_conf',
         'get_multi_webservice_status',
         'switch_multi_webservice_status',
         'switch_webservice',
         'get_current_webservice',
         'multi_service_check_repair',
         'website_rollback',
-        'service_install_count'
+        'service_install_count',
+        # 项目网站分类管理, 除开php
+        'batch_set_site_type',
+        'get_project_site_types',
+        'add_project_site_type',
+        'modify_project_site_type',
+        'remove_project_site_type',
     )
     return publicObject(siteObject, defs, None, pdata)
 
@@ -3829,7 +3870,12 @@ def git_tools(pdata=None):
         'update_deploy_sh',
         'del_script',
         'get_webhook_log',
-        'clear_webhook_log'
+        'clear_webhook_log',
+        'generate_aapanel_ed25519_key',
+        'get_remote_branches',
+        'change_repository_key',
+        'import_existing_repository',
+        'get_git_directory'
     )
     return publicObject(gitObject, defs, None, pdata)
 
@@ -4349,7 +4395,8 @@ def files_v2(pdata=None):
             'Re_Recycle_bin', 'Get_Recycle_bin', 'Del_Recycle_bin',
             'Close_Recycle_bin', 'Recycle_bin', 'file_webshell_check',
             'dir_webshell_check', 'files_search', 'files_replace',
-            'get_replace_logs', 'get_sql_backup', 'test_path', 'upload_files_exists')
+            'get_replace_logs', 'get_sql_backup', 'test_path', 'upload_files_exists',
+            'file_history', 'file_history_list', 'del_file_history','del_history')
 
     return publicObject(filesObject, defs, None, pdata)
 
@@ -4589,9 +4636,17 @@ def config_v2(pdata=None):
         'set_cdn_status',
         'set_auto_favicon',
         'set_theme',
-        'set_panel_asset',
-        'get_panel_asset',
-        'get_alarm_services',
+        # 旧主题
+        # 'set_panel_asset',
+        # 'get_panel_asset',
+        'get_alarm_services', # 服务
+        # 主题
+        'get_panel_theme',
+        'set_panel_theme',
+        'update_panel_theme',
+        'validate_theme_file',
+        'import_theme_config',
+        'export_theme_config',
     )
     return publicObject(config_v2.config(), defs, None, pdata)
 
@@ -4658,7 +4713,7 @@ def panel_data_v2(pdata=None):
     if comReturn: return comReturn
     import data_v2
     dataObject = data_v2.data()
-    defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal','get_wp_classification','get_wp_site_list')
+    defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal','get_wp_classification','get_wp_site_list','get_aacloud_data')
     return publicObject(dataObject, defs, None, pdata)
 
 # todo 计划调整

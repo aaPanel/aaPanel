@@ -149,7 +149,21 @@
 			"add_site_56": "Bitte geben Sie das Bereitstellungsskript ein",
 			"add_site_57": "Bitte geben Sie den SSH-Zweig ein",
 			"add_site_58": "Diese Domain unterstützt keine automatische Auflösung. Bitte wählen Sie die manuelle Auflösung",
-			"add_site_59": "Für Git erstellen"
+			"add_site_59": "Für Git erstellen",
+			"index_152": "Leistungsprüfung [{0}]",
+			"index_153": "Überprüfen",
+			"index_154": "Schnelle Aktion",
+			"index_155": "Ablauf",
+			"index_156": "Anfragen",
+			"index_157": "Wenn Sie es nicht benötigen, können Sie es unter „Einstellungen“ – „Panel-Einstellungen“ – „Site Monitor“ deaktivieren.",
+			"index_158": "Die Überwachungsberichtsdaten werden aktualisiert, wenn die Website-Liste aktualisiert wird",
+			"index_159": "Das Überwachungsberichts-Plugin verwendet die Daten des Plugins. Wenn es nicht installiert ist, werden kostenlose Überwachungsberichtsdaten verwendet.",
+			"index_160": "Aktiv",
+			"index_161": "Waf",
+			"index_162": "Erstellen Sie einen Analysebericht zur Website-Leistung basierend auf Google PageSpeed Insights",
+			"index_163": "Unterstützt nur Domänen, auf die über das externe Netzwerk zugegriffen werden kann",
+			"index_164": "Leistungsprüfung",
+			"index_165": "Bericht erfolgreich erstellt, Weiterleitung zum Link"
 		},
 		"Proxy": {
 			"index_1": "Ziel",
@@ -722,6 +736,31 @@
 			"index_16": "Global WebSocket sind aktiviert und dürfen nicht einzeln deaktiviert werden",
 			"index_17": "Reverse Proxy -Projekt löschen",
 			"index_18": "Ersetzen Sie alle übereinstimmenden Schlüsselwörter"
+		},
+		"Git": {
+			"sshKey": "SSH-Schlüssel",
+			"updateMethod": "Update-Methode",
+			"selectKey": "Schlüssel auswählen",
+			"generateNewKey": "Neuen Schlüssel generieren",
+			"keyList": "Schlüsselliste",
+			"keyName": "Schlüsselname",
+			"sshKeyNamePlaceholder": "Bitte geben Sie den SSH-Schlüsselnamen ein",
+			"pleaseInputSshKeyName": "Bitte geben Sie den SSH-Schlüsselnamen ein",
+			"pleaseSelectKey": "Bitte wählen Sie einen Schlüssel aus",
+			"generateNewKeySuccess": "Neuer SSH-Schlüssel erfolgreich generiert",
+			"updateSshKeyTitle": "SSH-Schlüssel aktualisieren",
+			"coverageData": "Abdeckungsdaten",
+			"repoAddressPlaceholder": "Bitte geben Sie die Repository-Adresse ein",
+			"branchPlaceholder": "Bitte wählen Sie eine Filiale aus",
+			"pleaseInputRepoAddress": "Bitte geben Sie zuerst die Repository-Adresse ein",
+			"resolveARecordTip": "Bitte lösen Sie zunächst den A-Eintrag dieser Domain in die Server-IP-Adresse auf",
+			"repoExample": "z.B.  ",
+			"branchExample": "z.B. Meister",
+			"howToCreateWebsiteUsingGit": "Wie erstelle ich eine Website mit Git?",
+			"viewDocs": "Sicht",
+			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho „🚀 Anwendung bereitgestellt!“",
+			"deleteGitConfigTitle": "Git-Konfiguration löschen",
+			"deleteGitConfigContent": "Sie können das Repository hier löschen. Beachten Sie, dass sowohl das .git-Verzeichnis als auch die Bereitstellungsdatensätze gelöscht werden."
 		}
 	}
 }

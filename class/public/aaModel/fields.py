@@ -1,8 +1,17 @@
 # coding: utf-8
 import copy
 import itertools
-import json
 import time
+
+try:
+    import ujson as json
+except ImportError:
+    try:
+        os.system("btpip install ujson")
+        import ujson as json
+    except:
+        import json
+
 from collections.abc import Callable
 from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime
@@ -22,7 +31,6 @@ __all__ = [
 
 if TYPE_CHECKING:
     from .model import aaModel
-
 
 M = TypeVar("M", bound="aaModel")
 
@@ -501,7 +509,9 @@ class DictField(aaField):
         "update",
     )
 
+
 ACCURACY = 1000
+
 
 @dataclass
 class DateTimeStrField(aaField):

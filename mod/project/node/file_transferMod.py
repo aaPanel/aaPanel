@@ -462,10 +462,7 @@ class main():
         if not path:
             return public.return_message(-1, 0,"Path parameter error")
         res=node.remove_file(path, is_dir=is_dir == 1)
-        if res.get('status',-1)==0: return public.return_message(0, 0,res.get('message',{}).get('result',"File deleted successfully"))
-        if res.get('result','')=='File moved to recycle bin': return public.return_message(0, 0,res.get('msg',"File moved to recycle bin"))
-        if res.get('result','')=='Successfully deleted file': return public.return_message(0, 0,res.get('msg',"Successfully deleted file"))
-        if res.get('result','')=='Directory moved to recycle bin!': return public.return_message(0, 0,res.get('msg',"Directory moved to recycle bin!"))
+        if res.get('status',-1)==0: return public.return_message(0, 0,res.get('message',{}).get('result',"File/Directory deleted successfully or moved to recycle bin!"))
         return public.return_message(-1, 0,res.get('msg',"File delete failed"))
         # return node.remove_file(path, is_dir=is_dir == 1)
 

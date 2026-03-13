@@ -19,9 +19,19 @@ import shutil
 import re
 import html
 import sqlite3
+import urllib
+import stat
 from BTPanel import session, request
 from public.validate import Param
 from datetime import datetime
+try:
+    import chardet
+except:
+    os.system('btpip install chardet')
+    try:
+        import chardet
+    except:
+        chardet = None
 
 
 class files:
@@ -2145,8 +2155,11 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
     def GetFileBody(self, get):
         if not hasattr(get, "path"):
             return public.return_message(-1, 0, public.lang("Parameters are missing! path"))
+        from urllib.parse import unquote
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
+        get.path = urllib.parse.unquote(get.path)
+        get.path = html.escape(get.path)
         get.path = self.xssdecode(get.path)
 
         if get.path.find('/rewrite/null/') != -1:
@@ -2177,8 +2190,36 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         # if os.path.getsize(get.path) > 3145928:
         #     return public.return_message(-1, 0, public.lang("Cannot edit files larger than 2MB online!"))
         if os.path.isdir(get.path):
-            return public.return_message(-1, 0, public.lang("Writing verification file failed: {}"))
+            return public.return_message(-1, 0, public.lang("Writing verification file failed: {}", get.path))
+        if not os.path.exists(get.path):
+            return public.return_message(-1, 0, public.lang("The file does not exist: {}", get.path))
 
+
+        # 获取文件状态
+        f_stat = os.stat(get.path)
+        if stat.S_ISSOCK(f_stat.st_mode):
+            return public.return_message(-1, 0, public.lang("Socket files cannot be edited online"))
+            # return public.returnMsg(False, "Socket files cannot be edited online")
+
+        data = {}
+        data['status'] = True
+        data["only_read"] = False
+        data["size"] = os.path.getsize(get.path)
+
+        req_data = {
+            "PATH": os.path.dirname(get.path),
+            "DIR": [],
+            "FILES": [os.path.basename(get.path)],
+        }
+        resp = self._check_tamper(req_data)
+
+        tamper_data = resp.get("tamper_data", {})
+        tamper_status = tamper_data.get("files", [])
+        close_status = os.path.exists("{}/tamper/close_temp.pl".format(public.get_setup_path()))
+        if not close_status and len(tamper_status) != 0:
+            if str(tamper_status[0]).startswith("1") and self._check_tamper_white() is False:
+                data['msg'] = "The current file is tamper-proof, and editing is not supported!"
+                data["only_read"] = True
         # 处理my.cnf为空的情况
         myconf_file = '/etc/my.cnf'
         if get.path == myconf_file:
@@ -2191,50 +2232,78 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         data['status'] = True
         data["only_read"] = False
         data["size"] = os.path.getsize(get.path)
+
         if data["size"] > 3145928:
             try:
-                info_data = self.last_lines(get.path, 10000)
-                if info_data == "": return public.return_message(-1, 0,
-                                                                 u'The file encoding is not compatible, the file cannot be read correctly!')
+                data["next"] = True
+                info_data = ''
+                if "mode" in get and "p" in get:
+                    if get.mode == "reverse":
+                        info_data = public.GetNumLines(get.path, 1000, int(get.p)).split("\n")
+                        info_data.reverse()
+                        info_data = "\n".join(info_data)
+
+                        if info_data == "":
+                            data["next"] = False
+                else:
+                    info_data = self.last_lines(get.path, 1000)
                 data["data"] = info_data
                 data["only_read"] = True
             except:
-                return public.return_message(-1, 0,
-                                             u'The file encoding is not compatible, the file cannot be read correctly!')
+                return public.return_message(-1, 0, public.lang("File encoding is not compatible and cannot be read correctly!"))
+
         else:
-            fp = open(get.path, 'rb')
-            if fp:
-                srcBody = fp.read()
-                fp.close()
-                try:
+            try:
+                fp = open(get.path, 'rb')
+                if fp:
                     data['encoding'] = 'utf-8'
-                    data['data'] = srcBody.decode(data['encoding'])
-                except:
+                    if chardet:
+                        chardet_data = fp.read(1024)
+                        res = chardet.detect(chardet_data)
+                        if res and res['confidence'] > 0.9:
+                            data['encoding'] = res['encoding']
+                        fp.seek(0)
+                    srcBody = fp.read()
+                    fp.close()
                     try:
-                        data['encoding'] = 'GBK'
                         data['data'] = srcBody.decode(data['encoding'])
                     except:
                         try:
-                            data['encoding'] = 'BIG5'
+                            data['encoding'] = 'utf-8'
                             data['data'] = srcBody.decode(data['encoding'])
                         except:
-                            return public.return_message(-1, 0, public.lang("File encoding is not compatible and cannot be read correctly!"))
-            else:
-                return public.return_message(-1, 0, public.lang("Failed to open file, file may be occupied by other processes!"))
-            if hasattr(get, 'filename'):
-                get.path = get.filename
+                            try:
+                                data['encoding'] = 'GBK'
+                                data['data'] = srcBody.decode(data['encoding'])
+                            except:
+                                try:
+                                    data['encoding'] = 'BIG5'
+                                    data['data'] = srcBody.decode(data['encoding'])
+                                except:
+                                    return public.return_message(-1, 0, public.lang("File encoding is not compatible and cannot be read correctly!"))
+            except OSError as e:
+                return public.return_message(-1, 0, public.lang(
+                    "If the file fails to open, the file may be occupied by other processes!"))
 
-            if not os.path.exists(get.path):
-                return public.return_message(-1, 0, public.lang("The file does not exist"))
+            except Exception as e:
+                return public.return_message(-1, 0, public.lang("Failed to open the file: {}", str(e)))
 
-            data['historys'] = self.get_history(get.path)
-            data['auto_save'] = self.get_auto_save(get.path)
-            data['st_mtime'] = str(int(os.stat(get.path).st_mtime))
-            return_status = -1
-            if data['status']:
-                return_status = 0
-            del data['status']
-            return public.return_message(return_status, 0, data)
+
+        if hasattr(get, 'filename'):
+            get.path = get.filename
+
+        if not os.path.exists(get.path):
+            return public.return_message(-1, 0, public.lang("The file does not exist"))
+
+        data['historys'] = self.get_history(get.path)
+        data['auto_save'] = self.get_auto_save(get.path)
+        data['st_mtime'] = str(int(os.stat(get.path).st_mtime))
+        return_status = -1
+        if data['status']:
+            return_status = 0
+        del data['status']
+        return public.return_message(return_status, 0, data)
+
 
     def last_lines(self, filename, lines=1):
         '''
@@ -2288,7 +2357,10 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if not 'force' in get or get['force'] != '1':
                 st_mtime = str(int(os.stat(get.path).st_mtime))
                 if st_mtime != get['st_mtime']:
-                    return public.return_message(-1, 0,'Failed to save, {} file has been changed, please refresh the content and modify it again.'.format(get.path))
+                    data= {
+                        "result": 'Failed to save, {} file has been changed, please refresh the content and modify it again.'.format(get.path),
+                        "status": False }
+                    return public.return_message(0, 0,data)
 
         his_path = '/www/backup/file_history/'
         if get.path.find(his_path) != -1:
@@ -2345,8 +2417,9 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                 isError = public.checkWebConfig(path=get.path)
                 if isError != True:
                     public.ExecShell('\\cp -a /tmp/backup.conf ' + get.path)
-                    return public.return_message(-1, 0, 'ERROR:<br><font style="color:red;">' + isError.replace("\n",
-                                                                                                                '<br>') + '</font>')
+                    res = public.return_message(-1, 0,  'The save failed because an error was detected in the modified profile:<br><pre style="color:red;white-space: pre-line;">' + isError + '</pre>')
+                    res["conf_check"] = 1
+                    return res
                 public.serviceReload()
 
             if userini:
@@ -2357,6 +2430,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             data = {'msg': tmp_data['msg']}
             data['historys'] = self.get_history(get.path)  # 获取历史记录
             data['st_mtime'] = str(int(os.stat(get.path).st_mtime))
+            data['status'] = True
             return public.return_message(0, 0, data)
         except Exception as ex:
             return public.return_message(-1, 0, 'Save ERROR! {}' + str(ex))
@@ -2446,6 +2520,27 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return sorted(os.listdir(save_path), reverse=True)
         except:
             return []
+
+    # 删除指定副本
+    def del_history(self, args):
+        if not hasattr(args, "filename"):
+            return public.return_message(-1, 0, public.lang("The parameter filename is missing"))
+
+        if not hasattr(args, "history"):
+            return public.return_message(-1, 0, public.lang("Missing parameter history"))
+
+        if not os.path.exists(args.filename):
+            return public.return_message(-1, 0, public.lang("The file does not exist"))
+        save_path = ('/www/backup/file_history/' +
+                     args.filename).replace('//', '/')
+        path = save_path + '/' + args.history
+        try:
+            os.remove(path)
+        except PermissionError as e:
+            if e.errno == 13:
+                return public.return_message(-1, 0, public.lang("There are not enough permissions to manipulate files or directories"))
+        return public.return_message(0, 0, public.lang("The old version [{}] was successfully deleted", args.history))
+
 
     # 读取指定历史副本
     def read_history(self, args):
@@ -3726,7 +3821,7 @@ cd %s
         return attribute
 
     def files_search(self, args):
-        import panelSearch
+        import panelSearchV2 as panelSearch
         adad = panelSearch.panelSearch()
         return adad.get_search(args)
 
@@ -4413,3 +4508,87 @@ CREATE TABLE index_tb(
         })
 
 
+    # 添加文件历史记录
+    def file_history(self, args):
+        file_history_data = os.path.join(public.get_panel_path(), "data/file_history_data.json")
+        path = args.path.strip()
+        name = args.name.strip()
+
+        if not os.path.exists(file_history_data):
+            public.writeFile(file_history_data, '[]')
+
+        if not path:
+            return public.return_message(-1, 0, public.lang("Please select the file"))
+
+
+        try:
+            filedata = json.loads(public.readFile(file_history_data))
+        except json.decoder.JSONDecodeError:
+            filedata = []
+
+        #  判断是否已经存在
+        for data in filedata:
+            if data["filename"] == name and data["filepath"] == path:
+                data["time"] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+                filedata = sorted(filedata, key=lambda x: x['time'], reverse=True)
+                public.writeFile(file_history_data, json.dumps(filedata))
+                return public.return_message(0, 0, public.lang("Add successfully"))
+
+        content = {
+            "filename": name,
+            "filepath": path,
+            "time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+            "id": public.GetRandomString(12)
+        }
+
+        filedata.append(content)
+
+        filedata = sorted(filedata, key=lambda x: x['time'], reverse=True)
+
+        if len(filedata) > 10:
+            filedata = filedata[:10]
+
+        public.writeFile(file_history_data, json.dumps(filedata))
+
+        return public.return_message(0, 0, public.lang("Add successfully"))
+
+    # 获取文件历史记录列表   最新10条
+    def file_history_list(self, args):
+        file_history_data = os.path.join(public.get_panel_path(), "data/file_history_data.json")
+
+        if not os.path.exists(file_history_data):
+            public.writeFile(file_history_data, '[]')
+        data = public.readFile(file_history_data)
+        if not data:
+            data = '[]'
+        data = json.loads(data)
+
+        for item in data:
+            item['historys'] = self.get_history(item["filepath"])
+
+        return data
+    # 删除文件历史记录
+    def del_file_history(self, args):
+        id = args.id
+        file_history_data = os.path.join(public.get_panel_path(), "data/file_history_data.json")
+        filedata = json.loads(public.readFile(file_history_data))
+
+        for index, data in enumerate(filedata):
+            if data["id"] == id:
+                del filedata[index]
+                break
+
+        public.writeFile(file_history_data, json.dumps(filedata))
+        return public.return_message(0, 0, public.lang("Delete successfully"))
+    # 防篡改：检查进程白名单，是否允许面板编辑
+    def _check_tamper_white(self) -> bool:
+        tamper = "/www/server/tamper/tamper.conf"
+        if not os.path.isfile(tamper):
+            return False
+        try:
+            tamper_info = json.loads(public.readFile(tamper))
+        except:
+            return False
+        if "BT-Panel" in tamper_info["process_names"]:
+            return True
+        return False

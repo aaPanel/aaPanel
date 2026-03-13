@@ -161,7 +161,10 @@ class DomainObject:
         return data
 
     def get_dns_support(self, get):
-        return public.success_v2(self.supports)
+        res = list(set(self.supports))
+        if "aaPanelDns" in res:
+            res.remove("aaPanelDns")
+        return public.success_v2(res)
 
     # =========== 托管商 ===========
     def sync_dns_info(self, get):
@@ -872,7 +875,7 @@ class DomainObject:
             if len(get.domains) == 0:
                 return public.fail_v2(public.lang("domains is empty"))
             get.deploy = getattr(get, "deploy", -1)
-            get.site_id = str(getattr(get, "site_id", "-1"))
+            get.site_id = int(getattr(get, "site_id", -1))
             auto_wildcard = False if int(getattr(get, "auto_wildcard", 0)) == 0 else True
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
@@ -899,7 +902,7 @@ class DomainObject:
                     return public.fail_v2(public.lang(
                         f"Dns01 Verify Errot, DNS Provider Not Found! for {temp_root}"
                     ))
-            dns_task = generate_sites_task({}, -1)
+            dns_task = generate_sites_task({}, get.site_id)
             threading.Thread(target=provider.model_apply_cert,
                              kwargs=({
                                  "domains": apply_domains,
@@ -924,7 +927,7 @@ class DomainObject:
                 return public.fail_v2(public.lang(
                     "Http01 Verify Error: The wildcard domain name can only be verified by DNS."
                 ))
-            http_task = generate_sites_task({}, -1)
+            http_task = generate_sites_task({}, get.site_id)
             threading.Thread(target=apply_cert,
                              kwargs=({
                                  "domains": apply_domains,
@@ -1122,8 +1125,14 @@ class DomainObject:
         sites = public.S("sites").field(
             "id", "name", "path", "status", "type_id", "project_type",
         ).select()
-        sites = self.__add_match_flag(sites, ssl_obj, "name")
-
+        for s in sites:
+            domains = public.S("domain").where("pid=?", (s["id"],)).field("name").select()
+            if not domains:
+                continue
+            if all([
+                DomainValid.match_ssl_dns(d.get("name", ""), ssl_obj) for d in domains if d.get("name")
+            ]):
+                s["match"] = 1
         # ====================== mails ======================
         mails = []
         if os.path.exists(self.mail_db_file):
@@ -1200,7 +1209,7 @@ class DomainObject:
         """
         证书部署到 选定的 sites
         get.hash
-        get.domain
+        get.domain (site name)
         get.append=1 追加模式, 其余为替换模式
         """
         try:

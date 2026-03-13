@@ -7,6 +7,8 @@ from panelDnsapi import *
 
 APP_PATH = os.path.dirname(__file__)
 
+SPECIAL_PROJECT_TYPE = {"node", "python", "go", "java", "net", "html", "other"}
+
 # 旧的, 限制域名面板登录
 PANEL_LIMIT_DOMAIN = os.path.join(public.get_panel_path(), "data/domain.conf")
 

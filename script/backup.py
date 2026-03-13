@@ -7,12 +7,13 @@
 
 import sys,os
 os.chdir('/www/server/panel')
-sys.path.append("./")
-sys.path.append("class/")
-sys.path.append("class_v2/")
+if "./" not in sys.path: sys.path.insert(0, "./")
+if "class/" not in sys.path: sys.path.insert(0, "class/")
+if "class_v2/" not in sys.path: sys.path.insert(0, "class_v2/")
+
 if sys.version_info[0] == 2:
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
+    reload(sys) # noqa
+    sys.setdefaultencoding('utf-8') # noqa
 import public,db,time
 from public.hook_import import hook_import
 hook_import()

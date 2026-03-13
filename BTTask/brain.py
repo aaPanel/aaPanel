@@ -177,7 +177,7 @@ class SimpleBrain:
 
         while not self.shutdown:
             try:
-                cpu = psutil.cpu_percent(interval=0.5)
+                cpu = psutil.cpu_percent(interval=0.2)
                 now = time.monotonic()
                 # 每10s
                 now_time = time.time()
@@ -208,7 +208,7 @@ class SimpleBrain:
                         self.MAXFACTOR * (cpu - self.cpu_max) / (100.0 - self.cpu_max)
                     )
                 elif self.delay_factor > 0:
-                    self.delay_factor = max(0.0, self.delay_factor - 0.5)
+                    self.delay_factor = max(0.0, self.delay_factor - 0.1)
 
             except Exception as e:
                 logger.error(f"cpu mem checker error: {e}")
@@ -345,7 +345,11 @@ class SimpleBrain:
             now = time.monotonic()
             with self.queue_lock:
                 ready_tasks = []
-                while self.task_queue and self.task_queue[0].next_run <= now:
+                while (
+                    self.task_queue
+                    and self.task_queue[0].next_run <= now
+                    and len(ready_tasks) < 1
+                ):
                     ready_tasks.append(heapq.heappop(self.task_queue))
                 next_run_time = self.task_queue[0].next_run if self.task_queue else now + 1.0
 
@@ -381,6 +385,7 @@ class SimpleBrain:
 
             if submit:
                 self._submit_task(submit)
+                time.sleep(1) # 使相同间隔的任务加大错峰
 
             time.sleep(max(0.01, min(1.0, next_run_time - now)))
 

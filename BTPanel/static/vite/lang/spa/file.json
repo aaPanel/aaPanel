@@ -130,6 +130,11 @@
 				"untitledFile": "archivo sin título"
 			}
 		},
+		"api": {
+			"saving": "Guardando, por favor espera...",
+			"deleting": "Eliminar, por favor espera ...",
+			"recovering": "Restaurando, por favor espera ..."
+		},
 		"fileOperation": {
 			"cut": "Cortar",
 			"rename": "Rebautizar",
@@ -420,20 +425,181 @@
 			"title": "Reproductor de video"
 		}
 	},
-	"editor": {
-		"title": "Editor de texto en línea",
-		"save": "Ahorrar",
-		"saveAll": "Guardar todo",
-		"refresh": "Refrescar",
-		"search": "Buscar",
-		"replace": "Reemplazar",
-		"jumpLine": "Línea de salto",
-		"font": "Fuente",
-		"theme": "Tema",
-		"settings": "Ajustes",
-		"help": "Ayuda",
-		"directory": "Directorio",
-		"back": "Atrás",
-		"new": "Nuevo"
+	"fileEditor": {
+		"common": {
+			"save": "Guardar"
+		},
+		"title": {
+			"onlineTextEditor": "Editor de texto en línea",
+			"minimize": "Minimizar",
+			"restore": "Restaurar",
+			"restoreDown": "Restaurar hacia abajo",
+			"maximize": "maximizar",
+			"close": "Cerrar"
+		},
+		"toolbar": {
+			"save": "Guardar",
+			"saveAll": "Guardar todo",
+			"refresh": "Refrescar",
+			"search": "Buscar",
+			"replace": "Reemplazar",
+			"jumpLine": "Línea de salto",
+			"fontSize": "Tamaño de fuente",
+			"theme": "Tema",
+			"setting": "Ajustes",
+			"shortcut": "Atajos",
+			"refreshing": "Refrescante, por favor espera...",
+			"refreshed": "Contenido del archivo actualizado",
+			"fontSizeSaved": "Tamaño de fuente actualizado"
+		},
+		"messages": {
+			"noRefresh": "Esta página no se puede actualizar en modo editor. Cierra el editor y vuelve a intentarlo."
+		},
+		"fileExplorer": {
+			"directory": "Directorio",
+			"up": "Arriba",
+			"refresh": "Refrescar",
+			"new": "Nuevo",
+			"search": "Buscar",
+			"searchPanelTitle": "Buscar archivos de directorio",
+			"close": "Cerrar",
+			"searchPlaceholder": "Buscar",
+			"includeSubdir": "Incluir subdirectorios",
+			"newFolder": "Nueva carpeta",
+			"newFile": "Nuevo archivo"
+		},
+		"tree": {
+			"newFilePlaceholder": "Nuevo archivo",
+			"newFolderPlaceholder": "Nueva carpeta"
+		},
+		"dialogs": {
+			"encodingTitle": "Establecer codificación de archivos",
+			"settingTitle": "Configuración del editor",
+			"setting": {
+				"wrap": "ajuste de palabras",
+				"enableLiveAutocompletion": "Autocompletado en vivo",
+				"enableSnippets": "Habilitar fragmentos",
+				"showInvisibles": "Mostrar invisibles",
+				"showLineNumbers": "Mostrar números de línea"
+			},
+			"themeTitle": "Establecer tema del editor",
+			"theme": {
+				"chrome": "cromo (luz)",
+				"monokai": "monokai (oscuro)"
+			},
+			"goToLineTitle": "ir a la linea",
+			"goToLineHint": "Actual: línea {línea}, columna {columna}. Ingrese un número de línea (1-{max}).",
+			"fontSizeTitle": "Establecer el tamaño de fuente del editor",
+			"tabSizeTitle": "Configuración de pestañas",
+			"tabSizeLengthTitle": "Tamaño de pestaña",
+			"tabSize": {
+				"useSpaces": "Sangrar usando espacios",
+				"useTabs": "Sangrar usando pestañas"
+			},
+			"lineEndingTitle": "Establecer final de línea",
+			"lineEndingChangeTitle": "Cambiar final de línea",
+			"lineEndingChangeContent1": "¿Cambiar la línea del archivo \"{file}\" que termina de {from} a {to}?",
+			"lineEndingChangeContent2": "Esto reescribirá todos los finales de línea en el archivo y entrará en vigor después de {guardar}.",
+			"fileHistory": {
+				"title": "Historial de archivos",
+				"time": "tiempo",
+				"actions": "Acciones",
+				"diff": "diferencia",
+				"recover": "Restaurar",
+				"delete": "Borrar",
+				"recoverTitle": "Restaurar historial",
+				"recoverContent": "¿Restaurar la versión del historial {hora}? Se sobrescribirá el contenido del archivo actual.",
+				"deleteTitle": "Eliminar historial",
+				"deleteContent": "¿Eliminar la versión del historial {hora}? Esto no se puede deshacer.",
+				"fileContentUpdated": "Contenido del archivo actualizado."
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "Aviso",
+			"modifiedSaveConfirm": "Este archivo ha sido modificado. ¿Guardar cambios?",
+			"dontSave": "No guardar"
+		},
+		"editorFooter": {
+			"fileLocation": "Archivo: {ruta}",
+			"readOnlyHistory": "Archivo de solo lectura: {ruta} Historial [{time}]",
+			"clickRecoverLeft": "Restaurar la versión izquierda del historial",
+			"lineColumn": "Ln {línea}, Col {columna}",
+			"historyCount": "Historia: {count}",
+			"tabSize": "Pestaña: {tamaño}",
+			"encoding": "Codificación: {codificación}",
+			"language": "Idioma: {idioma}",
+			"readOnlyMode": "Sólo lectura"
+		},
+		"store": {
+			"untitled": "Sin título",
+			"fileTooLarge": "¡Lo siento! Los archivos de más de 3 MB no se admiten para edición en línea.",
+			"shortcutTabName": "Atajos",
+			"conflictTitle": "Advertencia de conflicto",
+			"conflictContentFallback": "Es posible que este archivo tenga un conflicto de marca de tiempo o que no tenga permiso de escritura. ¿Forzar guardar?",
+			"forceSave": "Forzar guardar",
+			"saveAllLoading": "Guardando todos los archivos modificados, espere...",
+			"saveAllSuccess": "Todos los cambios guardados.",
+			"tabSettingsRefreshed": "Configuración actualizada.",
+			"nameRequired": "Por favor ingrese un nombre válido.",
+			"newFile": "Nuevo archivo",
+			"newFolder": "Nueva carpeta",
+			"createSuccess": "{tipo} creado correctamente."
+		},
+		"shortcut": {
+			"common": {
+				"title": "Atajos comunes",
+				"saveFile": "guardar archivo",
+				"copy": "Copiar",
+				"cut": "Cortar",
+				"paste": "Pasta",
+				"selectAll": "Seleccionar todo",
+				"undo": "Deshacer",
+				"redo": "Rehacer",
+				"find": "encontrar",
+				"replace": "Reemplazar",
+				"esc": "Salir de búsqueda/cancelar sugerencias"
+			},
+			"cursorMove": {
+				"title": "Movimiento del cursor",
+				"docStartEnd": "Mover el cursor al inicio/final del documento",
+				"matchingTag": "Saltar a la etiqueta coincidente",
+				"pageUpDown": "Página arriba/abajo",
+				"lineStartEnd": "Mover el cursor al inicio/final de la línea"
+			},
+			"selection": {
+				"title": "Selección",
+				"mouseBox": "Seleccionar con el mouse",
+				"drag": "Arrastrar",
+				"mouseDrag": "Arrastre del mouse",
+				"pageSelect": "Seleccionar mientras avanza o retrocede página",
+				"cursorToStartEnd": "Del cursor al inicio/fin",
+				"blockSelect": "Selección de bloque"
+			},
+			"edit": {
+				"title": "Editar",
+				"toggleComment": "Alternar comentario",
+				"indent": "sangría",
+				"outdent": "sin sangría",
+				"delete": "Borrar",
+				"deleteLine": "Eliminar línea",
+				"copyLineUpDown": "Duplicar línea arriba/abajo",
+				"deleteRight": "Eliminar a la derecha del cursor",
+				"swapLineUpDown": "Intercambiar línea actual con anterior/siguiente",
+				"copyLineDown": "Línea duplicada debajo"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "Buscar archivo/directorio",
+		"NewFile": "Nuevo archivo",
+		"NewFolder": "Nueva carpeta",
+		"CurrentSelection": "Selección actual:",
+		"Name": "Nombre",
+		"NamePlaceholder": "Por favor ingrese el nombre",
+		"Create": "Crear",
+		"ModifyTime": "Tiempo de modificación",
+		"PermissionOwner": "Permisos/Propietario",
+		"RootDir": "Directora de raíz",
+		"PathPlaceholder": "Por favor ingrese la ruta"
 	}
 }

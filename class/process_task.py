@@ -363,6 +363,7 @@ class process_task:
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `cpu_top` REAL,
   `memory_top` REAL,
+  `swap_top` REAL,
   `disk_top` REAL,
   `net_top` REAL,
   `all_top` REAL,
@@ -583,6 +584,14 @@ class process_task:
                 total_cpu_precent += process_info['cpu_percent']
                 process_info['memory'] = p.memory_info().rss                                            # 内存占用
                 if not process_info['memory']: continue
+                # ========== 新增：获取Swap占用 ==========
+
+                try:
+                    # swap_used_cmd = f"awk '/VmSwap/{{print $2}}' /proc/{pid}/status"
+                    # process_info['swap']=int(public.ExecShell(swap_used_cmd)[0].strip())
+                    process_info['swap']=p.memory_full_info().swap
+                except:
+                    process_info['swap']=0
 
                 io_counters = p.io_counters()
                 process_info['disk_read'] = self.get_io_read(pid,io_counters.read_bytes)                # 读取磁盘字节数
@@ -639,9 +648,14 @@ class process_task:
             @return bool
         '''
         if not process_info_list: return
-        all_top,cpu_top,disk_top,net_top,memory_top = self.get_top_list(process_info_list)
+        all_top,cpu_top,disk_top,net_top,memory_top,swap_top = self.get_top_list(process_info_list)
 
         with db.Sql().dbfile('system') as _sql:
+            #检测process_top_list表是否存在swap_top字段
+            field = 'cpu_top,swap_top'
+            check_result=_sql.table('process_top_list').order("id desc").field(field).select()
+            if type(check_result) == str:
+                _sql.table('process_top_list').execute("ALTER TABLE 'process_top_list' ADD 'swap_top' REAL DEFAULT []",())
             if not _time:
                 _time = int(time.time())
             _sql.table('process_top_list').insert({
@@ -650,6 +664,7 @@ class process_task:
                 'disk_top':dumps(disk_top),
                 'net_top':dumps(net_top),
                 'memory_top':dumps(memory_top),
+                'swap_top':dumps(swap_top),
                 'addtime':_time
             })
 
@@ -702,8 +717,15 @@ class process_task:
             if not p['memory']: continue
             _line = [p['memory'],p['pid'],public.xssencode2(p['name']),public.xssencode2(p['cmdline']),public.xssencode2(p['username']),p['create_time']]
             memory_top.append(_line)
+ 
+        process_info_list = sorted(process_info_list,key=lambda x:x['swap'],reverse=True)
+        swap_top = []
+        for p in process_info_list[:top_num]:
+            if not p['swap']: continue
+            _line = [p['swap'],p['pid'],public.xssencode2(p['name']),public.xssencode2(p['cmdline']),public.xssencode2(p['username']),p['create_time']]
+            swap_top.append(_line)
 
-        return all_top,cpu_top,disk_top,net_top,memory_top
+        return all_top,cpu_top,disk_top,net_top,memory_top,swap_top
 
 
 

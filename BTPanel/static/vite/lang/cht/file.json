@@ -127,6 +127,11 @@
 				"untitledFile": "未命名文件"
 			}
 		},
+		"api": {
+			"saving": "正在儲存中，請稍候...",
+			"deleting": "正在刪除中，請稍候...",
+			"recovering": "正在恢復中，請稍候..."
+		},
 		"fileOperation": {
 			"cut": "剪切",
 			"rename": "重命名",
@@ -417,20 +422,181 @@
 			"title": "視頻播放"
 		}
 	},
-	"editor": {
-		"onlineTextEditor": "在線文本編輯器",
-		"save": "保存",
-		"saveAll": "保存全部",
-		"refresh": "刷新",
-		"search": "搜索",
-		"replace": "替換",
-		"jumpline": "跳轉行",
-		"font": "字體",
-		"theme": "主題",
-		"set": "設置",
-		"help": "幫助",
-		"directory": "目錄",
-		"back": "返回",
-		"new": "新建"
+	"fileEditor": {
+		"common": {
+			"save": "保存"
+		},
+		"title": {
+			"onlineTextEditor": "在線文本編輯器",
+			"minimize": "最小化",
+			"restore": "還原",
+			"restoreDown": "後續還原",
+			"maximize": "最大化",
+			"close": "關閉"
+		},
+		"toolbar": {
+			"save": "保存",
+			"saveAll": "全部保存",
+			"refresh": "刷新",
+			"search": "搜索",
+			"replace": "替換",
+			"jumpLine": "跳轉行",
+			"fontSize": "字體大小",
+			"theme": "主題",
+			"setting": "設置",
+			"shortcut": "快速鍵",
+			"refreshing": "正在刷新中，請稍候...",
+			"refreshed": "文件內容已更新",
+			"fontSizeSaved": "字體大小設定成功"
+		},
+		"messages": {
+			"noRefresh": "編輯器模式下無法刷新網頁，請關閉後重試"
+		},
+		"fileExplorer": {
+			"directory": "目錄",
+			"up": "上一級",
+			"refresh": "刷新",
+			"new": "新建",
+			"search": "搜索",
+			"searchPanelTitle": "搜尋目錄文件",
+			"close": "關閉",
+			"searchPlaceholder": "搜索",
+			"includeSubdir": "包含目錄文件",
+			"newFolder": "新建文件夾",
+			"newFile": "新建文件"
+		},
+		"tree": {
+			"newFilePlaceholder": "新建文件",
+			"newFolderPlaceholder": "新建文件夾"
+		},
+		"dialogs": {
+			"encodingTitle": "設定檔案儲存編碼格式",
+			"settingTitle": "編輯器設定",
+			"setting": {
+				"wrap": "自動換行",
+				"enableLiveAutocompletion": "程式碼自動完成",
+				"enableSnippets": "啟用程式碼段",
+				"showInvisibles": "顯示隱藏字符",
+				"showLineNumbers": "顯示行號"
+			},
+			"themeTitle": "設定編輯器主題",
+			"theme": {
+				"chrome": "chrome【白色主題】",
+				"monokai": "monokai【黑色主題】"
+			},
+			"goToLineTitle": "跳到指定行",
+			"goToLineHint": "目前：行{line}，列{column}，輸入行數(介於1-{max}之間)",
+			"fontSizeTitle": "設定編輯器字體大小",
+			"tabSizeTitle": "設定製表符",
+			"tabSizeLengthTitle": "設定製表符長度",
+			"tabSize": {
+				"useSpaces": "使用空格縮排",
+				"useTabs": "使用製表符縮排"
+			},
+			"lineEndingTitle": "設定檔案儲存行結束符",
+			"lineEndingChangeTitle": "更改行結束符",
+			"lineEndingChangeContent1": "確定要將檔案 \"{file}\" 的行結束符號從 {from} 更改為 {to} 嗎？",
+			"lineEndingChangeContent2": "此操作將修改文件中所有的行結束符，並在{save}後生效。",
+			"fileHistory": {
+				"title": "文件版本歷史",
+				"time": "版本時間",
+				"actions": "操作",
+				"diff": "文件對比",
+				"recover": "恢復",
+				"delete": "刪除",
+				"recoverTitle": "恢復歷史文件",
+				"recoverContent": "是否恢復歷史文件 {time}？恢復歷史文件後，目前文件內容將會被替換！",
+				"deleteTitle": "刪除歷史文件",
+				"deleteContent": "是否刪除歷史檔案 {time}？刪除歷史檔案後，將無法恢復！",
+				"fileContentUpdated": "文件內容已更新！"
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "溫馨提示",
+			"modifiedSaveConfirm": "偵測到文件已被修改，是否已儲存？",
+			"dontSave": "不保存"
+		},
+		"editorFooter": {
+			"fileLocation": "文件位置：{path}",
+			"readOnlyHistory": "只讀文件，文件為{path} 歷史版本[{time}]",
+			"clickRecoverLeft": "點擊恢復左側歷史版本",
+			"lineColumn": "行 {line}, 列 {column}",
+			"historyCount": "歷史版本：{count}份",
+			"tabSize": "製表符: {size}",
+			"encoding": "編碼：{encoding}",
+			"language": "語言：{language}",
+			"readOnlyMode": "唯讀模式"
+		},
+		"store": {
+			"untitled": "未命名",
+			"fileTooLarge": "抱歉！文件大小超過3M，暫不支援線上編輯！",
+			"shortcutTabName": "快速鍵",
+			"conflictTitle": "衝突警告！",
+			"conflictContentFallback": "此文件正面臨潛在的時間戳衝突修改節點或您沒有寫權限，是否採取強制覆寫？",
+			"forceSave": "強制保存",
+			"saveAllLoading": "正在儲存所有髒文件狀態，請稍候...",
+			"saveAllSuccess": "全部修改已入庫",
+			"tabSettingsRefreshed": "配置格式已刷新",
+			"nameRequired": "命名域需提供有效字符",
+			"newFile": "全新文件",
+			"newFolder": "全新資料夾",
+			"createSuccess": "{type}寫入成功"
+		},
+		"shortcut": {
+			"common": {
+				"title": "常用快速鍵",
+				"saveFile": "儲存檔案",
+				"copy": "複製內容",
+				"cut": "剪切內容",
+				"paste": "貼上內容",
+				"selectAll": "全選內容",
+				"undo": "撤銷操作",
+				"redo": "反撤銷操作",
+				"find": "搜尋內容",
+				"replace": "替換內容",
+				"esc": "退出搜尋、取消自動提示"
+			},
+			"cursorMove": {
+				"title": "遊標移動",
+				"docStartEnd": "遊標移動到文件首/尾",
+				"matchingTag": "跳到匹配的標籤",
+				"pageUpDown": "遊標上/下翻頁",
+				"lineStartEnd": "遊標移到行首/尾"
+			},
+			"selection": {
+				"title": "內容選擇",
+				"mouseBox": "滑鼠框選",
+				"drag": "拖曳",
+				"mouseDrag": "滑鼠拖曳",
+				"pageSelect": "上下翻頁選中",
+				"cursorToStartEnd": "目前位置至頭/尾",
+				"blockSelect": "區塊選擇"
+			},
+			"edit": {
+				"title": "編輯",
+				"toggleComment": "註釋和取消註釋",
+				"indent": "柑橘",
+				"outdent": "整體前移",
+				"delete": "刪除",
+				"deleteLine": "刪除整行",
+				"copyLineUpDown": "複製行並新增到上一行/下一行",
+				"deleteRight": "刪除遊標右側內容",
+				"swapLineUpDown": "目前行和上一行/下一行交換",
+				"copyLineDown": "複製行並添加到下面"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "搜尋檔案/目錄",
+		"NewFile": "新建文件",
+		"NewFolder": "新建文件夾",
+		"CurrentSelection": "目前選取：",
+		"Name": "名稱",
+		"NamePlaceholder": "請輸入名稱",
+		"Create": "創建",
+		"ModifyTime": "修改時間",
+		"PermissionOwner": "權限/所有者",
+		"RootDir": "Root dir",
+		"PathPlaceholder": "請輸入路徑"
 	}
 }

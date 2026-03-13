@@ -418,6 +418,11 @@
 		},
 		"videoPlayerModal": {
 			"title": "Video Player"
+		},
+		"api": {
+			"saving": "Saving, please wait...",
+			"deleting": "Deleting, please wait...",
+			"recovering": "Restoring, please wait..."
 		}
 	},
 	"editor": {
@@ -459,5 +464,182 @@
 		"edit": "Edit",
 		"selectAll": "Select All",
 		"undo": "Cancel"
+	},
+	"fileEditor": {
+		"common": {
+			"save": "Save"
+		},
+		"title": {
+			"onlineTextEditor": "Online Text Editor",
+			"minimize": "Minimize",
+			"restore": "Restore",
+			"restoreDown": "Restore Down",
+			"maximize": "Maximize",
+			"close": "Close"
+		},
+		"toolbar": {
+			"save": "Save",
+			"saveAll": "Save All",
+			"refresh": "Refresh",
+			"search": "Search",
+			"replace": "Replace",
+			"jumpLine": "Jump Line",
+			"fontSize": "Font Size",
+			"theme": "Theme",
+			"setting": "Settings",
+			"shortcut": "Shortcuts",
+			"refreshing": "Refreshing, please wait...",
+			"refreshed": "File content updated",
+			"fontSizeSaved": "Font size updated"
+		},
+		"messages": {
+			"noRefresh": "This page cannot be refreshed in editor mode. Close the editor and try again."
+		},
+		"fileExplorer": {
+			"directory": "Directory",
+			"up": "Up",
+			"refresh": "Refresh",
+			"new": "New",
+			"search": "Search",
+			"searchPanelTitle": "Search Directory Files",
+			"close": "Close",
+			"searchPlaceholder": "Search",
+			"includeSubdir": "Include subdirectories",
+			"newFolder": "New Folder",
+			"newFile": "New File"
+		},
+		"tree": {
+			"newFilePlaceholder": "New file",
+			"newFolderPlaceholder": "New folder"
+		},
+		"dialogs": {
+			"encodingTitle": "Set file encoding",
+			"settingTitle": "Editor settings",
+			"setting": {
+				"wrap": "Word wrap",
+				"enableLiveAutocompletion": "Live autocompletion",
+				"enableSnippets": "Enable snippets",
+				"showInvisibles": "Show invisibles",
+				"showLineNumbers": "Show line numbers"
+			},
+			"themeTitle": "Set editor theme",
+			"theme": {
+				"chrome": "chrome (Light)",
+				"monokai": "monokai (Dark)"
+			},
+			"goToLineTitle": "Go to line",
+			"goToLineHint": "Current: line {line}, column {column}. Enter a line number (1-{max}).",
+			"fontSizeTitle": "Set editor font size",
+			"tabSizeTitle": "Tab settings",
+			"tabSizeLengthTitle": "Tab size",
+			"tabSize": {
+				"useSpaces": "Indent using spaces",
+				"useTabs": "Indent using tabs"
+			},
+			"lineEndingTitle": "Set line ending",
+			"lineEndingChangeTitle": "Change line ending",
+			"lineEndingChangeContent1": "Change file \"{file}\" line ending from {from} to {to}?",
+			"lineEndingChangeContent2": "This will rewrite all line endings in the file and take effect after {save}.",
+			"fileHistory": {
+				"title": "File history",
+				"time": "Time",
+				"actions": "Actions",
+				"diff": "Diff",
+				"recover": "Restore",
+				"delete": "Delete",
+				"recoverTitle": "Restore history",
+				"recoverContent": "Restore history version {time}? Current file content will be overwritten.",
+				"deleteTitle": "Delete history",
+				"deleteContent": "Delete history version {time}? This cannot be undone.",
+				"fileContentUpdated": "File content updated."
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "Notice",
+			"modifiedSaveConfirm": "This file has been modified. Save changes?",
+			"dontSave": "Don't Save"
+		},
+		"editorFooter": {
+			"fileLocation": "File: {path}",
+			"readOnlyHistory": "Read-only file: {path}  History [{time}]",
+			"clickRecoverLeft": "Restore left history version",
+			"lineColumn": "Ln {line}, Col {column}",
+			"historyCount": "History: {count}",
+			"tabSize": "Tab: {size}",
+			"encoding": "Encoding: {encoding}",
+			"language": "Language: {language}",
+			"readOnlyMode": "Read-only"
+		},
+		"store": {
+			"untitled": "Untitled",
+			"fileTooLarge": "Sorry! Files larger than 3MB are not supported for online editing.",
+			"shortcutTabName": "Shortcuts",
+			"conflictTitle": "Conflict warning",
+			"conflictContentFallback": "This file may have a timestamp conflict or you do not have write permission. Force save?",
+			"forceSave": "Force Save",
+			"saveAllLoading": "Saving all modified files, please wait...",
+			"saveAllSuccess": "All changes saved.",
+			"tabSettingsRefreshed": "Settings updated.",
+			"nameRequired": "Please enter a valid name.",
+			"newFile": "New file",
+			"newFolder": "New folder",
+			"createSuccess": "{type} created successfully."
+		},
+		"shortcut": {
+			"common": {
+				"title": "Common Shortcuts",
+				"saveFile": "Save file",
+				"copy": "Copy",
+				"cut": "Cut",
+				"paste": "Paste",
+				"selectAll": "Select all",
+				"undo": "Undo",
+				"redo": "Redo",
+				"find": "Find",
+				"replace": "Replace",
+				"esc": "Exit search / cancel suggestions"
+			},
+			"cursorMove": {
+				"title": "Cursor Movement",
+				"docStartEnd": "Move cursor to document start/end",
+				"matchingTag": "Jump to matching tag",
+				"pageUpDown": "Page up/down",
+				"lineStartEnd": "Move cursor to line start/end"
+			},
+			"selection": {
+				"title": "Selection",
+				"mouseBox": "Mouse select",
+				"drag": "Drag",
+				"mouseDrag": "Mouse drag",
+				"pageSelect": "Select while paging up/down",
+				"cursorToStartEnd": "From cursor to start/end",
+				"blockSelect": "Block selection"
+			},
+			"edit": {
+				"title": "Edit",
+				"toggleComment": "Toggle comment",
+				"indent": "Indent",
+				"outdent": "Outdent",
+				"delete": "Delete",
+				"deleteLine": "Delete line",
+				"copyLineUpDown": "Duplicate line up/down",
+				"deleteRight": "Delete to the right of cursor",
+				"swapLineUpDown": "Swap current line with previous/next",
+				"copyLineDown": "Duplicate line below"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "Search file/directory",
+		"NewFile": "New file",
+		"NewFolder": "New folder",
+		"CurrentSelection": "Current selection: ",
+		"Name": "Name",
+		"NamePlaceholder": "Please enter name",
+		"Create": "Create",
+		"ModifyTime": "Modification time",
+		"PermissionOwner": "Permissions/Owner",
+		"RootDir": "Root dir",
+		"PathPlaceholder": "Please enter path"
 	}
 }

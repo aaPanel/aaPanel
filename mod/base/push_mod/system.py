@@ -1,7 +1,7 @@
 import datetime
 import time
 from threading import Thread
-from typing import Optional, List, Tuple, Dict, Type, Union
+from typing import Optional, List, Dict, Type, Union, Any
 
 import public
 from .base_task import BaseTask
@@ -16,7 +16,7 @@ WAIT_TASK_LIST: List[Thread] = []
 
 class PushSystem:
     def __init__(self):
-        self.task_cls_cache: Dict[str, Type[T_CLS]] = {}
+        self.task_cls_cache: Dict[str, Type[T_CLS]] = {}  # NOQA
         self._today_zero: Optional[datetime.datetime] = None
         self._sender_type_class: Optional[dict] = {}
         self.sd_cfg = SenderConfig()
@@ -54,10 +54,10 @@ class PushSystem:
         result = []
         result_template = {}
         for task in TaskConfig().config:  # all task
-
             # ======== 移除旧任务 ==============
-            if task.get("source") == "cert_endtime" and task.get("task_data", {}).get("title") == "Certificate expiration":
-                PushSystem.remove_old_task(task) # 移除旧的ssl通知
+            if task.get("source") == "cert_endtime" and task.get("task_data", {}).get(
+                    "title") == "Certificate expiration":
+                PushSystem.remove_old_task(task)  # 移除旧的ssl通知
             # ======== 移除旧任务 End ==========
 
             if not task["status"]:
@@ -194,59 +194,111 @@ class PushRunner:
     def result_to_return(self) -> dict:
         return self.result
 
+    def _append_msg_list_for_hook(self, push_data: dict) -> dict:
+        for key in ["pre_hook", "after_hook"]:
+            if not self.task.get("task_data", {}).get(key):
+                continue
+            for k, v in self.task["task_data"][key].items():
+                try:
+                    val = ", ".join(v) if isinstance(v, list) else str(v)
+                    act = k.capitalize() if k and isinstance(k , str) else k
+                    push_data['msg_list'].append(f">{key.capitalize()}: {act} - {val} ")
+                except Exception as e:
+                    public.print_log(f"Append {key} hook msg error: {e}")
+                    continue
+        return push_data
+
     def run(self):
         self.task_obj = self.push_system.get_task_object(self.template["id"], self.template["load_cls"])
-
         if not self.task_obj:
             self.result["stop_msg"] = "The task class failed to load"
             return
         if self.custom_push_data is None:
-            push_data = self.task_obj.get_push_data(self.task["id"], self.task["task_data"])
+            push_data = None
+            try:
+                push_data = self.task_obj.get_push_data(self.task["id"], self.task["task_data"])
+            except Exception:
+                import traceback
+                public.print_log(f"get_push_data error: {traceback.format_exc()}")
             if not push_data:
                 return
         else:
             push_data = self.custom_push_data
 
         self.result["push_data"] = push_data
-        # 执行前置钩子
-        if self.task["pre_hook"] and "hook_type" in self.task["pre_hook"]:
+        # 执行全局前置钩子
+        if self.task.get("pre_hook"):
             if not self.run_hook(self.task["pre_hook"], "pre_hook"):
+                self.result["stop_msg"] = "Task global pre hook stopped execution"
+                return
+        # 执行任务自身前置钩子
+        if self.task.get("task_data", {}).get("pre_hook"):
+            if not self.run_hook(self.task["task_data"]["pre_hook"], "pre_hook"):
+                self.result["stop_msg"] = "Task pre hook stopped execution"
                 return
 
         # 执行时间规则判断
         if not self.run_time_rule(self.task["time_rule"]):
             return
 
-        # 执行时间规则判断
+        # 执行频率规则判断
         if not self.number_rule(self.task["number_rule"]):
             return
 
+        # 注入任务自身更多钩子消息, 全局钩子静默处理
+        push_data = self._append_msg_list_for_hook(push_data)
+
         # 执行发送信息
         self.send_message(push_data)
+
         self.change_fields.add("number_data")
         if "day_num" not in self.task["number_data"]:
             self.task["number_data"]["day_num"] = 0
-
         if "total" not in self.task["number_data"]:
             self.task["number_data"]["total"] = 0
-
         self.task["number_data"]["day_num"] += 1
         self.task["number_data"]["total"] += 1
         self.task["number_data"]["time"] = int(time.time())
 
-        # 执行后置钩子
-        if self.task["after_hook"] and "hook_type" in self.task["after_hook"]:
+        # 执行任务自身后置钩子
+        if self.task.get("task_data", {}).get("after_hook"):
+            self.run_hook(self.task["task_data"]["after_hook"], "after_hook")
+        # 执行全局后置钩子
+        if self.task.get("after_hook"):
             self.run_hook(self.task["after_hook"], "after_hook")
 
-    # todo: 下个版本实现一些自定义的hook函数，同时实现用户脚本的hook记录在 self.result 最后统一储存
-    def run_hook(self, hook_data: dict, hook_name: str) -> bool:
+    # hook函数, 额外扩展
+    def run_hook(self, hook_data: Dict[str, List[Any]], hook_name: str) -> bool:
         """
         执行hook操作，并返回是否继续执行, 并将hook的执行结果记录
         @param hook_name: 钩子的名称，如：after_hook， pre_hook
         @param hook_data: 执行的内容
-        @return:
+        @return: bool
         """
-        return True
+        if not isinstance(hook_data, dict) or not isinstance(hook_name, str):
+            return False
+
+        if hook_name == "pre_hook":
+            return True
+
+        elif hook_name == "after_hook":
+            from script.restart_services import ServicesHelper
+            # restart action
+            if hook_data.get("restart"):
+                for s in hook_data.get("restart", []):
+                    if not s or not isinstance(s, str):
+                        continue
+                    service_obj = ServicesHelper(s.strip())
+                    if not service_obj.is_install:
+                        continue
+                    service_obj.script("restart", "Alarm Triggered")
+                return True
+
+            # module action
+            elif hook_data.get("module"):
+                return True
+
+        return False
 
     def run_time_rule(self, time_rule: dict) -> bool:
         if "send_interval" in time_rule and time_rule["send_interval"] > 0:
@@ -258,8 +310,8 @@ class PushRunner:
         time_range = time_rule.get("time_range", None)
         if time_range and isinstance(time_range, list) and len(time_range) == 2:
             t_zero = self.push_system.get_today_zero()
-            start_time = t_zero + datetime.timedelta(seconds=time_range[0])
-            end_time = t_zero + datetime.timedelta(seconds=time_range[1])
+            start_time = t_zero + datetime.timedelta(seconds=time_range[0])  # NOQA
+            end_time = t_zero + datetime.timedelta(seconds=time_range[1])  # NOQA
             if not start_time < datetime.datetime.now() < end_time:
                 self.result['stop_msg'] = 'It is not within the time frame within which the alarm can be sent'
                 self.result['check_stop_on'] = "time_rule_time_range"
@@ -307,7 +359,6 @@ class PushRunner:
     def send_message(self, push_data: dict):
         self.result["do_send"] = True
         self.result["push_data"] = push_data
-        # wx_account = []
         for sender_id in self.task["sender"]:
             conf = self.push_system.sd_cfg.get_by_id(sender_id)
             if conf is None:
@@ -317,6 +368,7 @@ class PushRunner:
                     conf["data"].get("title"))
                 continue
             sd_cls = self.push_system.sender_cls(conf["sender_type"])
+            res = None
             if conf["sender_type"] == "weixin":
                 res = sd_cls(conf).send_msg(
                     self.task_obj.to_weixin_msg(push_data, self.public_push_data),
@@ -352,10 +404,6 @@ class PushRunner:
                 sm_args = sms_msg_normalize(sm_args)
                 res = sd_cls(conf).send_msg(sm_type, sm_args)
 
-            # elif conf["sender_type"] == "wx_account":
-            #     wx_account.append(conf)
-            #     continue
-
             elif conf["sender_type"] == "tg":
                 # public.print_log("tg -- 发送数据 {}".format(self.task_obj.to_tg_msg(push_data, self.public_push_data)))
                 from mod.base.msg import TgMsg
@@ -377,21 +425,12 @@ class PushRunner:
             else:
                 continue
             if isinstance(res, str) and res.find("Traceback") != -1:
-                self.result["send_data"][
-                    sender_id] = "An error occurred during the execution of the message transmission, and the transmission was not successful"
+                self.result["send_data"][sender_id] = ("An error occurred during the execution of the message "
+                                                       "transmission, and the transmission was not successful")
             if isinstance(res, str):
                 self.result["send_data"][sender_id] = res
             else:
                 self.result["send_data"][sender_id] = 1
-        #
-        # if len(wx_account) > 0:
-        #     sd_cls = self.push_system.sender_cls("wx_account")
-        #     res = sd_cls(*wx_account).send_msg(self.task_obj.to_wx_account_msg(push_data, self.public_push_data))
-        #     for i in wx_account:
-        #         if isinstance(res, str):
-        #             self.result["send_data"][i["id"]] = res
-        #         else:
-        #             self.result["send_data"][i["id"]] = 1
 
 
 def push_by_task_keyword(source: str, keyword: str, push_data: Optional[dict] = None) -> Union[str, dict]:
@@ -403,7 +442,7 @@ def push_by_task_keyword(source: str, keyword: str, push_data: Optional[dict] = 
     @return:
     """
     push_system = PushSystem()
-    target_task = None
+    target_task = {}
     for i in TaskConfig().config:
         if i["source"] == source and i["keyword"] == keyword:
             target_task = i
@@ -411,7 +450,7 @@ def push_by_task_keyword(source: str, keyword: str, push_data: Optional[dict] = 
     if not target_task:
         return "The task was not found"
 
-    target_template = TaskTemplateConfig().get_by_id(target_task["template_id"])
+    target_template = TaskTemplateConfig().get_by_id(target_task["template_id"]) # NOQA
     if not target_template["used"]:
         return "This task type has been banned"
     if not target_task['status']:

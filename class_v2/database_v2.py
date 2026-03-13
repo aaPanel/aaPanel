@@ -1268,7 +1268,9 @@ SetLink
             result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, newpassword))
             for my_host in accept:
                 mysql_obj.execute("ALTER USER `%s`@`%s` IDENTIFIED BY '%s'" % (username, my_host[0], newpassword))
-        elif any(mariadb_ver in m_version for mariadb_ver in ['10.5.', '10.4.', '10.6.', '10.7.', '10.11.', '11.3.']):
+        elif any(mariadb_ver in m_version for mariadb_ver in [
+            '10.5.', '10.4.', '10.6.', '10.7.', '10.11.', '11.3.', '11.4.'
+        ]):
             accept = self.map_to_list(mysql_obj.query("select Host from mysql.user where User='" + username + "' AND Host!='localhost'"))
             result = mysql_obj.execute("ALTER USER `%s`@`localhost` IDENTIFIED BY '%s'" % (username, newpassword))
             for my_host in accept:

@@ -404,7 +404,8 @@
 			"index_54": "LP/ Domain Blacklisted Alert",
 			"index_55": "Benachrichtigen Sie mich, wenn der Mail -Service nicht mehr ist",
 			"index_56": "Mail -Service -Alarm",
-			"index_57": "Automatisch Blacklisten erkennen"
+			"index_57": "Automatisch Blacklisten erkennen",
+			"index_58": "Senden Sie eine E-Mail, wenn das Kontingent überschritten ist"
 		},
 		"Api": {
 			"index_1": "Setzen Sie sich alles, bitte warten Sie ...",

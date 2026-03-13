@@ -149,7 +149,21 @@
 			"add_site_56": "Por favor ingrese el script de implementación",
 			"add_site_57": "Por favor ingrese la rama ssh",
 			"add_site_58": "Este dominio no admite resolución automática, elija resolución manual",
-			"add_site_59": "Crear para Git"
+			"add_site_59": "Crear para Git",
+			"index_152": "Comprobación de rendimiento [{0}]",
+			"index_153": "comprobar",
+			"index_154": "acción rápida",
+			"index_155": "Caducidad",
+			"index_156": "Solicitudes",
+			"index_157": "Si no lo necesita, puede desactivarlo en \"Configuración\" - \"Configuración del panel\" - \"Monitor del sitio\".",
+			"index_158": "Los datos del informe de seguimiento se actualizarán a medida que se actualice la lista de sitios web.",
+			"index_159": "El complemento del informe de seguimiento utilizará los datos del complemento; si no está instalado, se utilizarán los datos del informe de seguimiento gratuito.",
+			"index_160": "Activo",
+			"index_161": "WAF",
+			"index_162": "Genere un informe de análisis del rendimiento del sitio web basado en Google PageSpeed Insights",
+			"index_163": "Solo admite dominios accesibles desde la red externa",
+			"index_164": "Comprobación de rendimiento",
+			"index_165": "Informe generado correctamente, redireccionando al enlace"
 		},
 		"Proxy": {
 			"index_1": "Objetivo",
@@ -295,7 +309,7 @@
 			"index_57": "Eliminar sitios en lotes",
 			"index_58": "Modificación del sitio",
 			"index_59": "Tiempo agregado",
-			"index_60": "Ahorrar",
+			"index_60": "Guardar",
 			"index_61": "Cambiar",
 			"index_62": "Agregar",
 			"index_63": "Actual, otro certificado",
@@ -722,6 +736,31 @@
 			"index_16": "Global WebSocket está habilitado y no se permite deshabilitar individualmente",
 			"index_17": "Eliminar proyecto de proxy inverso",
 			"index_18": "Reemplace todas las palabras clave coincidentes"
+		},
+		"Git": {
+			"sshKey": "Clave SSH",
+			"updateMethod": "Método de actualización",
+			"selectKey": "Seleccionar clave",
+			"generateNewKey": "Generar nueva clave",
+			"keyList": "lista de claves",
+			"keyName": "Nombre clave",
+			"sshKeyNamePlaceholder": "Por favor ingrese el nombre de la clave SSH",
+			"pleaseInputSshKeyName": "Por favor ingrese el nombre de la clave SSH",
+			"pleaseSelectKey": "Por favor seleccione una clave",
+			"generateNewKeySuccess": "Nueva clave SSH generada exitosamente",
+			"updateSshKeyTitle": "Actualizar clave SSH",
+			"coverageData": "Datos de cobertura",
+			"repoAddressPlaceholder": "Por favor ingrese la dirección del repositorio",
+			"branchPlaceholder": "Por favor seleccione una sucursal",
+			"pleaseInputRepoAddress": "Introduzca primero la dirección del repositorio",
+			"resolveARecordTip": "Primero resuelva el registro A de este dominio en la dirección IP del servidor.",
+			"repoExample": "por ej.  ",
+			"branchExample": "p.ej. maestro",
+			"howToCreateWebsiteUsingGit": "¿Cómo crear un sitio web usando Git?",
+			"viewDocs": "Vista",
+			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 ¡Aplicación implementada!\"",
+			"deleteGitConfigTitle": "Eliminar la configuración de git",
+			"deleteGitConfigContent": "Puede eliminar el repositorio aquí. Tenga en cuenta que se eliminarán tanto el directorio .git como los registros de implementación."
 		}
 	}
 }

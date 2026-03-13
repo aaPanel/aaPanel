@@ -200,6 +200,7 @@ def multi_service_check_repair():
         apache_update_config('enable')
 
         # 重载服务
+        public.kill_process_strictly('litespeed', True) # 去残留
         setup_path = public.get_setup_path()
         services = [
             (
@@ -214,7 +215,7 @@ def multi_service_check_repair():
             ),
             (
                 "/usr/local/lsws/bin/lswsctrl",
-                "/usr/local/lsws/bin/lswsctrl reload",
+                "/usr/local/lsws/bin/lswsctrl restart",
                 None
             )
         ]

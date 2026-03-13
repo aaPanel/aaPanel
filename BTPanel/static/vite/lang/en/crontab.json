@@ -95,7 +95,10 @@
 			"index_92": "Timed task started successfully",
 			"index_93": "Timed task closed successfully",
 			"index_94": "Part",
-			"index_95": "Executed every {0} seconds"
+			"index_95": "Executed every {0} seconds",
+			"index_96": "Select script",
+			"index_97": "Please select a script (search supported)",
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
 		},
 		"arrange": {
 			"index_1": "Execute the script task in [{0}] immediately, the execution process may wait for a long time, please be patient. Do you want to continue?",

@@ -130,6 +130,11 @@
 				"untitledFile": "file tanpa judul"
 			}
 		},
+		"api": {
+			"saving": "Menyimpan, harap tunggu...",
+			"deleting": "Menghapus, tunggu ...",
+			"recovering": "Memulihkan, tunggu ..."
+		},
 		"fileOperation": {
 			"cut": "Memotong",
 			"rename": "Ganti nama",
@@ -420,20 +425,181 @@
 			"title": "Pemutar video"
 		}
 	},
-	"editor": {
-		"title": "Editor Teks Online",
-		"save": "Menyimpan",
-		"saveAll": "Simpan semua",
-		"refresh": "Menyegarkan",
-		"search": "Mencari",
-		"replace": "Mengganti",
-		"jumpLine": "Jump line",
-		"font": "Font",
-		"theme": "Tema",
-		"settings": "Pengaturan",
-		"help": "Membantu",
-		"directory": "Direktori",
-		"back": "Kembali",
-		"new": "Baru"
+	"fileEditor": {
+		"common": {
+			"save": "Menyimpan"
+		},
+		"title": {
+			"onlineTextEditor": "Editor Teks Online",
+			"minimize": "Memperkecil",
+			"restore": "Memulihkan",
+			"restoreDown": "Pulihkan",
+			"maximize": "Maksimalkan",
+			"close": "Tutup"
+		},
+		"toolbar": {
+			"save": "Menyimpan",
+			"saveAll": "Simpan semua",
+			"refresh": "Menyegarkan",
+			"search": "Mencari",
+			"replace": "Mengganti",
+			"jumpLine": "Jump line",
+			"fontSize": "Ukuran Huruf",
+			"theme": "Tema",
+			"setting": "Pengaturan",
+			"shortcut": "Jalan pintas",
+			"refreshing": "Menyegarkan, harap tunggu...",
+			"refreshed": "Konten file diperbarui",
+			"fontSizeSaved": "Ukuran font diperbarui"
+		},
+		"messages": {
+			"noRefresh": "Halaman ini tidak dapat di-refresh dalam mode editor. Tutup editor dan coba lagi."
+		},
+		"fileExplorer": {
+			"directory": "Direktori",
+			"up": "Ke atas",
+			"refresh": "Menyegarkan",
+			"new": "Baru",
+			"search": "Mencari",
+			"searchPanelTitle": "Cari File Direktori",
+			"close": "Tutup",
+			"searchPlaceholder": "Mencari",
+			"includeSubdir": "Sertakan subdirektori",
+			"newFolder": "Folder baru",
+			"newFile": "File baru"
+		},
+		"tree": {
+			"newFilePlaceholder": "Berkas baru",
+			"newFolderPlaceholder": "Folder baru"
+		},
+		"dialogs": {
+			"encodingTitle": "Atur pengkodean file",
+			"settingTitle": "Pengaturan editor",
+			"setting": {
+				"wrap": "Bungkus kata",
+				"enableLiveAutocompletion": "Pelengkapan otomatis langsung",
+				"enableSnippets": "Aktifkan cuplikan",
+				"showInvisibles": "Tampilkan yang tak terlihat",
+				"showLineNumbers": "Tampilkan nomor baris"
+			},
+			"themeTitle": "Tetapkan tema editor",
+			"theme": {
+				"chrome": "krom (Ringan)",
+				"monokai": "monokai (Gelap)"
+			},
+			"goToLineTitle": "Pergi ke barisan",
+			"goToLineHint": "Saat ini: baris {line}, kolom {column}. Masukkan nomor baris (1-{max}).",
+			"fontSizeTitle": "Atur ukuran font editor",
+			"tabSizeTitle": "Pengaturan tab",
+			"tabSizeLengthTitle": "Ukuran tab",
+			"tabSize": {
+				"useSpaces": "Indentasi menggunakan spasi",
+				"useTabs": "Indentasi menggunakan tab"
+			},
+			"lineEndingTitle": "Tetapkan akhir baris",
+			"lineEndingChangeTitle": "Ubah akhir baris",
+			"lineEndingChangeContent1": "Ubah baris file \"{file}\" yang diakhiri dari {from} menjadi {to}?",
+			"lineEndingChangeContent2": "Ini akan menulis ulang semua akhiran baris dalam file dan berlaku setelah {save}.",
+			"fileHistory": {
+				"title": "Riwayat berkas",
+				"time": "Waktu",
+				"actions": "Tindakan",
+				"diff": "Beda",
+				"recover": "Memulihkan",
+				"delete": "Menghapus",
+				"recoverTitle": "Pulihkan riwayat",
+				"recoverContent": "Pulihkan riwayat versi {time}? Konten file saat ini akan ditimpa.",
+				"deleteTitle": "Hapus riwayat",
+				"deleteContent": "Hapus riwayat versi {time}? Hal ini tidak dapat dibatalkan.",
+				"fileContentUpdated": "Konten file diperbarui."
+			}
+		},
+		"editorHeader": {
+			"tipTitle": "Perhatikan",
+			"modifiedSaveConfirm": "File ini telah dimodifikasi. Simpan perubahan?",
+			"dontSave": "Jangan Simpan"
+		},
+		"editorFooter": {
+			"fileLocation": "Berkas: {jalur}",
+			"readOnlyHistory": "File hanya-baca: {path} Riwayat [{time}]",
+			"clickRecoverLeft": "Pulihkan versi riwayat yang tersisa",
+			"lineColumn": "Ln {baris}, Kolom {kolom}",
+			"historyCount": "Riwayat: {hitungan}",
+			"tabSize": "Tab: {ukuran}",
+			"encoding": "Pengkodean: {pengkodean}",
+			"language": "Bahasa: {bahasa}",
+			"readOnlyMode": "Hanya baca"
+		},
+		"store": {
+			"untitled": "Tanpa judul",
+			"fileTooLarge": "Maaf! File yang lebih besar dari 3MB tidak didukung untuk pengeditan online.",
+			"shortcutTabName": "Jalan pintas",
+			"conflictTitle": "Peringatan konflik",
+			"conflictContentFallback": "File ini mungkin memiliki konflik stempel waktu atau Anda tidak memiliki izin menulis. Paksa simpan?",
+			"forceSave": "Paksa Simpan",
+			"saveAllLoading": "Menyimpan semua file yang dimodifikasi, harap tunggu...",
+			"saveAllSuccess": "Semua perubahan disimpan.",
+			"tabSettingsRefreshed": "Pengaturan diperbarui.",
+			"nameRequired": "Silakan masukkan nama yang valid.",
+			"newFile": "Berkas baru",
+			"newFolder": "Folder baru",
+			"createSuccess": "{type} berhasil dibuat."
+		},
+		"shortcut": {
+			"common": {
+				"title": "Pintasan umum",
+				"saveFile": "Simpan berkas",
+				"copy": "Menyalin",
+				"cut": "Memotong",
+				"paste": "Pasta",
+				"selectAll": "Pilih semua",
+				"undo": "Membatalkan",
+				"redo": "Ulangi",
+				"find": "Temukan",
+				"replace": "Mengganti",
+				"esc": "Keluar dari pencarian/batalkan saran"
+			},
+			"cursorMove": {
+				"title": "Gerakan kursor",
+				"docStartEnd": "Pindahkan kursor ke awal/akhir dokumen",
+				"matchingTag": "Lompat ke tag yang cocok",
+				"pageUpDown": "Halaman atas/bawah",
+				"lineStartEnd": "Pindahkan kursor ke baris awal/akhir"
+			},
+			"selection": {
+				"title": "Seleksi",
+				"mouseBox": "Pilih tikus",
+				"drag": "Tarik",
+				"mouseDrag": "Tarik tikus",
+				"pageSelect": "Pilih saat paging naik/turun",
+				"cursorToStartEnd": "Dari kursor ke awal/akhir",
+				"blockSelect": "Seleksi blok"
+			},
+			"edit": {
+				"title": "Edit",
+				"toggleComment": "Alihkan komentar",
+				"indent": "Indentasi",
+				"outdent": "keluar",
+				"delete": "Menghapus",
+				"deleteLine": "Hapus baris",
+				"copyLineUpDown": "Duplikat baris atas/bawah",
+				"deleteRight": "Hapus di sebelah kanan kursor",
+				"swapLineUpDown": "Tukar baris saat ini dengan sebelumnya/berikutnya",
+				"copyLineDown": "Baris duplikat di bawah"
+			}
+		}
+	},
+	"FolderPicker": {
+		"SearchPlaceholder": "Cari file/direktori",
+		"NewFile": "Berkas baru",
+		"NewFolder": "Folder baru",
+		"CurrentSelection": "Pilihan saat ini:",
+		"Name": "Nama",
+		"NamePlaceholder": "Silakan masukkan nama",
+		"Create": "Membuat",
+		"ModifyTime": "Waktu modifikasi",
+		"PermissionOwner": "Izin/Pemilik",
+		"RootDir": "Root dir",
+		"PathPlaceholder": "Silakan masukkan jalur"
 	}
 }

@@ -11,6 +11,7 @@
 # node.js模型
 #------------------------------
 import os,sys,re,json,shutil,psutil,time
+from time import process_time_ns
 from urllib.parse import urlparse
 
 from projectModelV2.base import projectBase
@@ -60,18 +61,11 @@ class main(projectBase):
         '''
         if not os.path.exists(self._npm_exec_log): return public.returnMsg(False,'NODE_NOT_EXISTS')
         return public.return_message(0,0,public.GetNumLines(self._npm_exec_log,20))
-            
 
-    def get_project_list(self,get):
+    def get_project_list(self, get):
         '''
-            @name 获取项目列表
-            @author hwliang<2021-08-09>
-            @param get<dict_obj>{
-                project_name: string<项目名称>
-            }
-            @return dict
+            @name 获取项目列表（支持全局流量排序）
         '''
-        # 校验参数
         try:
             get.validate([
                 Param('search').String(),
@@ -84,26 +78,49 @@ class main(projectBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        p = int(get.get('p', 1))
+        limit = int(get.get('limit', 20))
+        search_word = get.get('search', '').strip()
+        re_order = get.get('re_order', '')  # 流量排序专用
+        order_str = get.get('order', 'id desc')
 
-        if not 'p' in get:  get.p = 1
-        if not 'limit' in get: get.limit = 20
-        if not 'callback' in get: get.callback = ''
-        if not 'order' in get: get.order = 'id desc'
+        sql = public.M('sites').where('project_type=?', ('Node',))
+        if search_word:
+            search_pattern = "%{}%".format(search_word)
+            sql = sql.where('name LIKE ? OR ps LIKE ?', (search_pattern, search_pattern))
 
-        if 'search' in get:
-            get.project_name = get.search.strip()
-            search = "%{}%".format(get.project_name)
-            count = public.M('sites').where('project_type=? AND (name LIKE ? OR ps LIKE ?)',('Node',search,search)).count()
-            data = public.get_page(count,int(get.p),int(get.limit),get.callback)
-            data['data'] = public.M('sites').where('project_type=? AND (name LIKE ? OR ps LIKE ?)',('Node',search,search)).limit(data['shift'] + ',' + data['row']).order(get.order).select()
-        else:
-            count = public.M('sites').where('project_type=?','Node').count()
-            data = public.get_page(count,int(get.p),int(get.limit),get.callback)
-            data['data'] = public.M('sites').where('project_type=?','Node').limit(data['shift'] + ',' + data['row']).order(get.order).select()
+        all_data = sql.order(order_str).select()
+        if not all_data:
+            return public.return_message(0, 0, {'data': [], 'page': ''})
 
-        for i in range(len(data['data'])):
-            data['data'][i] = self.get_project_stat(data['data'][i])
-        return public.return_message(0,0,data)
+        # 获取流量数据
+        re_data = None
+        if re_order:
+            import data_v2
+            res = data_v2.data().get_site_request(public.to_dict_obj({'site_type': 'Node'}))
+            if res.get('status') == 0:
+                re_data = res.get('message')
+
+        for i in range(len(all_data)):
+            all_data[i] = self.get_project_stat(all_data[i])
+
+            all_data[i]['re_total'] = 0
+            if re_data and all_data[i]['name'] in re_data:
+                all_data[i]['re_total'] = re_data[all_data[i]['name']]['total']['request']
+
+        if re_order:
+            is_reverse = True if re_order == 'desc' else False
+            all_data = sorted(all_data, key=lambda x: x.get('re_total', 0), reverse=is_reverse)
+
+        count = len(all_data)
+        start = (p - 1) * limit
+        end = start + limit
+        paged_data = all_data[start:end]
+
+        data = public.get_page(count, p, limit, get.get('callback', ''))
+        data['data'] = paged_data
+
+        return public.return_message(0, 0, data)
 
 
     def get_ssl_end_date(self,project_name):
@@ -691,10 +708,10 @@ export PATH
         domains = []
         if int(get.bind_extranet) == 1:
             domains = get.domains
-            if not public.is_apache_nginx(): 
-                return_message=public.return_error(public.lang('Please install Nginx or Apache first'))
-                del return_message['status']
-                return public.return_message(-1,0, return_message)
+            # if not public.is_apache_nginx():
+            #     return_message=public.return_error(public.lang('Please install Nginx or Apache first'))
+            #     del return_message['status']
+            #     return public.return_message(-1,0, return_message)
         for domain in domains:
             domain_arr = domain.split(':')
             if public.M('domain').where('name=?',domain_arr[0]).count():
@@ -892,6 +909,59 @@ export PATH
         del return_message['status']
         return public.return_message(0,0, return_message)
 
+    # 批量操作项目
+    def batch_operation_project(self, get):
+        '''
+            @name 批量操作项目
+            @param project_names []
+            @return dict
+        '''
+        try:
+            get.validate([
+                Param('project_names'),
+                Param('operation_type'),
+
+            ])
+            project_names = json.loads(get.get('project_names',[]))
+            operation_type = get.get('operation_type')
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        if not project_names:
+            return public.return_message(-1, 0,public.lang('The project list is empty.'))
+
+        if operation_type not in ['delete','start','stop','restart']:
+            return public.return_message(-1, 0,public.lang('Operation type is empty！'))
+
+        success_count = 0
+        msg_list = []
+
+        for name in project_names:
+            try:
+                temp_get = public.to_dict_obj({'project_name': name})
+                res = None
+                if operation_type == 'delete':
+                    res = self.remove_project(temp_get)
+                elif operation_type == 'start':
+                    res = self.start_project(temp_get)
+                elif operation_type == 'stop':
+                    temp_get.is_power_on = 'True'
+                    res = self.stop_project(temp_get)
+                elif operation_type == 'restart':
+                    res = self.restart_project(temp_get)
+
+                if res is None or res['status'] != 0:
+                    msg_list.append({'name': name,'status':False,'msg':res['message']['error_msg']})
+                else:
+                    success_count += 1
+                    msg_list.append({'name': name,'status':True, 'msg': res['message']['data']})
+
+            except Exception as e:
+                msg_list.append({'name': name, 'status': False, 'msg': str(e)})
+
+        msg = f"Successfully {success_count} items.Failed on {len(project_names) - success_count} projects."
+        return public.return_message(0, 0, {"msg":msg, "msg_list":msg_list})
 
     def project_get_domain(self,get):
         '''
@@ -908,7 +978,6 @@ export PATH
             return public.return_message(0, 0, [])
         domains = public.M('domain').where('pid=?', (project_id,)).order('id desc').select()
         return public.return_message(0, 0, domains)
-
 
     def project_add_domain(self,get):
         '''
@@ -1060,10 +1129,6 @@ export PATH
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        if not public.is_apache_nginx(): 
-            return_message=public.return_error(public.lang('Please install Nginx or Apache first'))
-            del return_message['status']
-            return public.return_message(-1,0, return_message)
         project_name = get.project_name.strip()
         project_find = self.get_project_find(project_name)
         if not project_find: 
@@ -1097,6 +1162,7 @@ export PATH
         if not project_find['project_config']['domains']: return False
         self.set_nginx_config(project_find)
         self.set_apache_config(project_find)
+        self.set_ols_config(project_find)
         public.serviceReload()
         return True
 
@@ -1111,8 +1177,41 @@ export PATH
         if not project_find: return False
         self.clear_nginx_config(project_find)
         self.clear_apache_config(project_find)
+        self.clear_ols_config(project_find)
         public.serviceReload()
         return True
+
+    def clear_ols_config(self, project_find):
+        '''
+            @name 删除OLS配置
+            @param project_find: dict<项目信息>
+            @return bool
+        '''
+        project_name = project_find['name']
+
+        vhost_dir = public.get_panel_path() + '/vhost/openlitespeed/'
+        detail_file = vhost_dir + 'detail/' + project_name + '.conf'
+        main_conf_file = vhost_dir + project_name + '.conf'
+        listen_dir = vhost_dir + 'listen/'
+        listen_list = [listen_dir + '80.conf', listen_dir + '443.conf']
+
+        # 删除虚拟主机配置文件
+        if os.path.exists(main_conf_file):
+            os.remove(main_conf_file)
+        if os.path.exists(detail_file):
+            os.remove(detail_file)
+
+        # 清理监听器中的映射 (Map) 关系
+        if os.path.exists(listen_dir):
+            for conf_name in listen_list:
+                content = public.readFile(conf_name)
+                if content:
+                    pattern = r"^\s*map\s+{}\s+.*?\n".format(re.escape(project_name))
+                    if re.search(pattern, content, flags=re.M):
+                        new_content = re.sub(pattern, "", content, flags=re.M)
+                        public.writeFile(conf_name, new_content)
+
+        return public.return_message(0, 0, True)
 
     def clear_apache_config(self,project_find):
         '''
@@ -1379,7 +1478,113 @@ export PATH
         # 写配置文件
         public.writeFile(config_file,apache_config_body)
         return True
-    
+
+    def set_ols_config(self, project_find):
+        project_name = project_find['name']
+        project_port = project_find['project_config']['port']
+        domains = project_find['project_config']['domains']
+
+        # 路径与基础检查
+        vhost_dir = public.get_panel_path() + '/vhost/openlitespeed/'
+        detail_dir = vhost_dir + 'detail/'
+        listen_dir = vhost_dir + 'listen/'
+        for path in [detail_dir, listen_dir]:
+            if not os.path.exists(path): os.makedirs(path)
+
+        # 生成虚拟主机
+        vhost_main_file = vhost_dir + project_name + '.conf'
+        vhost_main_body = """virtualhost {name} {{
+        vhRoot {path}
+        configFile {detail_dir}{name}.conf
+        allowSymbolLink 1
+        enableScript 1
+        restrained 1
+        setUIDMode 0
+    }}""".format(name=project_name, path=project_find['path'], detail_dir=detail_dir)
+        public.writeFile(vhost_main_file, vhost_main_body)
+
+        # 生成Host
+        detail_file = detail_dir + project_name + '.conf'
+        conf_body = '''docRoot                   $VH_ROOT
+    vhDomain                  $VH_NAME
+    adminEmails               admin@{name}
+    enableGzip                1
+
+    errorlog /www/wwwlogs/{name}_ols.error_log {{
+      useServer               0
+      logLevel                ERROR
+      rollingSize             10M
+    }}
+
+    accesslog /www/wwwlogs/{name}_ols.access_log {{
+      useServer               0
+      logFormat               '%{{X-Forwarded-For}}i %h %l %u %t "%r" %>s %b "%{{Referer}}i" "%{{User-Agent}}i"'
+      logHeaders              5
+      rollingSize             10M
+      keepDays                10
+    }}
+
+    extprocessor {name}_proxy {{
+      type                    proxy
+      address                 127.0.0.1:{node_port}
+      maxConns                100
+      pcKeepAliveTimeout      60
+      initTimeout             60
+      retryTimeout            0
+      respBuffer              0
+    }}
+
+    context / {{
+      type                    proxy
+      handler                 {name}_proxy
+      addDefaultCharset       off
+    }}
+
+    rewrite  {{
+      enable                  1
+      autoLoadHtaccess        1
+    }}
+    '''.format(name=project_name, node_port=project_port)
+        public.writeFile(detail_file, conf_body)
+
+        # 处理监听器映射
+        # 提取端口和对应的域名
+        port_map = {}
+        for d in domains:
+            tmp = d.split(':')
+            p = tmp[1] if len(tmp) > 1 else "80"
+            if p not in port_map: port_map[p] = []
+            port_map[p].append(tmp[0])
+
+        # 检查 SSL 状态 (参考原 Apache 逻辑)
+        is_ssl, _ = self.exists_apache_ssl(project_name)
+        if is_ssl and "443" not in port_map:
+            # 如果有证书但域名列表没写443，默认把所有域名映射到443
+            port_map["443"] = [d.split(':')[0] for d in domains]
+
+        for p, ds in port_map.items():
+            listen_file = "{}{}.conf".format(listen_dir, p)
+            if not os.path.exists(listen_file): continue
+
+            content = public.readFile(listen_file)
+
+            # 构造映射行：map 项目名 域名1,域名2
+            domain_str = ",".join(ds)
+            map_line = "\tmap\t{}\t{}\n".format(project_name, domain_str)
+
+            # 如果该项目已在 map 中，先正则替换或跳过，这里采用简单判断
+            if "map\t{}\t".format(project_name) in content:
+                import re
+                content = re.sub(r"map\t{}\t.*?\n".format(project_name), map_line, content)
+            else:
+                # 插入到最后一个花括号之前
+                last_brace_index = content.rfind('}')
+                if last_brace_index != -1:
+                    content = content[:last_brace_index] + map_line + content[last_brace_index:]
+
+            public.writeFile(listen_file, content)
+
+        return public.return_message(0, 0, True)
 
     def unbind_extranet(self,get):
         '''
@@ -1735,6 +1940,7 @@ echo $! > {pid_file}
             @author hwliang<2021-08-09>
             @param get<dict_obj>{
                 project_name: string<项目名称>
+                is_power_on: boolean<<UNK>> #标记是否自动关闭自动重启
             }
             @return dict
         '''
@@ -1775,6 +1981,21 @@ cd {}
         time.sleep(0.5)
         pids = self.get_project_state_by_cwd(get.project_name)
         if pids: self.kill_pids(pids=pids)
+
+        # 停用项目自启
+        if get.get('is_power_on') in ['True', 'true']:
+            data = project_find['project_config']
+            data = {
+                "project_cwd": data['project_cwd'],
+                "project_name": data['project_name'],
+                "project_script": data['project_script'],
+                "port": str(data['port']),
+                "run_user": data['run_user'],
+                "nodejs_version": data['nodejs_version'],
+                "project_ps" : project_find['ps'],
+                "is_power_on": 0
+            }
+            self.modify_project(public.to_dict_obj(data))
         return_message=public.return_data(True, 'Stopped successfully')
         del return_message['status']
         return public.return_message(0,0, return_message)
@@ -2276,6 +2497,8 @@ cd {}
         if not pids: return False
         return True
 
+
+    # 废弃，重定向于script/project_daemon.py
     def auto_run(self):
         '''
             @name 自动启动所有项目
