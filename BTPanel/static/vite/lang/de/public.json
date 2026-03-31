@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Stapel löschen",
-			"ChooseDel": "Bitte wählen Sie Del"
+			"ChooseDel": "Bitte wählen Sie Del",
+			"ConfirmWithDesc": "{0}, Betrieb fortsetzen?"
 		},
 		"Confirm": {
 			"Title": "Tipps",

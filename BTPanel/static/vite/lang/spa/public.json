@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Eliminar por lotes",
-			"ChooseDel": "Por favor elija dele"
+			"ChooseDel": "Por favor elija dele",
+			"ConfirmWithDesc": "{0}, ¿continuar la operación?"
 		},
 		"Confirm": {
 			"Title": "Consejos",

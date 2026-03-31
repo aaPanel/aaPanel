@@ -774,14 +774,176 @@ class ajax:
         return ','.join(other['ds'])
 
 
+    # # 修复面板
+    # def RepPanel(self, get):
+    #     """修复面板"""
+    #     disk = psutil.disk_usage(public.get_panel_path())
+    #     if disk.free < 50 * 1024 * 1024:
+    #         return public.fail_v2(public.lang("Disk is not enough [50MB] , can't continue!"))
+    #     pids = psutil.pids()
+    #     for pid in pids:
+    #         try:
+    #             p = psutil.Process(pid)
+    #             if "python3" in p.name():
+    #                 if "repair_panel" in p.cmdline()[-1]:
+    #                     public.ExecShell("kill -9 {}".format(pid))
+    #         except:
+    #             pass
+    #
+    #     if not 'force' in get:
+    #         data = {'local':{},'cloud':{}, 'upgrade':0}
+    #         data['local']['version'] = '{}'.format(public.version())
+    #         update_time = public.readFile("{}/config/update_time.pl".format(public.get_panel_path()))
+    #         if not update_time:
+    #             update_time = os.path.getmtime('{}/class/common.py'.format(public.get_panel_path()))
+    #
+    #         data['local']['update_time'] = int(update_time)
+    #         try:
+    #             down_url = 'https://node.aapanel.com/install/update/LinuxPanel_EN-{}.pl'.format(data['local']['version'])
+    #             if os.path.exists("/tmp/LinuxPanel_EN-{}.pl".format(data['local']['version'])):
+    #                 os.remove("/tmp/LinuxPanel_EN-{}.pl".format(data['local']['version']))
+    #             public.downloadFile(down_url, "/tmp/LinuxPanel_EN-{}.pl".format(data['local']['version']))
+    #             try:
+    #                 pl_info = json.loads(public.readFile("/tmp/LinuxPanel_EN-{}.pl".format(data['local']['version'])))
+    #                 if int(pl_info['update_time']) > int(data['local']['update_time']):
+    #                     data['upgrade'] = 1
+    #                     data['cloud'] = {}
+    #                     data['cloud']['hash'] = pl_info['hash']
+    #                     data['cloud']['update_time'] = pl_info['update_time']
+    #                     data['cloud']['version'] = data['local']['version']
+    #             except Exception as e:
+    #                 public.print_log(f"error: {e}")
+    #                 data['upgrade'] = 0
+    #         except Exception as e1:
+    #             public.print_log(f"error1: {e1}")
+    #             data['upgrade'] = 1
+    #         return public.success_v2(data)
+    #     else:
+    #         # ==================== 日志进度, 新分支 =====================
+    #         update_time_file = "{}/config/update_time.pl".format(public.get_panel_path())
+    #         if os.path.exists(update_time_file):
+    #             os.remove(update_time_file)
+    #         try:
+    #             pl_info = json.loads(public.readFile("/tmp/LinuxPanel_EN-{}.pl".format(public.version())))
+    #             public.writeFile(update_time_file, str(pl_info['update_time']))
+    #         except:
+    #             pass
+    #
+    #         logPath = '/tmp/upgrade_panel.log'
+    #         public.writeFile(logPath, "")
+    #         shell = 'nohup {} -u {}/script/upgrade_panel_optimized.py repair_panel {} &>{} &'.format(
+    #             public.get_python_bin(), public.get_panel_path(), public.version(), logPath
+    #         )
+    #         public.ExecShell(shell)
+    #         return public.success_v2(public.lang("Panel repair task has been started, please check"))
 
-    #  更新面板
+
+    # 修复面板
+
+    def __get_remote_version_info(self) -> dict:
+        """远程版本信息"""
+        import psutil
+        import system
+        import panelPlugin
+        logs = public.get_debug_log()
+        mem = psutil.virtual_memory()
+        mplugin = panelPlugin.panelPlugin()
+        mplugin.ROWS = 10000
+        panelsys = system.system()
+        data = {
+            'ds': '',
+            'sites': str(public.M('sites').count()),
+            'ftps': str(public.M('ftps').count()),
+            'databases': str(public.M('databases').count()),
+            'system': panelsys.GetSystemVersion() + '|' + str(mem.total / 1024 / 1024) + 'MB|' + str(
+                public.getCpuType()
+            ) + '*' + str(psutil.cpu_count()) + '|' + str(public.get_webserver()) + '|' + \
+                      session['version']
+        }
+        data['system'] += '||' + self.GetInstalleds(mplugin.getPluginList(None))
+        data['logs'] = logs
+        data['client'] = request.headers.get('User-Agent')
+        data['oem'] = ''
+        data['intrusion'] = 0
+        data['uid'] = self.get_uid()
+        data['o'] = public.get_oem_name()
+        sUrl = '{}/api/panel/updateLinuxEn'.format(self.__official_url)
+        updateInfoRaw = public.httpPost(sUrl, data, timeout=60)
+        if not updateInfoRaw or len(updateInfoRaw) == 0:
+            return {}
+        try:
+            updateInfo = json.loads(updateInfoRaw)
+        except:
+            return {}
+        session['updateInfo'] = updateInfo
+        return updateInfo
+
+    def __generate_upgrade_cmd(self, fun: str, version: str, is_pro: bool = False) -> str:
+        """生成升级修复命令"""
+        py_bin = public.get_python_bin()
+        panel_path = public.get_panel_path()
+        script_path = 'script/upgrade_panel_optimized.py'
+        logPath = '/tmp/upgrade_panel.log'
+        pro_str = 'is_pro' if is_pro else ''
+        return f"nohup {py_bin} -u {panel_path}/{script_path} {fun} {version} {pro_str} &>{logPath} &"
+
+    def RepPanel(self, get):
+        """修复面板到正式版"""
+        disk = psutil.disk_usage(public.get_panel_path())
+        if disk.free < 50 * 1024 * 1024:
+            return public.fail_v2(public.lang("Disk is not enough [50MB] , can't continue!"))
+        pids = psutil.pids()
+        for pid in pids:
+            try:
+                p = psutil.Process(pid)
+                if "python3" in p.name():
+                    if "repair_panel" in p.cmdline()[-1]:
+                        public.ExecShell("kill -9 {}".format(pid))
+            except:
+                pass
+        # is pro
+        is_pro = True if os.path.exists('/www/server/panel/data/panel_pro.pl') else False
+        updateInfo = self.__get_remote_version_info()
+        if not updateInfo:
+            return public.fail_v2(public.lang("Failed to connect server!"))
+
+        if is_pro:
+            target_version = updateInfo.get('pro', {}).get('version')
+        else:
+            target_version = updateInfo.get('version')
+
+        if not target_version:
+            return public.fail_v2(public.lang("Failed to connect server!"))
+        public.print_log(f"target_version = {target_version}")
+        if not 'force' in get:
+            data = {
+                'local': {},
+                'cloud': {},
+                'upgrade': 1, # 总是恢复
+            }
+            data['local']['version'] = '{}'.format(public.version())
+            update_time = public.readFile("{}/config/update_time.pl".format(public.get_panel_path()))
+            if not update_time:
+                update_time = os.path.getmtime('{}/class/common.py'.format(public.get_panel_path()))
+            data['local']['update_time'] = int(update_time)
+            data['cloud']['version'] = target_version
+            return public.success_v2(data)
+        else:
+            # ==================== 日志进度, 新分支 =====================
+            shell = self.__generate_upgrade_cmd('repair_panel', target_version, is_pro)
+            public.print_log(f"shell = {shell}")
+            public.ExecShell(shell)
+            return public.success_v2(public.lang("Panel repair task has been started, please check"))
+
+
+    # 更新面板
     def UpdatePanel(self,get):
         if 'check' in get:
             # 校验参数
             try:
                 get.validate([
                     Param('check').Bool(),
+                    Param('version').String(),
                 ], [
                     public.validate.trim_filter(),
                 ])
@@ -789,6 +951,10 @@ class ajax:
                 public.print_log("error info: {}".format(ex))
                 return public.return_message(-1, 0, str(ex))
 
+        import psutil
+        disk = psutil.disk_usage(public.get_panel_path())
+        if disk.free < 50 * 1024 * 1024:
+            return public.fail_v2(public.lang("Disk is not enough [50MB] , can't continue!"))
 
         try:
             # if not public.IsRestart():
@@ -804,40 +970,9 @@ class ajax:
             if 'updateInfo' in session and hasattr(get,'check') == False:
                 updateInfo = session['updateInfo']
             else:
-                logs = public.get_debug_log()
-                import psutil,system,sys
-                mem = psutil.virtual_memory()
-                import panelPlugin
-                mplugin = panelPlugin.panelPlugin()
-
-                mplugin.ROWS = 10000
-                panelsys = system.system()
-                data = {}
-                data['ds'] = ''#self.get_other_info()
-                data['sites'] = str(public.M('sites').count())
-                data['ftps'] = str(public.M('ftps').count())
-                data['databases'] = str(public.M('databases').count())
-                data['system'] = panelsys.GetSystemVersion() + '|' + str(mem.total / 1024 / 1024) + 'MB|' + str(public.getCpuType()) + '*' + str(psutil.cpu_count()) + '|' + str(public.get_webserver()) + '|' +session['version']
-                data['system'] += '||'+self.GetInstalleds(mplugin.getPluginList(None))
-                data['logs'] = logs
-                data['client'] = request.headers.get('User-Agent')
-                data['oem'] = ''
-                data['intrusion'] = 0
-                data['uid'] = self.get_uid()
-                #msg = public.getMsg('Current version is stable version and already latest. Update cycle of stable version is generally 2 months，while developer version will update every Wednesday!');
-                data['o'] = public.get_oem_name()
-                sUrl = '{}/api/panel/updateLinuxEn'.format(self.__official_url)
-
-                updateInfoRaw = public.httpPost(sUrl, data, timeout=60)
-
-                if not updateInfoRaw or len(updateInfoRaw) == 0:
+                updateInfo = self.__get_remote_version_info()
+                if not updateInfo:
                     return public.return_message(-1, 0, public.lang("Failed to connect server! -1"))
-
-                try:
-                    updateInfo = json.loads(updateInfoRaw)
-                except:
-                    return public.return_message(-1, 0, public.lang("Failed to connect server! -2"))
-
                 session['updateInfo'] = updateInfo
 
             # 判断是否测试版
@@ -897,6 +1032,22 @@ class ajax:
 
             #检查是否需要升级
             if not hasattr(get,'toUpdate'):
+                # 基础的更新时间判断
+                # down_url = f'{public.get_url()}/install/update/LinuxPanel_EN-{public.version()}.pl'
+                # tmp_pl = f"/tmp/LinuxPanel_EN-{public.version()}.pl"
+                # if os.path.exists(tmp_pl):
+                #     os.remove(tmp_pl)
+                # public.downloadFile(down_url, tmp_pl)
+                # try:
+                #     pl_info = json.loads(public.readFile(tmp_pl))
+                #     update_time = public.readFile("{}/config/update_time.pl".format(public.get_panel_path()))
+                #     if not update_time:
+                #         update_time = os.path.getmtime('{}/class/common.py'.format(public.get_panel_path()))
+                #     if int(pl_info['update_time']) > int(update_time):
+                #         updateInfo['local_is_latest'] = True
+                # except:
+                #     updateInfo['local_is_latest'] = True
+                # aa特有判断, 覆盖local_is_latest
                 if updateInfo['is_beta'] == 1:
                     if updateInfo['beta']['version'] == session['version']:
                         updateInfo['local_is_latest'] = True
@@ -914,7 +1065,19 @@ class ajax:
 
                 return public.return_message(0, 0, updateInfo)
 
+            # ==================== 日志进度, 新分支 =====================
+            # 存在toUpdate, version时, 确认升级到指定版本
+            if hasattr(get, 'version') and hasattr(get, 'toUpdate'):
+                get.version = get.get("version", None)
+                if get.version is None:
+                    return public.fail_v2('version is error')
+                if updateInfo['is_beta'] == 1: self.to_beta()
+                shell = self.__generate_upgrade_cmd('upgrade_panel', get.version, updateInfo.get('is_pro', 0) == 1)
+                public.ExecShell(shell)
+                return public.success_v2('Update task has been started, please check')
+            # ==================== 日志进度, 新分支 End =====================
 
+            # 旧升级方法
             #是否执行升级程序
             if(updateInfo['force'] == True or hasattr(get,'toUpdate') == True or os.path.exists('data/autoUpdate.pl') == True):
                 if not public.IsRestart():

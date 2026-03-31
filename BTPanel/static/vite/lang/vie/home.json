@@ -145,7 +145,19 @@
 			"index_23_2": "\"Hướng dẫn cho người thử nghiệm beta\"",
 			"index_23_3": "{0} thứ hai (s) Chờ nhấp vào",
 			"index_24": "Cập nhật phiên bản Beta Linux",
-			"index_25": "Vui lòng đọc cẩn thận hướng dẫn cho người thử nghiệm beta. Bạn có chắc chắn cập nhật lên phiên bản beta linux?"
+			"index_25": "Vui lòng đọc cẩn thận hướng dẫn cho người thử nghiệm beta. Bạn có chắc chắn cập nhật lên phiên bản beta linux?",
+			"index_26": "Đang cập nhật bảng điều khiển, vui lòng đợi...",
+			"index_27": "Vui lòng nhấn Ctrl+F5 để làm mới bộ đệm hoặc đợi 5 giây để tự động làm mới!",
+			"index_28": "Bảng nâng cấp",
+			"index_29": "Nâng cấp sửa các lỗi đã biết và thêm các tính năng mới nhất. Dữ liệu của bạn sẽ không bị ảnh hưởng",
+			"index_30": "Sắp cập nhật lên: ",
+			"index_31": "Thời gian cập nhật: ",
+			"index_32": "Phiên bản hiện tại đã là phiên bản mới nhất rồi",
+			"index_33": "Nhật ký thay đổi",
+			"index_34": "Tiếp tục nâng cấp",
+			"index_35": "Tiếp tục sửa",
+			"index_36": "Sửa bảng điều khiển",
+			"index_37": "Sửa chữa bảng điều khiển giải quyết các vấn đề không mong muốn khác nhau"
 		},
 		"Restart": {
 			"index_1": "Khởi động lại máy chủ",
@@ -263,13 +275,15 @@
 			"index_90": "Dừng quét",
 			"index_91": "Sửa chữa một cú nhấp chuột",
 			"index_92": "Sau khi quét, tất cả các mục rủi ro có thể sửa chữa sẽ được tự động sửa chữa và báo cáo quét bảo mật mới nhất sẽ được lấy",
-			"index_93": "Nếu [hệ thống làm cứng] được cài đặt, vui lòng đóng nó trước và sau đó thực hiện sửa chữa một nhấp chuột",
+			"index_93": "Tắt [Tăng cường hệ thống] trước khi sử dụng Sửa chữa bằng một cú nhấp chuột.",
 			"index_94": "Sửa chữa được chọn",
 			"index_95": "Bỏ qua các mục quét",
 			"index_96": "Phát hiện bảo mật máy chủ",
 			"index_97": "Quét",
 			"index_98": "Vật phẩm không có rủi ro",
-			"index_99": "Chờ quét"
+			"index_99": "Chờ quét",
+			"ScanRules": "Quy tắc quét",
+			"DefaultRuleTag": "[Mặc định]"
 		}
 	}
 }

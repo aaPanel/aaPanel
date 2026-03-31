@@ -587,7 +587,7 @@
 			"index_9": "Tidak bisa dioperasikan",
 			"index_10": "URL rewrite"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "Domain",
 			"index_2": "Direktori Situs",
 			"index_3": "Direktori Menjalankan",
@@ -673,7 +673,7 @@
 			"index_6": "Pilih versi WP",
 			"index_7": "Pengguna WordPress Backend tidak bisa kosong",
 			"index_8": "Kata Sandi Backend WordPress tidak bisa kosong",
-			"index_9": "Alamat email tidak bisa kosong",
+			"index_9": "Email tidak boleh kosong",
 			"index_10": "WordPress Tabel nama awalan tidak bisa kosong",
 			"index_11": "URL login tidak bisa kosong",
 			"index_12": "URL pengalihan tidak bisa kosong",
@@ -749,6 +749,7 @@
 			"pleaseSelectKey": "Silakan pilih kunci",
 			"generateNewKeySuccess": "Kunci SSH baru berhasil dibuat",
 			"updateSshKeyTitle": "Perbarui Kunci SSH",
+			"importExistingProjectTitle": "Impor proyek Git yang ada",
 			"coverageData": "Data cakupan",
 			"repoAddressPlaceholder": "Silakan masukkan alamat repositori",
 			"branchPlaceholder": "Silakan pilih cabang",

@@ -95,7 +95,10 @@
 			"index_92": "La tâche chronométrée a commencé avec succès",
 			"index_93": "Tâche chronométrée fermée avec succès",
 			"index_94": "Partie",
-			"index_95": "Exécuté toutes les {0} secondes"
+			"index_95": "Exécuté toutes les {0} secondes",
+			"index_96": "Select script",
+			"index_97": "Please select a script (search supported)",
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
 		},
 		"arrange": {
 			"index_1": "Exécutez la tâche de script dans [{0}] Immédiatement, le processus d'exécution peut attendre longtemps, veuillez être patient. Voulez-vous continuer?",

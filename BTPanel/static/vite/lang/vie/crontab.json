@@ -95,7 +95,10 @@
 			"index_92": "Nhiệm vụ thời gian bắt đầu thành công",
 			"index_93": "Nhiệm vụ thời gian đóng thành công",
 			"index_94": "Phần",
-			"index_95": "Được thực hiện mỗi {0} giây"
+			"index_95": "Được thực hiện mỗi {0} giây",
+			"index_96": "Chọn tập lệnh",
+			"index_97": "Vui lòng chọn một tập lệnh (hỗ trợ tìm kiếm)",
+			"index_98": "Để duy trì sự ổn định của dịch vụ và đảm bảo hiệu suất mượt mà, vui lòng hạn chế thường xuyên chạy các tập lệnh tải cao và tránh thêm quá nhiều tác vụ như vậy"
 		},
 		"arrange": {
 			"index_1": "Thực hiện tác vụ tập lệnh trong [{0}] Ngay lập tức, quá trình thực thi có thể chờ đợi trong một thời gian dài, vui lòng kiên nhẫn. Bạn có muốn tiếp tục?",

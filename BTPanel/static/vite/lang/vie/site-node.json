@@ -81,6 +81,10 @@
 		"index_79": "Địa chỉ địa phương",
 		"index_80": "Tắt ánh xạ!, Bạn có muốn tiếp tục không?",
 		"index_81": "Kích hoạt ánh xạ!, Bạn có muốn tiếp tục không?",
-		"index_82": "Định dạng của tên miền bị ràng buộc không chính xác"
+		"index_82": "Định dạng của tên miền bị ràng buộc không chính xác",
+		"index_83": "Sau khi bắt đầu các dự án được chọn theo đợt, các dự án sẽ có thể truy cập được",
+		"index_84": "Sau khi dừng các dự án đã chọn theo đợt, các dự án sẽ ngừng chạy",
+		"index_85": "Sau khi khởi động lại các dự án đã chọn theo đợt, các dự án sẽ được khởi động lại",
+		"index_86": "Đang vận hành hàng loạt, vui lòng đợi..."
 	}
 }

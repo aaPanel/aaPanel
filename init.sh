@@ -56,7 +56,7 @@ panel_init(){
 panel_init
 
 get_panel_pids(){
-        isStart=$(ps aux|grep -E '(runserver|BT-Panel)'|grep -v grep|awk '{print $2}'|xargs)
+        isStart=$(ps aux|grep -E '(BT-Panel)'|grep -v grep|awk '{print $2}'|xargs)
         pids=$isStart
         arr=$isStart
 }

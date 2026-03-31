@@ -587,7 +587,7 @@
 			"index_9": "Недоступно",
 			"index_10": "URL rewrite"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "Домен",
 			"index_2": "Каталог сайта",
 			"index_3": "Рабочий каталог",
@@ -754,13 +754,14 @@
 			"branchPlaceholder": "Please select a branch",
 			"pleaseInputRepoAddress": "Please enter repository address first",
 			"resolveARecordTip": "Please first resolve the A record of this domain to the server IP address",
-			"repoExample": "e.g. git@github.com:username/repo.git",
+			"repoExample": "e.g. ",
 			"branchExample": "e.g. master",
 			"howToCreateWebsiteUsingGit": "How to create website using Git?",
 			"viewDocs": "View",
 			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 Application deployed!\"",
 			"deleteGitConfigTitle": "Delete git configuration",
-			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted."
+			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted.",
+			"importExistingProjectTitle": "Import existing Git project"
 		}
 	}
 }

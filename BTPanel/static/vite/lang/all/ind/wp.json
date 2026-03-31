@@ -235,5 +235,21 @@
 	"a7c3c998c562b3c1a03b55a45885d89f": "Berkas yang dipilih: {0}",
 	"9162fca50a90dd9ede7b004903e8d5f5": "Unggah Plugin",
 	"f6e4b551382f9dbe4413c43de5f80873": "Unggah Tema",
-	"4e4b1e639a36d24d7cc6865089a975b6": "Untuk menambahkan plugin atau tema khusus ke koleksi ini, klik tombol Unggah, lalu unggah file dari komputer lokal Anda"
+	"4e4b1e639a36d24d7cc6865089a975b6": "Untuk menambahkan plugin atau tema khusus ke koleksi ini, klik tombol Unggah, lalu unggah file dari komputer lokal Anda",
+	"09cdd6a7321c64bae05b8cca859f1461": "Aktifkan cache",
+	"4e8ee19c1cb18f89be54c0ace9edfd3a": "Pembuatan situs secara batch",
+	"2b456e8e4127051e591e630c17843128": "Harap selesaikan terlebih dahulu catatan A domain ini ke alamat IP server",
+	"4c9c0eb283eda5aa5c4a8c8c86df15eb": "Deskripsi format:",
+	"d36103913ac2fe791d17be0fa8d69d49": "Format batch: Domain {'|'} Judul Situs Web {'|'} Akun Admin {'|'} Kata Sandi Admin {'|'} Awalan",
+	"9ffd4c6ccbafc6c32a32ff354808e4bb": "Format domain: Mendukung banyak domain, dipisahkan dengan koma (misalnya: a.com,b.com)",
+	"94ba5b2e80d63c99f45adfba8485afe8": "misalnya aapanel.com{'|'}blog saya{'|'}admin{'|'}pass123456{'|'}wp_",
+	"decac45ddce192fc04d7a8143151b5b5": "Satu situs per baris. Jika kata sandi kosong, sistem secara otomatis akan menghasilkan kata sandi yang kuat.",
+	"7d334a13bf3e93e8eff7d4c344b79ac9": "Jika Anda menyetel awalan wp_, sistem akan secara otomatis menghasilkan akhiran acak.",
+	"8329ddd883c86d197cd5c890ed4b379a": "Silakan masukkan data kumpulan",
+	"c309257ce4aed5d1b9dc845f9ca8e539": "domain.com{'|'}Judul Situs Web{'|'}Pengguna Admin{'|'}Sandi{'|'}wp_",
+	"702177c75a3234bb2d5cd33d1e50004d": "Saat ini ada tugas yang sedang berjalan.",
+	"4351cfebe4b61d8aa5efa1d020710005": "Lihat",
+	"c696fc9ea1860852518fe04f275823b2": "Salin Kemajuan",
+	"73f71db707c76dfc09d49efa5d17fda8": "Tugas selesai!",
+	"bfb163741ecfc99874cb1a139feb4898": "Sedang berlangsung..."
 }

@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Пакетное удаление",
-			"ChooseDel": "Выберите для удаления"
+			"ChooseDel": "Выберите для удаления",
+			"ConfirmWithDesc": "{0}, continue operation?"
 		},
 		"Confirm": {
 			"Title": "Советы",

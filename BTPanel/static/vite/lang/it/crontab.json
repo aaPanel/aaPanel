@@ -95,7 +95,10 @@
 			"index_92": "L'attività a tempo è iniziata con successo",
 			"index_93": "Compito a tempo chiuso correttamente",
 			"index_94": "Parte",
-			"index_95": "Eseguito ogni {0} secondi"
+			"index_95": "Eseguito ogni {0} secondi",
+			"index_96": "Select script",
+			"index_97": "Please select a script (search supported)",
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
 		},
 		"arrange": {
 			"index_1": "Eseguire immediatamente l'attività di script in [{0}], il processo di esecuzione può attendere a lungo, si prega di essere paziente. Vuoi continuare?",

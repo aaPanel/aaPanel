@@ -748,7 +748,8 @@ class RestartServices:
             if not obj.is_install:
                 continue
 
-            if not obj.is_running:
+            running_state = obj.is_running
+            if not running_state:
                 if int(manual_info.get(obj.nick_name, 0)) == 1:
                     # service closed maually, skip
                     continue
@@ -758,7 +759,7 @@ class RestartServices:
                 if not self._overhead(obj.nick_name):
                     obj.script("restart")
 
-            if obj.is_running and manual_info.get(obj.nick_name) == 1:
+            if running_state and manual_info.get(obj.nick_name) == 1:
                 # service is running, fix the wrong flag
                 manual_info[obj.nick_name] = 0
                 # under lock file read lock

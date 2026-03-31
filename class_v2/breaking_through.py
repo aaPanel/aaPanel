@@ -1156,7 +1156,10 @@ class main(safeBase):
         @name 获取登录限制配置
         """
         self._config=self.read_config()
-        if not self._config['global_status'] or not self._config['username_status']:return False
+        # 修复字典键缺失 使用 .get() 提供默认值
+        if not self._config.get('global_status') or not self._config.get('username_status'):
+            return False
+        # if not self._config['global_status'] or not self._config['username_status']:return False
          #防爆破检测
         now_time=limit_time=time.time()
         white_ips=''

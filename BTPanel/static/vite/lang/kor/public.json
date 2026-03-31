@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "삭제",
-			"ChooseDel": "삭제를 선택하세요"
+			"ChooseDel": "삭제를 선택하세요",
+			"ConfirmWithDesc": "{0}, continue operation?"
 		},
 		"Confirm": {
 			"Title": "팁",

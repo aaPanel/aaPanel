@@ -1,0 +1,14 @@
+{
+    "bt_basic": {
+        "name": "aaPanel Security Audit",
+        "enabled": true
+    },
+    "international": {
+        "name": "International Baseline Audit",
+        "enabled": false
+    },
+    "nginx": {
+        "name": "Nginx Baseline Audit",
+        "enabled": false
+    }
+}

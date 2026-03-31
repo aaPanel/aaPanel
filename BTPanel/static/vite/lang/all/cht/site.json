@@ -1590,5 +1590,7 @@
 	"607e7a4f377fa66b0b28ce318aab841f": "查看",
 	"4a3494a7c32dc9402a6ef7f0f8e8aec5": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 部署完成！\"",
 	"8aa50d9835a5151e46efe46d0b5fb431": "刪除 Git 配置",
-	"f49ebc5eb6567bf26c6e687f13d989c0": "您可以在此刪除倉庫。注意：.git 目錄以及部署記錄都會被刪除。"
+	"f49ebc5eb6567bf26c6e687f13d989c0": "您可以在此刪除倉庫。注意：.git 目錄以及部署記錄都會被刪除。",
+	"5639affd9e68850bf5d15af8e39e15ff": "導入現有的 Git 項目",
+	"98e3edf3da504c1b70aa66fe9ca3762e": "電子郵件不能為空"
 }

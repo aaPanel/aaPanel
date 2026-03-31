@@ -155,18 +155,19 @@ class main():
         私有辅助方法：确定请求的主机地址（优先从配置文件读取，默认 127.0.0.1）
         @return: request_host: str
         """
-        default_host = "127.0.0.1"
-        host_file = "/www/server/panel/data/domain.conf"
-        server_domain_file = self.server_domain_file  # 假设已在类中定义
+        return "127.0.0.1"
+        # default_host = "127.0.0.1"
+        # host_file = "/www/server/panel/data/domain.conf"
+        # server_domain_file = self.server_domain_file  # 假设已在类中定义
 
-        # 检查配置文件是否存在（需同时满足两个文件存在才读取）
-        if not (os.path.exists(host_file) and os.path.exists(server_domain_file)):
-            public.print_log(f"vhost---------Host config file missing, use default host: {default_host}")
-            return default_host
+        # # 检查配置文件是否存在（需同时满足两个文件存在才读取）
+        # if not (os.path.exists(host_file) and os.path.exists(server_domain_file)):
+        #     public.print_log(f"vhost---------Host config file missing, use default host: {default_host}")
+        #     return default_host
 
-        # 读取并清理主机地址
-        host = public.ReadFile(host_file).strip()
-        return host if host else default_host
+        # # 读取并清理主机地址
+        # host = public.ReadFile(host_file).strip()
+        # return host if host else default_host
         
         
 

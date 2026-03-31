@@ -81,6 +81,10 @@
 		"index_79": "Lokale Adresse",
 		"index_80": "Deaktivieren Sie die Kartierung!, Möchten Sie fortfahren?",
 		"index_81": "Mapping aktivieren!, Möchten Sie fortfahren?",
-		"index_82": "Das Format des gebundenen Domänennamens ist falsch"
+		"index_82": "Das Format des gebundenen Domänennamens ist falsch",
+		"index_83": "Nachdem ausgewählte Projekte stapelweise gestartet wurden, sind die Projekte zugänglich",
+		"index_84": "Nachdem ausgewählte Projekte stapelweise gestoppt wurden, wird die Ausführung der Projekte gestoppt",
+		"index_85": "Nach dem stapelweisen Neustart ausgewählter Projekte werden die Projekte neu gestartet",
+		"index_86": "Batch-Betrieb, bitte warten..."
 	}
 }

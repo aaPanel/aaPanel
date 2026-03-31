@@ -145,7 +145,19 @@
 			"index_23_2": "\"Instruções para Testadores Beta\"",
 			"index_23_3": "{0} segundo(s) aguarde para clicar",
 			"index_24": "Atualizar para versão Linux Beta",
-			"index_25": "Por favor, leia as Instruções para Testadores Beta cuidadosamente. Tem certeza de que deseja atualizar para a versão Linux Beta?"
+			"index_25": "Por favor, leia as Instruções para Testadores Beta cuidadosamente. Tem certeza de que deseja atualizar para a versão Linux Beta?",
+			"index_26": "Updating panel, please wait...",
+			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
+			"index_28": "Upgrade Panel",
+			"index_29": "New version found. Continue repairing panel can fix various abnormal issues encountered during use",
+			"index_30": "About to update to: ",
+			"index_31": "Update time: ",
+			"index_32": "Current version is already the latest",
+			"index_33": "Change Logs",
+			"index_34": "Continue upgrade",
+			"index_35": "Continue fix",
+			"index_36": "Fix panel",
+			"index_37": "New version available. Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "Reiniciar servidor",
@@ -269,7 +281,9 @@
 			"index_96": "Detecção de segurança do servidor",
 			"index_97": "Escaneando",
 			"index_98": "Item sem risco",
-			"index_99": "Aguardando varredura"
+			"index_99": "Aguardando varredura",
+			"ScanRules": "Scan Rules",
+			"DefaultRuleTag": "[Default]"
 		}
 	}
 }

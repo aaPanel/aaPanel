@@ -1,0 +1,1 @@
+System.register(["./index-legacy-3bAYElO-.js?v=1774508183068"],(function(t,e){"use strict";var n,r;return{setters:[t=>{n=t.bf,r=t.cp}],execute:function(){t({i:function(t,e){const r=n(t),c=n(e);return+r<+c},s:function(){return r(Date.now())}})}}}));

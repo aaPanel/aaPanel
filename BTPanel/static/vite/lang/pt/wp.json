@@ -78,7 +78,8 @@
 			"import_3": "Plesk ou CPanel",
 			"import_4": "Caminho do Arquivo de Backup",
 			"import_5": "Subdiretório, em branco no diretório raiz",
-			"import_6": "Por favor, insira o caminho do arquivo de backup"
+			"import_6": "Por favor, insira o caminho do arquivo de backup",
+			"index_3": "Batch create sites"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +255,24 @@
 			"index_17": "Versão do plugin",
 			"index_18": "Versão MySQL",
 			"index_19": "Isso removerá seu site do painel, Tem certeza de que deseja fazer isso?"
+		},
+		"AddBatch": {
+			"index_1": "Please first resolve the A record of this domain to the server IP address",
+			"index_2": "Format description:",
+			"index_3": "Batch format: Domain {'|'} Website Title {'|'} Admin Account {'|'} Admin Password {'|'} Prefix",
+			"index_4": "Domain format: Support multiple domains, separated by commas (e.g.: a.com,b.com)",
+			"index_7": "e.g. aapanel.com{'|'}my blog{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "One site per line. If the password is empty, the system will automatically generate a strong password.",
+			"index_6": "If you set the prefix wp_, the system will automatically generate a random suffix.",
+			"index_8": "Please enter batch data",
+			"placeholder": "domain.com{'|'}Website Title{'|'}AdminUser{'|'}Password{'|'}wp_"
+		},
+		"Task": {
+			"index_1": "There are currently tasks in progress.",
+			"index_2": "View",
+			"index_3": "Copy Progress",
+			"index_4": "Task completed!",
+			"index_5": "In progress..."
 		}
 	}
 }

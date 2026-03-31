@@ -587,7 +587,7 @@
 			"index_9": "不可操作",
 			"index_10": "URL 重寫"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "域名",
 			"index_2": "站點目錄",
 			"index_3": "運行目錄",
@@ -673,7 +673,7 @@
 			"index_6": "請選擇 WP 版本",
 			"index_7": "WordPress 後台用戶不能為空",
 			"index_8": "WordPress 後台密碼不能為空",
-			"index_9": "電子郵件地址不能為空",
+			"index_9": "電子郵件不能為空",
 			"index_10": "WordPress 表名前綴不能為空",
 			"index_11": "登錄 URL 不能為空",
 			"index_12": "重定向 URL 不能為空",
@@ -749,6 +749,7 @@
 			"pleaseSelectKey": "請選擇密鑰",
 			"generateNewKeySuccess": "產生新密鑰成功",
 			"updateSshKeyTitle": "更改 SSH 金鑰",
+			"importExistingProjectTitle": "導入現有的 Git 項目",
 			"coverageData": "覆蓋數據",
 			"repoAddressPlaceholder": "請輸入倉庫位址",
 			"branchPlaceholder": "請選擇分支",

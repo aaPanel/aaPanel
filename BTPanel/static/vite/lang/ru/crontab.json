@@ -95,7 +95,10 @@
 			"index_92": "Задача по расписанию успешно запущена",
 			"index_93": "Задача по расписанию успешно остановлена",
 			"index_94": "шт.",
-			"index_95": "Выполнять каждые {0} секунд"
+			"index_95": "Выполнять каждые {0} секунд",
+			"index_96": "Select script",
+			"index_97": "Please select a script (search supported)",
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
 		},
 		"arrange": {
 			"index_1": "Немедленно выполнить задачу скрипта в [{0}]? Процесс может занять значительное время.",

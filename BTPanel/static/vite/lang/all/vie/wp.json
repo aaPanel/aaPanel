@@ -389,5 +389,21 @@
 	"a7c3c998c562b3c1a03b55a45885d89f": "Tệp đã chọn: {0}",
 	"9162fca50a90dd9ede7b004903e8d5f5": "Tải lên plugin",
 	"f6e4b551382f9dbe4413c43de5f80873": "Tải chủ đề lên",
-	"4e4b1e639a36d24d7cc6865089a975b6": "Để thêm plugin hoặc chủ đề tùy chỉnh vào bộ sưu tập này, hãy nhấp vào nút Tải lên, sau đó tải tệp lên từ máy tính cục bộ của bạn"
+	"4e4b1e639a36d24d7cc6865089a975b6": "Để thêm plugin hoặc chủ đề tùy chỉnh vào bộ sưu tập này, hãy nhấp vào nút Tải lên, sau đó tải tệp lên từ máy tính cục bộ của bạn",
+	"09cdd6a7321c64bae05b8cca859f1461": "Bật bộ đệm",
+	"4e8ee19c1cb18f89be54c0ace9edfd3a": "Tạo trang web hàng loạt",
+	"2b456e8e4127051e591e630c17843128": "Trước tiên hãy giải quyết bản ghi A của miền này thành địa chỉ IP của máy chủ",
+	"4c9c0eb283eda5aa5c4a8c8c86df15eb": "Mô tả định dạng:",
+	"d36103913ac2fe791d17be0fa8d69d49": "Định dạng hàng loạt: Tên miền {'|'} Tiêu đề trang web {'|'} Tài khoản quản trị viên {'|'} Mật khẩu quản trị viên {'|'} Tiền tố",
+	"9ffd4c6ccbafc6c32a32ff354808e4bb": "Định dạng tên miền: Hỗ trợ nhiều tên miền, phân tách bằng dấu phẩy (ví dụ: a.com,b.com)",
+	"94ba5b2e80d63c99f45adfba8485afe8": "ví dụ: aapanel.com{'|'}blog của tôi{'|'}quản trị viên{'|'}pass123456{'|'}wp_",
+	"decac45ddce192fc04d7a8143151b5b5": "Một trang web trên mỗi dòng. Nếu mật khẩu trống, hệ thống sẽ tự động tạo mật khẩu mạnh.",
+	"7d334a13bf3e93e8eff7d4c344b79ac9": "Nếu bạn đặt tiền tố wp_, hệ thống sẽ tự động tạo hậu tố ngẫu nhiên.",
+	"8329ddd883c86d197cd5c890ed4b379a": "Vui lòng nhập dữ liệu hàng loạt",
+	"c309257ce4aed5d1b9dc845f9ca8e539": "domain.com{'|'}Tiêu đề trang web{'|'}Người dùng quản trị viên{'|'}Mật khẩu{'|'}wp_",
+	"702177c75a3234bb2d5cd33d1e50004d": "Hiện tại có những nhiệm vụ đang được tiến hành.",
+	"4351cfebe4b61d8aa5efa1d020710005": "Xem",
+	"c696fc9ea1860852518fe04f275823b2": "Sao chép tiến trình",
+	"73f71db707c76dfc09d49efa5d17fda8": "Nhiệm vụ đã hoàn thành!",
+	"bfb163741ecfc99874cb1a139feb4898": "Đang tiến hành..."
 }

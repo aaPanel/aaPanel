@@ -478,8 +478,11 @@ class panelPlugin:
                     sType = 0
         except:pass
 
-        # 扫描本地插件并追加到软件列表中
-        softList['list'] = self.get_local_plugin(softList['list'])
+        # 扫描本地插件并追加到软件列表中  修复类型错误
+        if isinstance(softList, dict) and 'list' in softList:
+            softList['list'] = self.get_local_plugin(softList['list'])
+        else:
+            softList = {'list': []}
 
         # 软件列表分类处理
         softList['list'] = self.get_types(softList['list'], sType)

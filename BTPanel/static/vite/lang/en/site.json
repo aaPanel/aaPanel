@@ -587,7 +587,7 @@
 			"index_9": "Inoperable",
 			"index_10": "URL rewrite"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "Domain",
 			"index_2": "Site directory",
 			"index_3": "Running directory",
@@ -673,7 +673,7 @@
 			"index_6": "Please select the WP version",
 			"index_7": "Wordpress backend user cannot be empty",
 			"index_8": "Wordpress backend password cannot be empty",
-			"index_9": "Email address cannot be empty",
+			"index_9": "Email cannot be empty",
 			"index_10": "Wordpress table name prefix cannot be empty",
 			"index_11": "Login url cannot be empty",
 			"index_12": "Redirection url cannot be empty",

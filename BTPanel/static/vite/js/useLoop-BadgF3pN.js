@@ -1,1 +1,0 @@
-import{b as u}from"./vue-core-DJjvd5ZC.js?v=1773287522785";function c(i,l=3){let e=null,o=!1,r=0;const n=()=>{if(o){t();return}if(r>=3){t();return}e=window.setTimeout(async()=>{try{await i(),r=0}catch(a){r++}finally{n()}},l*1e3)},t=()=>{e&&(clearTimeout(e),e=null)};return u(()=>{o=!0,t()}),{loop:n,clearTimer:t}}export{c as u};

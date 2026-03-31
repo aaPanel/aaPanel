@@ -34,7 +34,7 @@ class main(projectBase):
     _pids = None
     _vhost_path = '{}/vhost'.format(_panel_path)
     _www_home = '/home/www'
-
+    _node_logs = '{}/vhost/logs'.format(_nodejs_path)
 
 
     def __init__(self):
@@ -84,12 +84,16 @@ class main(projectBase):
         re_order = get.get('re_order', '')  # 流量排序专用
         order_str = get.get('order', 'id desc')
 
-        sql = public.M('sites').where('project_type=?', ('Node',))
-        if search_word:
-            search_pattern = "%{}%".format(search_word)
-            sql = sql.where('name LIKE ? OR ps LIKE ?', (search_pattern, search_pattern))
+        where_str = "project_type=?"
+        where_args = ["Node"]
 
-        all_data = sql.order(order_str).select()
+        if search_word:
+            where_str += " AND (name LIKE ? OR ps LIKE ?)"
+            search_pattern = "%{}%".format(search_word)
+            where_args.extend([search_pattern, search_pattern])
+
+        all_data = public.M('sites').where(where_str, tuple(where_args)).order(order_str).select()
+
         if not all_data:
             return public.return_message(0, 0, {'data': [], 'page': ''})
 
@@ -732,7 +736,7 @@ export PATH
                     'project_script': get.project_script,
                     'bind_extranet': int(get.bind_extranet),
                     'domains': [],
-                    'is_power_on': get.is_power_on,
+                    'is_power_on': 0,
                     'run_user': get.run_user,
                     'max_memory_limit': get.max_memory_limit,
                     'nodejs_version': get.nodejs_version,
@@ -934,31 +938,33 @@ export PATH
         if operation_type not in ['delete','start','stop','restart']:
             return public.return_message(-1, 0,public.lang('Operation type is empty！'))
 
+        project_list = public.S('sites').where_in("name",project_names,'OR').select()
+        if not project_list:
+            return public.return_message(-1, 0, public.lang('The project list is empty.'))
+
         success_count = 0
         msg_list = []
-
-        for name in project_names:
+        from mod.project.nodejs import comMod
+        for project in project_list:
             try:
-                temp_get = public.to_dict_obj({'project_name': name})
+                project['project_config'] = json.loads(project['project_config'])
+                p_type = 'pm2' if project['project_config'].get('pm2_name') else 'nodejs'
                 res = None
                 if operation_type == 'delete':
-                    res = self.remove_project(temp_get)
-                elif operation_type == 'start':
-                    res = self.start_project(temp_get)
-                elif operation_type == 'stop':
-                    temp_get.is_power_on = 'True'
-                    res = self.stop_project(temp_get)
-                elif operation_type == 'restart':
-                    res = self.restart_project(temp_get)
-
+                    temp_get = public.to_dict_obj({'project_name': project['name'],'project_type': p_type,'pm2_name':project['project_config'].get('pm2_name')})
+                    res = comMod.main().delete(temp_get)
+                elif operation_type in ['start','stop','restart']:
+                    res = comMod.main().set_project_status(public.to_dict_obj(
+                        {"project_name": project['name'], "project_type": p_type, "status": operation_type,
+                         "pm2_name": project['project_config'].get('pm2_name'),"run_user":project['project_config'].get('run_user')}))
                 if res is None or res['status'] != 0:
-                    msg_list.append({'name': name,'status':False,'msg':res['message']['error_msg']})
+                    msg_list.append({'name': project['name'],'status':False,'msg':res['message']['result']})
                 else:
                     success_count += 1
-                    msg_list.append({'name': name,'status':True, 'msg': res['message']['data']})
+                    msg_list.append({'name': project['name'],'status':True, 'msg': res['message']['result']})
 
             except Exception as e:
-                msg_list.append({'name': name, 'status': False, 'msg': str(e)})
+                msg_list.append({'name': project['name'], 'status': False, 'msg': str(e)})
 
         msg = f"Successfully {success_count} items.Failed on {len(project_names) - success_count} projects."
         return public.return_message(0, 0, {"msg":msg, "msg_list":msg_list})
@@ -1137,6 +1143,10 @@ export PATH
             return public.return_message(-1,0, return_message)
         if not project_find['project_config']['domains']: 
             return_message=public.return_error(public.lang('Please add at least one domain name in the [Domain Management] option'))
+            del return_message['status']
+            return public.return_message(-1,0, return_message)
+        if not project_find['project_config'].get('port'):
+            return_message=public.return_error(public.lang('Please set the running port for the project first.'))
             del return_message['status']
             return public.return_message(-1,0, return_message)
         project_find['project_config']['bind_extranet'] = 1
@@ -1983,7 +1993,7 @@ cd {}
         if pids: self.kill_pids(pids=pids)
 
         # 停用项目自启
-        if get.get('is_power_on') in ['True', 'true']:
+        if get.get('is_power_on') in ['True', 'true',1, '1' ]:
             data = project_find['project_config']
             data = {
                 "project_cwd": data['project_cwd'],
@@ -2053,11 +2063,15 @@ cd {}
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        log_file = "{}/{}.log".format(self._node_logs_path,get.project_name)
-        if not os.path.exists(log_file): 
-            return_message=public.return_error(public.lang('Log file does not exist'))
-            del return_message['status']
-            return public.return_message(-1,0, return_message)
+        project_find = self.get_project_find(get.project_name)
+        if not project_find: return public.returnMsg(False,'项目不存在')
+        if "log_path" not in project_find['project_config']:
+            log_file = "{}/{}.log".format(self._node_logs, project_find["name"])
+        else:
+            log_file = "{}/{}.log".format(project_find['project_config']["log_path"], project_find["name"])
+
+        if not os.path.exists(log_file):
+            return public.return_message(-1,0, public.lang("The log file does not exist."))
         return public.return_message(0,0,self.xsssec(public.GetNumLines(log_file,200)))
     
 
@@ -2368,12 +2382,36 @@ cd {}
             @return list
         '''
         project_info['project_config'] = json.loads(project_info['project_config'])
-        project_info['run'] = self._get_project_run_state(project_name = project_info['name'])
-        # project_info['run'] = True
         project_info['load_info'] = {}
-        if project_info['run']:
-            project_info['load_info'] = self.get_project_load_info(project_name = project_info['name'])['message']
-        project_info['ssl'] = self.get_ssl_end_date(project_name = project_info['name'])
+        if ("pm2_name" in project_info['project_config'] and
+                "project_type" in project_info['project_config'] and
+                project_info['project_config']["project_type"] == "pm2") or "pm2" in project_info['project_config']['project_script']:
+            from mod.project.nodejs import pm2Mod
+            pm2_list = pm2Mod.main().get_jlist()
+            project_info['run'] = False
+            pm2_name = project_info['project_config'].get("pm2_name", project_info['name'])
+            pm2_pids = []
+            project_info['project_config']['watch'] = True if project_info['project_config'].get('watch', False) in ['True','true', True] else False
+
+            for pm2_info in pm2_list:
+                if pm2_info.get("name") in ("pm2-sysmonit", "pm2-logrotate"):
+                    continue
+                env_projectname = ""
+                if "pm2_env" in pm2_info and "NODE_PROJECT_NAME" in pm2_info["pm2_env"]:
+                    env_projectname = pm2_info["pm2_env"]["NODE_PROJECT_NAME"]
+                if pm2_name != pm2_info.get("name") and pm2_name != env_projectname:
+                    continue
+                project_info['run'] = pm2_info.get("pm2_env").get("status") == "online"
+                if project_info['run']:
+                    pm2_pids.append(pm2_info.get("pid"))
+                    break
+            project_info['load_info'] = self.get_pm2_load_info_new(pm2_pids)
+        else:
+            project_info['run'] = self._get_project_run_state(project_name=project_info['name'])
+            if project_info['run']:
+                project_info['load_info'] = self.get_project_load_info(project_name=project_info['name'])['message']
+
+        project_info['ssl'] = self.get_ssl_end_date(project_name=project_info['name'])
         project_info['listen'] = []
         project_info['listen_ok'] = True
         if project_info['load_info']:
@@ -2386,10 +2424,57 @@ cd {}
                     if not conn['local_port'] in project_info['listen']:
                         project_info['listen'].append(conn['local_port'])
             if project_info['listen']:
+                if project_info['project_config']['port'] is None:
+                    # 端口回填
+                    project_info['project_config']['port'] = project_info['listen'][0]
+                    try:
+                        update_data = {
+                            'project_config': json.dumps(project_info['project_config'])
+                        }
+                        public.M('sites').where('name=?', (project_info['name'],)).update(update_data)
+                    except:
+                        pass
                 project_info['listen_ok'] = project_info['project_config']['port'] in project_info['listen']
+
         return project_info
-            
-        
+
+    def get_pm2_load_info_new(self,pids: list):
+        '''
+            @name 获取项目负载信息
+            @author hwliang<2021-08-12>
+            @param get<dict_obj>{
+                project_name: string<项目名称>
+            }
+            @return dict
+        '''
+        load_info = {}
+        for i in pids:
+            process_info = self.get_process_info_by_pid(i)
+            if process_info: load_info[i] = process_info
+        return load_info
+
+    # 获取项目状态，支持PM2/node
+    def get_project_run(self, project_name, project_type):
+        try:
+            if project_type == 'node':
+                return self._get_project_run_state(project_name=project_name)
+            else:
+                from mod.project.nodejs import pm2Mod
+                pm2_list = pm2Mod.main().get_jlist()
+                pm2_name = project_name
+                for pm2_info in pm2_list:
+                    if pm2_info.get("name") in ("pm2-sysmonit", "pm2-logrotate"):
+                        continue
+                    env_projectname = ""
+                    if "pm2_env" in pm2_info and "NODE_PROJECT_NAME" in pm2_info["pm2_env"]:
+                        env_projectname = pm2_info["pm2_env"]["NODE_PROJECT_NAME"]
+                    if pm2_name != pm2_info.get("name") and pm2_name != env_projectname:
+                        continue
+                    return pm2_info.get("pm2_env").get("status") == "online"
+                return False
+        except Exception as e:
+            return False
+
 
     def get_project_state(self,project_name):
         '''
@@ -2479,7 +2564,10 @@ cd {}
         for project_find in project_list:
             project_config = json.loads(project_find['project_config'])
             if not 'port' in project_config: continue
-            if int(project_config['port']) == port: return True
+            try:
+                if int(project_config['port']) == port: return True
+            except:
+                pass
         if sock: return False
         return public.check_tcp('127.0.0.1',port)
 

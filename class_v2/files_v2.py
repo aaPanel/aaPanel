@@ -7,6 +7,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
+import pathlib
 from base64 import b64encode
 import sys
 import os
@@ -343,9 +344,22 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
 
         if args.f_name.find('./') != -1 or args.f_path.find('./') != -1:
             return public.return_message(-1, 0, public.lang("Wrong parameter"))
-
+        # 判断是否存在同名文件
+        if pathlib.Path(args.f_path).is_file():
+            return public.return_message(-1, 0, public.lang("If there is a file with the same name as the upload folder, please check and try again"))
         if not os.path.exists(args.f_path):
-            os.makedirs(args.f_path, 493, True)
+            try:
+                os.makedirs(args.f_path, 493)
+            except PermissionError:
+                return public.return_message(-1, 0, public.lang("The current user does not have enough permissions to access or modify {}", args.f_path))
+
+            except OSError as e:
+                if 'Read-only' in str(e):
+                    return public.return_message(-1, 0, public.lang("The current directory is read-only"))
+
+                else:
+                    return public.return_message(-1, 0, public.lang("Upload failed {}", str(e)))
+
             if not 'dir_mode' in args or not 'file_mode' in args:
                 self.set_mode(args.f_path)
 
@@ -375,22 +389,33 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             if ex.find('No space left on device') != -1:
                 return public.fail_v2(public.lang('Not enough disk space'))
 
-        f_size = os.path.getsize(save_path)
-        if f_size != int(args.f_size):
+        if os.path.exists(save_path):
+            f_size = os.path.getsize(save_path)
+        else:
+            f_size = 0
+        if f_size is not None and f_size != int(args.f_size):
+            if f_size > int(args.f_size):
+                return public.return_message(-1, 0, public.lang("If there is an error in file uploading, please delete the temporary file [{}] and try again", save_path))
+
             return f_size
 
         new_name = os.path.join(args.f_path, args.f_name)
         if os.path.exists(new_name):
             if new_name.find('.user.ini') != -1:
                 public.ExecShell("chattr -i " + new_name)
-            try:
-                os.remove(new_name)
-            except:
-                public.ExecShell("rm -f %s" % new_name)
+        if pathlib.Path(new_name).is_dir():
+            return public.return_message(-1, 0, public.lang("If there is a folder with the same name as the uploaded file, please check and try again"))
 
-        if os.path.isdir(new_name):
-            return public.fail_v2(public.lang("If the destination path already has a directory with the same name, change the file name"))
-        os.renames(save_path, new_name)
+        try:
+            os.renames(save_path, new_name)
+        except PermissionError:
+            os.remove(save_path)
+            return public.return_message(-1, 0, public.lang("The current user does not have sufficient permissions to access or modify it"))
+
+        except Exception as e:
+            os.remove(save_path)
+            return public.return_message(-1, 0, public.lang("Upload failed {}", str(e)))
+
         if 'dir_mode' in args and 'file_mode' in args:
             mode_tmp1 = args.dir_mode.split(',')
             public.set_mode(args.f_path, mode_tmp1[0])
@@ -400,7 +425,8 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.set_own(new_name, mode_tmp2[1])
 
         else:
-            self.set_mode(new_name)
+             if os.path.exists(new_name):
+                self.set_mode(new_name)
 
         if new_name.find('.user.ini') != -1:
             public.ExecShell("chattr +i " + new_name)
@@ -409,6 +435,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
                                  (args.f_name, args.f_path))
 
         return public.success_v2(public.lang('Successfully uploaded!'))
+
     # 设置文件和目录权限
     def set_mode(self, path):
         if path[-1] == '/': path = path[:-1]

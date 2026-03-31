@@ -4509,7 +4509,7 @@ def cloud_check_domain(domain):
 
 
 
-def get_user_info():
+def get_user_info(jwt: bool = False):
     user_file = '{}/data/userInfo.json'.format(get_panel_path())
     if not os.path.exists(user_file): return {}
     userInfo = {}
@@ -4528,6 +4528,8 @@ def get_user_info():
         userInfo['oem'] = get_oem_name()
         userInfo['o'] = userInfo['oem']
         userInfo['mac'] = get_mac_address()
+        if jwt:
+            userInfo['jwt'] = userTmp.get('token', '')
     except:
         print_log(get_error_info())
         pass
@@ -4677,8 +4679,17 @@ def get_pd(args=None):
         tmp_f = '/tmp/' + p_token
         p_token_time_f = '/tmp/{}.time'.format(p_token)
 
+        # 修复 p_token_time_f文件内容异常导致int转换失败的问题
+        cache_missing = not os.path.exists(tmp_f) or not os.path.exists(p_token_time_f)
+        time_content = readFile(p_token_time_f)
+        if time_content and time_content.strip().isdigit():
+            token_expire_time = int(time_content.strip()) + 86400
+        else:
+            token_expire_time = 0  # 视为已过期
+
         # 检查缓存是否失效
-        if not os.path.exists(tmp_f) or not os.path.exists(p_token_time_f) or int(readFile(p_token_time_f).strip()) + 86400 <= cur_time:
+        if cache_missing or token_expire_time <= cur_time:
+        # if not os.path.exists(tmp_f) or not os.path.exists(p_token_time_f) or int(readFile(p_token_time_f).strip()) + 86400 <= cur_time:
             # 检查用户是否登录，登录后才获取授权信息
             userinfo_f = '{}/data/userInfo.json'.format(get_panel_path())
             if os.path.exists(userinfo_f) and os.path.getsize(userinfo_f) > 10:
@@ -8659,7 +8670,7 @@ def reload_panel():
 
 
 # 2024/1/24 上午 10:38 通用响应对象
-def returnResult(code=0, status=True, msg="OK", data=None, timestamp=None, args=None):
+def returnResult(status=True, msg="OK", code=0, data=None, timestamp=None, args=None):
     '''
     通用响应对象
     @param code: 0:成功 1:失败 2:警告 ...
@@ -8983,6 +8994,8 @@ def download_main(upgrade_plugin_name, upgrade_version):
 
     download_d_main_url = '{}/api/panel/download_plugin_main'.format(OfficialApiBase())
     pdata = get_user_info()
+    if not isinstance(pdata, dict):
+        pdata = {}
     pdata['name'] = upgrade_plugin_name
     pdata['version'] = upgrade_version
     pdata['os'] = 'Linux'
@@ -10167,3 +10180,22 @@ def get_default_site_conf():
             pass
 
     return default
+
+# 获取随机字符串
+def generate_random_string(length, include_special=False):
+    """
+    生成指定长度的随机字符串。
+
+    参数:
+    length (int): 字符串的长度
+    include_special (bool): 是否包含特殊字符
+    """
+    import secrets
+
+    chars = string.ascii_letters + string.digits
+
+    # 加入特殊字符
+    if include_special:
+        chars += string.punctuation
+
+    return ''.join(secrets.choice(chars) for _ in range(length))

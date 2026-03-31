@@ -3888,7 +3888,6 @@ class main(projectBase):
             })
 
         except Exception as e:
-            # public.print_log(f"获取待处理告警趋势失败: {str(e)}")
             # 确保返回有效的初始数据
             current_time = int(time.time())
             return public.returnMsg(-1,0,{
@@ -3921,11 +3920,34 @@ class main(projectBase):
             try:
                 risk_file = '/www/server/panel/data/warning/resultresult.json'
                 if os.path.exists(risk_file):
-                    risk_data = json.loads(public.readFile(risk_file))
-                    result['high_risk'] += sum(1 for risk in risk_data.get('risk', [])
-                                               if not risk.get('status', True))
+                    data = public.readFile(risk_file)
+                    if data and data != -1:
+                        risk_data = json.loads(data)
+                        for r in risk_data.get('risk', []):
+                            if r.get('status', True):
+                                continue
+                            lv = r.get('level', 0)
+                            try:
+                                lv_int = int(lv)
+                            except:
+                                lv_str = str(lv).strip().lower()
+                                if lv_str == 'high':
+                                    lv_int = 3
+                                elif lv_str == 'medium':
+                                    lv_int = 2
+                                elif lv_str == 'low':
+                                    lv_int = 1
+                                elif lv_str == 'serious':
+                                    lv_int = 4
+                                else:
+                                    lv_int = 0
+                            if lv_int == 3:
+                                result['high_risk'] += 1
+                            elif lv_int == 2:
+                                result['medium_risk'] += 1
+                            elif lv_int == 1:
+                                result['low_risk'] += 1
             except Exception as e:
-                # public.print_log("统计首页风险失败: {}".format(str(e)))
                 pass
 
             # 2. 漏洞扫描
@@ -3933,9 +3955,23 @@ class main(projectBase):
                 vul_file = '/www/server/panel/data/scanning.json'
                 if os.path.exists(vul_file):
                     vul_data = json.loads(public.readFile(vul_file))
-                    result['medium_risk'] += vul_data.get('loophole_num', 0)
+                    rc = vul_data.get('risk_count', {})
+                    try:
+                        # 获取中危风险数量
+                        result['medium_risk'] += int(rc.get('middle', 0) or 0)
+                    except:
+                        pass
+                    try:
+                        high_val = int(rc.get('high', 0) or 0)
+                    except:
+                        high_val = 0
+                    try:
+                        dangerous_val = int(rc.get('dangerous', 0) or 0)
+                    except:
+                        dangerous_val = 0
+                    # 获取高危风险数量
+                    result['high_risk'] += high_val + dangerous_val
             except Exception as e:
-                # public.print_log("统计漏洞扫描失败: {}".format(str(e)))
                 pass
 
             # 3. 入侵检测
@@ -3943,7 +3979,6 @@ class main(projectBase):
                 result['high_risk'] += public.M('risk').dbfile('bt_hids').where('level=?', ('high',)).count()
                 result['medium_risk'] += public.M('risk').dbfile('bt_hids').where('level=?', ('medium',)).count()
             except Exception as e:
-                # public.print_log("统计入侵检测失败: {}".format(str(e)))
                 pass
 
             # 4. 服务器安全检测
@@ -3953,7 +3988,6 @@ class main(projectBase):
                     safe_data = json.loads(public.readFile(safe_file))
                     result['high_risk'] += safe_data.get('risk_count', {}).get('danger', 0)
             except Exception as e:
-                # public.print_log("统计服务器安全检测失败: {}".format(str(e)))
                 pass
 
             # 5. 恶意文件检测
@@ -3963,11 +3997,9 @@ class main(projectBase):
                     with open(detection_log, 'r') as f:
                         result['high_risk'] += len(f.readlines())
             except Exception as e:
-                # public.print_log("统计恶意文件检测失败: {}".format(str(e)))
                 pass
 
         except Exception as e:
-            # public.print_log("风险统计总失败: {}".format(str(e)))
             pass
 
         return result

@@ -467,7 +467,15 @@
 		},
 		"tree": {
 			"newFilePlaceholder": "新建文件",
-			"newFolderPlaceholder": "新建文件夾"
+			"newFolderPlaceholder": "新建文件夾",
+			"rename": "重命名",
+			"download": "下載",
+			"delete": "刪除",
+			"refresh": "刷新目錄",
+			"openDir": "開啟子目錄",
+			"newFolder": "新建文件夾",
+			"newFile": "新建文件",
+			"renameOpenedWarning": "文件已打開，無法修改名稱"
 		},
 		"dialogs": {
 			"encodingTitle": "設定檔案儲存編碼格式",
@@ -514,7 +522,10 @@
 		"editorHeader": {
 			"tipTitle": "溫馨提示",
 			"modifiedSaveConfirm": "偵測到文件已被修改，是否已儲存？",
-			"dontSave": "不保存"
+			"dontSave": "不保存",
+			"close": "關閉",
+			"closeOthers": "關閉其他",
+			"closeAll": "全部關閉"
 		},
 		"editorFooter": {
 			"fileLocation": "文件位置：{path}",

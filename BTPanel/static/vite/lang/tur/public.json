@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Toplu Sil",
-			"ChooseDel": "Lütfen silinecek öğeleri seçin"
+			"ChooseDel": "Lütfen silinecek öğeleri seçin",
+			"ConfirmWithDesc": "{0}, continue operation?"
 		},
 		"Confirm": {
 			"Title": "Bilgi",

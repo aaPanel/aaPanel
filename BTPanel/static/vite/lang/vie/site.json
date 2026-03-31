@@ -587,7 +587,7 @@
 			"index_9": "Không thể hoạt động",
 			"index_10": "Rewrite URL"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "tên miền",
 			"index_2": "Thư mục trang web",
 			"index_3": "Chạy thư mục",
@@ -673,7 +673,7 @@
 			"index_6": "Vui lòng chọn phiên bản WP",
 			"index_7": "Người dùng phụ trợ WordPress không thể trống",
 			"index_8": "Mật khẩu phụ trợ WordPress không thể trống",
-			"index_9": "Địa chỉ email không thể trống",
+			"index_9": "Email không được để trống",
 			"index_10": "Tiền tố tên bảng WordPress không thể trống",
 			"index_11": "URL đăng nhập không thể trống",
 			"index_12": "URL chuyển hướng không thể trống",
@@ -749,6 +749,7 @@
 			"pleaseSelectKey": "Vui lòng chọn một phím",
 			"generateNewKeySuccess": "Khóa SSH mới được tạo thành công",
 			"updateSshKeyTitle": "Cập nhật khóa SSH",
+			"importExistingProjectTitle": "Nhập dự án Git hiện có",
 			"coverageData": "Dữ liệu bảo hiểm",
 			"repoAddressPlaceholder": "Vui lòng nhập địa chỉ kho lưu trữ",
 			"branchPlaceholder": "Vui lòng chọn chi nhánh",

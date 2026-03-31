@@ -143,5 +143,9 @@
 	"3b5e49a81a141e2d63b8dad2964e33dc": "Địa chỉ địa phương",
 	"c7dea2e82a3d73a2ec514438b7f8a879": "Tắt ánh xạ!, Bạn có muốn tiếp tục không?",
 	"1e0987441b69ab74d07cb865b2828245": "Kích hoạt ánh xạ!, Bạn có muốn tiếp tục không?",
-	"63d7b382680de0dacf15b200233990b1": "Định dạng của tên miền bị ràng buộc không chính xác"
+	"63d7b382680de0dacf15b200233990b1": "Định dạng của tên miền bị ràng buộc không chính xác",
+	"c7122f4c7fcb8fa9156415b35acc2e0d": "Sau khi bắt đầu các dự án được chọn theo đợt, các dự án sẽ có thể truy cập được",
+	"335d619ca69887831a59ee15de944384": "Sau khi dừng các dự án đã chọn theo đợt, các dự án sẽ ngừng chạy",
+	"c728fa4b32fe3880398e628ad427199e": "Sau khi khởi động lại các dự án đã chọn theo đợt, các dự án sẽ được khởi động lại",
+	"c2e30cfdf1b2be46c5c480b962e4b9e0": "Đang vận hành hàng loạt, vui lòng đợi..."
 }

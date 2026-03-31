@@ -27,6 +27,7 @@ OLD_DNS_CONF = os.path.join(public.get_panel_path(), "class_v2/ssl_dnsV2", "aaDn
 
 DNS_MAP = {
     "CloudFlareDns": CloudFlareDns,
+    "ClouDns": ClouDns,
     "NameCheapDns": NameCheapDns,
     "PorkBunDns": PorkBunDns,
     "NameSiloDns": NameSiloDns,

@@ -587,7 +587,7 @@
       "index_9": "不可操作",
       "index_10": "URL 重写"
     },
-    "Lable": {
+    "Label": {
       "index_1": "域名",
       "index_2": "站点目录",
       "index_3": "运行目录",
@@ -673,7 +673,7 @@
       "index_6": "请选择 WP 版本",
       "index_7": "WordPress 后台用户不能为空",
       "index_8": "WordPress 后台密码不能为空",
-      "index_9": "电子邮件地址不能为空",
+      "index_9": "电子邮件不能为空",
       "index_10": "WordPress 表名前缀不能为空",
       "index_11": "登录 URL 不能为空",
       "index_12": "重定向 URL 不能为空",

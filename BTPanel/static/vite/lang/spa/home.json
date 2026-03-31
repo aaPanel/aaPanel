@@ -145,7 +145,19 @@
 			"index_23_2": "\"Instrucciones para Beta Testers\"",
 			"index_23_3": "{0} segundo (s) esperar a hacer clic",
 			"index_24": "Actualización de la versión beta de Linux",
-			"index_25": "Lea cuidadosamente las instrucciones para los evaluadores beta. ¿Seguro que actualizará a la versión beta de Linux?"
+			"index_25": "Lea cuidadosamente las instrucciones para los evaluadores beta. ¿Seguro que actualizará a la versión beta de Linux?",
+			"index_26": "Actualizando panel, por favor espere...",
+			"index_27": "Presione Ctrl+F5 para actualizar el caché o espere 5 segundos para la actualización automática.",
+			"index_28": "Panel de actualización",
+			"index_29": "La actualización corrige errores conocidos y agrega las funciones más recientes. Tus datos no se verán afectados",
+			"index_30": "A punto de actualizar a: ",
+			"index_31": "Hora de actualización: ",
+			"index_32": "La versión actual ya es la última.",
+			"index_33": "Cambiar registros",
+			"index_34": "Continuar actualizando",
+			"index_35": "Continuar arreglando",
+			"index_36": "Panel de reparación",
+			"index_37": "La reparación del panel resuelve varios problemas inesperados"
 		},
 		"Restart": {
 			"index_1": "Reiniciar servidor",
@@ -263,13 +275,15 @@
 			"index_90": "Escaneo",
 			"index_91": "Reparación de un solo clic",
 			"index_92": "Después del escaneo, todos los artículos de riesgo reparable se repararán automáticamente y se obtendrá el último informe de escaneo de seguridad",
-			"index_93": "Si [el endurecimiento del sistema] está instalado, cierre primero y luego realice una reparación de un solo clic",
+			"index_93": "Deshabilite [Reforzamiento del sistema] antes de usar la reparación con un clic.",
 			"index_94": "Reparación seleccionada",
 			"index_95": "Ignorar elementos de escaneo",
 			"index_96": "Detección de seguridad del servidor",
 			"index_97": "Exploración",
 			"index_98": "Artículo sin riesgos",
-			"index_99": "Esperando escanear"
+			"index_99": "Esperando escanear",
+			"ScanRules": "Reglas de escaneo",
+			"DefaultRuleTag": "[Por defecto]"
 		}
 	}
 }

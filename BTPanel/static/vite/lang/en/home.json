@@ -145,7 +145,19 @@
 			"index_23_2": "\"Instructions for Beta Testers\"",
 			"index_23_3": "{0} second(s) wait to click",
 			"index_24": "Update to Linux Beta version",
-			"index_25": "Please read Instructions for Beta Testers carefully. Are you sure to update to Linux Beta version?"
+			"index_25": "Please read Instructions for Beta Testers carefully. Are you sure to update to Linux Beta version?",
+			"index_26": "Updating panel, please wait...",
+			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
+			"index_28": "Upgrade Panel",
+			"index_29": "Upgrading fixes known bugs and adds the latest features. Your data will not be affected",
+			"index_30": "About to update to: ",
+			"index_31": "Update time: ",
+			"index_32": "Current version is already the latest",
+			"index_33": "Change Logs",
+			"index_34": "Continue upgrade",
+			"index_35": "Continue fix",
+			"index_36": "Fix panel",
+			"index_37": "Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "Restart server",
@@ -263,13 +275,15 @@
 			"index_90": "Stop Scan",
 			"index_91": "One-click repair",
 			"index_92": "After scanning, all repairable risk items will be automatically repaired and the latest security scan report will be obtained",
-			"index_93": "If [System Hardening] is installed, please close it first and then perform one-click repair",
+			"index_93": "Disable [System Hardening] before using One-click repair.",
 			"index_94": "Repair Selected",
 			"index_95": "Ignore Scan Items",
 			"index_96": "Server security detection",
 			"index_97": "Scanning",
 			"index_98": "Risk-free item",
-			"index_99": "Waiting for scanning"
+			"index_99": "Waiting for scanning",
+			"ScanRules": "Scan Rules",
+			"DefaultRuleTag": "[Default]"
 		}
 	}
 }

@@ -10,6 +10,7 @@
 import os, sys, json, time, datetime
 os.chdir("/www/server/panel")
 sys.path.append("class/")
+sys.path.append("class_v2/")
 import public
 from public.validate import Param
 
@@ -21,7 +22,7 @@ class panelWarning:
     _vuln_ignore = __path + '/ignore.json'
     _vuln_result = __path + '/result.json'
     __repair_count = __path + '/repair_count.json'
-    __vul_list = __path + '/high_risk_vul-9.json'  # 空i那么；皮的泡沫隔离
+    __vul_list = __path + '/high_risk_vul-9.json'  # 旧漏洞库
     __report = '/www/server/panel/data/warning_report'
     vul_num = 0
     discov_count = 0  # 扫描中发现的漏洞数
@@ -29,6 +30,7 @@ class panelWarning:
     yum_time = __path + '/yum_time.pl'
     new_vul_list = __path + '/vul_centos7.json'
     product_version = __path + '/product_version.json'
+    __repair_history = __path + '/repair_history.json'  # 修复历史记录
 
     def __init__(self):
         if not os.path.exists(self.__ignore):
@@ -49,8 +51,6 @@ class panelWarning:
             result = []
             public.WriteFile(self._vuln_result, json.dumps(result))
         self.new_system_result = []
-        # self.sys_version = self.get_sys_version()
-        # self.sys_product = self.new_get_sys_product()
 
     def _get_list(self):
         # 最终输出结果
@@ -81,11 +81,16 @@ class panelWarning:
         self.score = 100  # 扫描中分数变化
         sys_version = self.get_sys_version()  # 获取系统版本
         # self.compare_md5()  # 比较漏洞库版本
+        self.init_new_vul()  # 初始化漏洞库文件
+        # 若漏洞库超过90天，更新漏洞库
+        if self.is_file_too_old(self.new_vul_list, 90):
+            if os.path.exists(self.new_vul_list):
+                os.remove(self.new_vul_list)
         # 下载新版漏洞库文件
         if not self.download_new_vulns():
             sys_version = None
-        # centos_7走新版漏洞扫描
-        if sys_version == 'centos_7' or sys_version == 'centos_8' or sys_version == 'centos_8_stream':
+        # redhat系列走新版1接口漏洞扫描
+        if sys_version == 'centos_7' or sys_version == 'centos_8' or sys_version == 'centos_8_stream' or sys_version == 'alicloud_3' or sys_version == 'alicloud_2':
             self.new_system_scan()
         # ubuntu走新版2接口
         elif sys_version == 'ubuntu_20.04' or sys_version == 'ubuntu_22.04' or sys_version == 'ubuntu_18.04' or sys_version == 'debian_12' or sys_version == 'debian_11' or sys_version == 'debian_10':
@@ -94,33 +99,40 @@ class panelWarning:
         # else:
         #     self.system_scan()  # 旧版本系统漏洞扫描
 
+        # 加载分类配置，获取启用的分类
+        config = self.load_category_config()
+        enabled_categories = [k for k, v in config.items() if v.get('enabled', False)]
+        if not enabled_categories:
+            enabled_categories = ['bt_basic']
+
+        # 逐个加载子目录模块，然后合并
+        p_all = self.load_modules_from_categories(enabled_categories)
+
         # 加载安全风险模块
-        p = public.get_modules('class_v2/safe_warning_v2')
-        for m_name in p.__dict__.keys():
+        for m_name in p_all.__dict__.keys():
             ignore_file = self.__ignore + '/' + m_name + '.pl'
             # 忽略的检查项
-            if p[m_name]._level == 0: continue
-
+            if p_all.__dict__[m_name]._level == 0: continue
             m_info = {
-                'title': p[m_name]._title,
+                'title': p_all.__dict__[m_name]._title,
                 'm_name': m_name,
-                'ps': p[m_name]._ps,
-                'version': p[m_name]._version,
-                'level': p[m_name]._level,
-                'ignore': p[m_name]._ignore,
-                'date': p[m_name]._date,
-                'tips': p[m_name]._tips,
-                'help': p[m_name]._help
+                'ps': p_all.__dict__[m_name]._ps,
+                'version': p_all.__dict__[m_name]._version,
+                'level': p_all.__dict__[m_name]._level,
+                'ignore': p_all.__dict__[m_name]._ignore,
+                'date': p_all.__dict__[m_name]._date,
+                'tips': p_all.__dict__[m_name]._tips,
+                'help': p_all.__dict__[m_name]._help
             }
             try:
-                m_info['remind'] = p[m_name]._remind
+                m_info['remind'] = p_all.__dict__[m_name]._remind
             except:
                 pass
             result_file = self.__result + '/' + m_name + '.pl'
 
             try:
                 s_time = time.time()
-                m_info['status'], m_info['msg'] = p[m_name].check_run()
+                m_info['status'], m_info['msg'] = p_all.__dict__[m_name].check_run()
                 m_info['taking'] = round(time.time() - s_time, 6)
                 m_info['check_time'] = int(time.time())
                 public.writeFile(result_file, json.dumps(
@@ -146,7 +158,8 @@ class panelWarning:
                     if self.score < 0:
                         self.score = 0
 
-            bar = ("%.2f" % (float(bar_num) / float(len(p.__dict__.keys())) * 50 + 50))
+            total_checks = len(p_all.__dict__.keys())
+            bar = ("%.2f" % (float(bar_num) / float(total_checks) * 50 + 50))
             #  通过进度条限制，防止写文件频繁占用高
             if int(float(bar)) >= bar_limit:
                 context = {"status": "{}".format(m_info['title']), "percentage": int(float(bar)), "count": self.discov_count, "score": self.score}
@@ -156,22 +169,7 @@ class panelWarning:
             bar_num += 1
 
         # 新版漏洞检测无需读文件
-        # is_autofix被包含进tmp_data{}字典里，会动态增加
         self.data['is_autofix'] = is_autofix
-        # self.data['is_autofix'] += is_autofix
-
-        # if sys_version == 'centos_7' or sys_version == 'ubuntu_20.04' or sys_version == 'ubuntu_22.04' or sys_version == 'ubuntu_18.04' or sys_version == 'debian_12' or sys_version == 'debian_11' or sys_version == 'debian_10':
-        #     self.data['is_autofix'] += is_autofix
-        # 旧版本漏洞检测
-        # else:
-        #     vuln_result = self.get_vuln_result()
-        #     self.data['risk'] = self.data['risk'] + vuln_result['risk']
-        #     self.data['ignore'] = self.data['ignore'] + vuln_result['ignore']
-        #     vuln_is_autofix = []
-        #     for vr in vuln_result['risk']:
-        #         if not vr["reboot"]:
-        #             vuln_is_autofix.append(vr["cve_id"])
-        #     self.data['is_autofix'] = is_autofix + vuln_is_autofix
 
         score = 100
         for d in self.data['risk']:
@@ -184,6 +182,8 @@ class panelWarning:
         self.data['security'] = sorted(self.data['security'], key=lambda x: x['level'], reverse=True)
         self.data['ignore'] = sorted(self.data['ignore'], key=lambda x: x['level'], reverse=True)
         self.data['check_time'] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        # 新增：返回分类信息
+        self.data['categories'] = self.get_categories_list()
         # 将结果输出一份到报告目录下
         with open("/www/server/panel/data/warning_report/data.json", "w") as f:
             json.dump(self.data, f)
@@ -197,40 +197,17 @@ class panelWarning:
         '''
         根据系统版本确定漏洞库名
         '''
-        sys_version = self.get_sys_version()
-        zip_file = ""
-        if sys_version == "centos_7":
-            self.new_vul_list = self.__path + '/vul_centos7.json'
-            zip_file = "vul_centos7.zip"
-        elif sys_version == "centos_8":
-            self.new_vul_list = self.__path + '/vul_centos8.json'
-            zip_file = "vul_centos8.zip"
-        elif sys_version == "centos_8_stream":
-            self.new_vul_list = self.__path + '/vul_centos8stream.json'
-            zip_file = "vul_centos8stream.zip"
-        elif sys_version == "ubuntu_20.04":
-            self.new_vul_list = self.__path + '/vul_ubuntu2004.json'
-            zip_file = "vul_ubuntu2004.zip"
-        elif sys_version == "ubuntu_22.04":
-            self.new_vul_list = self.__path + '/vul_ubuntu2204.json'
-            zip_file = "vul_ubuntu2204.zip"
-        elif sys_version == "ubuntu_18.04":
-            self.new_vul_list = self.__path + '/vul_ubuntu1804.json'
-            zip_file = "vul_ubuntu1804.zip"
-        elif sys_version == "debian_12":
-            self.new_vul_list = self.__path + '/vul_debian12.json'
-            zip_file = "vul_debian12.zip"
-        elif sys_version == "debian_11":
-            self.new_vul_list = self.__path + '/vul_debian11.json'
-            zip_file = "vul_debian11.zip"
-        elif sys_version == "debian_10":
-            self.new_vul_list = self.__path + '/vul_debian10.json'
-            zip_file = "vul_debian10.zip"
+        # 生成压缩包名
+        try:
+            zip_file = os.path.basename(self.new_vul_list).replace(".json", ".zip")
+        except Exception as e:
+            # public.print_log("报错：{}".format(e))
+            return False
         # 检查漏洞库文件是否存在
         if not os.path.exists(self.new_vul_list):
             if zip_file != '':
                 downfile = self.__path+'/'+zip_file
-                public.downloadFile("/safe_warning/{}".format(public.get_url(),zip_file), downfile)
+                public.downloadFile("{}/safe_warning/{}".format(public.get_url(), zip_file), downfile)
                 o, e = public.ExecShell("unzip -o {} -d {}".format(downfile, self.__path))
                 # 解压报错
                 if e != "":
@@ -278,6 +255,37 @@ class panelWarning:
             "is_autofix": []
         }
         if not os.path.exists(result_file):
+            return public.return_message(0, 0, output)
+        result_body = public.ReadFile(result_file)
+        if not result_body:
+            return public.return_message(0, 0, output)
+        try:
+            output = json.loads(result_body)
+        except:
+            return public.return_message(0, 0, output)
+        # 给前端判断这次的扫描结果是否中断
+        if public.ReadFile(self.__path + '/kill.pl') == "True":
+            output["interrupt"] = True
+        else:
+            output["interrupt"] = False
+        return public.return_message(0,0,output)
+
+    def get_result(self, args):
+        '''
+            @name 获取当前首页风险检测结果
+            @return dict
+        '''
+        result_file = self.__path + '/resultresult.json'
+        output = {
+            "score": 100,
+            "check_time": public.format_date(),
+            "interrupt": False,
+            "security": [],
+            "risk": [],
+            "ignore": [],
+            "is_autofix": []
+        }
+        if not os.path.exists(result_file):
             return output
         result_body = public.ReadFile(result_file)
         if not result_body:
@@ -286,12 +294,8 @@ class panelWarning:
             output = json.loads(result_body)
         except:
             return output
-        # 给前端判断这次的扫描结果是否中断
-        if public.ReadFile(self.__path + '/kill.pl') == "True":
-            output["interrupt"] = True
-        else:
-            output["interrupt"] = False
-        return public.return_message(0,0,output)
+        return output
+
 
     def sync_rule(self):
         '''
@@ -404,6 +408,23 @@ class panelWarning:
             return public.return_message(0,0,res)
         except Exception as e:
             return public.return_message(-1,0,'Please perform a scan first!')
+
+    def set_ignore_list(self, args):
+        """
+        @name 批量设置指定项忽略状态
+        @author lwh<2024-02-22>
+        @param dict_obj{
+            m_name_list<list> 模块名称列表
+        }
+        @return dict
+        """
+        m_name_list = json.loads(args.m_name_list)
+        arg = public.dict_obj
+        for m_name in m_name_list:
+            arg.m_name = m_name
+            # public.print_log("忽略对象{}".format(m_name))
+            self.set_ignore(arg)
+        return public.returnMsg(True, 'Setup completed!')
 
     def check_find(self, args):
         '''
@@ -664,6 +685,10 @@ class panelWarning:
                 sys_version = "centos_8"
             elif "CentOS Stream release 8" in result:
                 sys_version = "centos_8_stream"
+            elif result.find("Alibaba Cloud Linux release 3") != -1:
+                sys_version = "alicloud_3"
+            elif result.find("Alibaba Cloud Linux (Aliyun Linux) release 2") != -1:
+                sys_version = "alicloud_2"
         elif os.path.exists("/etc/lsb-release"):
             if "Ubuntu 20.04" in public.ReadFile("/etc/lsb-release"):
                 sys_version = "ubuntu_20.04"
@@ -692,10 +717,10 @@ class panelWarning:
             public.WriteFile(self.product_version, json.dumps(sys_product))
 
         sys_version = self.get_sys_version()
-        if sys_version == "centos_7":
+        if sys_version == "centos_7" or sys_version == "alicloud_2":
             # 根据yum日志判断是否用软件包更新
             yumlog = "/var/log/yum.log"
-        elif sys_version == "centos_8" or sys_version == "centos_8_stream":
+        elif sys_version == "centos_8" or sys_version == "centos_8_stream" or sys_version == "alicloud_3":
             yumlog = "/var/log/dnf.log"
         else:
             yumlog = "/var/log/apt/history.log"
@@ -714,8 +739,8 @@ class panelWarning:
                     # 比较上一次记录的时间和这次获取的修改时间，相等则根据rpm文件的修改时间
                     if old_modi_time == new_modi_time:
                         if os.path.exists(self.product_version):
-                            # 若rpm文件修改日期大于七天，则还是执行rpm检测
-                            if self.is_file_too_old(self.product_version, 7):
+                            # 若rpm文件修改日期大于十四天，则还是执行rpm检测
+                            if self.is_file_too_old(self.product_version, 14):
                                 sys_product = self.get_sys_product()
                                 public.WriteFile(self.product_version, json.dumps(sys_product))
                             else:
@@ -731,7 +756,7 @@ class panelWarning:
             # 没有yum.log，则直接根据rpm文件修改日期
             else:
                 if os.path.exists(self.product_version):
-                    if self.is_file_too_old(self.product_version, 7):
+                    if self.is_file_too_old(self.product_version, 14):
                         sys_product = self.get_sys_product()
                         public.WriteFile(self.product_version, json.dumps(sys_product))
                     else:
@@ -758,6 +783,8 @@ class panelWarning:
         # if sys_version == 'None':return public.returnMsg(False, public.lang("当前系统暂不支持"))
         if "centos" in sys_version:
             result = public.ExecShell('rpm -qa --qf \'%{NAME};%{VERSION}-%{RELEASE}\\n\'')[0].strip().split('\n')
+        elif "alicloud" in sys_version:
+            result = public.ExecShell('rpm -qa --qf \'%{NAME};%{VERSION}-%{RELEASE}\\n\'')[0].strip().split('\n')
         elif "ubuntu" in sys_version:
             # result1 = subprocess.check_output(['dpkg-query', '-W', '-f=${Package};${Version}\n']).decode('utf-8').strip().split('\n')
             result = public.ExecShell('dpkg-query -W -f=\'${Package};${Version}\n\'')[0].strip().split('\n')
@@ -773,7 +800,7 @@ class panelWarning:
             except:
                 return None
         # product_version["kernel"] = subprocess.check_output(['uname', '-r']).decode('utf-8').strip().replace(".x86_64", "")
-        product_version["kernel"] = public.ExecShell('uname -r')[0].strip()
+        # product_version["kernel"] = public.ExecShell('uname -r')[0].strip()
         return product_version
 
     def get_vuln_result(self):
@@ -1006,8 +1033,18 @@ class panelWarning:
                 tmp["scan"].append({"date": last_date, "times": 0})
                 tmp["repair"].append({"date": last_date, "times": 0})
             public.WriteFile("/www/server/panel/data/warning_report/record.json", json.dumps(tmp))
-        with open("/www/server/panel/data/warning_report/record.json", "r") as f:
-            record = json.load(f)
+        try:
+            with open("/www/server/panel/data/warning_report/record.json", "r") as f:
+                record = json.load(f)
+        except (json.JSONDecodeError, ValueError):
+            # 文件损坏或为空，重新初始化
+            tmp = {"scan": [], "repair": []}
+            for i in range(6, -1, -1):
+                last_date = (date_obj - datetime.timedelta(days=i)).strftime("%Y/%m/%d")
+                tmp["scan"].append({"date": last_date, "times": 0})
+                tmp["repair"].append({"date": last_date, "times": 0})
+            public.WriteFile("/www/server/panel/data/warning_report/record.json", json.dumps(tmp))
+            record = tmp
         if record["scan"][weekday]["date"] == datetime.datetime.now().strftime("%Y/%m/%d"):
             record["scan"][weekday]["times"] += 1
         else:
@@ -1058,7 +1095,12 @@ class panelWarning:
         '''
         if not os.path.exists(self.__path + '/tmp_result.json'):
             return "err"
-        return public.return_message(0,0,json.loads(public.ReadFile(self.__path + '/tmp_result.json')))
+        try:
+            tmp_result = json.loads(public.ReadFile(self.__path + '/tmp_result.json'))
+        except Exception as e:
+            # public.print_log("首页获取中断结果报错：{}".format(e))
+            return {"security": [], "risk": [], "ignore": [], "interrupt": True, "is_autofix": [], "score": 100, "check_time": ""}
+        return tmp_result
 
     def new_system_scan2(self):
         '''
@@ -1066,6 +1108,10 @@ class panelWarning:
         '''
         if not os.path.exists(self.new_vul_list):
             return
+        # 初始化进度条
+        context = {"status": "The system software is currently being checked.", "percentage": 0, "count": 0, "score": 100}
+        public.WriteFile(self.__path + '/bar.txt', json.dumps(context))
+
         # 加载漏洞库文件
         try:
             vul_json = json.loads(public.ReadFile(self.new_vul_list))
@@ -1106,50 +1152,57 @@ class panelWarning:
 
         # 为了兼容旧版本再次做处理
         for sr in systemscan_result.values():
-            one_risk = {}
-            one_risk["title"] = "【{}】Linux系统安全漏洞编号".format(sr["ref_id"])
-            one_risk["data"] = "2023-12-08"
-            one_risk["help"] = ""
-            one_risk["ignore"] = False
-            level = self.new_severity_to_num(sr["severity"])
-            one_risk["level"] = level
-            one_risk["m_name"] = sr["ref_id"]
-            pk_list = []
-            # 判断是否有内核漏洞在里面
-            is_kernel = False
-            soft_list = []
-            for impact in sr["impact"]:
-                if impact["package"].startswith("kernel"):
-                    is_kernel = True
-                    continue
-                soft_list.append("{} Versions below {}".format(impact["package"]+"-"+impact["version"], impact["vul_ver"]))
-                pk_list.append(impact["package"])
-            if is_kernel:
-                continue
-            one_risk["msg"] = "Security vulnerabilities are found in the following system software：<br>{}<br>Vulnerabilities involved：{}<br>Please refer to the official announcement for details：{}".format('<br>'.join(soft_list), '、'.join(sr["cve"]),sr["ref_url"])
-            one_risk["ps"] = "【{}】Linux system vulnerability security vulnerability number".format(sr["ref_id"])
-            one_risk["remind"] = "Fixing vulnerabilities has certain risks, so it is recommended to take a good system snapshot to prevent system operation from being affected."
-            one_risk["status"] = False
-            one_risk["taking"] = 0.000001
-            one_risk["tips"] = ["Update the software to a safe version according to the risk description", "Or click [One-click Repair] to solve all security issues"]
-            one_risk["version"] = 1
-            one_risk["type"] = "vulnerability"
-            one_risk["package"] = pk_list
+            try:
+                one_risk = {}
+                one_risk["title"] = "【{}】Linux system security vulnerability number".format(sr["ref_id"])
+                one_risk["date"] = "2023-12-08"
+                one_risk["help"] = ""
+                one_risk["ignore"] = False
+                level = self.new_severity_to_num(sr["severity"])
+                one_risk["level"] = level
+                one_risk["m_name"] = sr["ref_id"]
+                pk_list = []
+                # 判断是否有内核漏洞在里面
+                # is_kernel = False
+                soft_list = []
+                for impact in sr["impact"]:
+                    soft_list.append(
+                        "{} Version lower than {}".format(impact["package"] + "-" + impact["version"], impact["vul_ver"]))
+                    pk_list.append(impact["package"])
+                one_risk["msg"] = "Security vulnerabilities are found in the following system software：<br>{}<br>Vulnerabilities involved：{}<br>Please refer to the official announcement for details：{}".format('<br>'.join(soft_list), '、'.join(sr["cve"]),sr["ref_url"])
+                one_risk["ps"] = "【{}】Linux system vulnerability security vulnerability number".format(sr["ref_id"])
+                one_risk["remind"] = "Fixing vulnerabilities has certain risks, so it is recommended to take a good system snapshot to prevent system operation from being affected."
+                one_risk["status"] = False
+                one_risk["taking"] = 0.000001
+                one_risk["tips"] = ["Update the software to a safe version according to the risk description", "Or click [One-click Repair] to solve all security issues"]
+                one_risk["version"] = 1
+                one_risk["type"] = "vulnerability"
+                one_risk["package"] = pk_list
 
-            # 存储结果
-            self.data["risk"].append(one_risk)
-            self.data["is_autofix"].append(one_risk["m_name"])
+                # 存储结果
+                # 是否被忽略
+                ignore_file = self.__ignore + '/' + sr["ref_id"] + '.pl'
+                if os.path.exists(ignore_file):
+                    one_risk["ignore"] = True
+                    self.data["ignore"].append(one_risk)
+                    # 扫描中的动态风险
+                    self.tmp_data['ignore'].append(one_risk)
+                else:
+                    self.data["risk"].append(one_risk)
+                    # 扫描中的动态风险
+                    self.tmp_data['risk'].append(one_risk)
+                # 扫描中发现的漏洞数
+                self.discov_count += 1
+                # 扫描中的动态分数
+                self.score -= level
+                if self.score < 0:
+                    self.score = 0
 
-            # 扫描中发现的漏洞数
-            self.discov_count += 1
-            # 扫描中的动态分数
-            self.score -= level
-            if self.score < 0:
-                self.score = 0
-            # 扫描中的动态风险
-            self.tmp_data['risk'].append(one_risk)
+                self.data["is_autofix"].append(one_risk["m_name"])
             # 可修复项
-            self.tmp_data['is_autofix'].append(one_risk["m_name"])
+                self.tmp_data['is_autofix'].append(one_risk["m_name"])
+            except:
+                continue
 
     def new_system_scan(self):
         '''
@@ -1201,101 +1254,62 @@ class panelWarning:
 
         # 为了兼容旧版本再次做处理
         for sr in systemscan_result.values():
-            one_risk = {}
-            one_risk["title"] = "【{}】Linux system vulnerability security notice".format(sr["ref_id"])
-            one_risk["data"] = "2023-12-08"
-            one_risk["help"] = ""
-            one_risk["ignore"] = False
-            level = self.new_severity_to_num(sr["severity"])
-            one_risk["level"] = level
-            one_risk["m_name"] = sr["ref_id"]
-            pk_list = []
-            # 判断是否有内核漏洞在里面
-            is_kernel = False
-            soft_list = []
-            for impact in sr["impact"]:
-                if impact["package"].startswith("kernel"):
-                    is_kernel = True
+            try:
+                one_risk = {}
+                one_risk["title"] = "【{}】Linux System Vulnerability Security Notice".format(sr["ref_id"])
+                one_risk["date"] = "2023-12-08"
+                one_risk["help"] = ""
+                one_risk["ignore"] = False
+                level = self.new_severity_to_num(sr["severity"])
+                one_risk["level"] = level
+                one_risk["m_name"] = sr["ref_id"]
+                pk_list = []
+                # 判断是否有内核漏洞在里面
+                is_kernel = False
+                soft_list = []
+                for impact in sr["impact"]:
+                    if impact["package"].startswith("kernel"):
+                        is_kernel = True
+                        continue
+                    soft_list.append(
+                            "{} version lower than {}".format(impact["package"] + "-" + impact["version"], impact["vul_ver"]))
+                    pk_list.append(impact["package"])
+                if is_kernel:
                     continue
-                soft_list.append("{} Versions below {}".format(impact["package"]+"-"+impact["version"], impact["vul_ver"]))
-                pk_list.append(impact["package"])
-            if is_kernel:
+                one_risk["msg"] = "The following system software has been found to have security vulnerabilities:<br>{}<br>Involved vulnerabilities: {}<br>Vulnerability description: {}<br>For details, please refer to the official announcement: {}".format(
+                    '<br>'.join(soft_list), '、'.join(sr["cve"]), sr["description"][:280]+'......', sr["ref_url"])
+                one_risk["ps"] = "[{}] Linux System Vulnerability Security Notice".format(sr["ref_id"])
+                one_risk["remind"] = "Fixing the vulnerabilities involves certain risks. It is recommended to take a system snapshot to prevent any impact on the system operation."
+                one_risk["status"] = False
+                one_risk["taking"] = 0.000001
+                one_risk["tips"] = ['According to the risk description, update the software to the secure version, or click on "One-click Repair" to solve all security issues.']
+                one_risk["version"] = 1
+                one_risk["type"] = "vulnerability"
+                one_risk["package"] = pk_list
+
+                # 存储结果
+                # 是否被忽略
+                ignore_file = self.__ignore + '/' + sr["ref_id"] + '.pl'
+                if os.path.exists(ignore_file):
+                    one_risk["ignore"] = True
+                    self.data["ignore"].append(one_risk)
+                    self.tmp_data['ignore'].append(one_risk)
+                else:
+                    self.data["risk"].append(one_risk)
+                    # 扫描中的动态风险
+                    self.tmp_data['risk'].append(one_risk)
+                    # 扫描中发现的漏洞数
+                    self.discov_count += 1
+                    # 扫描中的动态分数
+                    self.score -= level
+                    if self.score < 0:
+                        self.score = 0
+
+                self.data["is_autofix"].append(one_risk["m_name"])
+                # 临时结果
+                self.tmp_data['is_autofix'].append(one_risk["m_name"])
+            except:
                 continue
-            one_risk["msg"] = "The following system software was found to have security vulnerabilities：<br>{}<br>Vulnerabilities involved：{}<br>Refer to the official announcement for details：{}".format('<br>'.join(soft_list), '、'.join(sr["cve"]),sr["ref_url"])
-            one_risk["ps"] = "【{}】Linux system vulnerability security notice".format(sr["ref_id"])
-            one_risk["remind"] = "Fixing vulnerabilities has certain risks, so it is recommended to take a good system snapshot to prevent system operation from being affected."
-            one_risk["status"] = False
-            one_risk["taking"] = 0.000001
-            one_risk["tips"] = ["Update the software to a safe version according to the risk description", "Or click [One-click Repair] to solve all security issues"]
-            one_risk["version"] = 1
-            one_risk["type"] = "vulnerability"
-            one_risk["package"] = pk_list
-
-            # 存储结果
-            self.data["risk"].append(one_risk)
-            self.data["is_autofix"].append(one_risk["m_name"])
-
-            # 扫描中发现的漏洞数
-            self.discov_count += 1
-            # 扫描中的动态分数
-            self.score -= level
-            if self.score < 0:
-                self.score = 0
-            # 扫描中的动态风险
-            self.tmp_data['risk'].append(one_risk)
-            # 可修复项
-            self.tmp_data['is_autofix'].append(one_risk["m_name"])
-
-        # result_json = {
-        #     "vul_count": len(detail),
-        #     "risk": [],
-        #     "ignore": [],
-        #     "all_check_time": "",
-        #     "ignore_count": 0,
-        #     "msg": "",
-        #     "repair_count": {"all_count": 0, "today_vount": 0},
-        # }
-        # for sr in systemscan_result.values():
-        #     one_risk = {
-        #         "cve_id": "",
-        #         "vuln_name": "",
-        #         "vuln_time": "2021-12-16",
-        #         "vuln_solution": "",
-        #         "level": 1,
-        #         "soft_name": {},
-        #         "vuln_version": "",
-        #         "check_time": 1701910962,
-        #         "reboot": ""
-        #     }
-        #     one_risk["cve_id"] = sr["ref_id"]
-        #     one_risk["vuln_name"] = "【{}】Linux软件安全公告".format(sr["ref_id"])
-        #     one_risk["vuln_solution"] = "更新涉及软件补丁，具体信息参考官方公告{}".format(sr["ref_url"])
-        #     level = self.new_severity_to_num(sr["severity"])
-        #     one_risk["level"] = level
-        #     # 处理受影响的软件包（为了兼容旧版本暂时这样）
-        #     soft_name = {}
-        #     vuln_version = ""
-        #     for impact in sr["impact"]:
-        #         soft_name[impact["package"]] = impact["version"]
-        #         vuln_version = impact["vul_ver"]
-        #     one_risk["soft_name"] = soft_name
-        #     one_risk["vuln_version"] = vuln_version
-        #     risk_list.append(one_risk)
-        #
-        #     # 扫描中发现的漏洞数
-        #     self.discov_count += 1
-        #     # 扫描中的动态分数
-        #     self.score -= level
-        #     if self.score < 0:
-        #         self.score = 0
-        #     # 扫描中的动态风险
-        #     self.tmp_data['risk'].append(one_risk)
-        #     # 可修复项
-        #     self.tmp_data['is_autofix'].append(one_risk["cve_id"])
-        #
-        # result_json["risk"] = risk_list
-        # public.WriteFile(self.__path + '/system_scan_time', int(time.time()))
-        # public.WriteFile(self._vuln_result, json.dumps(result_json))
 
     def is_file_too_old(self, file_path, days):
         """
@@ -1304,12 +1318,15 @@ class panelWarning:
         :param days: 超过的天数
         :return: bool
         """
-        mtime = os.path.getmtime(file_path)
-        # 不存在直接返回True
-        if mtime is None:
+        try:
+            mtime = os.path.getmtime(file_path)
+            # 不存在直接返回True
+            if mtime is None:
+                return True
+            mod_time = datetime.datetime.fromtimestamp(mtime)
+            days_old = datetime.datetime.now() - mod_time
+        except:
             return True
-        mod_time = datetime.datetime.fromtimestamp(mtime)
-        days_old = datetime.datetime.now() - mod_time
         return days_old.days > days
 
     def adjust_ver(self, ver_a, ver_b):
@@ -1349,19 +1366,194 @@ class panelWarning:
         else:
             return 2
 
-    # def new_rpmvercmp(self, sys_ver, vul_ver):
-    #     output, err = public.ExecShell("rpmdev-vercmp {} {}".format(sys_ver, vul_ver))
-    #     if err != '':
-    #         return 1
-    #     output = output.strip()
-    #     if output == "{} > {}".format(sys_ver, vul_ver):
-    #         return 1
-    #     elif output == "{} == {}".format(sys_ver, vul_ver):
-    #         return 0
-    #     elif output == "{} < {}".format(sys_ver, vul_ver):
-    #         return -1
-    #     else:
-    #         return 1
+    def get_repair_logs(self, get):
+        """
+        @name 获取修复历史记录
+        @param get.p string 页码
+        @param get.tojs
+        @return page string 前端页码
+        @return data list 数据
+        """
+        data = {}
+        # count = 0
+        data['data'] = []
+
+        if os.path.exists(self.__repair_history):
+            try:
+                history = json.loads(public.ReadFile(self.__repair_history))
+            except:
+                history = []
+            data['data'] = history
+        return data
+
+    def init_new_vul(self):
+        """
+        @name 初始化漏洞库名
+        @author lwh<2024-03-02>
+        """
+        sys_version = self.get_sys_version()
+        if sys_version == "centos_7":
+            self.new_vul_list = self.__path + '/vul_centos7.json'
+        elif sys_version == "centos_8":
+            self.new_vul_list = self.__path + '/vul_centos8.json'
+        elif sys_version == "centos_8_stream":
+            self.new_vul_list = self.__path + '/vul_centos8stream.json'
+        elif sys_version == "alicloud_3":
+            self.new_vul_list = self.__path + '/vul_alicloud3.json'
+        elif sys_version == "alicloud_2":
+            self.new_vul_list = self.__path + '/vul_alicloud2.json'
+        elif sys_version == "ubuntu_20.04":
+            self.new_vul_list = self.__path + '/vul_ubuntu2004.json'
+        elif sys_version == "ubuntu_22.04":
+            self.new_vul_list = self.__path + '/vul_ubuntu2204.json'
+        elif sys_version == "ubuntu_18.04":
+            self.new_vul_list = self.__path + '/vul_ubuntu1804.json'
+        elif sys_version == "debian_12":
+            self.new_vul_list = self.__path + '/vul_debian12.json'
+        elif sys_version == "debian_11":
+            self.new_vul_list = self.__path + '/vul_debian11.json'
+        elif sys_version == "debian_10":
+            self.new_vul_list = self.__path + '/vul_debian10.json'
+
+    def get_warning_rules(self, get=None):
+        data = self.load_category_config()
+        res = []
+        for k, v in data.items():
+            res.append({
+                'name_id': k,
+                'name': v['name'],
+                'enabled': v['enabled']
+            })
+        return public.return_message(0,0, res)
+
+    def load_category_config(self):
+        """
+        加载分类配置
+        @return dict
+        """
+        config_file = '/www/server/panel/config/safe_categories.json'
+        try:
+            with open(config_file, 'r') as f:
+                return json.load(f)
+        except:
+            return self.get_default_category_config()
+
+    def get_default_category_config(self):
+        """
+        获取默认分类配置（配置文件不存在时使用）
+        @return dict
+        """
+        return {
+            "bt_basic": {
+                "name": "aaPanel Security Audit",
+                "enabled": True
+            },
+            "international": {
+                "name": "International Baseline Audit",
+                "enabled": False
+            },
+            "nginx": {
+                "name": "Nginx Baseline Audit",
+                "enabled": False
+            }
+        }
+
+    def load_modules_from_categories(self, categories):
+        """
+        从多个分类目录加载模块，合并返回
+        @param categories list 启用的分类列表
+        @return object 合并后的模块对象
+        """
+        base_dir = '/www/server/panel/class_v2/safe_warning_v2'
+
+        # 创建一个空的模块对象用于合并
+        class MergedModules:
+            def __init__(self):
+                self.__dict__ = {}
+
+        merged = MergedModules()
+        for cat in categories:
+            cat_dir = os.path.join(base_dir, cat)
+
+            if not os.path.exists(cat_dir):
+                continue
+            # 加载该分类目录下的模块
+
+            cat_modules = public.get_modules(f'/www/server/panel/class_v2/safe_warning_v2/{cat}')
+
+            # 合并到总模块中，只复制真正的检测项模块（具有_level属性的模块）
+            for m_name in cat_modules.__dict__.keys():
+                # 跳过特殊属性（以__开头）
+                if m_name.startswith('__'):
+                    continue
+                # 只复制具有检测项特征的模块（有_level属性）
+                m_obj = cat_modules[m_name]
+                if hasattr(m_obj, '_level'):
+                    merged.__dict__[m_name] = m_obj
+        return merged
+
+    def get_categories_list(self):
+        """
+        获取分类列表（供扫描结果返回）
+        @return list
+        """
+        config = self.load_category_config()
+        result = []
+        base_dir = '/www/server/panel/class_v2/safe_warning_v2'
+
+        for cat_id, cat_config in config.items():
+            cat_dir = os.path.join(base_dir, cat_id)
+            count = 0
+            if os.path.exists(cat_dir):
+                count = len([f for f in os.listdir(cat_dir) if f.endswith('.py')])
+
+            result.append({
+                'name_id': cat_id,
+                'name': cat_config['name'],
+                'enabled': cat_config.get('enabled', False),
+                'count': count
+            })
+
+        return result
+
+    def set_scan_categories(self, args):
+        """
+        设置扫描分类
+        @author lwh<2024-02-05>
+        @param dict_obj{
+            categories<list> 要启用的分类列表，字符串形式传入如"["bt_basic","international"]"
+        }
+        @return dict
+        """
+        config = self.load_category_config()
+
+        # 解析分类列表
+        try:
+            if isinstance(args.categories, str):
+                # 如果是字符串，用 json.loads 解析
+                categories = json.loads(args.categories)
+            else:
+                # 如果已经是列表对象，直接使用
+                categories = args.categories
+        except Exception as e:
+            categories = None
+
+        # 不传参数或传空数组
+        if categories is None or (isinstance(categories, list) and len(categories) == 0):
+            return public.return_message(0,0, 'Maintain the current configuration')
+
+        # 先全部禁用，再启用指定的
+        for cat in config:
+            config[cat]['enabled'] = cat in categories
+
+        # 如果全部禁用，默认启用bt_basic
+        has_enabled = any(v.get('enabled', False) for v in config.values())
+        if not has_enabled:
+            config['bt_basic']['enabled'] = True
+
+        # 保存配置
+        public.WriteFile('/www/server/panel/config/safe_categories.json', json.dumps(config))
+        return public.return_message(0,0,'Setup completed')
 
 
 class Dpkg:
@@ -1520,199 +1712,3 @@ if __name__ == "__main__":
     # panel.new_system_scan()
     public.WriteFile('/www/server/panel/data/warning/resultresult.json', json.dumps(panel._get_list()))
     # et = time.time()
-
-
-
-
-
-
-# #coding: utf-8
-# # +-------------------------------------------------------------------
-# # | aaPanel
-# # +-------------------------------------------------------------------
-# # | Copyright (c) 2015-2099 aaPanel(www.aapanel.com) All rights reserved.
-# # +-------------------------------------------------------------------
-# # | Author: hwliang <2020-08-04>
-# # +-------------------------------------------------------------------
-#
-# import os,sys,json,time,public
-#
-# class panelWarning:
-#     __path = '/www/server/panel/data/warning'
-#     __ignore = __path + '/ignore'
-#     __result = __path + '/result'
-#     __risk = __path + '/risk'
-#     def __init__(self):
-#         if not os.path.exists(self.__ignore):
-#             os.makedirs(self.__ignore,384)
-#         if not os.path.exists(self.__result):
-#             os.makedirs(self.__result,384)
-#         if not os.path.exists(self.__risk):
-#             os.makedirs(self.__risk, 384)
-#
-#     def get_list(self,args):
-#         p = public.get_modules('class/safe_warning')
-#         data = {
-#             'security':[],
-#             'risk':[],
-#             'ignore':[]
-#         }
-#
-#         for m_name in p.__dict__.keys():
-#             ignore_file = self.__ignore + '/' + m_name + '.pl'
-#             # 忽略的检查项
-#             if p[m_name]._level == 0: continue
-#
-#             m_info = {
-#                 'title': p[m_name]._title,
-#                 'm_name': m_name,
-#                 'ps': p[m_name]._ps,
-#                 'version': p[m_name]._version,
-#                 'level': p[m_name]._level,
-#                 'ignore': p[m_name]._ignore,
-#                 'date': p[m_name]._date,
-#                 'tips': p[m_name]._tips,
-#                 'help': p[m_name]._help
-#             }
-#             result_file = self.__result + '/' + m_name + '.pl'
-#
-#             try:
-#                 s_time = time.time()
-#                 m_info['status'],m_info['msg'] = p[m_name].check_run()
-#                 m_info['taking'] = round(time.time() - s_time,6)
-#                 m_info['check_time'] = int(time.time())
-#                 public.writeFile(result_file,json.dumps([m_info['status'],m_info['msg'],m_info['check_time'],m_info['taking']],))
-#             except:
-#                 continue
-#
-#             m_info['ignore'] = os.path.exists(ignore_file)
-#             if m_info['ignore']:
-#                 data['ignore'].append(m_info)
-#             else:
-#                 if m_info['status']:
-#                     data['security'].append(m_info)
-#                 else:
-#                     risk_file = self.__risk + '/' + m_name + '.pl'
-#                     public.writeFile(risk_file, json.dumps(m_info))
-#                     data['risk'].append(m_info)
-#
-#         data['risk'] = sorted(data['risk'],key=lambda x: x['level'],reverse=True)
-#         data['security'] = sorted(data['security'],key=lambda x: x['level'],reverse=True)
-#         data['ignore'] = sorted(data['ignore'],key=lambda x: x['level'],reverse=True)
-#         # 获取支持一键修复的列表
-#         try:
-#             is_autofix = public.read_config("safe_autofix")
-#         except:
-#             is_autofix = []
-#         data['is_autofix'] = is_autofix
-#         return data
-#
-#
-#     def sync_rule(self):
-#         '''
-#             @name 从云端同步规则
-#             @author hwliang<2020-08-05>
-#             @return void
-#         '''
-#         # try:
-#         #     dep_path = '/www/server/panel/class/safe_warning'
-#         #     local_version_file = self.__path + '/version.pl'
-#         #     last_sync_time = local_version_file = self.__path + '/last_sync.pl'
-#         #     if os.path.exists(dep_path):
-#         #         if os.path.exists(last_sync_time):
-#         #             if int(public.readFile(last_sync_time)) > time.time():
-#         #                 return
-#         #     else:
-#         #         if os.path.exists(local_version_file): os.remove(local_version_file)
-#
-#         #     download_url = public.get_url()
-#         #     version_url = download_url + '/install/warning/version.txt'
-#         #     cloud_version = public.httpGet(version_url)
-#         #     if cloud_version: cloud_version = cloud_version.strip()
-#
-#         #     local_version = public.readFile(local_version_file)
-#         #     if local_version:
-#         #         if cloud_version == local_version:
-#         #             return
-#
-#         #     tmp_file = '/tmp/bt_safe_warning.zip'
-#         #     public.ExecShell('wget -O {} {} -T 5'.format(tmp_file,download_url + '/install/warning/safe_warning.zip'))
-#         #     if not os.path.exists(tmp_file):
-#         #         return
-#
-#         #     if os.path.getsize(tmp_file) < 2129:
-#         #         os.remove(tmp_file)
-#         #         return
-#
-#         #     if not os.path.exists(dep_path):
-#         #         os.makedirs(dep_path,384)
-#         #     public.ExecShell("unzip -o {} -d {}/ >/dev/null".format(tmp_file,dep_path))
-#         #     public.writeFile(local_version_file,cloud_version)
-#         #     public.writeFile(last_sync_time,str(int(time.time() + 7200)))
-#         #     if os.path.exists(tmp_file): os.remove(tmp_file)
-#         #     public.ExecShell("chmod -R 600 {}".format(dep_path))
-#         # except:
-#         #     pass
-#
-#
-#
-#     def set_ignore(self,args):
-#         '''
-#             @name 设置指定项忽略状态
-#             @author hwliang<2020-08-04>
-#             @param dict_obj {
-#                 m_name<string> 模块名称
-#             }
-#             @return dict
-#         '''
-#         m_name = args.m_name.strip()
-#         ignore_file = self.__ignore + '/' + m_name + '.pl'
-#         if os.path.exists(ignore_file):
-#             os.remove(ignore_file)
-#         else:
-#             public.writeFile(ignore_file,'1')
-#         return public.returnMsg(True, public.lang("Successfully set!"))
-#
-#     def check_find(self, args):
-#         '''
-#             @name 检测指定项
-#             @author hwliang<2020-08-04>
-#             @param dict_obj {
-#                 m_name<string> 模块名称
-#             }
-#             @return dict
-#         '''
-#         try:
-#             m_name = args.m_name.strip()
-#             p = public.get_modules('class/safe_warning')
-#             m_info = {
-#                 'title': p[m_name]._title,
-#                 'm_name': m_name,
-#                 'ps': p[m_name]._ps,
-#                 'version': p[m_name]._version,
-#                 'level': p[m_name]._level,
-#                 'ignore': p[m_name]._ignore,
-#                 'date': p[m_name]._date,
-#                 'tips': p[m_name]._tips,
-#                 'help': p[m_name]._help
-#             }
-#
-#             # 解决已经在忽略列表中，但是如果仍然需要检查的话可以检查
-#             ignore_file = self.__ignore + '/' + m_name + '.pl'
-#             if os.path.exists(ignore_file):
-#                 from cachelib import SimpleCache
-#                 cache = SimpleCache(5000)
-#                 ikey = 'warning_list'
-#                 cache.delete(ikey)
-#                 os.remove(ignore_file)
-#
-#             result_file = self.__result + '/' + m_name + '.pl'
-#             s_time = time.time()
-#             m_info['status'], m_info['msg'] = p[m_name].check_run()
-#             m_info['taking'] = round(time.time() - s_time, 4)
-#             m_info['check_time'] = int(time.time())
-#             public.writeFile(result_file, json.dumps(
-#                 [m_info['status'], m_info['msg'], m_info['check_time'], m_info['taking']]))
-#             return public.returnMsg(True, public.lang("Retested"))
-#         except:
-#             return public.returnMsg(False, public.lang("Detection failed"))

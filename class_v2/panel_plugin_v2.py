@@ -3374,8 +3374,7 @@ class panelPlugin:
                     return json.loads(download_res.text).json()
                 except:
                     if download_res.text.find('<html>') != -1:
-                        raise public.PanelError(
-                            public.error_conn_cloud(download_res.text))
+                        raise public.PanelError(public.error_conn_cloud(download_res.text))
                     raise public.PanelError(download_res.text)
 
             res_down_size = 0

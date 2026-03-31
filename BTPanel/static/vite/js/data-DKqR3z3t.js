@@ -1,0 +1,1 @@
+import{t as e}from"./naive-ui-BjvXgNtF.js?v=1774508183068";const a=t=>t.split(" ").map(r=>r.charAt(0).toUpperCase()+r.slice(1).toLowerCase()).join(" "),i=t=>{try{return JSON.parse(t),!0}catch(r){return!1}},c=t=>Number.isNaN(e(t))?0:e(t);export{a as c,c as g,i};

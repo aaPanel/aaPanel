@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "批量刪除",
-			"ChooseDel": "請選擇刪除"
+			"ChooseDel": "請選擇刪除",
+			"ConfirmWithDesc": "{0}，是否繼續操作？"
 		},
 		"Confirm": {
 			"Title": "提示",

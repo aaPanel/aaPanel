@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Suppression par lots",
-			"ChooseDel": "Veuillez choisir Del"
+			"ChooseDel": "Veuillez choisir Del",
+			"ConfirmWithDesc": "{0}, continue operation?"
 		},
 		"Confirm": {
 			"Title": "Conseils",

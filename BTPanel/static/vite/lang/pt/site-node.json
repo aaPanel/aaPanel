@@ -81,6 +81,10 @@
 		"index_79": "Endereço local",
 		"index_80": "Desativar mapeamento!, deseja continuar?",
 		"index_81": "Ativar mapeamento!, deseja continuar?",
-		"index_82": "O formato do nome de domínio vinculado está incorreto"
+		"index_82": "O formato do nome de domínio vinculado está incorreto",
+		"index_83": "After starting selected projects in batches, the projects will be accessible",
+		"index_84": "After stopping selected projects in batches, the projects will stop running",
+		"index_85": "After restarting selected projects in batches, the projects will be restarted",
+		"index_86": "Batch operating, please wait..."
 	}
 }

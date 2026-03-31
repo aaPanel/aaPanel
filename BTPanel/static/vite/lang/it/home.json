@@ -142,7 +142,19 @@
 			"index_23_2": "\"Istruzioni per i beta tester\"",
 			"index_23_3": "{0} secondi (s) Attendi per fare clic",
 			"index_24": "Aggiornamento alla versione beta di Linux",
-			"index_25": "Si prega di leggere attentamente le istruzioni per i beta tester. Sei sicuro di aggiornare alla versione beta di Linux?"
+			"index_25": "Si prega di leggere attentamente le istruzioni per i beta tester. Sei sicuro di aggiornare alla versione beta di Linux?",
+			"index_26": "Updating panel, please wait...",
+			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
+			"index_28": "Upgrade Panel",
+			"index_29": "New version found. Continue repairing panel can fix various abnormal issues encountered during use",
+			"index_30": "About to update to: ",
+			"index_31": "Update time: ",
+			"index_32": "Current version is already the latest",
+			"index_33": "Change Logs",
+			"index_34": "Continue upgrade",
+			"index_35": "Continue fix",
+			"index_36": "Fix panel",
+			"index_37": "New version available. Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "RIAVVIA SERVER",
@@ -266,7 +278,9 @@
 			"index_96": "Rilevamento della sicurezza del server",
 			"index_97": "Scansione",
 			"index_98": "Articolo privo di rischio",
-			"index_99": "In attesa di scansione"
+			"index_99": "In attesa di scansione",
+			"ScanRules": "Scan Rules",
+			"DefaultRuleTag": "[Default]"
 		},
 		"systemRestartReminder": "System Restart Reminder",
 		"serverRestartedAt": "Your server restarted at {time}.",

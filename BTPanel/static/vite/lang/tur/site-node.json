@@ -81,6 +81,10 @@
 		"index_79": "Yerel adres",
 		"index_80": "Yönlendirmeyi devre dışı bırakmak istediğinizden emin misiniz?",
 		"index_81": "Yönlendirmeyi etkinleştirmek istediğinizden emin misiniz?",
-		"index_82": "Bağlanan alan adının formatı yanlış"
+		"index_82": "Bağlanan alan adının formatı yanlış",
+		"index_83": "After starting selected projects in batches, the projects will be accessible",
+		"index_84": "After stopping selected projects in batches, the projects will stop running",
+		"index_85": "After restarting selected projects in batches, the projects will be restarted",
+		"index_86": "Batch operating, please wait..."
 	}
 }

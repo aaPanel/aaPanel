@@ -31,6 +31,7 @@ __all__ = [
     "CloudFlareDns",
     "PorkBunDns",
     "GodaddyDns",
+    "ClouDns",
 ]
 
 
@@ -129,7 +130,7 @@ class aaPanelDns(BaseDns):
         "priority": "priority"
     }
 
-    def __init__(self, api_user: str = None, api_key: str = None, **kwargs):
+    def __init__(self, api_user: str = None, api_key: str = None, **kwargs):  # noqa
         super().__init__()
         self.api_user = api_user
         self.api_key = api_key
@@ -596,7 +597,7 @@ class CloudFlareDns(BaseDns):
         self.time_out = 65  # seconds
 
     def _get_auth_headers(self) -> dict:
-        if self.limit is True:
+        if self.limit:
             return {"Authorization": "Bearer " + self.api_key}
         else:  # api limit False, is global permissions
             return {"X-Auth-Email": self.api_user, "X-Auth-Key": self.api_key}
@@ -1241,7 +1242,7 @@ class GodaddyDns(BaseDns):
         "priority": "priority"
     }
 
-    def __init__(self, api_user, api_key, **kwargs):
+    def __init__(self, api_user, api_key, **kwargs):  # noqa
         super().__init__()
         self.api_user = api_user  # secret key
         self.api_key = api_key
@@ -1298,7 +1299,7 @@ class GodaddyDns(BaseDns):
                     "DNRA"
                 ],
                 "agreedBy": "bt-dev3",
-                "agreedAt": datetime.utcnow().isoformat() + "Z"
+                "agreedAt": datetime.utcnow().isoformat() + "Z"  # noqa
             },
             "period": 1,
             "renewAuto": False,
@@ -1350,7 +1351,7 @@ class GodaddyDns(BaseDns):
 
                 last_domain = res[-1]["domain"]
                 endpoint = f"/v1/domains?limit={limit}&marker={last_domain}"
-                time.sleep(1) # 限流
+                time.sleep(1)  # 限流
 
             all_domains.sort()
             return all_domains
@@ -1429,4 +1430,358 @@ class GodaddyDns(BaseDns):
             self.get_domains()
         except Exception as e:
             raise HintException(f"Verify fail, please check your Api Key and Secret Key: {e}")
+        return True
+
+
+class ClouDns(BaseDns):
+    dns_provider_name = "cloudns"
+    support_record_types = {"A", "AAAA", "MX", "TXT", "NS", "CAA", "CNAME"}
+
+    kw_prefix = {
+        "priority": "priority"
+    }
+
+    def __init__(self, api_user, api_key, **kwargs):  # noqa
+        super().__init__()
+        self.api_user = str(api_user or "").strip()
+        self.api_key = str(api_key or "").strip()
+        self.timeout = 30
+        self.base_url = "https://api.cloudns.net/dns/"
+
+    def _auth_params(self) -> dict:
+        if self.api_user.isdigit():  # 接受 api auth id
+            return {
+                "auth-id": self.api_user,
+                "auth-password": self.api_key,
+            }
+        # 回退账号策略
+        return {
+            "auth-user": self.api_user,
+            "auth-password": self.api_key,
+        }
+
+    def _make_request(self, endpoint: str, payload: dict = None, method: str = "GET"):
+        params = self._auth_params()
+        if payload:
+            params.update(payload)
+        url = urljoin(self.base_url, endpoint)
+        response = requests.request(method, url, params=params, timeout=self.timeout)
+        if response.status_code != 200:
+            self.raise_resp_error(response)
+
+        try:
+            data = response.json()
+        except ValueError:
+            raise HintException(f"Cloudns API returned invalid JSON: {response.text}")
+
+        if isinstance(data, dict):
+            status = str(data.get("status", "")).lower()
+            if status in {"failed", "failure", "error"}:
+                raise HintException(data.get("statusDescription") or data.get("status") or str(data))
+            if str(data.get("result", "")).lower() in {"failed", "failure", "error"}:
+                raise HintException(data.get("statusDescription") or data.get("message") or str(data))
+        return data
+
+    @staticmethod
+    def _normalize_host(domain_name: str, record: str) -> str:
+        record = (record or "@").strip().rstrip(".")
+        if not record or record == "@":
+            return "@"
+
+        if record == domain_name:
+            return "@"
+
+        suffix = f".{domain_name}"
+        if record.endswith(suffix):
+            host = record[:-len(suffix)]
+            return host or "@"
+        return record
+
+    def _normalize_zone_domain(self, domain_name: str) -> str:
+        domain = str(domain_name or "").strip().rstrip(".").lstrip("*.")
+        if not domain:
+            raise HintException("Missing domain-name")
+
+        root, _, _ = extract_zone(domain)
+        domain = (root or domain).strip().rstrip(".")
+        if not domain:
+            raise HintException("Missing domain-name")
+        return domain
+
+    def _find_record_id(self, domain_name: str, record: str, record_type: str, record_value: str = None):
+        host = self._normalize_host(domain_name, record)
+        try:
+            for item in self.get_dns_record(domain_name):
+                if item.get("record_type", "").upper() != record_type.upper():
+                    continue
+                if self._normalize_host(domain_name, item.get("record")) != host:
+                    continue
+                if record_value is not None and item.get("record_value") != record_value:
+                    continue
+                return item.get("record_id")
+        except Exception as e:
+            public.print_log(f"{self.dns_provider_name} find record id error {e}")
+        return None
+
+    def _build_acme_record(self, domain_name: str) -> tuple[str, str]:
+        zone_domain = self._normalize_zone_domain(domain_name)
+        return zone_domain, "_acme-challenge"
+
+    @staticmethod
+    def _parse_caa_value(record_value: str) -> tuple[int, str, str]:
+        parts = str(record_value or "").strip().split(None, 2)
+        if len(parts) != 3:
+            raise HintException("CAA record_value format error, expected: '<flag> <type> <value>'")
+
+        flag_raw, caa_type, caa_value = parts
+        if not caa_type or not caa_value:
+            raise HintException("CAA record_value format error, expected: '<flag> <type> <value>'")
+
+        # Accept UI-style quoted values such as: 0 issue "letsencrypt.org"
+        if (caa_value.startswith('"') and caa_value.endswith('"')) or (
+                caa_value.startswith("'") and caa_value.endswith("'")
+        ):
+            caa_value = caa_value[1:-1].strip()
+        if caa_value == "":
+            raise HintException("CAA record_value format error, expected: '<flag> <type> <value>'")
+
+        try:
+            caa_flag = int(flag_raw)
+        except Exception:
+            raise HintException("CAA flag must be integer")
+        return caa_flag, caa_type, caa_value
+
+    def _build_record_payload(self, domain_name: str, record: str, record_value: str, record_type: str,
+                              ttl: int, extra: dict) -> dict:
+        record_type = str(record_type or "").upper()
+        if record_type not in self.support_record_types:
+            raise HintException(f"Unsupported record type: {record_type}")
+
+        payload = {
+            "host": self._normalize_host(domain_name, record),
+            "record-type": record_type,
+            "ttl": 600 if int(ttl) == 1 else int(ttl),
+        }
+
+        if record_type == "CAA":
+            # Match get_dns_record output format: "flag type value".
+            caa_flag, caa_type, caa_value = self._parse_caa_value(record_value)
+            payload.update({
+                "caa_flag": caa_flag,
+                "caa_type": caa_type,
+                "caa_value": caa_value,
+            })
+            return payload
+
+        payload["record"] = record_value
+        if record_type == "MX":
+            priority = extra.get("priority", -1)
+            if str(priority) not in {"", "-1", "None"}:
+                payload["priority"] = int(priority)
+        return payload
+
+    # =============== acme ======================
+    def create_dns_record(self, domain_name: str, domain_dns_value: str) -> None:
+        zone_domain, acme_txt = self._build_acme_record(domain_name)
+        res = self.create_org_record(
+            domain_name=zone_domain,
+            record=acme_txt,
+            record_value=domain_dns_value,
+            record_type="TXT",
+            ttl=600,
+        )
+        if not res.get("status"):
+            raise HintException(res.get("msg") or "create dns record failed")
+
+    def delete_dns_record(self, domain_name: str, domain_dns_value: str) -> None:
+        zone_domain, acme_txt = self._build_acme_record(domain_name)
+        res = self.remove_record(zone_domain, acme_txt, "TXT", record_value=domain_dns_value)
+        if not res.get("status"):
+            raise HintException(res.get("msg") or "delete dns record failed")
+
+    # =============== 域名管理 ====================
+    def get_domains(self, verify: bool = False, page: int = 1, per_page: int = 100) -> list | bool:
+        try:
+            domains = []
+            current_page = max(int(page), 1)
+            page_size = max(int(per_page), 1)
+
+            def _is_active_domain(item: dict) -> str:
+                name = str(item.get("name", "")).strip().rstrip(".")
+                zone = str(item.get("zone", "")).strip().lower()
+                status = str(item.get("status", "")).strip().lower()
+                type = str(item.get("type", "")).strip().lower()
+                if zone != "domain":
+                    return ""
+                if status not in {"1", "active", "true"}:
+                    return ""
+                if not name or name.endswith(".arpa"):
+                    return ""
+                if type != "master":
+                    return ""
+                return name
+
+            while 1:
+                payload = {
+                    "page": current_page,
+                    "rows-per-page": page_size,
+                }
+                data = self._make_request("list-zones.json", payload)
+                if verify:
+                    return True
+
+                page_domains = []
+                if not isinstance(data, list):
+                    raise HintException(f"list-zones response type error: {type(data).__name__}")
+
+                raw_count = len(data)
+                for item in data:
+                    if isinstance(item, dict):
+                        domain = _is_active_domain(item)
+                        if domain:
+                            page_domains.append(domain)
+
+                if raw_count == 0:
+                    break
+
+                domains.extend(page_domains)
+                if raw_count < page_size:
+                    break
+
+                current_page += 1
+                time.sleep(1)  # 限流
+
+            return sorted(set(domains))
+        except Exception as e:
+            raise HintException(f"get domains error {e}")
+
+    def get_dns_record(self, domain_name: str) -> list:
+        domain_name = self._normalize_zone_domain(domain_name)
+        try:
+            data = self._make_request("records.json", {"domain-name": domain_name})
+            items = []
+            if isinstance(data, dict):
+                items = [v for v in data.values() if isinstance(v, dict)]
+            elif isinstance(data, list):
+                items = [v for v in data if isinstance(v, dict)]
+
+            result = []
+            for x in items:
+                try:
+                    status = str(x.get("status", "")).strip().lower()
+                    if status not in {"1", "active", "true"}:
+                        continue
+
+                    record_type = str(x.get("type", "")).strip().upper()
+                    host = str(x.get("host", "")).strip()
+                    host = host if host else "@"
+
+                    # CAA style "flag type value", default flag=0 when missing.
+                    if record_type == "CAA":
+                        caa_type = str(x.get("caa_type", "")).strip()
+                        caa_value = str(x.get("caa_value", "")).strip()
+                        if not caa_type or caa_value == "":
+                            continue
+                        caa_flag = str(x.get("caa_flag", "0")).strip() or "0"
+                        record_value = f"{caa_flag} {caa_type} {caa_value}"
+                    else:
+                        record_value = x.get("record", "")
+
+                    ttl = int(x.get("ttl", 1))
+                    priority = x.get("priority", -1)
+                    result.append({
+                        "record": host,
+                        "record_value": record_value,
+                        "record_type": record_type,
+                        "ttl": ttl,
+                        "priority": int(priority) if str(priority) not in {"", "0", "-1", "None"} else -1,
+                        "proxy": -1,
+                        "record_id": x.get("id") or x.get("record_id"),
+                    })
+                except Exception:
+                    continue
+            return result
+        except Exception as e:
+            raise HintException(e)
+
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl=1, **kwargs):
+        domain_name = self._normalize_zone_domain(domain_name)
+        try:
+            payload = {
+                "domain-name": domain_name,
+                **self._build_record_payload(
+                    domain_name=domain_name,
+                    record=record,
+                    record_value=record_value,
+                    record_type=record_type,
+                    ttl=ttl,
+                    extra=kwargs,
+                ),
+            }
+            res = self._make_request("add-record.json", payload, method="POST")
+            return {"status": True, "msg": res}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
+        domain_name = self._normalize_zone_domain(domain_name)
+        try:
+            record_id = kwargs.get("record_id") or self._find_record_id(
+                domain_name,
+                record,
+                record_type,
+                kwargs.get("record_value"),
+            )
+            if not record_id:
+                return {"status": True, "msg": "Dns Record is empty."}
+
+            payload = {
+                "domain-name": domain_name,
+                "record-id": int(record_id),
+            }
+            res = self._make_request("delete-record.json", payload, method="POST")
+            return {"status": True, "msg": res}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def update_record(self, domain_name, record: dict, new_record: dict, **kwargs):
+        domain_name = self._normalize_zone_domain(domain_name)
+        try:
+            record_id = record.get("record_id") or self._find_record_id(
+                domain_name,
+                record.get("record"),
+                record.get("record_type", ""),
+                record.get("record_value"),
+            )
+            if not record_id:
+                return {"status": False, "msg": "Dns Record Not Found!"}
+
+            payload = {
+                "domain-name": domain_name,
+                "record-id": int(record_id),
+                **self._build_record_payload(
+                    domain_name=domain_name,
+                    record=new_record.get("record"),
+                    record_value=new_record.get("record_value"),
+                    record_type=new_record.get("record_type", ""),
+                    ttl=new_record.get("ttl", 1),
+                    extra=new_record,
+                ),
+            }
+            res = self._make_request("mod-record.json", payload, method="POST")
+            return {"status": True, "msg": res}
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def verify(self) -> Optional[bool]:
+        try:
+            self.get_domains(verify=True)
+        except Exception as e:
+            public.print_log(f"e = {e}")
+            if "You don't have access to the HTTP API. Check your plan." in str(e):
+                raise HintException(public.lang(
+                    "Cloudns API have been rejected, "
+                    "Free accounts (Free plan) don't have access to API, Please upgrade your plan."
+                ))
+            raise HintException(public.lang(f"Verify fail, please check your Api Account and Password: {e}"))
         return True

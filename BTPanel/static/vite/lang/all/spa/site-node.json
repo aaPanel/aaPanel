@@ -81,5 +81,9 @@
 	"079692346c78feef82d8a9bf935440ae": "Proyecto de nodo Cerrar [{0}], ¿Continuar la operación?",
 	"c7dea2e82a3d73a2ec514438b7f8a879": "¡Deshabilite el mapeo!, ¿Quieres continuar?",
 	"1e0987441b69ab74d07cb865b2828245": "¡Habilitar el mapeo!, ¿Quieres continuar?",
-	"63d7b382680de0dacf15b200233990b1": "El formato del nombre de dominio unido es incorrecto"
+	"63d7b382680de0dacf15b200233990b1": "El formato del nombre de dominio unido es incorrecto",
+	"c7122f4c7fcb8fa9156415b35acc2e0d": "Después de iniciar los proyectos seleccionados en lotes, los proyectos serán accesibles",
+	"335d619ca69887831a59ee15de944384": "Después de detener los proyectos seleccionados en lotes, los proyectos dejarán de ejecutarse",
+	"c728fa4b32fe3880398e628ad427199e": "Después de reiniciar los proyectos seleccionados en lotes, los proyectos se reiniciarán",
+	"c2e30cfdf1b2be46c5c480b962e4b9e0": "Lote funcionando, por favor espere..."
 }

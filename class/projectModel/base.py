@@ -1,4 +1,6 @@
 #coding: utf-8
+import pwd
+
 import public,re
 
 class projectBase:
@@ -61,3 +63,33 @@ class projectBase:
             return True
         except:
             return False
+
+    @staticmethod
+    def get_system_user_list(get=None):
+        """
+        默认只返回uid>= 1000 的用户 和 root
+        get中包含 sys_user 返回 uid>= 100 的用户 和 root
+        get中包含 all_user 返回所有的用户
+        """
+        sys_user = False
+        all_user = False
+        if get is not None:
+            if hasattr(get, "sys_user"):
+                sys_user = True
+            if hasattr(get, "all_user"):
+                all_user = True
+
+        user_set = set()
+        try:
+            for tmp_uer in pwd.getpwall():
+                if tmp_uer.pw_uid == 0:
+                    user_set.add(tmp_uer.pw_name)
+                elif tmp_uer.pw_uid >= 1000:
+                    user_set.add(tmp_uer.pw_name)
+                elif sys_user and tmp_uer.pw_uid >= 100:
+                    user_set.add(tmp_uer.pw_name)
+                elif all_user:
+                    user_set.add(tmp_uer.pw_name)
+        except Exception:
+            pass
+        return list(user_set)

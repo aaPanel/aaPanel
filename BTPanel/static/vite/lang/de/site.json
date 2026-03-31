@@ -587,7 +587,7 @@
 			"index_9": "Inoperabel",
 			"index_10": "URL -Umschreiben"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "Domain",
 			"index_2": "Standortverzeichnis",
 			"index_3": "Auslaufverzeichnis",
@@ -673,7 +673,7 @@
 			"index_6": "Bitte wählen Sie die WP -Version aus",
 			"index_7": "WordPress -Backend -Benutzer kann nicht leer sein",
 			"index_8": "WordPress -Backend -Passwort kann nicht leer sein",
-			"index_9": "E -Mail -Adresse kann nicht leer sein",
+			"index_9": "E-Mail darf nicht leer sein",
 			"index_10": "WordPress -Tabellenname Präfix kann nicht leer sein",
 			"index_11": "Die Anmeldemugel kann nicht leer sein",
 			"index_12": "Umleitung URL kann nicht leer sein",
@@ -749,6 +749,7 @@
 			"pleaseSelectKey": "Bitte wählen Sie einen Schlüssel aus",
 			"generateNewKeySuccess": "Neuer SSH-Schlüssel erfolgreich generiert",
 			"updateSshKeyTitle": "SSH-Schlüssel aktualisieren",
+			"importExistingProjectTitle": "Vorhandenes Git-Projekt importieren",
 			"coverageData": "Abdeckungsdaten",
 			"repoAddressPlaceholder": "Bitte geben Sie die Repository-Adresse ein",
 			"branchPlaceholder": "Bitte wählen Sie eine Filiale aus",

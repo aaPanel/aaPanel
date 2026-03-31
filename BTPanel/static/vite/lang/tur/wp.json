@@ -78,7 +78,8 @@
 			"import_3": "Plesk veya CPanel",
 			"import_4": "Yedekleme Dosya Yolu",
 			"import_5": "Alt dizin, kök dizinde boş bırakın",
-			"import_6": "Lütfen yedekleme dosya yolunu girin"
+			"import_6": "Lütfen yedekleme dosya yolunu girin",
+			"index_3": "Batch create sites"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +255,24 @@
 			"index_17": "Eklenti sürümü",
 			"index_18": "MySQL sürümü",
 			"index_19": "Bu, web sitenizi kontrol panelinden kaldıracaktır, bunu yapmak istediğinizden emin misiniz?"
+		},
+		"AddBatch": {
+			"index_1": "Please first resolve the A record of this domain to the server IP address",
+			"index_2": "Format description:",
+			"index_3": "Batch format: Domain {'|'} Website Title {'|'} Admin Account {'|'} Admin Password {'|'} Prefix",
+			"index_4": "Domain format: Support multiple domains, separated by commas (e.g.: a.com,b.com)",
+			"index_7": "e.g. aapanel.com{'|'}my blog{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "One site per line. If the password is empty, the system will automatically generate a strong password.",
+			"index_6": "If you set the prefix wp_, the system will automatically generate a random suffix.",
+			"index_8": "Please enter batch data",
+			"placeholder": "domain.com{'|'}Website Title{'|'}AdminUser{'|'}Password{'|'}wp_"
+		},
+		"Task": {
+			"index_1": "There are currently tasks in progress.",
+			"index_2": "View",
+			"index_3": "Copy Progress",
+			"index_4": "Task completed!",
+			"index_5": "In progress..."
 		}
 	}
 }

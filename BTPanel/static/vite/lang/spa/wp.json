@@ -67,18 +67,30 @@
 			"index_7": "Agregar sitio",
 			"index_8": "Versiones 5.6.0+ activar automáticamente las actualizaciones de la versión automática",
 			"index_9": "Permitir contraseñas débiles",
-			"index_10": "Habilitar el almacenamiento en caché, actualmente solo admite Nginx",
+			"index_10": "Habilitar caché",
 			"index_11": "Habilitar WPS-Hide-Login",
 			"index_12": "Cambiar URL de inicio de sesión de administrador",
 			"index_13": "URL de redirección",
 			"index_1": "Crear sitio",
 			"index_2": "Crear desde la copia de seguridad",
+			"index_3": "Crear sitios por lotes",
 			"import_1": "Tipo de copia de seguridad",
 			"import_2": "Local",
 			"import_3": "Plesk o cpanel",
 			"import_4": "Ruta del archivo de respaldo",
 			"import_5": "Subdirectorio, en blanco en el directorio raíz",
 			"import_6": "Ingrese la ruta del archivo de copia de seguridad"
+		},
+		"AddBatch": {
+			"index_1": "Primero resuelva el registro A de este dominio en la dirección IP del servidor.",
+			"index_2": "Descripción del formato:",
+			"index_3": "Formato por lotes: Dominio {'|'} Título del sitio web {'|'} Cuenta de administrador {'|'} Contraseña de administrador {'|'} Prefijo",
+			"index_4": "Formato de dominio: admite múltiples dominios, separados por comas (por ejemplo: a.com,b.com)",
+			"index_7": "por ej. aapanel.com{'|'}mi blog{'|'}admin{'|'}contraseña123456{'|'}wp_",
+			"index_5": "Un sitio por línea. Si la contraseña está vacía, el sistema generará automáticamente una contraseña segura.",
+			"index_6": "Si configura el prefijo wp_, el sistema generará automáticamente un sufijo aleatorio.",
+			"index_8": "Por favor ingrese los datos del lote",
+			"placeholder": "dominio.com{'|'}Título del sitio web{'|'}Usuario administrador{'|'}Contraseña{'|'}wp_"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +266,13 @@
 			"index_17": "Versión de complemento",
 			"index_18": "Versión mysql",
 			"index_19": "Esto eliminará su sitio web del tablero, ¿está seguro de que desea hacer esto?"
+		},
+		"Task": {
+			"index_1": "Actualmente hay tareas en progreso.",
+			"index_2": "Ver",
+			"index_3": "Copiar progreso",
+			"index_4": "¡Tarea completada!",
+			"index_5": "En curso..."
 		}
 	}
 }

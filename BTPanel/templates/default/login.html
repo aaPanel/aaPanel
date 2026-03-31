@@ -671,6 +671,7 @@
 			<div class="login{% if session['code'] %} code{% endif %}">
 				<div class="account">
 					<div class="last_token" style="display: block" data="{{data['last_login_token']}}"></div>
+					<div class="apsess_token" style="display: block" data="{{data['apsess_token']}}"></div>
 					<div class="public_key" style="display: block" data="{{data['public_key']}}"></div>
 					<form class="login_form" onsubmit="return false;">
 						<div class="form_title">{{g.title}}</div>
@@ -838,6 +839,19 @@
 				var entrance = document.querySelector('.entrance').querySelector('.bg_img');
 
 				/**
+				 * 跳转到面板
+				 */
+				function jump_to_panel() {
+					var lastAccessToken = document.querySelector(".apsess_token").getAttribute("data");
+					if (lastAccessToken) {
+						localStorage.setItem("apsess", lastAccessToken);
+						window.location.href = `/apsess_${lastAccessToken}/`;
+					} else {
+						window.location.href = '/';
+					}
+				}
+
+				/**
 				 * 显示验证码
 				 */
 				function show_check_img() {
@@ -949,7 +963,7 @@
 										shade: [0.4, '#fff'],
 									},
 									function () {
-										window.location.href = '/';
+										jump_to_panel();
 									}
 								);
 							} else {
@@ -1057,7 +1071,7 @@
 														shade: [0.3, '#000'],
 													},
 													function () {
-														window.location.href = '/';
+														jump_to_panel();
 													}
 												);
 											});
@@ -1078,7 +1092,7 @@
 							}
 							popup.msg(res.msg, { time: 0, icon: 16, shade: [0.3, '#333'] });
 							setTimeout(function () {
-								window.location.href = '/';
+								jump_to_panel();
 							}, 1000);
 						});
 					});
@@ -1377,7 +1391,14 @@
 
 			// 获取当前主题模式
 			const themMode = JSON.parse(localStorage.getItem('ThemeStore'));
-			const isDark = themMode && themMode.theme === 'dark';
+			let isDark = false;
+			if (themMode && themMode.themeRef) {
+				if (themMode.themeRef === 'dark') {
+					isDark = true;
+				} else if (themMode.themeRef === 'auto') {
+					isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				}
+			}
 			document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
 		</script>
 	</body>

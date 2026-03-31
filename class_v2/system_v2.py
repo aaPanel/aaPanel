@@ -1116,7 +1116,7 @@ class system:
         # public.writeFile('data/control.conf', '30')
         return public.return_message(0, 0, public.lang("Panel restarted"))
 
-
+    # todo 弃用, fun repair_panel 代替
     #修复面板
     def RepPanel(self,get):
         # 校验参数
@@ -1141,6 +1141,95 @@ class system:
         self.ReWeb(None)
         return True
 
+    # ============== New 更新,修复面板 ======================
+    @staticmethod
+    def _has_py313() -> bool:
+        import subprocess
+        code = "import sys, urllib3, _sqlite3; print('%d.%d' % (sys.version_info.major, sys.version_info.minor))"
+        now_env = os.path.join(public.get_panel_path(), "pyenv/bin/python3")
+        pre_env = os.path.join(public.get_panel_path(), "pyenv313/bin/python3")
+        for env in (now_env, pre_env):
+            if not os.path.exists(env):
+                continue
+            try:
+                ver = subprocess.check_output([env, "-c", code], text=True)
+                if ver.strip() == "3.13":
+                    return True
+            except:
+                pass
+        return False
+    
+    @staticmethod
+    def _normalize_version(version_str: str):
+        try:
+            tmp = version_str.split(".")
+            if len(tmp) < 3:
+                tmp += [0] * (3 - len(tmp))
+            return int(tmp[0]), int(tmp[1]), int(tmp[2])
+        except:
+            return 0, 0, 0
+
+    def _get_plugin_for_py313(self):
+        config_file = os.path.join(public.get_panel_path(), "data/py313_plugins.json")
+        m_time = 0
+        if os.path.exists(config_file):
+            m_time = os.path.getmtime(config_file)
+
+        if m_time < time.time() - 3600:
+            public.downloadFile('{}/install/update/py313_plugins.json'.format(public.get_url()), config_file)
+
+        try:
+            data = json.loads(public.readFile(config_file))
+        except:
+            data = []
+
+        plugins = []
+        plugin_path = os.path.join(public.get_panel_path(), "plugin")
+        for i in data:
+            if_file = os.path.join(plugin_path, i["name"], "info.json")
+            if not os.path.exists(if_file):
+                continue
+            try:
+                info = json.loads(public.readFile(if_file))
+                lv = self._normalize_version(info.get("versions", "99.99"))
+                nv = self._normalize_version(i.get("version", "0.0"))
+                if lv < nv:
+                    i["local_version"] = info["versions"]
+                    plugins.append(i)
+            except:
+                continue
+        plugins.sort(key=lambda x: x["level"])
+        return  plugins
+
+    def repair_panel(self, get):
+        # ajax_v2 RepPanel
+        ...
+
+    def upgrade_panel(self, get):
+        # ajax_v2 UpdatePanel
+        ...
+
+    def get_upgrade_log(self,get):
+        """
+        @name 获取更新日志
+        """
+        logPath = '/tmp/upgrade_panel.log'
+        if not os.path.exists(logPath):
+            return public.success_v2('')
+
+        logs = public.GetNumLines(logPath, 1000)
+        try:
+            # 适配旧版的日志
+            return json.loads(logs)
+        except:
+            pass
+
+        if logs.find('Success: Panel updated successfully') != -1:
+            return public.success_v2(
+                {"msg": public.lang("aaPanel Update Successfully!"), "data": logs}
+            )
+
+        return public.success_v2(logs)
 
     def mark_reboot_read(self, get):
         import os

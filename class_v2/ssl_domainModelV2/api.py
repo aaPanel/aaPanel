@@ -164,6 +164,7 @@ class DomainObject:
         res = list(set(self.supports))
         if "aaPanelDns" in res:
             res.remove("aaPanelDns")
+        res.sort(key=lambda x: x.lower())
         return public.success_v2(res)
 
     # =========== 托管商 ===========

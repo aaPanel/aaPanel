@@ -510,7 +510,15 @@
 		},
 		"tree": {
 			"newFilePlaceholder": "New file",
-			"newFolderPlaceholder": "New folder"
+			"newFolderPlaceholder": "New folder",
+			"rename": "Rename",
+			"download": "Download",
+			"delete": "Delete",
+			"refresh": "Refresh directory",
+			"openDir": "Open subdirectory",
+			"newFolder": "New folder",
+			"newFile": "New file",
+			"renameOpenedWarning": "This file is currently open and cannot be renamed."
 		},
 		"dialogs": {
 			"encodingTitle": "Set file encoding",
@@ -557,7 +565,10 @@
 		"editorHeader": {
 			"tipTitle": "Notice",
 			"modifiedSaveConfirm": "This file has been modified. Save changes?",
-			"dontSave": "Don't Save"
+			"dontSave": "Don't Save",
+			"close": "Close",
+			"closeOthers": "Close Others",
+			"closeAll": "Close All"
 		},
 		"editorFooter": {
 			"fileLocation": "File: {path}",

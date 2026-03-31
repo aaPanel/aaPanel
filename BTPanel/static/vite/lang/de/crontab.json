@@ -95,7 +95,10 @@
 			"index_92": "Die zeitgesteuerte Aufgabe begann erfolgreich",
 			"index_93": "Zeitgesteuerte Aufgabe erfolgreich geschlossen",
 			"index_94": "Teil",
-			"index_95": "Jede {0} Sekunden ausgeführt"
+			"index_95": "Jede {0} Sekunden ausgeführt",
+			"index_96": "Skript auswählen",
+			"index_97": "Bitte wählen Sie ein Skript aus (Suche unterstützt)",
+			"index_98": "Um die Stabilität des Dienstes aufrechtzuerhalten und eine reibungslose Leistung zu gewährleisten, sollten Sie davon absehen, häufig Skripts mit hoher Auslastung auszuführen und nicht zu viele solcher Aufgaben hinzufügen"
 		},
 		"arrange": {
 			"index_1": "Führen Sie die Skriptaufgabe in [{0}] sofort aus, der Ausführungsprozess kann lange warten. Bitte seien Sie geduldig. Willst du weitermachen?",

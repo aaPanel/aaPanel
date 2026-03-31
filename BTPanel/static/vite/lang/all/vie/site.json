@@ -1234,5 +1234,7 @@
 	"a12da959bc78438d1b9b613755251e63": "cd /www/wwwroot/aapanel.com\ngit pull Origin master\necho \"\" | sudo -S service php8.3-fpm tải lại\necho \"🚀 Ứng dụng đã được triển khai!\"",
 	"016435b6e35ac3f9ebbee2465461a8e3": "Xóa cấu hình git",
 	"d954fc3c257148e3de3a7cf2002927d1": "Bạn có thể xóa kho lưu trữ ở đây. Lưu ý rằng cả thư mục .git và bản ghi triển khai sẽ bị xóa.",
-	"ec83f9791cb48ef207d00d6689156126": "ví dụ."
+	"ec83f9791cb48ef207d00d6689156126": "ví dụ.",
+	"06493c1849f385b79535ab5038aa2f95": "Nhập dự án Git hiện có",
+	"62ac18bcb213e34e0b145c50b49a0ee4": "Email không được để trống"
 }

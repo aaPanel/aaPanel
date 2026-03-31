@@ -67,18 +67,30 @@
 			"index_7": "Thêm trang web",
 			"index_8": "Phiên bản 5.6.0+ tự động bật các bản cập nhật phiên bản tự động",
 			"index_9": "Cho phép mật khẩu yếu",
-			"index_10": "Bật bộ đệm, hiện chỉ hỗ trợ nginx",
+			"index_10": "Bật bộ đệm",
 			"index_11": "Kích hoạt WPS-Hide-Login",
 			"index_12": "Thay đổi URL đăng nhập quản trị viên",
 			"index_13": "URL chuyển hướng",
 			"index_1": "Tạo trang web",
 			"index_2": "Tạo từ sao lưu",
+			"index_3": "Tạo trang web hàng loạt",
 			"import_1": "Loại sao lưu",
 			"import_2": "Địa phương",
 			"import_3": "Plesk hoặc cpanel",
 			"import_4": "Đường dẫn tệp sao lưu",
 			"import_5": "Thư mục con, trống trong thư mục gốc",
 			"import_6": "Vui lòng nhập đường dẫn tệp sao lưu"
+		},
+		"AddBatch": {
+			"index_1": "Trước tiên hãy giải quyết bản ghi A của miền này thành địa chỉ IP của máy chủ",
+			"index_2": "Mô tả định dạng:",
+			"index_3": "Định dạng hàng loạt: Tên miền {'|'} Tiêu đề trang web {'|'} Tài khoản quản trị viên {'|'} Mật khẩu quản trị viên {'|'} Tiền tố",
+			"index_4": "Định dạng tên miền: Hỗ trợ nhiều tên miền, phân tách bằng dấu phẩy (ví dụ: a.com,b.com)",
+			"index_7": "ví dụ: aapanel.com{'|'}blog của tôi{'|'}quản trị viên{'|'}pass123456{'|'}wp_",
+			"index_5": "Một trang web trên mỗi dòng. Nếu mật khẩu trống, hệ thống sẽ tự động tạo mật khẩu mạnh.",
+			"index_6": "Nếu bạn đặt tiền tố wp_, hệ thống sẽ tự động tạo hậu tố ngẫu nhiên.",
+			"index_8": "Vui lòng nhập dữ liệu hàng loạt",
+			"placeholder": "domain.com{'|'}Tiêu đề trang web{'|'}Người dùng quản trị viên{'|'}Mật khẩu{'|'}wp_"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +266,13 @@
 			"index_17": "Phiên bản plugin",
 			"index_18": "Phiên bản MySQL",
 			"index_19": "Điều này sẽ xóa trang web của bạn khỏi bảng điều khiển, bạn có chắc mình muốn làm điều này không?"
+		},
+		"Task": {
+			"index_1": "Hiện tại có những nhiệm vụ đang được tiến hành.",
+			"index_2": "Xem",
+			"index_3": "Sao chép tiến trình",
+			"index_4": "Nhiệm vụ đã hoàn thành!",
+			"index_5": "Đang tiến hành..."
 		}
 	}
 }

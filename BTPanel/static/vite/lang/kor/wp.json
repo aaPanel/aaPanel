@@ -78,7 +78,8 @@
 			"import_3": "Plesk 또는 CPANEL",
 			"import_4": "백업 파일 경로",
 			"import_5": "루트 디렉토리의 서브 디렉토리, 빈",
-			"import_6": "백업 파일 경로를 입력하세요"
+			"import_6": "백업 파일 경로를 입력하세요",
+			"index_3": "Batch create sites"
 		},
 		"TableRow": {
 			"index_1": "워드프레스",
@@ -254,6 +255,24 @@
 			"index_17": "플러그인 버전",
 			"index_18": "MySQL 버전",
 			"index_19": "이렇게하면 대시 보드에서 웹 사이트가 제거됩니다.이 작업을 수행 하시겠습니까?"
+		},
+		"AddBatch": {
+			"index_1": "Please first resolve the A record of this domain to the server IP address",
+			"index_2": "Format description:",
+			"index_3": "Batch format: Domain {'|'} Website Title {'|'} Admin Account {'|'} Admin Password {'|'} Prefix",
+			"index_4": "Domain format: Support multiple domains, separated by commas (e.g.: a.com,b.com)",
+			"index_7": "e.g. aapanel.com{'|'}my blog{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "One site per line. If the password is empty, the system will automatically generate a strong password.",
+			"index_6": "If you set the prefix wp_, the system will automatically generate a random suffix.",
+			"index_8": "Please enter batch data",
+			"placeholder": "domain.com{'|'}Website Title{'|'}AdminUser{'|'}Password{'|'}wp_"
+		},
+		"Task": {
+			"index_1": "There are currently tasks in progress.",
+			"index_2": "View",
+			"index_3": "Copy Progress",
+			"index_4": "Task completed!",
+			"index_5": "In progress..."
 		}
 	}
 }

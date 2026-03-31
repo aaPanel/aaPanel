@@ -24,6 +24,77 @@ try:
 except:
     pass
 
+CLOUD_STORAGE = [
+    {
+        "name": "FTP Storage",
+        "type": "Cron job",
+        "ps": "Package the website or database back to the FTP storage space.",
+        "status": 'false',
+        "opt": "ftp",
+        "module": "paramiko==2.7.1",
+        "script": "ftp",
+        "help": "http://www.aapanel.com/forum",
+        "USE_SFTP": "Whether to use SFTP for data transfer",
+        "Host": "server address",
+        "User": "User Name",
+        "Pass": "Password",
+        "backup_path": "Backup save path, default is/bt_backup",
+        "check": [
+            "/usr/lib/python2.7/site-packages/paramiko/__init__.py",
+            "/www/server/panel/pyenv/bin/python3.7/site-packages/paramiko"
+            "/__init__.py"
+        ]
+    },
+    {
+        "name": "AWS S3",
+        "type": "Cron job",
+        "ps": "Back up your data to AWS S3",
+        "status": 'false',
+        "opt": "aws_s3",
+        "module": "boto3",
+        "script": "aws_s3",
+        "help": "https://www.bt.cn/bbs/thread-50145-1-1.html",
+        "SecretId": "SecretId| please enter SecretId|AWS S3的SecretId",
+        "SecretKey": "SecretKey| please enter SecretKey|AWS S3 的SecretKey",
+        "region": "region, like ap-chengdu",
+        "Bucket": "bucket name",
+        "check": ["/usr/lib/python2.6/site-packages/boto3/__init__.py",
+                  "/usr/lib/python2.7/site-packages/boto3/__init__.py",
+                  "/www/server/panel/pyenv/lib/python3.7/site-packages/boto3/__init__.py"]
+    },
+    {
+        "name": "Google Drive",
+        "type": "Cron job",
+        "ps": "Back up your website or database to Google Cloud Storage.",
+        "status": False,
+        "opt": "gdrive",
+        "module": "os",
+        "script": "gdrive",
+        "help": "http://forum.aapanel.com",
+        "key": "",
+        "secret": "",
+        "bucket": "",
+        "domain": "",
+        "check": ["/www/server/panel/plugin/gdrive/gdrive_main.py",
+                  "/www/server/panel/script/backup_gdrive.py"]
+    },
+    {
+        "name": "Google Cloud Storage",
+        "type": "Cron job",
+        "ps": "Back up your website or database to Google Cloud Storage.",
+        "status": False,
+        "opt": "gcloud_storage",
+        "module": "os",
+        "script": "google",
+        "help": "http://www.aapanel.com/forum",
+        "key": "",
+        "secret": "",
+        "bucket": "",
+        "domain": "",
+        "check": ["/www/server/panel/plugin/gcloud_storage/gcloud_storage_main.py",
+                  "/www/server/panel/script/backup_gcloud.py"]
+    }
+]
 
 
 class crontab:
@@ -758,16 +829,20 @@ class crontab:
                 # 如果user有值，则修改sBody
                 user = get.get('user', 'root')
                 if user :
-                    if get["sType"] != "toShell":
-                        get['sBody'] = "sudo -u {0} bash -c '{1}'".format(user, get['sBody'])
-                    else:
+                    # todo support python
+                    if get["sType"] == "toShell":
+                        # support more complex command, such as multi-line script
                         get['sBody'] = f"sudo -u {user} bash <<'EOF'\n{get['sBody']}\nEOF"
+                    else:
+                        get['sBody'] = "sudo -u {0} bash -c '{1}'".format(user, get['sBody'])
 
                 if get.get('version',''):
                     version = get['version'].replace(".", "")
                     get['sBody'] = get['sBody'].replace("${1/./}", version)
+
             if len(get['name']) < 1:
                 return public.return_message(-1,0, public.lang('CRONTAB_TASKNAME_EMPTY'))
+
             id = get['id']
             cronInfo = public.M('crontab').where('id=?', (id,)).field(self.field).find()
 
@@ -803,9 +878,7 @@ WantedBy=timers.target
 
 
             if get['type']=='sweek':
-
-            # if get['type']=='sweek':
-                self.modify_values(cronInfo['echo'],get['time_type'],get['special_time'],get['time_set']) 
+                self.modify_values(cronInfo['echo'],get['time_type'],get['special_time'],get['time_set'])
                 get['type']='minute-n'
 
             if get['type']=="second-n":
@@ -814,11 +887,12 @@ WantedBy=timers.target
                 get['hour']=1
                 get['minute']=1
                 get['flock']=0
-            cuonConfig, get, name = self.GetCrondCycle(get)            
 
+            cuonConfig, get, name = self.GetCrondCycle(get)
             projectlog = self.modify_project_log_split(cronInfo, get)
             if projectlog.modify():
                 return public.return_message(0,0, projectlog.msg)
+
             if not get['where1']: get['where1'] = get['week']
             del (cronInfo['id'])
             del (cronInfo['addtime'])
@@ -832,30 +906,50 @@ WantedBy=timers.target
             cronInfo['backupTo'] = get['backupTo']
             cronInfo['sBody'] = get['sBody']
             cronInfo['urladdress'] = get['urladdress']
-            cronInfo['time_type']=get.get('time_type','')
-            cronInfo['special_time']=get.get('special_time','')
-            cronInfo['time_set']=get.get('time_set','')
-            cronInfo['second']=get.get('second','')
-            if get.get('db_backup_path')=="/www/backup":
-                db_backup_path=""
+            cronInfo['time_type'] = get.get('time_type', '')
+            cronInfo['special_time'] = get.get('special_time', '')
+            cronInfo['time_set'] = get.get('time_set', '')
+            cronInfo['second'] = get.get('second', '')
+            # future
+            # cronInfo['log_cut_path'] = get.get('log_cut_path', '')
+            # cronInfo['user'] = get.get('user', 'root')
+            # cronInfo['flock'] = get.get('flock', 0)
+            # cronInfo['params'] = get.get('params', '{}')
+
+            db_backup_path = public.M('config').where("id=?", ('1',)).getField('backup_path')
+            if get.get('db_backup_path') == db_backup_path:
+                db_backup_path = ""
             else:
-                db_backup_path=get.get('db_backup_path','')
-            columns = 'status,type,where1,where_hour,where_minute,save,backupTo,sName,sBody,urladdress,db_type,split_type,split_value,rname,post_param,flock,time_set,backup_mode,db_backup_path,time_type,special_time,user_agent,version,table_list,second'
+                db_backup_path = get.get('db_backup_path', '')
+
+            # 如果状态为启用，并且类型不是一次性任务，则先移除再更新, 否则直接修改数据
+            if cronInfo['status'] != 0 and cronInfo['type'] != 'once':
+                error = public.lang('Writing scheduled task failed, '
+                                    'please check if the disk is writable or if system hardening is enabled!')
+                remove_res = self.remove_for_crond(cronInfo['echo'])
+                if not remove_res:
+                    return public.fail_v2(error)
+                if get.get("post_param", ""):
+                    cronInfo["post_param"] = get["post_param"]
+                if get.get("user_agent", ""):
+                    cronInfo["user_agent"] = get["user_agent"]
+                sync_res = self.sync_to_crond(cronInfo)
+                if not sync_res:
+                    return public.fail_v2(error)
+
+            # more future fields, 'stop_site', 'params', 'log_cut_path'...
+            columns = 'type,where1,where_hour,where_minute,save,backupTo,sName,sBody,urladdress,db_type,split_type,split_value,rname,post_param,flock,time_set,backup_mode,db_backup_path,time_type,special_time,user_agent,version,table_list,second'
             values = (get['type'], get['where1'], get['hour'],
                       get['minute'], get['save'], get['backupTo'], cronInfo['sName'], get['sBody']
                       , get['urladdress'], get.get("db_type"), get.get("split_type"), get.get("split_value"), get['name'], get.get('post_param', ''), get.get('flock', 0),get.get('time_set',''),get.get('backup_mode', ''),db_backup_path,get.get('time_type',''),get.get('special_time',''),get.get('user_agent',''),get.get('version',''),get.get('table_list',''),get.get('second',''))
+
             if 'save_local' in get:
                 columns += ",save_local, notice, notice_channel"
-                values = (1,get['type'], get['where1'], get['hour'],
+                values = (get['type'], get['where1'], get['hour'],
                           get['minute'], get['save'], get['backupTo'], cronInfo['sName'], get['sBody'],
                           get['urladdress'], get.get("db_type"), get.get("split_type"), get.get("split_value"), get['name'], get.get('post_param', ''), get.get('flock', 0),get.get('time_set',''),get.get('backup_mode', ''),db_backup_path,get.get('time_type',''),get.get('special_time',''),get.get('user_agent',''),get.get('version',''),get.get('table_list',''),get.get('second',''),
                           get['save_local'], get["notice"],get["notice_channel"])
-            if cronInfo['status'] != 0 and cronInfo['type'] != 'once':
-                if not self.remove_for_crond(cronInfo['echo']):
-                    return public.return_message(-1,0, public.lang('Writing scheduled task failed, please check if the disk is writable or if system hardening is enabled!'))
-                # if cronInfo['status'] == 0: return public.returnMsg(False, '当前任务处于停止状态,请开启任务后再修改!')
-                if not self.sync_to_crond(cronInfo):
-                    return public.return_message(-1,0, public.lang('Writing scheduled task failed, please check if the disk is writable or if system hardening is enabled!'))
+
             public.M('crontab').where('id=?', (id,)).save(columns, values)
             public.WriteLog(public.lang('crontab tasks'), public.lang('Successfully modified plan task ['+cronInfo ['name']+']'))
             return public.return_message(0,0, public.lang('Modified successfully'))
@@ -1314,13 +1408,45 @@ WantedBy=timers.target
         tmp = public.readFile('data/libList.conf')
         if not tmp: return data
         libs = json.loads(tmp)
-        for lib in libs:
-            if not 'opt' in lib: continue
+        cloud_storage_info = [x for x in CLOUD_STORAGE]
+
+        for lib in cloud_storage_info: # 预配置
+            if_exist = next(
+                (x for x in libs if x['name'] == lib['name']), None
+            ) # libs中存在, 整体替换
+            if if_exist:
+                lib = if_exist
+            if not 'opt' in lib:
+                continue
             filename = 'plugin/{}'.format(lib['opt'])
-            if not os.path.exists(filename): continue
-            tmp = {}
-            tmp['name'] = lib['name']
-            tmp['value'] = lib['opt']
+            cfg = os.path.join(filename, 'config.conf')
+
+            if lib.get('name') != 'Google Cloud Storage':
+                shop_name = lib.get('opt', '')
+            else:  # 处理gcloud商店名不一致
+                shop_name = 'gcloud_storage'
+
+            tmp = {
+                'name': lib['name'],
+                'value': shop_name,
+                'install': False,
+                'config': False,
+            }
+            if os.path.exists(filename):
+                tmp['install'] = True
+
+            if lib.get('name', '') != 'FTP Storage':
+                if os.path.exists(cfg) and isinstance(public.readFile(cfg), str):
+                    tmp['config'] = True
+            else:  # 处理ftp 三种cfg
+                for cfg_file in [
+                    'config.conf', 'ftp.config.conf', 'sftp.config.conf'
+                ]:
+                    target = os.path.join(filename, cfg_file)
+                    if os.path.exists(target) and isinstance(public.readFile(target), str):
+                        tmp['config'] = True
+                        break
+
             data['orderOpt'].append(tmp)
         return public.return_message(0,0,data)
 

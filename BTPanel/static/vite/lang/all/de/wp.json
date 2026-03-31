@@ -244,5 +244,21 @@
 	"a7c3c998c562b3c1a03b55a45885d89f": "Ausgewählte Datei: {0}",
 	"9162fca50a90dd9ede7b004903e8d5f5": "Plugin hochladen",
 	"f6e4b551382f9dbe4413c43de5f80873": "Theme hochladen",
-	"4e4b1e639a36d24d7cc6865089a975b6": "Um dieser Sammlung ein benutzerdefiniertes Plugin oder Theme hinzuzufügen, klicken Sie auf die Schaltfläche „Hochladen“ und laden Sie dann die Datei von Ihrem lokalen Computer hoch"
+	"4e4b1e639a36d24d7cc6865089a975b6": "Um dieser Sammlung ein benutzerdefiniertes Plugin oder Theme hinzuzufügen, klicken Sie auf die Schaltfläche „Hochladen“ und laden Sie dann die Datei von Ihrem lokalen Computer hoch",
+	"09cdd6a7321c64bae05b8cca859f1461": "Cache aktivieren",
+	"4e8ee19c1cb18f89be54c0ace9edfd3a": "Websites im Batch erstellen",
+	"2b456e8e4127051e591e630c17843128": "Bitte lösen Sie zunächst den A-Eintrag dieser Domain in die Server-IP-Adresse auf",
+	"4c9c0eb283eda5aa5c4a8c8c86df15eb": "Formatbeschreibung:",
+	"d36103913ac2fe791d17be0fa8d69d49": "Stapelformat: Domain {'|'} Website-Titel {'|'} Admin-Konto {'|'} Admin-Passwort {'|'} Präfix",
+	"9ffd4c6ccbafc6c32a32ff354808e4bb": "Domänenformat: Unterstützt mehrere Domänen, getrennt durch Kommas (z. B.: a.com,b.com)",
+	"94ba5b2e80d63c99f45adfba8485afe8": "z.B. aapanel.com{'|'}mein Blog{'|'}admin{'|'}pass123456{'|'}wp_",
+	"decac45ddce192fc04d7a8143151b5b5": "Eine Site pro Zeile. Wenn das Passwort leer ist, generiert das System automatisch ein sicheres Passwort.",
+	"7d334a13bf3e93e8eff7d4c344b79ac9": "Wenn Sie das Präfix wp_ festlegen, generiert das System automatisch ein zufälliges Suffix.",
+	"8329ddd883c86d197cd5c890ed4b379a": "Bitte geben Sie Chargendaten ein",
+	"c309257ce4aed5d1b9dc845f9ca8e539": "domain.com{'|'}Website-Titel{'|'}AdminUser{'|'}Passwort{'|'}wp_",
+	"702177c75a3234bb2d5cd33d1e50004d": "Derzeit sind Aufgaben in Bearbeitung.",
+	"4351cfebe4b61d8aa5efa1d020710005": "Ansicht",
+	"c696fc9ea1860852518fe04f275823b2": "Kopierfortschritt",
+	"73f71db707c76dfc09d49efa5d17fda8": "Aufgabe erledigt!",
+	"bfb163741ecfc99874cb1a139feb4898": "Im Gange..."
 }

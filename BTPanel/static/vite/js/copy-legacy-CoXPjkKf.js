@@ -1,1 +1,0 @@
-System.register(["./index-legacy-DQdImDha.js?v=1773287522785"],(function(e,t){"use strict";var s,c,r;return{setters:[e=>{s=e.aO,c=e.m,r=e.a3}],execute:function(){e("c",(async e=>{const{copy:t,isSupported:i}=s({legacy:!0});i.value?(t(e),c.success(r.global.t("Utils.Copy.index_1"))):c.error(r.global.t("Utils.Copy.index_2"))}))}}}));

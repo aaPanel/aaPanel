@@ -470,7 +470,15 @@
 		},
 		"tree": {
 			"newFilePlaceholder": "Neue Datei",
-			"newFolderPlaceholder": "Neuer Ordner"
+			"newFolderPlaceholder": "Neuer Ordner",
+			"rename": "Umbenennen",
+			"download": "Herunterladen",
+			"delete": "Löschen",
+			"refresh": "Verzeichnis aktualisieren",
+			"openDir": "Unterverzeichnis öffnen",
+			"newFolder": "Neuer Ordner",
+			"newFile": "Neue Datei",
+			"renameOpenedWarning": "Diese Datei ist derzeit geöffnet und kann nicht umbenannt werden."
 		},
 		"dialogs": {
 			"encodingTitle": "Legen Sie die Dateikodierung fest",
@@ -517,7 +525,10 @@
 		"editorHeader": {
 			"tipTitle": "Hinweis",
 			"modifiedSaveConfirm": "Diese Datei wurde geändert. Änderungen speichern?",
-			"dontSave": "Nicht speichern"
+			"dontSave": "Nicht speichern",
+			"close": "Schließen",
+			"closeOthers": "Andere schließen",
+			"closeAll": "Alle schließen"
 		},
 		"editorFooter": {
 			"fileLocation": "Datei: {Pfad}",

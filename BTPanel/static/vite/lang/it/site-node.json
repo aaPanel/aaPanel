@@ -81,6 +81,10 @@
 		"index_79": "Indirizzo locale",
 		"index_80": "Disabilita mappatura!, Vuoi continuare?",
 		"index_81": "Abilita la mappatura!, Vuoi continuare?",
-		"index_82": "Il formato del nome del dominio legato non è corretto"
+		"index_82": "Il formato del nome del dominio legato non è corretto",
+		"index_83": "After starting selected projects in batches, the projects will be accessible",
+		"index_84": "After stopping selected projects in batches, the projects will stop running",
+		"index_85": "After restarting selected projects in batches, the projects will be restarted",
+		"index_86": "Batch operating, please wait..."
 	}
 }

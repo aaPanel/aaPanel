@@ -145,7 +145,19 @@
 			"index_23_2": "\"베타 테스터를위한 지침\"",
 			"index_23_3": "{0} Second (S) 클릭을 기다립니다",
 			"index_24": "Linux 베타 버전으로 업데이트하세요",
-			"index_25": "베타 테스터에 대한 지침을주의 깊게 읽으십시오. Linux Beta 버전으로 업데이트 하시겠습니까?"
+			"index_25": "베타 테스터에 대한 지침을주의 깊게 읽으십시오. Linux Beta 버전으로 업데이트 하시겠습니까?",
+			"index_26": "Updating panel, please wait...",
+			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
+			"index_28": "Upgrade Panel",
+			"index_29": "New version found. Continue repairing panel can fix various abnormal issues encountered during use",
+			"index_30": "About to update to: ",
+			"index_31": "Update time: ",
+			"index_32": "Current version is already the latest",
+			"index_33": "Change Logs",
+			"index_34": "Continue upgrade",
+			"index_35": "Continue fix",
+			"index_36": "Fix panel",
+			"index_37": "New version available. Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "서버 다시시작",
@@ -269,7 +281,9 @@
 			"index_96": "서버 보안 감지",
 			"index_97": "스캐닝",
 			"index_98": "무위험 항목",
-			"index_99": "스캔을 기다리고 있습니다"
+			"index_99": "스캔을 기다리고 있습니다",
+			"ScanRules": "Scan Rules",
+			"DefaultRuleTag": "[Default]"
 		}
 	}
 }

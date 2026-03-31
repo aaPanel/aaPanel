@@ -204,5 +204,8 @@
 	"1366ea178d5982a458473a26d2497704": "A partir del minuto 0 de cada hora y ejecutó cada {0} minutos",
 	"39aba25ea2402e1013ebe54be1c7acc8": "Ejecutado cada {0} segundos",
 	"b7b5c32036d1bb9dd91e97886fc1b1f3": "Programación de tareas",
-	"aac027ec9e38230130244e0397eaac6d": "Sincronice el tiempo del servidor NTP de forma predeterminada y sincronizará el tiempo del servidor de AAPANEL.com cuando falle."
+	"aac027ec9e38230130244e0397eaac6d": "Sincronice el tiempo del servidor NTP de forma predeterminada y sincronizará el tiempo del servidor de AAPANEL.com cuando falle.",
+	"8fc0659232c975a18a7081105574d3f2": "Seleccionar guión",
+	"616014f40d8c6b598ac8e4b3f6604a65": "Seleccione un script (se admite búsqueda)",
+	"64acfab698beb8e9800766cbae80c991": "Para mantener la estabilidad del servicio y garantizar un rendimiento fluido, absténgase de ejecutar con frecuencia scripts de alta carga y evite agregar demasiadas tareas de este tipo."
 }

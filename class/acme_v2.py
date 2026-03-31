@@ -1414,6 +1414,42 @@ fullchain.pem       Paste into certificate input box
                 break
         return siteName, project_type
 
+    def _sub_mial_cert(self, domain, key_file, pem_file, to_info, cert_init) -> bool:
+        """
+        mail 证书替换
+        - 更新 postfix/dovecot 配置
+        - 更新 vmail_ssl.map 并重启相关服务
+        """
+        try:
+            if os.path.exists("/www/server/panel/plugin/mail_sys"):
+                sys.path.insert(1, "/www/server/panel/plugin/mail_sys")
+            from plugin.mail_sys.mail_sys_main import mail_sys_main
+            args = public.dict_obj()
+            args.domain = domain
+            args.csr = public.readFile(pem_file)
+            args.key = public.readFile(key_file)
+            args.act = 'add'
+            result = mail_sys_main().set_mail_certificate_multiple(args)
+
+            if not isinstance(result, dict) or not result.get('status'):
+                self.logger(
+                    '|-Detected that certificate under /www/server/panel/plugin/mail_sys/cert/{} needs update, '
+                    'but mail ssl apply failed: {}'.format(domain, result)
+                )
+                return False
+
+            public.writeFile(to_info, json.dumps(cert_init))
+            self.logger(
+                '|-Detected that the certificate under /www/server/panel/plugin/mail_sys/cert/{} '
+                'overlaps with this application and has an earlier expiration time, '
+                'and has been replaced via set_mail_certificate_multiple!'.format(domain)
+            )
+            return True
+        except Exception:
+            self.logger('|-Mail ssl update exception for {}: {}'.format(domain, public.get_error_info()))
+            return False
+
+
     # 替换服务器上的同域名同品牌证书
     def sub_all_cert(self, key_file, pem_file):
         cert_init = self.get_cert_init(pem_file)  # 获取新证书的基本信息
@@ -1462,6 +1498,18 @@ fullchain.pem       Paste into certificate input box
                         is_copy = False
                 if not is_copy:
                     continue
+
+                # ========================= 开始更新替换ssl ===========================
+                if path == '/www/server/panel/plugin/mail_sys/cert': # mail更新逻辑
+                    self._sub_mial_cert(
+                        domain=p_name,
+                        key_file=key_file,
+                        pem_file=pem_file,
+                        to_info=to_info,
+                        cert_init=cert_init
+                    )
+                    continue
+
                 # 替换新的证书文件和基本信息
                 public.writeFile(to_pem_file, public.readFile(pem_file, 'rb'), 'wb')
                 public.writeFile(to_key_file, public.readFile(key_file, 'rb'), 'wb')

@@ -587,7 +587,7 @@
 			"index_9": "Inopérable",
 			"index_10": "Réécrire URL"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "Domaine",
 			"index_2": "Répertoire de site",
 			"index_3": "Répertoire en cours d'exécution",
@@ -760,7 +760,8 @@
 			"viewDocs": "View",
 			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 Application deployed!\"",
 			"deleteGitConfigTitle": "Delete git configuration",
-			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted."
+			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted.",
+			"importExistingProjectTitle": "Import existing Git project"
 		}
 	}
 }

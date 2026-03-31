@@ -95,7 +95,10 @@
 			"index_92": "Tugas waktunya dimulai dengan sukses",
 			"index_93": "Tugas waktunya berhasil ditutup",
 			"index_94": "Bagian",
-			"index_95": "Dieksekusi setiap {0} detik"
+			"index_95": "Dieksekusi setiap {0} detik",
+			"index_96": "Pilih skrip",
+			"index_97": "Silakan pilih skrip (pencarian didukung)",
+			"index_98": "Untuk menjaga stabilitas layanan dan memastikan kelancaran kinerja, harap jangan sering menjalankan skrip dengan beban tinggi dan hindari menambahkan terlalu banyak tugas seperti itu"
 		},
 		"arrange": {
 			"index_1": "Jalankan tugas skrip di [{0}] segera, proses eksekusi mungkin menunggu lama, harap bersabar. Apakah Anda ingin melanjutkan?",

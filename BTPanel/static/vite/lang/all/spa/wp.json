@@ -244,5 +244,21 @@
 	"a7c3c998c562b3c1a03b55a45885d89f": "Archivo seleccionado: {0}",
 	"9162fca50a90dd9ede7b004903e8d5f5": "Subir complemento",
 	"f6e4b551382f9dbe4413c43de5f80873": "Subir tema",
-	"4e4b1e639a36d24d7cc6865089a975b6": "Para agregar un complemento o tema personalizado a esta colección, haga clic en el botón Cargar y luego cargue el archivo desde su computadora local."
+	"4e4b1e639a36d24d7cc6865089a975b6": "Para agregar un complemento o tema personalizado a esta colección, haga clic en el botón Cargar y luego cargue el archivo desde su computadora local.",
+	"09cdd6a7321c64bae05b8cca859f1461": "Habilitar caché",
+	"4e8ee19c1cb18f89be54c0ace9edfd3a": "Crear sitios por lotes",
+	"2b456e8e4127051e591e630c17843128": "Primero resuelva el registro A de este dominio en la dirección IP del servidor.",
+	"4c9c0eb283eda5aa5c4a8c8c86df15eb": "Descripción del formato:",
+	"d36103913ac2fe791d17be0fa8d69d49": "Formato por lotes: Dominio {'|'} Título del sitio web {'|'} Cuenta de administrador {'|'} Contraseña de administrador {'|'} Prefijo",
+	"9ffd4c6ccbafc6c32a32ff354808e4bb": "Formato de dominio: admite múltiples dominios, separados por comas (por ejemplo: a.com,b.com)",
+	"94ba5b2e80d63c99f45adfba8485afe8": "por ej. aapanel.com{'|'}mi blog{'|'}admin{'|'}contraseña123456{'|'}wp_",
+	"decac45ddce192fc04d7a8143151b5b5": "Un sitio por línea. Si la contraseña está vacía, el sistema generará automáticamente una contraseña segura.",
+	"7d334a13bf3e93e8eff7d4c344b79ac9": "Si configura el prefijo wp_, el sistema generará automáticamente un sufijo aleatorio.",
+	"8329ddd883c86d197cd5c890ed4b379a": "Por favor ingrese los datos del lote",
+	"c309257ce4aed5d1b9dc845f9ca8e539": "dominio.com{'|'}Título del sitio web{'|'}Usuario administrador{'|'}Contraseña{'|'}wp_",
+	"702177c75a3234bb2d5cd33d1e50004d": "Actualmente hay tareas en progreso.",
+	"4351cfebe4b61d8aa5efa1d020710005": "Ver",
+	"c696fc9ea1860852518fe04f275823b2": "Copiar progreso",
+	"73f71db707c76dfc09d49efa5d17fda8": "¡Tarea completada!",
+	"bfb163741ecfc99874cb1a139feb4898": "En curso..."
 }

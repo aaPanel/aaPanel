@@ -205,7 +205,7 @@ var docker = {
                                 that.remove_cont_chart_data()
                                 //加载图表文件
                                 jQuery.ajax({ 
-                                    url: "/static/js/echarts.min.js?v=1773287522785",
+                                    url: "/static/js/echarts.min.js?v=1774508183068",
                                     dataType: "script",
                                     cache: true
                                 }).done(function() {

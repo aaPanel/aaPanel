@@ -470,7 +470,15 @@
 		},
 		"tree": {
 			"newFilePlaceholder": "Nuevo archivo",
-			"newFolderPlaceholder": "Nueva carpeta"
+			"newFolderPlaceholder": "Nueva carpeta",
+			"rename": "Rebautizar",
+			"download": "Descargar",
+			"delete": "Borrar",
+			"refresh": "Actualizar directorio",
+			"openDir": "Abrir subdirectorio",
+			"newFolder": "Nueva carpeta",
+			"newFile": "Nuevo archivo",
+			"renameOpenedWarning": "Este archivo está actualmente abierto y no se le puede cambiar el nombre."
 		},
 		"dialogs": {
 			"encodingTitle": "Establecer codificación de archivos",
@@ -517,7 +525,10 @@
 		"editorHeader": {
 			"tipTitle": "Aviso",
 			"modifiedSaveConfirm": "Este archivo ha sido modificado. ¿Guardar cambios?",
-			"dontSave": "No guardar"
+			"dontSave": "No guardar",
+			"close": "Cerrar",
+			"closeOthers": "Cerrar Otros",
+			"closeAll": "Cerrar todo"
 		},
 		"editorFooter": {
 			"fileLocation": "Archivo: {ruta}",

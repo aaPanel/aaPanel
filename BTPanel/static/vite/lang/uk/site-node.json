@@ -81,6 +81,10 @@
 		"index_79": "Локальна адреса",
 		"index_80": "Вимкнути проксі? Продовжити?",
 		"index_81": "Увімкнути проксі? Продовжити?",
-		"index_82": "Некоректний формат доменного імені"
+		"index_82": "Некоректний формат доменного імені",
+		"index_83": "After starting selected projects in batches, the projects will be accessible",
+		"index_84": "After stopping selected projects in batches, the projects will stop running",
+		"index_85": "After restarting selected projects in batches, the projects will be restarted",
+		"index_86": "Batch operating, please wait..."
 	}
 }

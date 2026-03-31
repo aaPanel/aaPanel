@@ -680,5 +680,7 @@
 	"4351cfebe4b61d8aa5efa1d020710005": "Melihat",
 	"a12da959bc78438d1b9b613755251e63": "cd /www/wwwroot/aapanel.com\ngit pull asal master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 Aplikasi dikerahkan!\"",
 	"016435b6e35ac3f9ebbee2465461a8e3": "Hapus konfigurasi git",
-	"d954fc3c257148e3de3a7cf2002927d1": "Anda dapat menghapus repositori di sini. Perhatikan bahwa direktori .git dan catatan penerapan akan dihapus."
+	"d954fc3c257148e3de3a7cf2002927d1": "Anda dapat menghapus repositori di sini. Perhatikan bahwa direktori .git dan catatan penerapan akan dihapus.",
+	"06493c1849f385b79535ab5038aa2f95": "Impor proyek Git yang ada",
+	"62ac18bcb213e34e0b145c50b49a0ee4": "Email tidak boleh kosong"
 }

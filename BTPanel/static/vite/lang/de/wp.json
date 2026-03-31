@@ -67,18 +67,30 @@
 			"index_7": "Site hinzufügen",
 			"index_8": "Versionen 5.6.0+ aktivieren automatisch automatische Versionsaktualisierungen",
 			"index_9": "Erlauben Sie schwache Passwörter",
-			"index_10": "Aktivieren Sie das Caching, der derzeit nur Nginx unterstützt",
+			"index_10": "Cache aktivieren",
 			"index_11": "Aktivieren Sie WPS-Hide-Login",
 			"index_12": "Ändern Sie die Administratoranmelder -URL",
 			"index_13": "Umleitung URL",
 			"index_1": "Site erstellen",
 			"index_2": "Erstellen Sie aus dem Backup",
+			"index_3": "Websites im Batch erstellen",
 			"import_1": "Sicherungstyp",
 			"import_2": "Lokal",
 			"import_3": "Plesk oder CPanel",
 			"import_4": "Sicherungsdateipfad",
 			"import_5": "Unterverzeichnis, im Stammverzeichnis leer",
 			"import_6": "Bitte geben Sie den Sicherungsdateipfad ein"
+		},
+		"AddBatch": {
+			"index_1": "Bitte lösen Sie zunächst den A-Eintrag dieser Domain in die Server-IP-Adresse auf",
+			"index_2": "Formatbeschreibung:",
+			"index_3": "Stapelformat: Domain {'|'} Website-Titel {'|'} Admin-Konto {'|'} Admin-Passwort {'|'} Präfix",
+			"index_4": "Domänenformat: Unterstützt mehrere Domänen, getrennt durch Kommas (z. B.: a.com,b.com)",
+			"index_7": "z.B. aapanel.com{'|'}mein Blog{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "Eine Site pro Zeile. Wenn das Passwort leer ist, generiert das System automatisch ein sicheres Passwort.",
+			"index_6": "Wenn Sie das Präfix wp_ festlegen, generiert das System automatisch ein zufälliges Suffix.",
+			"index_8": "Bitte geben Sie Chargendaten ein",
+			"placeholder": "domain.com{'|'}Website-Titel{'|'}AdminUser{'|'}Passwort{'|'}wp_"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +266,13 @@
 			"index_17": "Plugin -Version",
 			"index_18": "Mysql Version",
 			"index_19": "Dadurch wird Ihre Website aus dem Dashboard entfernt. Sind Sie sicher, dass Sie dies tun möchten?"
+		},
+		"Task": {
+			"index_1": "Derzeit sind Aufgaben in Bearbeitung.",
+			"index_2": "Ansicht",
+			"index_3": "Kopierfortschritt",
+			"index_4": "Aufgabe erledigt!",
+			"index_5": "Im Gange..."
 		}
 	}
 }

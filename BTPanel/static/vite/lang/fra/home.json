@@ -145,7 +145,19 @@
 			"index_23_2": "\"Instructions pour les testeurs bêta\"",
 			"index_23_3": "{0} seconde (s) attendre pour cliquer",
 			"index_24": "Mise à jour de la version bêta de Linux",
-			"index_25": "Veuillez lire attentivement les instructions pour les bêta. Êtes-vous sûr de mettre à jour la version bêta de Linux?"
+			"index_25": "Veuillez lire attentivement les instructions pour les bêta. Êtes-vous sûr de mettre à jour la version bêta de Linux?",
+			"index_26": "Updating panel, please wait...",
+			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
+			"index_28": "Upgrade Panel",
+			"index_29": "New version found. Continue repairing panel can fix various abnormal issues encountered during use",
+			"index_30": "About to update to: ",
+			"index_31": "Update time: ",
+			"index_32": "Current version is already the latest",
+			"index_33": "Change Logs",
+			"index_34": "Continue upgrade",
+			"index_35": "Continue fix",
+			"index_36": "Fix panel",
+			"index_37": "New version available. Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "Le serveur",
@@ -269,7 +281,9 @@
 			"index_96": "Détection de sécurité du serveur",
 			"index_97": "Balayage",
 			"index_98": "Article sans risque",
-			"index_99": "En attente de numérisation"
+			"index_99": "En attente de numérisation",
+			"ScanRules": "Scan Rules",
+			"DefaultRuleTag": "[Default]"
 		}
 	}
 }

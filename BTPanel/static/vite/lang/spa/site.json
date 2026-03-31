@@ -587,7 +587,7 @@
 			"index_9": "Inoperable",
 			"index_10": "URL Reescritura"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "Dominio",
 			"index_2": "Directorio de sitio",
 			"index_3": "Directorio de ejecución",
@@ -673,7 +673,7 @@
 			"index_6": "Seleccione la versión WP",
 			"index_7": "El usuario de Backend de WordPress no puede estar vacío",
 			"index_8": "La contraseña de backend de WordPress no puede estar vacía",
-			"index_9": "La dirección de correo electrónico no puede estar vacía",
+			"index_9": "El correo electrónico no puede estar vacío.",
 			"index_10": "Nombre de la tabla de WordPress El prefijo no puede estar vacío",
 			"index_11": "La URL de inicio de sesión no puede estar vacía",
 			"index_12": "La URL de redirección no puede estar vacía",
@@ -749,6 +749,7 @@
 			"pleaseSelectKey": "Por favor seleccione una clave",
 			"generateNewKeySuccess": "Nueva clave SSH generada exitosamente",
 			"updateSshKeyTitle": "Actualizar clave SSH",
+			"importExistingProjectTitle": "Importar proyecto Git existente",
 			"coverageData": "Datos de cobertura",
 			"repoAddressPlaceholder": "Por favor ingrese la dirección del repositorio",
 			"branchPlaceholder": "Por favor seleccione una sucursal",

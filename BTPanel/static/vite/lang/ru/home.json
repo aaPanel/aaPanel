@@ -142,7 +142,19 @@
 			"index_23_2": "\"Руководство для бэта-тестеров\"",
 			"index_23_3": "Подождите {0} секунд(ы) перед нажатием",
 			"index_24": "Обновить до Linux бэта версии",
-			"index_25": "Ознакомьтесь с инструкциями для участников бэта-тестирования. Вы уверены, что хотите обновиться до бэта-версии Linux?"
+			"index_25": "Ознакомьтесь с инструкциями для участников бэта-тестирования. Вы уверены, что хотите обновиться до бэта-версии Linux?",
+			"index_26": "Updating panel, please wait...",
+			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
+			"index_28": "Upgrade Panel",
+			"index_29": "New version found. Continue repairing panel can fix various abnormal issues encountered during use",
+			"index_30": "About to update to: ",
+			"index_31": "Update time: ",
+			"index_32": "Current version is already the latest",
+			"index_33": "Change Logs",
+			"index_34": "Continue upgrade",
+			"index_35": "Continue fix",
+			"index_36": "Fix panel",
+			"index_37": "New version available. Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "Сервер",
@@ -269,7 +281,9 @@
 			"index_96": "Server security detection",
 			"index_97": "Scanning",
 			"index_98": "Risk-free item",
-			"index_99": "Waiting for scanning"
+			"index_99": "Waiting for scanning",
+			"ScanRules": "Scan Rules",
+			"DefaultRuleTag": "[Default]"
 		}
 	}
 }

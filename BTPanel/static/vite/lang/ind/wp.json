@@ -67,18 +67,30 @@
 			"index_7": "Tambahkan situs",
 			"index_8": "Versi 5.6.0+ Secara otomatis mengaktifkan pembaruan versi otomatis",
 			"index_9": "Izinkan kata sandi yang lemah",
-			"index_10": "Aktifkan caching, saat ini hanya mendukung Nginx",
+			"index_10": "Aktifkan cache",
 			"index_11": "Aktifkan WPS-HIDE-LOGIN",
 			"index_12": "Ubah URL Login Admin",
 			"index_13": "URL pengalihan",
 			"index_1": "Buat Situs",
 			"index_2": "Buat dari cadangan",
+			"index_3": "Pembuatan situs secara batch",
 			"import_1": "Jenis cadangan",
 			"import_2": "Lokal",
 			"import_3": "Plesk atau cpanel",
 			"import_4": "Jalur file cadangan",
 			"import_5": "Subdirektori, kosong di direktori root",
 			"import_6": "Harap masukkan jalur file cadangan"
+		},
+		"AddBatch": {
+			"index_1": "Harap selesaikan terlebih dahulu catatan A domain ini ke alamat IP server",
+			"index_2": "Deskripsi format:",
+			"index_3": "Format batch: Domain {'|'} Judul Situs Web {'|'} Akun Admin {'|'} Kata Sandi Admin {'|'} Awalan",
+			"index_4": "Format domain: Mendukung banyak domain, dipisahkan dengan koma (misalnya: a.com,b.com)",
+			"index_7": "misalnya aapanel.com{'|'}blog saya{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "Satu situs per baris. Jika kata sandi kosong, sistem secara otomatis akan menghasilkan kata sandi yang kuat.",
+			"index_6": "Jika Anda menyetel awalan wp_, sistem akan secara otomatis menghasilkan akhiran acak.",
+			"index_8": "Silakan masukkan data kumpulan",
+			"placeholder": "domain.com{'|'}Judul Situs Web{'|'}Pengguna Admin{'|'}Sandi{'|'}wp_"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +266,13 @@
 			"index_17": "Versi plugin",
 			"index_18": "Versi MySQL",
 			"index_19": "Ini akan menghapus situs web Anda dari dasbor, apakah Anda yakin ingin melakukan ini?"
+		},
+		"Task": {
+			"index_1": "Saat ini ada tugas yang sedang berjalan.",
+			"index_2": "Lihat",
+			"index_3": "Salin Kemajuan",
+			"index_4": "Tugas selesai!",
+			"index_5": "Sedang berlangsung..."
 		}
 	}
 }

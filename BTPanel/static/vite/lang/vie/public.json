@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Xóa hàng loạt",
-			"ChooseDel": "Vui lòng chọn Del"
+			"ChooseDel": "Vui lòng chọn Del",
+			"ConfirmWithDesc": "{0}, tiếp tục hoạt động?"
 		},
 		"Confirm": {
 			"Title": "Lời khuyên",

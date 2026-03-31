@@ -470,7 +470,15 @@
 		},
 		"tree": {
 			"newFilePlaceholder": "Berkas baru",
-			"newFolderPlaceholder": "Folder baru"
+			"newFolderPlaceholder": "Folder baru",
+			"rename": "Ganti nama",
+			"download": "Unduh",
+			"delete": "Menghapus",
+			"refresh": "Segarkan direktori",
+			"openDir": "Buka subdirektori",
+			"newFolder": "Folder baru",
+			"newFile": "Berkas baru",
+			"renameOpenedWarning": "File ini sedang terbuka dan tidak dapat diganti namanya."
 		},
 		"dialogs": {
 			"encodingTitle": "Atur pengkodean file",
@@ -517,7 +525,10 @@
 		"editorHeader": {
 			"tipTitle": "Perhatikan",
 			"modifiedSaveConfirm": "File ini telah dimodifikasi. Simpan perubahan?",
-			"dontSave": "Jangan Simpan"
+			"dontSave": "Jangan Simpan",
+			"close": "Tutup",
+			"closeOthers": "Tutup Lainnya",
+			"closeAll": "Tutup Semua"
 		},
 		"editorFooter": {
 			"fileLocation": "Berkas: {jalur}",
@@ -591,7 +602,7 @@
 	},
 	"FolderPicker": {
 		"SearchPlaceholder": "Cari file/direktori",
-		"NewFile": "Berkas baru",
+		"NewFile": "File baru",
 		"NewFolder": "Folder baru",
 		"CurrentSelection": "Pilihan saat ini:",
 		"Name": "Nama",

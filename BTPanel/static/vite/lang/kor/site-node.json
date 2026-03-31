@@ -81,6 +81,10 @@
 		"index_79": "로컬 주소",
 		"index_80": "매핑 비활성화!, 계속 하시겠습니까?",
 		"index_81": "매핑 활성화!, 계속 하시겠습니까?",
-		"index_82": "바운드 도메인 이름의 형식이 올바르지 않습니다"
+		"index_82": "바운드 도메인 이름의 형식이 올바르지 않습니다",
+		"index_83": "After starting selected projects in batches, the projects will be accessible",
+		"index_84": "After stopping selected projects in batches, the projects will stop running",
+		"index_85": "After restarting selected projects in batches, the projects will be restarted",
+		"index_86": "Batch operating, please wait..."
 	}
 }

@@ -204,5 +204,8 @@
 	"1366ea178d5982a458473a26d2497704": "Ab minute 0 einer Stunde und leitete alle {0} Minuten aus",
 	"39aba25ea2402e1013ebe54be1c7acc8": "Jede {0} Sekunden ausgeführt",
 	"b7b5c32036d1bb9dd91e97886fc1b1f3": "Aufgabenplanung",
-	"aac027ec9e38230130244e0397eaac6d": "Synchronisieren Sie die Zeit standardmäßig vom NTP -Server und synchronisieren die Serverzeit von aapanel.com, wenn er fehlschlägt."
+	"aac027ec9e38230130244e0397eaac6d": "Synchronisieren Sie die Zeit standardmäßig vom NTP -Server und synchronisieren die Serverzeit von aapanel.com, wenn er fehlschlägt.",
+	"8fc0659232c975a18a7081105574d3f2": "Skript auswählen",
+	"616014f40d8c6b598ac8e4b3f6604a65": "Bitte wählen Sie ein Skript aus (Suche unterstützt)",
+	"64acfab698beb8e9800766cbae80c991": "Um die Stabilität des Dienstes aufrechtzuerhalten und eine reibungslose Leistung zu gewährleisten, sollten Sie davon absehen, häufig Skripts mit hoher Auslastung auszuführen und nicht zu viele solcher Aufgaben hinzufügen"
 }

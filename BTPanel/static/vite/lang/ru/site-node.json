@@ -81,6 +81,10 @@
 		"index_79": "Локальный адрес",
 		"index_80": "Отключение маппинга! Продолжить?",
 		"index_81": "Включение маппинга! Продолжить?",
-		"index_82": "Неверный формат привязанного домена"
+		"index_82": "Неверный формат привязанного домена",
+		"index_83": "After starting selected projects in batches, the projects will be accessible",
+		"index_84": "After stopping selected projects in batches, the projects will stop running",
+		"index_85": "After restarting selected projects in batches, the projects will be restarted",
+		"index_86": "Batch operating, please wait..."
 	}
 }

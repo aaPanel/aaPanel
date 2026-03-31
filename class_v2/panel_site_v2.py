@@ -1442,45 +1442,158 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.progress_release_lock(lock_file)
                 return data
 
-    # 添加WP站点
-    def AddWPSite(self, args: public.dict_obj):
-        # 参数验证
+    # 处理批量创建wp站点
+    def batch_add_wp(self,get: public.dict_obj, app = None):
+        task_status = os.path.join('/tmp', 'wp_batch_aapanel_deploy.log')
+        lock_file = os.path.join('/tmp',  "wp_batch_aapanel_deploy.lock" )
+        import threading
+        thread_id = threading.get_ident()
+        public.writeFile(lock_file, str(thread_id))
         try:
-            args.validate([
-                Param('webname').String(),
-                Param('type').String(),
-                Param('ps').String(),
-                Param('path').String(),
+            # 初始化
+            get.validate([
                 Param('version').String(),
-                Param('sql').String(),
-                Param('datauser').String(),
-                Param('datapassword').String(),
-                Param('codeing').String(),
-                Param('port').Integer(),
-                Param('type_id').Integer(),
-                Param('set_ssl').Integer(),
-                Param('force_ssl').Integer(),
-                Param('ftp').Bool(),
-                Param('weblog_title').Require().Xss(),
+                Param('websites_content').String(),
                 Param('language').Require(),
-                Param('user_name').Require().Xss(),
-                Param('email').Require().Email(),
-                Param('pw_weak').Require().String('in', ['on', 'off']),
-                Param('password').Require(),
-                Param('prefix').Require().Xss(),
                 Param('enable_cache').Require().Integer(),
-                Param('enable_whl').Integer(),
-                Param('whl_page').SafePath(),
-                Param('whl_redirect_admin').SafePath(),
+                Param('email').Require().Email(),
+                Param('ssl_auto').Integer(),
+                Param('is_create_default_file').String(),
                 Param('package_version').String(),
-                Param('wp_parse_list').String(),  # dns auto
             ], [
                 public.validate.trim_filter(),
             ])
-        except Exception as ex:
-            public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, str(ex))
+            get.project_type = 'WP2'
+            websites_content = json.loads(get.websites_content)
 
+            websites_info = []
+            domin_list = []  # 用于去重
+            count = 0
+            result_list = []
+            progress_log = {
+                "status": 0,
+                "error": "",
+                "Create_website": {
+                    "status": 0,
+                    "ps" : f"Initialization parameters",
+                    "title": public.lang("Create_website"),
+                    "result_list" : []
+                },
+            }
+            public.writeFile(task_status, json.dumps(progress_log))
+
+            # 参数处理
+            for website in websites_content:
+                website_list = website.strip().split('|')
+                if len(website_list) != 5:
+                    continue
+
+                site_dict = f'{{"domain":"{website_list[0]}","domainlist":"{website_list[0][1:]}","count":{len(website_list[0][1:])}}}'
+
+                if website_list[0] in domin_list:
+                    continue
+
+                domin_list.append(website_list[0])
+                websites_info.append({
+                    'domain': website_list[0],
+                    'webname': site_dict,
+                    'weblog_title': website_list[1],
+                    'user_name': public.generate_random_string(6) if not website_list[2] or website_list[2] == 'AdminUser' else website_list[2],
+                    'password': public.generate_random_string(16,include_special=True) if not website_list[3] or website_list[3] == 'Password' else website_list[2],
+                    'prefix': 'wp_' + public.generate_random_string(6) + '_' if not website_list[4] or website_list[4] else website_list[4]
+                })
+
+            sites_count = len(websites_info)
+            progress_log = {
+                "status": 0,
+                "error": "",
+                "Create_website": {
+                    "status": 0,
+                    "ps" : f"Create websites in batches: {count}/{sites_count}",
+                    "title": public.lang("Create_website"),
+                    "result_list" : []
+                },
+            }
+            public.writeFile(task_status, json.dumps(progress_log))
+
+            # 循环创建
+            for site in websites_info:
+                get.webname = site['webname']
+                get.port = '80'
+                get.weblog_title = site['weblog_title']
+                get.user_name = site['user_name']
+                get.password = site['password']
+                get.prefix = site['prefix']
+                get.pw_weak = 'on'
+                get.path = '/www/wwwroot/' + site["domain"]
+                get.ps = site['domain']
+                get.sql = 'true'
+                get.datauser = 'sql_' +  site['domain'].replace('.', '_')
+                get.datapassword = public.generate_random_string(12)
+                get.codeing = 'utf8'
+                get.project_type = 'WP2'
+                from flask import Flask
+                app = Flask(__name__)
+                self.add_sites(get, app)
+                res = self.get_wp_progress(public.to_dict_obj({"progress_type":"backup_deploy"}), True)
+                if res['status'] == 0 and res['message'].get('initialize_wp_website').get("status") == 1:
+                    result_list.append({f"msg" : "Successfully created","webname": site['domain'],"status": 0})
+                else:
+                    msg = "Unknown error"
+                    if res['status'] == 0:
+                        for key, value in res.get('message').items():
+                            if isinstance(value, dict) and value.get("status") == -1:
+                                msg = value.get("error", "Unknown error")
+                    result_list.append({f"msg" : msg,"webname": site['domain'],"status": -1})
+
+                count += 1
+                progress_log = {
+                    "status": 0,
+                    "error": "",
+                    "Create_website": {
+                        "status": 0,
+                        "ps": f"Create websites in batches: {count}/{sites_count}",
+                        "title": public.lang("Create_website"),
+                        "result_list": result_list
+                    },
+                }
+                public.writeFile(task_status,  json.dumps(progress_log))
+
+                time.sleep(1)
+
+            progress_log = {
+                "status": 1,
+                "error": "",
+                "Create_website": {
+                    "status": 1,
+                    "ps": f"Create websites in batches: {count}/{sites_count}",
+                    "title": public.lang("Create_website"),
+                    "result_list": result_list
+                },
+            }
+            public.writeFile(task_status, json.dumps(progress_log))
+            public.writeFile("/tmp/wp_aapanel_deploy.log", json.dumps(progress_log))  # 写入双份
+            public.progress_release_lock(lock_file)
+
+            return public.return_message(0,0, "Completed creation")
+        except Exception as e:
+            progress_log = {
+                "status": 1,
+                "error": "",
+                "Create_website": {
+                    "status": -1,
+                    "ps": f"Initialization error",
+                    "title": public.lang("Create_website"),
+                },
+            }
+            public.writeFile(task_status, progress_log)
+            public.writeFile("/tmp/wp_aapanel_deploy.log", json.dumps(progress_log))
+            public.progress_release_lock(lock_file)
+            return progress_log
+
+
+    # 添加WP站点
+    def AddWPSite(self, args: public.dict_obj):
         from flask import Flask
         app = Flask(__name__)
 
@@ -1492,9 +1605,12 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
         from concurrent.futures import ThreadPoolExecutor
 
-        # 创建单线程池
+        # 批量创建/单创建
         thread = ThreadPoolExecutor(max_workers=1)
-        thread.submit(self.add_sites, args, app)
+        if args.get('websites_content'):
+            thread.submit(self.batch_add_wp, args, app)
+        else:
+            thread.submit(self.add_sites, args, app)
 
         return public.return_message(0, 0, public.lang('Successful startup!'))
 
@@ -2864,6 +2980,9 @@ listener SSL443 {{
                     if other_project in SPECIAL_PROJECT_TYPE:
                         # 兼容 node, python, go, java, net, html, other
                         try:
+                            # 修正项目名
+                            if 'node' in other_project:
+                                other_project = 'nodejs'
                             import importlib
                             project_module = importlib.import_module(f"projectModelV2.{other_project}Model")
                             project_class = getattr(project_module, "main", None)
@@ -9689,7 +9808,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             raise public.HintException(public.lang('Database connection failed, please check the database status!'))
 
     # 获取wp复制进度, 创建进度
-    def get_wp_progress(self, args: public.dict_obj):
+    def get_wp_progress(self, args: public.dict_obj, internal = None):
         """
             兼容备份部署与数据复制
         """
@@ -9698,8 +9817,13 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         try:
             # 进度类型区分
             if args.get('progress_type', '') == 'backup_deploy':
-                task_status = Path('/tmp') / 'wp_aapanel_deploy.log'
-                lock_file = Path('/tmp') / 'wp_aapanel_deploy.lock'
+                # 如果正在进行批量创建，则优先获取批量创建
+                if os.path.exists(Path("/tmp") / "wp_batch_aapanel_deploy.lock") and internal is None:
+                    task_status = Path("/tmp") / "wp_batch_aapanel_deploy.log"
+                    lock_file = Path("/tmp") / "wp_batch_aapanel_deploy.lock"
+                else:
+                    task_status = Path('/tmp') / 'wp_aapanel_deploy.log'
+                    lock_file = Path('/tmp') / 'wp_aapanel_deploy.lock'
             elif args.get('progress_type', '') == 'wp_copy':
                 task_status = Path("/tmp") / "wp_copy_status.log"  # 进度文件
                 lock_file = Path("/tmp") / "wp_copy_lock.lock"  # 锁文件

@@ -587,7 +587,7 @@
 			"index_9": "작동 할 수 없습니다",
 			"index_10": "URL을 다시 작성합니다"
 		},
-		"Lable": {
+		"Label": {
 			"index_1": "도메인",
 			"index_2": "사이트 디렉토리",
 			"index_3": "실행 디렉토리",
@@ -760,7 +760,8 @@
 			"viewDocs": "View",
 			"deployScriptPlaceholder": "cd /www/wwwroot/aapanel.com\ngit pull origin master\necho \"\" | sudo -S service php8.3-fpm reload\necho \"🚀 Application deployed!\"",
 			"deleteGitConfigTitle": "Delete git configuration",
-			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted."
+			"deleteGitConfigContent": "You can delete the repository here. Note that both the .git directory and the deployment records will be deleted.",
+			"importExistingProjectTitle": "Import existing Git project"
 		}
 	}
 }

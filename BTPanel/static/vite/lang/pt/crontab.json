@@ -95,7 +95,10 @@
 			"index_92": "Tarefa cronometrada iniciada com sucesso",
 			"index_93": "Tarefa cronometrada fechada com sucesso",
 			"index_94": "Parte",
-			"index_95": "Executado a cada {0} segundos"
+			"index_95": "Executado a cada {0} segundos",
+			"index_96": "Select script",
+			"index_97": "Please select a script (search supported)",
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
 		},
 		"arrange": {
 			"index_1": "Executar a tarefa de script em [{0}] imediatamente, o processo de execução pode demorar muito tempo, por favor, seja paciente. Deseja continuar?",

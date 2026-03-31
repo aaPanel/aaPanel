@@ -49,17 +49,23 @@ def NodeDaemons():
     if public.M('sites').where('project_type=?', ('Node',)).count() >= 1:
         project_info = public.M('sites').where('project_type=?', ('Node',)).select()
         from projectModelV2 import nodejsModel
+        from mod.project.nodejs import comMod
         for i in project_info:
             try:
                 i['project_config'] = json.loads(i['project_config'])
                 if 'is_power_on' in i['project_config'] and i['project_config']['is_power_on'] in ["1", 1, True, "true"]:  # node 默认为is_power_on
+                    p_type = 'pm2' if i['project_config'].get('pm2_name') else 'nodejs'
                     node_obj = nodejsModel.main()
-                    get = public.dict_obj()
-                    get.project_name = i['name']
-                    if node_obj._get_project_run_state(get):
+                    # 判断状态
+                    status = node_obj.get_project_info(public.to_dict_obj({"project_name": i['name']}))
+                    if status['status'] == 0 and status.get('message').get('run') in [True,'true']:
                         continue
-                    # StartProject
-                    node_obj.start_project(get)
+                    if p_type == 'pm2':
+                        if not node_obj.get_project_run(project_name=i['project_config'].get('pm2_name'), project_type = 'pm2'):
+                            comMod.main().set_project_status(public.to_dict_obj({"project_name":i['name'],"project_type":p_type,"status":"start","pm2_name":i['project_config'].get('pm2_name')}))
+                    else:
+                        if not node_obj.get_project_run(project_name=i['name'], project_type = 'node'):
+                            comMod.main().set_project_status(public.to_dict_obj({"project_name":i['name'],"project_type":p_type,"status":"start"}))
                     public.WriteLog('Project Daemon', 'Node.js project [{}] auto start!'.format(i['name']))
             except Exception:
                 import traceback

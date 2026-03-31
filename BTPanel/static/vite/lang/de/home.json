@@ -145,7 +145,19 @@
 			"index_23_2": "\"Anweisungen für Beta -Tester\"",
 			"index_23_3": "{0} Sekunde (s) warten, um zu klicken",
 			"index_24": "Aktualisieren Sie die Linux -Beta -Version",
-			"index_25": "Bitte lesen Sie die Anweisungen für Beta -Tester sorgfältig durch. Sind Sie sicher auf Linux Beta -Version aktualisieren?"
+			"index_25": "Bitte lesen Sie die Anweisungen für Beta -Tester sorgfältig durch. Sind Sie sicher auf Linux Beta -Version aktualisieren?",
+			"index_26": "Das Panel wird aktualisiert, bitte warten...",
+			"index_27": "Bitte drücken Sie Strg+F5, um den Cache zu aktualisieren, oder warten Sie 5 Sekunden auf die automatische Aktualisierung!",
+			"index_28": "Upgrade-Panel",
+			"index_29": "Durch das Upgrade werden bekannte Fehler behoben und die neuesten Funktionen hinzugefügt. Ihre Daten sind davon nicht betroffen",
+			"index_30": "Aktualisierung steht bevor auf: ",
+			"index_31": "Aktualisierungszeit: ",
+			"index_32": "Die aktuelle Version ist bereits die neueste",
+			"index_33": "Änderungsprotokolle",
+			"index_34": "Fahren Sie mit dem Upgrade fort",
+			"index_35": "Weiter beheben",
+			"index_36": "Paneel befestigen",
+			"index_37": "Durch die Reparatur des Panels werden verschiedene unerwartete Probleme behoben"
 		},
 		"Restart": {
 			"index_1": "Server neu starten",
@@ -263,13 +275,15 @@
 			"index_90": "Stoppen Sie den Scan",
 			"index_91": "Ein-Klick-Reparatur",
 			"index_92": "Nach dem Scannen werden alle reparierbaren Risikoartikel automatisch repariert und der neueste Sicherheits -Scan -Bericht wird erstellt",
-			"index_93": "Wenn [Systemhärtung] installiert ist, schließen Sie es zuerst und führen Sie dann eine Reparatur mit einer Klick durch",
+			"index_93": "Deaktivieren Sie [Systemhärtung], bevor Sie die Ein-Klick-Reparatur verwenden.",
 			"index_94": "Reparatur ausgewählt",
 			"index_95": "Scan -Elemente ignorieren",
 			"index_96": "Serversicherheitserkennung",
 			"index_97": "Scannen",
 			"index_98": "Risikofreier Artikel",
-			"index_99": "Warten auf das Scannen"
+			"index_99": "Warten auf das Scannen",
+			"ScanRules": "Scanregeln",
+			"DefaultRuleTag": "[Standard]"
 		}
 	}
 }

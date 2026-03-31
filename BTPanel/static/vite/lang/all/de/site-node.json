@@ -81,5 +81,9 @@
 	"079692346c78feef82d8a9bf935440ae": "Schließen des Knotenprojekts [{0}], den Betrieb fortsetzen?",
 	"c7dea2e82a3d73a2ec514438b7f8a879": "Deaktivieren Sie die Kartierung!, Möchten Sie fortfahren?",
 	"1e0987441b69ab74d07cb865b2828245": "Mapping aktivieren!, Möchten Sie fortfahren?",
-	"63d7b382680de0dacf15b200233990b1": "Das Format des gebundenen Domänennamens ist falsch"
+	"63d7b382680de0dacf15b200233990b1": "Das Format des gebundenen Domänennamens ist falsch",
+	"c7122f4c7fcb8fa9156415b35acc2e0d": "Nachdem ausgewählte Projekte stapelweise gestartet wurden, sind die Projekte zugänglich",
+	"335d619ca69887831a59ee15de944384": "Nachdem ausgewählte Projekte stapelweise gestoppt wurden, wird die Ausführung der Projekte gestoppt",
+	"c728fa4b32fe3880398e628ad427199e": "Nach dem stapelweisen Neustart ausgewählter Projekte werden die Projekte neu gestartet",
+	"c2e30cfdf1b2be46c5c480b962e4b9e0": "Batch-Betrieb, bitte warten..."
 }

@@ -470,7 +470,15 @@
 		},
 		"tree": {
 			"newFilePlaceholder": "Tập tin mới",
-			"newFolderPlaceholder": "Thư mục mới"
+			"newFolderPlaceholder": "Thư mục mới",
+			"rename": "Đổi tên",
+			"download": "Tải xuống",
+			"delete": "Xóa bỏ",
+			"refresh": "Làm mới thư mục",
+			"openDir": "Mở thư mục con",
+			"newFolder": "Thư mục mới",
+			"newFile": "Tập tin mới",
+			"renameOpenedWarning": "Tệp này hiện đang mở và không thể đổi tên."
 		},
 		"dialogs": {
 			"encodingTitle": "Đặt mã hóa tập tin",
@@ -517,7 +525,10 @@
 		"editorHeader": {
 			"tipTitle": "thông báo",
 			"modifiedSaveConfirm": "Tập tin này đã được sửa đổi. Lưu thay đổi?",
-			"dontSave": "Không lưu"
+			"dontSave": "Không lưu",
+			"close": "Đóng",
+			"closeOthers": "Đóng phần khác",
+			"closeAll": "Đóng tất cả"
 		},
 		"editorFooter": {
 			"fileLocation": "Tệp: {đường dẫn}",
@@ -591,7 +602,7 @@
 	},
 	"FolderPicker": {
 		"SearchPlaceholder": "Tìm kiếm tập tin/thư mục",
-		"NewFile": "Tập tin mới",
+		"NewFile": "Tệp mới",
 		"NewFolder": "Thư mục mới",
 		"CurrentSelection": "Lựa chọn hiện tại:",
 		"Name": "Tên",

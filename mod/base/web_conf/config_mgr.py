@@ -104,7 +104,7 @@ class ConfigMgr:
         ap_save_path = "{}{}".format(his_path, apache_config_file)
         if os.path.isdir(ap_save_path):
             for i in os.listdir(ap_save_path):
-                os.remove(os.path.join(ng_save_path, i))
+                os.remove(os.path.join(ap_save_path, i))
 
     @staticmethod
     def _file_md5(filename):

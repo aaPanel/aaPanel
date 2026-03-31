@@ -80,7 +80,8 @@
 		},
 		"Batch": {
 			"Del": "Hapus Batch",
-			"ChooseDel": "Pilih Del"
+			"ChooseDel": "Pilih Del",
+			"ConfirmWithDesc": "{0}, lanjutkan operasi?"
 		},
 		"Confirm": {
 			"Title": "Tips",

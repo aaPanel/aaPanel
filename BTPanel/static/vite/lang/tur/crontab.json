@@ -95,7 +95,10 @@
 			"index_92": "Zamanlanmış görev başarıyla başlatıldı",
 			"index_93": "Zamanlanmış görev başarıyla kapatıldı",
 			"index_94": "Parça",
-			"index_95": "Her {0} saniyede bir çalıştırıldı"
+			"index_95": "Her {0} saniyede bir çalıştırıldı",
+			"index_96": "Select script",
+			"index_97": "Please select a script (search supported)",
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
 		},
 		"arrange": {
 			"index_1": "[{0}] içindeki script görevini hemen çalıştırın, yürütme işlemi uzun sürebilir, lütfen sabırlı olun. Devam etmek istiyor musunuz?",

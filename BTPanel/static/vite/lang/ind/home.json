@@ -145,7 +145,19 @@
 			"index_23_2": "\"Instruksi untuk penguji beta\"",
 			"index_23_3": "{0} detik menunggu untuk mengklik",
 			"index_24": "Perbarui ke versi Linux Beta",
-			"index_25": "Harap baca instruksi untuk penguji beta dengan cermat. Apakah Anda pasti akan memperbarui ke versi Linux Beta?"
+			"index_25": "Harap baca instruksi untuk penguji beta dengan cermat. Apakah Anda pasti akan memperbarui ke versi Linux Beta?",
+			"index_26": "Memperbarui panel, harap tunggu...",
+			"index_27": "Silakan tekan Ctrl+F5 untuk menyegarkan cache, atau tunggu 5 detik untuk menyegarkan otomatis!",
+			"index_28": "Panel Peningkatan",
+			"index_29": "Memutakhirkan memperbaiki bug yang diketahui dan menambahkan fitur terbaru. Data Anda tidak akan terpengaruh",
+			"index_30": "Akan diperbarui ke: ",
+			"index_31": "Waktu pembaruan: ",
+			"index_32": "Versi saat ini sudah yang terbaru",
+			"index_33": "Ubah Log",
+			"index_34": "Lanjutkan peningkatan",
+			"index_35": "Lanjutkan perbaikan",
+			"index_36": "Perbaiki panel",
+			"index_37": "Memperbaiki panel menyelesaikan berbagai masalah yang tidak terduga"
 		},
 		"Restart": {
 			"index_1": "Restart server",
@@ -263,13 +275,15 @@
 			"index_90": "Berhenti memindai",
 			"index_91": "Perbaikan satu klik",
 			"index_92": "Setelah pemindaian, semua item risiko yang dapat diperbaiki akan secara otomatis diperbaiki dan laporan pemindaian keamanan terbaru akan diperoleh",
-			"index_93": "Jika [System Hardening] dipasang, silakan tutup dulu dan kemudian lakukan perbaikan satu klik",
+			"index_93": "Nonaktifkan [Pengerasan Sistem] sebelum menggunakan Perbaikan sekali klik.",
 			"index_94": "Perbaikan dipilih",
 			"index_95": "Abaikan item pemindaian",
 			"index_96": "Deteksi Keamanan Server",
 			"index_97": "Pemindaian",
 			"index_98": "Item bebas risiko",
-			"index_99": "Menunggu pemindaian"
+			"index_99": "Menunggu pemindaian",
+			"ScanRules": "Aturan Pemindaian",
+			"DefaultRuleTag": "[Bawaan]"
 		}
 	}
 }

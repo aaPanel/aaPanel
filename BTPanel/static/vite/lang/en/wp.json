@@ -67,18 +67,30 @@
 			"index_7": "Add site",
 			"index_8": "Versions 5.6.0+ automatically turn on automatic version updates",
 			"index_9": "Allow weak passwords",
-			"index_10": "Enable caching, currently only supports nginx",
+			"index_10": "Enable cache",
 			"index_11": "Enable WPS-Hide-Login",
 			"index_12": "Change Admin Login url",
 			"index_13": "Redirection url",
 			"index_1": "Create site",
 			"index_2": "Create from backup",
+			"index_3": "Batch create sites",
 			"import_1": "Backup Type",
 			"import_2": "Local",
 			"import_3": "Plesk or CPanel",
 			"import_4": "Backup File Path",
 			"import_5": "Subdirectory, blank in the root directory",
 			"import_6": "Please enter backup file path"
+		},
+		"AddBatch": {
+			"index_1": "Please first resolve the A record of this domain to the server IP address",
+			"index_2": "Format description:",
+			"index_3": "Batch format: Domain {'|'} Website Title {'|'} Admin Account {'|'} Admin Password {'|'} Prefix",
+			"index_4": "Domain format: Support multiple domains, separated by commas (e.g.: a.com,b.com)",
+			"index_7": "e.g. aapanel.com{'|'}my blog{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "One site per line. If the password is empty, the system will automatically generate a strong password.",
+			"index_6": "If you set the prefix wp_, the system will automatically generate a random suffix.",
+			"index_8": "Please enter batch data",
+			"placeholder": "domain.com{'|'}Website Title{'|'}AdminUser{'|'}Password{'|'}wp_"
 		},
 		"TableRow": {
 			"index_1": "WordPress",
@@ -254,6 +266,13 @@
 			"index_17": "Plugin version",
 			"index_18": "MySQL version",
 			"index_19": "This will remove your website from the dashboard, Are you sure you want to do this?"
+		},
+		"Task": {
+			"index_1": "There are currently tasks in progress.",
+			"index_2": "View",
+			"index_3": "Copy Progress",
+			"index_4": "Task completed!",
+			"index_5": "In progress..."
 		}
 	}
 }

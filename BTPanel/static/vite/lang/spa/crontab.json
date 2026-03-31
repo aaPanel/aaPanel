@@ -95,7 +95,10 @@
 			"index_92": "La tarea cronometrada comenzó con éxito",
 			"index_93": "Tarea cronometrada cerrada con éxito",
 			"index_94": "Parte",
-			"index_95": "Ejecutado cada {0} segundos"
+			"index_95": "Ejecutado cada {0} segundos",
+			"index_96": "Seleccionar guión",
+			"index_97": "Seleccione un script (se admite búsqueda)",
+			"index_98": "Para mantener la estabilidad del servicio y garantizar un rendimiento fluido, absténgase de ejecutar con frecuencia scripts de alta carga y evite agregar demasiadas tareas de este tipo."
 		},
 		"arrange": {
 			"index_1": "Ejecute la tarea de script en [{0}] inmediatamente, el proceso de ejecución puede esperar mucho tiempo, por favor, sea paciente. ¿Quieres continuar?",
