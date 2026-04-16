@@ -598,6 +598,8 @@ class bt_task:
         # public.ExecShell('chmod -R 755 ' + filename)
         import files
         from collections import namedtuple
+        if not os.path.exists(filename):
+            return
         get = namedtuple('get',['path'])
         get.path = filename
         files.files().fix_permissions(get)

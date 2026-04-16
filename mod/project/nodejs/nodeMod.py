@@ -52,6 +52,7 @@ class main(NodeJs):
                     get.bind_extranet bool 是否绑定外网 True/False 依赖于get.port 非必传
                     get.domains list 域名列表 ["www.bt.cn", "bt.cn", ...] 非必传
                     get.project_ps string 备注 ps 非必传
+                    get.deploy_type git部署
         '''
         self.set_self_get(get)
         self.set_def_name(get.def_name)
@@ -110,6 +111,7 @@ class main(NodeJs):
         start_result = self.start_project(get)
         if not start_result["status"]:
             self.ws_err_exit(False, start_result["msg"] if "msg" in start_result else start_result["error_msg"], code=5)
+
         get._ws.send(json.dumps(self.wsResult(True, "Project created successfully!", code=-1)))
         time.sleep(1)
         get._ws.close()
@@ -363,8 +365,7 @@ cd {}
         if project_find:
             if project_find['edate'] != "0000-00-00" and project_find['edate'] < datetime.datetime.today().strftime("%Y-%m-%d"):
                 return public.return_message(-1, 0, public.lang( 'The current project has expired. Please reset the project expiration date'))
-        res = self.stop_project(get)
-        if not res['status']: return res
+        self.stop_project(get)
         res = self.start_project(get)
         if not res['status']: return res
         return public.return_message(0, 0, public.lang( 'Restarted successfully'))

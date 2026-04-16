@@ -74,12 +74,40 @@
 			"index_1": "Tạo trang web",
 			"index_2": "Tạo từ sao lưu",
 			"index_3": "Tạo trang web hàng loạt",
+			"index_4": "Lô từ bản sao lưu",
 			"import_1": "Loại sao lưu",
 			"import_2": "Địa phương",
 			"import_3": "Plesk hoặc cpanel",
 			"import_4": "Đường dẫn tệp sao lưu",
 			"import_5": "Thư mục con, trống trong thư mục gốc",
-			"import_6": "Vui lòng nhập đường dẫn tệp sao lưu"
+			"import_6": "Vui lòng nhập đường dẫn tệp sao lưu",
+			"BackupBatch": {
+				"unifiedConfig": "Cài đặt hợp nhất",
+				"phpVersion": "Phiên bản PHP",
+				"sslForAllSites": "Áp dụng SSL cho tất cả các trang web",
+				"importListTitle": "Nhập danh sách",
+				"clearAll": "Xóa tất cả",
+				"localUpload": "Tải lên cục bộ",
+				"serverUpload": "Từ máy chủ",
+				"emptyHint": "Nhấp vào các nút ở trên để tải lên các tập tin sao lưu",
+				"Confirm": {
+					"clearTitle": "Xác nhận rõ ràng",
+					"clearContent": "Bạn có chắc chắn muốn xóa tất cả các bản ghi tệp sao lưu không?",
+					"deleteTitle": "Xác nhận xóa",
+					"deleteContent": "Bạn có chắc chắn muốn xóa mục tập tin sao lưu này không?"
+				},
+				"Errors": {
+					"emptyList": "Vui lòng thêm ít nhất một tệp sao lưu",
+					"emptyBakFile": "Đường dẫn tệp sao lưu cho mục {index} không được để trống",
+					"emptyDomain": "Tên miền của trang web {index} không được để trống"
+				},
+				"Item": {
+					"backupFile": "Tệp sao lưu",
+					"domain": "Tên miền",
+					"websitePath": "Đường dẫn trang web",
+					"subdirectory": "Thư mục con"
+				}
+			}
 		},
 		"AddBatch": {
 			"index_1": "Trước tiên hãy giải quyết bản ghi A của miền này thành địa chỉ IP của máy chủ",

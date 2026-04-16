@@ -23,7 +23,7 @@
 			"docker_4": "Recipiente",
 			"docker_5": "Imagen de nube",
 			"docker_6": "Imagen local",
-			"docker_7": "Componer",
+			"docker_7": "Composición acoplable",
 			"docker_8": "Plantilla",
 			"docker_9": "Red",
 			"docker_10": "Volumen",

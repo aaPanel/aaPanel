@@ -29,7 +29,7 @@
 		"index_27": "Vĩnh viễn",
 		"index_28": "Không được kích hoạt",
 		"index_29": "Tên phần mềm",
-		"index_30": "Hiển thị trên bảng điều khiển",
+		"index_30": "Hiển thị trên Trang chủ",
 		"index_31": "Được đánh giá",
 		"index_32": "Không được đánh giá",
 		"index_34": "Cài đặt ngay bây giờ",
@@ -53,6 +53,7 @@
 		"index_52": "Cập nhật nhật ký",
 		"index_53": "Xin lưu ý rằng quy trình cập nhật có thể gây gián đoạn dịch vụ",
 		"index_54": "Bạn nên thực hiện cập nhật phần mềm khi tải máy chủ không hoạt động",
+		"index_55": "Vui lòng vào ứng dụng để tìm kiếm",
 		"Plugin": {
 			"index_1": "Máy chủ web",
 			"index_2": "Đang chuyển đổi, vui lòng đợi...",

@@ -457,16 +457,16 @@ class panelPlugin:
         pluginInfo_status = 0
         if not hasattr(get,'pluginInfo'):
             pluginInfos = self.get_soft_find(get.sName)
-            pluginInfo = pluginInfos['message']
-            pluginInfo_status = pluginInfos['status']
+            pluginInfo = pluginInfos.get('message', {})
+            pluginInfo_status = pluginInfos.get('status', -1)
         else:
             pluginInfo = get.pluginInfo
+
+        if pluginInfo_status == -1 or not pluginInfo:
+            return public.return_message(-1, 0, public.lang("The specified plugin does not exist!"))
         p_node = '/www/server/panel/install/public.sh'
         if os.path.exists(p_node):
             if len(public.readFile(p_node)) < 100: os.remove(p_node)
-        if pluginInfo_status == -1 or not pluginInfo:
-            return public.return_message(-1, 0, public.lang("The specified plugin does not exist!"))
-
 
 
         if pluginInfo.get('message', ''):
@@ -3371,7 +3371,8 @@ class panelPlugin:
                 headers_total_size = int(download_res.headers['File-size'])
             except:
                 try:
-                    return json.loads(download_res.text).json()
+                    if json.loads(download_res.text):
+                        return download_res.json()
                 except:
                     if download_res.text.find('<html>') != -1:
                         raise public.PanelError(public.error_conn_cloud(download_res.text))

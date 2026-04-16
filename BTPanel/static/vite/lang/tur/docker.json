@@ -27,6 +27,7 @@
 			"app_list_15": "Alan adına yönlendirmek için tıklayın:",
 			"app_list_16": "Web sitesini yönet",
 			"app_list_17": "Yedekle",
+			"app_list_19": "Terminal",
 			"app_category_0": "Kuruldu",
 			"app_category_1": "Daha Fazla ",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "All",
 			"filterRunning": "Running",
 			"filterStopped": "Stopped",
-			"searchPlaceholder": "Search container name or image name"
+			"searchPlaceholder": "Search container name or image name",
+			"goToApp": "Go to App Store to install"
 		},
 		"Container": {
 			"index_1": "Konteyner Oluştur",

@@ -74,12 +74,40 @@
 			"index_1": "Crear sitio",
 			"index_2": "Crear desde la copia de seguridad",
 			"index_3": "Crear sitios por lotes",
+			"index_4": "Lote desde la copia de seguridad",
 			"import_1": "Tipo de copia de seguridad",
 			"import_2": "Local",
 			"import_3": "Plesk o cpanel",
 			"import_4": "Ruta del archivo de respaldo",
 			"import_5": "Subdirectorio, en blanco en el directorio raíz",
-			"import_6": "Ingrese la ruta del archivo de copia de seguridad"
+			"import_6": "Ingrese la ruta del archivo de copia de seguridad",
+			"BackupBatch": {
+				"unifiedConfig": "Configuraciones unificadas",
+				"phpVersion": "Versión PHP",
+				"sslForAllSites": "Aplicar SSL para todos los sitios",
+				"importListTitle": "Lista de importación",
+				"clearAll": "Borrar todo",
+				"localUpload": "Carga local",
+				"serverUpload": "Desde el servidor",
+				"emptyHint": "Haga clic en los botones de arriba para cargar archivos de respaldo",
+				"Confirm": {
+					"clearTitle": "Confirmar claro",
+					"clearContent": "¿Está seguro de que desea borrar todos los registros del archivo de respaldo?",
+					"deleteTitle": "Confirmar eliminación",
+					"deleteContent": "¿Está seguro de que desea eliminar este elemento del archivo de copia de seguridad?"
+				},
+				"Errors": {
+					"emptyList": "Por favor agregue al menos un archivo de respaldo",
+					"emptyBakFile": "La ruta del archivo de respaldo para el elemento {índice} no puede estar vacía",
+					"emptyDomain": "El dominio del sitio {index} no puede estar vacío"
+				},
+				"Item": {
+					"backupFile": "Archivo de copia de seguridad",
+					"domain": "Dominio",
+					"websitePath": "Ruta del sitio web",
+					"subdirectory": "Subdirectorio"
+				}
+			}
 		},
 		"AddBatch": {
 			"index_1": "Primero resuelva el registro A de este dominio en la dirección IP del servidor.",

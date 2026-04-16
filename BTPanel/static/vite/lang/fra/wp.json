@@ -79,7 +79,35 @@
 			"import_4": "Chemin de sauvegarde",
 			"import_5": "Subdirection, vide dans le répertoire racine",
 			"import_6": "Veuillez saisir le chemin du fichier de sauvegarde",
-			"index_3": "Batch create sites"
+			"index_3": "Batch create sites",
+			"index_4": "Batch create from backup",
+			"BackupBatch": {
+				"unifiedConfig": "Unified settings",
+				"phpVersion": "PHP Version",
+				"sslForAllSites": "Apply SSL for all sites",
+				"importListTitle": "Import list",
+				"clearAll": "Clear all",
+				"localUpload": "Local upload",
+				"serverUpload": "From Server",
+				"emptyHint": "Click the buttons above to upload backup files",
+				"Confirm": {
+					"clearTitle": "Confirm clear",
+					"clearContent": "Are you sure you want to clear all backup file records?",
+					"deleteTitle": "Confirm delete",
+					"deleteContent": "Are you sure you want to delete this backup file item?"
+				},
+				"Errors": {
+					"emptyList": "Please add at least one backup file",
+					"emptyBakFile": "Backup file path for item {index} cannot be empty",
+					"emptyDomain": "Domain for site {index} cannot be empty"
+				},
+				"Item": {
+					"backupFile": "Backup file",
+					"domain": "Domain",
+					"websitePath": "Website Path",
+					"subdirectory": "Subdirectory"
+				}
+			}
 		},
 		"TableRow": {
 			"index_1": "Wordpress",

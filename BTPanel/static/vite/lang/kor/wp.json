@@ -79,7 +79,35 @@
 			"import_4": "백업 파일 경로",
 			"import_5": "루트 디렉토리의 서브 디렉토리, 빈",
 			"import_6": "백업 파일 경로를 입력하세요",
-			"index_3": "Batch create sites"
+			"index_3": "Batch create sites",
+			"index_4": "Batch create from backup",
+			"BackupBatch": {
+				"unifiedConfig": "Unified settings",
+				"phpVersion": "PHP Version",
+				"sslForAllSites": "Apply SSL for all sites",
+				"importListTitle": "Import list",
+				"clearAll": "Clear all",
+				"localUpload": "Local upload",
+				"serverUpload": "From Server",
+				"emptyHint": "Click the buttons above to upload backup files",
+				"Confirm": {
+					"clearTitle": "Confirm clear",
+					"clearContent": "Are you sure you want to clear all backup file records?",
+					"deleteTitle": "Confirm delete",
+					"deleteContent": "Are you sure you want to delete this backup file item?"
+				},
+				"Errors": {
+					"emptyList": "Please add at least one backup file",
+					"emptyBakFile": "Backup file path for item {index} cannot be empty",
+					"emptyDomain": "Domain for site {index} cannot be empty"
+				},
+				"Item": {
+					"backupFile": "Backup file",
+					"domain": "Domain",
+					"websitePath": "Website Path",
+					"subdirectory": "Subdirectory"
+				}
+			}
 		},
 		"TableRow": {
 			"index_1": "워드프레스",
@@ -188,7 +216,7 @@
 			"tamper_17": "로드, 잠깐만 ..."
 		},
 		"Transition": {
-			"index_1": "WordPress Toolkit Introdution",
+			"index_1": "WordPress Toolkit Introduction",
 			"index_2": "oneclick WordPress를 설치하세요",
 			"index_3": "특별한 안전 보호",
 			"index_4": "전체 백업",
@@ -198,8 +226,8 @@
 			"index_8": "로그인 Aapanel 계정"
 		},
 		"Sets": {
-			"index_1": "세트를 만듭니다",
-			"index_2": "웹 사이트를 선택하세요",
+			"index_1": "세트 만들기",
+			"index_2": "웹 사이트 선택",
 			"index_3": "플러그인",
 			"index_4": "{0} Total (플러그인 추가)",
 			"index_5": "플러그인 추가",
@@ -257,22 +285,22 @@
 			"index_19": "이렇게하면 대시 보드에서 웹 사이트가 제거됩니다.이 작업을 수행 하시겠습니까?"
 		},
 		"AddBatch": {
-			"index_1": "Please first resolve the A record of this domain to the server IP address",
-			"index_2": "Format description:",
-			"index_3": "Batch format: Domain {'|'} Website Title {'|'} Admin Account {'|'} Admin Password {'|'} Prefix",
-			"index_4": "Domain format: Support multiple domains, separated by commas (e.g.: a.com,b.com)",
-			"index_7": "e.g. aapanel.com{'|'}my blog{'|'}admin{'|'}pass123456{'|'}wp_",
-			"index_5": "One site per line. If the password is empty, the system will automatically generate a strong password.",
-			"index_6": "If you set the prefix wp_, the system will automatically generate a random suffix.",
-			"index_8": "Please enter batch data",
-			"placeholder": "domain.com{'|'}Website Title{'|'}AdminUser{'|'}Password{'|'}wp_"
+			"index_1": "해당 도메인의 A 레코드를 서버 IP 주소로 먼저 연결(해석)해 주세요",
+			"index_2": "형식 설명:",
+			"index_3": "일괄 입력 형식: 도메인 {'|'} 웹사이트 제목 {'|'} 관리자 계정 {'|'} 관리자 비밀번호 {'|'} 접두사",
+			"index_4": "도메인 형식: 여러 도메인을 쉼표(,)로 구분하여 입력할 수 있습니다 (예: a.com,b.com)",
+			"index_7": "예: aapanel.com{'|'}나의 블로그{'|'}admin{'|'}pass123456{'|'}wp_",
+			"index_5": "한 줄에 하나의 사이트씩 입력하세요. 비밀번호를 비워두면 시스템에서 자동으로 강력한 비밀번호를 생성합니다.",
+			"index_6": "접두사를 wp_로 설정하면 시스템이 자동으로 임의의 접미사를 생성합니다.",
+			"index_8": "일괄 데이터를 입력해 주세요",
+			"placeholder": "domain.com{'|'}웹사이트 제목{'|'}관리자계정{'|'}비밀번호{'|'}wp_"
 		},
 		"Task": {
-			"index_1": "There are currently tasks in progress.",
-			"index_2": "View",
-			"index_3": "Copy Progress",
-			"index_4": "Task completed!",
-			"index_5": "In progress..."
+			"index_1": "현재 진행 중인 작업이 있습니다.",
+			"index_2": "보기",
+			"index_3": "진행 상황 복사",
+			"index_4": "작업 완료!",
+			"index_5": "진행 중..."
 		}
 	}
 }

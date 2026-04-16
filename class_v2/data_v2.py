@@ -1167,14 +1167,14 @@ class data:
         """
             2026/2/26 调整由前端传入site_type控制输出
         """
-        prorject_type = ['PHP','WP2','proxy' , 'Node' , 'Python']
+        project_type = ['PHP', 'WP2',' proxy' , 'Node' , 'Python', 'Go']
         if get is not None:
-            if get.get("site_type", None) in prorject_type:
-                prorject_type = [get.get("site_type")]
+            if get.get("site_type", None) in project_type:
+                project_type = [get.get("site_type")]
 
         #检测插件是否安装
         if not os.path.exists(os.path.join(public.get_panel_path(),"plugin/monitor/info.json")):
-            site_names = [ i.get('name','') for i in public.S('sites').where_in('project_type',prorject_type).field('name').select() if i.get('name','') !='' ]
+            site_names = [ i.get('name','') for i in public.S('sites').where_in('project_type',project_type).field('name').select() if i.get('name','') !='' ]
             start_date= None if get==None else get.get('start_date',None)
             end_date= None if get==None else get.get('end_date',None)
             return {'status': 0, "timestamp": int(time.time()), "message": self.get_multi_site_stats(site_names=site_names,start_date=start_date,end_date=end_date)}
@@ -1189,7 +1189,7 @@ class data:
             if int(version_list[0])==4 and int(version_list[1])<1 and int(version_list[2])<2:return {'status': 0, "timestamp": int(time.time()), "message": result}
             #取网站域名列表
             try:
-                domain_list = public.S('sites').where_in('project_type',prorject_type).field('name').select()
+                domain_list = public.S('sites').where_in('project_type',project_type).field('name').select()
             except Exception as ex:
                 domain_list = []
             now_time = int(time.time())
@@ -1249,7 +1249,7 @@ class data:
 
     # 简化版获取网站请求数用于排序
     def get_site_request(self,get=None):
-        project_type = ['PHP','WP2','proxy' , 'Node' , 'Python']
+        project_type = ['PHP', 'WP2',' proxy' , 'Node' , 'Python', 'Go']
         if get is not None:
             if get.get("site_type") and get.get("site_type") in project_type:
                 project_type = [get.get("site_type")]

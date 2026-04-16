@@ -103,7 +103,7 @@
 				"index_7": "Введите IP или примечание",
 				"index_8": "Редактировать правило IP",
 				"index_9": "Исходный IP",
-				"index_10": "IP home place",
+				"index_10": "Местоположение IP",
 				"index_11": "Политика",
 				"index_12": "Блокировать",
 				"index_13": "Направление",
@@ -116,7 +116,7 @@
 				"index_20": "Массовое удаление",
 				"index_21": "Массовое удаление IP",
 				"index_22": "Выбранные правила IP будут удалены. Продолжить?",
-				"index_23": "Release",
+				"index_23": "Разблокировать",
 				"index_24": "Просмотреть",
 				"index_25": "При смене политики IP на 'Блокировать' доступ с этого IP будет запрещен. Продолжить?",
 				"index_26": "Экспорт направления",
@@ -128,7 +128,7 @@
 				"form_8": "Для добавления диапазона IP используйте формат: 192.168.0.0/24",
 				"form_9": "Для диапазона IP введите: 192.168.1.xx-192.168.1.xx",
 				"form_10": "Введите IP",
-				"form_11": "Release",
+				"form_11": "Разблокировать",
 				"form_12": "Блокировать",
 				"form_13": "Входящий (по умолчанию)",
 				"form_14": "Исходящий",
@@ -328,7 +328,7 @@
 			"Index_11": "Разрешить блокировку пользователя 'root'",
 			"Index_12": "Защита по IP-адресам",
 			"Index_13": "Отслеживает попытки входа с IP-адресов. При отключении новые блокировки IP прекратятся, но существующие останутся",
-			"Index_14": "ериод защиты от брутфорса по IP (в минутах)",
+			"Index_14": "Период защиты от брутфорса по IP (в минутах)",
 			"Index_15": "Максимум неудачных попыток для аккаунта",
 			"Index_16": "Команда при срабатывании защиты от брутфорса по IP",
 			"Index_17": "Блокировать IP на уровне фаервола при срабатывании защиты",
@@ -467,80 +467,80 @@
 		},
 		"SiteSecurity": {
 			"Header": {
-				"scanning": "Scanning",
-				"lastScanTime": "Last scan time:",
-				"cancelScan": "Cancel Scan",
-				"scanNow": "Scan Now",
-				"title": "Intelligent Website Security",
-				"desc": "Free website security powered by a robust engine. With one click you can check for website risk signals; aaPanel automatically provides optimization and remediation suggestions so you can harden your site with simple operations.",
-				"noPhpSite": "No PHP websites found"
+				"scanning": "Сканирование",
+				"lastScanTime": "Последнее сканирование:",
+				"cancelScan": "Отменить сканирование",
+				"scanNow": "Сканировать",
+				"title": "Интеллектуальная защита сайтов",
+				"desc": "Бесплатная защита сайтов на базе мощного движка. Одним щелчком проверьте сайт на угрозы; aaPanel автоматически предложит рекомендации по устранению рисков, чтобы вы могли укрепить безопасность простыми действиями.",
+				"noPhpSite": "Сайты на PHP не найдены"
 			},
 			"Metric": {
-				"duration": "Duration",
-				"seconds": "seconds",
-				"durationDesc": "Total duration of this website scan",
-				"xssDesc": "XSS attacks in this website scan",
-				"sqlDesc": "SQL injection in this website scan",
-				"maliciousScan": "Malicious Scan",
-				"maliciousScanDesc": "Malicious scans in this website scan",
-				"phpAttack": "PHP Attack",
-				"phpAttackDesc": "PHP attacks in this website scan"
+				"duration": "Длительность",
+				"seconds": "сек",
+				"durationDesc": "Общая длительность сканирования сайта",
+				"xssDesc": "XSS-атаки, обнаруженные при сканировании",
+				"sqlDesc": "SQL-инъекции, обнаруженные при сканировании",
+				"maliciousScan": "Вредоносное ПО",
+				"maliciousScanDesc": "Вредоносные элементы, обнаруженные при сканировании",
+				"phpAttack": "PHP-атаки",
+				"phpAttackDesc": "PHP-атаки, обнаруженные при сканировании"
 			},
 			"Summary": {
-				"scoreTitle": "Website Security Score",
-				"scoreLabel": "Score"
+				"scoreTitle": "Оценка безопасности сайта",
+				"scoreLabel": "Оценка"
 			},
 			"Top": {
-				"title": "IP (Top 5)",
+				"title": "IP (топ-5)",
 				"columns": {
-					"ip": "IP Address",
-					"count": "Visits"
+					"ip": "IP-адрес",
+					"count": "Посещения"
 				},
-				"banTitle": "Ban IP [{0}]",
-				"banContent": "After banning this IP, it will no longer be allowed to access the server. Continue?",
-				"unbanTitle": "Unban IP [{0}]",
-				"unbanContent": "After unbanning this IP, access from this IP to the server will be restored. Continue?",
-				"banBrief": "Website security manually block IP"
+				"banTitle": "Заблокировать IP [{0}]",
+				"banContent": "После блокировки IP доступ к серверу будет запрещён. Продолжить?",
+				"unbanTitle": "Разблокировать IP [{0}]",
+				"unbanContent": "После разблокировки IP доступ к серверу будет восстановлен. Продолжить?",
+				"banBrief": "Ручная блокировка IP в разделе безопасности сайта"
 			},
 			"Project": {
-				"title": "Security Items",
-				"waiting": "Waiting to scan",
-				"foundRisk": "{0} risks",
-				"noRisk": "No risks",
-				"expand": "Expand",
+				"title": "Элементы безопасности",
+				"waiting": "Ожидает сканирования",
+				"foundRisk": "Обнаружено рисков: {0}",
+				"noRisk": "Рисков не обнаружено",
+				"expand": "Развернуть",
 				"items": {
-					"webscan": "Website Configuration Security",
-					"fileleak": "File Leak Detection",
-					"webshell": "Webshell Detection",
-					"backup": "Backup Files",
-					"weakpass": "Weak Password Detection",
-					"weblog": "Website Logs"
+					"webscan": "Безопасность конфигурации сайта",
+					"fileleak": "Обнаружение утечек файлов",
+					"webshell": "Обнаружение вебшеллов",
+					"backup": "Резервные копии",
+					"weakpass": "Обнаружение слабых паролей",
+					"weblog": "Журналы сайта"
 				}
 			},
 			"Risk": {
-				"detailLabel": "Details:",
-				"repairLabel": "Fix:"
+				"detailLabel": "Подробности:",
+				"repairLabel": "Исправление:"
 			},
 			"RiskLevel": {
-				"warning": "Warning",
-				"low": "Low",
-				"middle": "Medium",
-				"high": "High"
+				"warning": "Предупреждение",
+				"low": "Низкий",
+				"middle": "Средний",
+				"high": "Высокий"
 			},
 			"Info": {
-				"overviewTitle": "Overview",
+				"overviewTitle": "Обзор",
 				"features": {
 					"scan": {
-						"title": "Free and powerful all-in-one website intrusion scan",
-						"desc": "Comprehensive free scan to block website intrusion risks"
+						"title": "Бесплатное комплексное сканирование на вторжения",
+						"desc": "Полноценное сканирование для блокировки рисков вторжений на сайт"
 					},
 					"trojan": {
-						"title": "Deep scan for dangerous trojans",
-						"desc": "Accurately detect hidden threats with deep trojan scanning"
+						"title": "Глубокий поиск опасных троянов",
+						"desc": "Точное обнаружение скрытых угроз методом глубокого сканирования"
 					},
 					"log": {
-						"title": "Professional analysis of website access logs",
-						"desc": "Discover anomalies and security risks through log analysis"
+						"title": "Профессиональный анализ журналов доступа",
+						"desc": "Выявление аномалий и угроз безопасности через анализ журналов"
 					}
 				}
 			}

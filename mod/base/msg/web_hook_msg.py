@@ -8,7 +8,7 @@
 # | 消息通道HOOK模块
 # +-------------------------------------------------------------------
 
-
+import copy
 import requests
 from typing import Optional, Union
 from urllib3.util import parse_url
@@ -48,18 +48,9 @@ class WebHookMsg(object):
 
     def __init__(self, hook_data: dict):
         self.id = hook_data["id"]
-        self.config = hook_data["data"]
+        self.config = copy.deepcopy(hook_data["data"])
 
-    def _replace_and_parse(self, value, real_data):
-        """替换占位符并递归解析JSON字符串"""
-        if isinstance(value, str):
-            value = value.replace("$1", json.dumps(real_data, ensure_ascii=False))
-        elif isinstance(value, dict):
-            for k, v in value.items():
-                value[k] = self._replace_and_parse(v, real_data)
-        return value
-
-    def send_msg(self, msg: str, title:str, push_type:str) -> Optional[str]:
+    def send_msg(self, msg: str, title: str) -> Optional[str]:
         the_url = parse_url(self.config['url'])
 
         ssl_verify = self.config.get("ssl_verify", None)
@@ -68,36 +59,24 @@ class WebHookMsg(object):
         else:
             ssl_verify = bool(int(ssl_verify))  # 转换为布尔值
 
-
-        real_data = {
-            "title": title,
-            "msg": msg,
-            "type": push_type,
-        }
         custom_parameter = self.config.get("custom_parameter", {})
         if not isinstance(custom_parameter, dict):
             custom_parameter = {}  # 如果 custom_parameter 不是字典，则设置为空字典
-        # 处理custom_parameter，将$1替换为real_data内容并递归解析
-        custom_data = {}
-        for k, v in custom_parameter.items():
-            custom_data[k] = self._replace_and_parse(v, real_data)
 
-        if custom_data:
-            real_data = custom_data
+        real_data = self._build_real_data(msg, title, custom_parameter=custom_parameter)
 
-
-        data = None
-        json_data = None
         headers = self.DEFAULT_HEADERS.copy()
-        if self.config["body_type"] == "json":
-            json_data = real_data
-        elif self.config["body_type"] == "form_data":
-            data = real_data
-
         for k, v in self.config.get("headers", {}).items():
             if not isinstance(v, str):
                 v = str(v)
             headers[k] = v
+
+        data = None
+        json_data = None
+        if self.config["body_type"] == "json":
+            json_data = real_data
+        elif self.config["body_type"] == "form_data":
+            data = real_data
 
         status = False
         error = None
@@ -130,57 +109,133 @@ class WebHookMsg(object):
                         verify=ssl_verify,
                     )
 
+                text_lower = res.text.lower()
+                if "error" in text_lower or "invalid" in text_lower or "fail" in text_lower:
+                    status = False
+                    return res.text
+
+                if "success" in text_lower:
+                    status = True
+                    error = None
+                    break
+
                 if res.status_code == 200:
                     status = True
+                    error = None
                     break
                 else:
                     status = False
                     return res.text
+
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
                 timeout += 5
+                error = "time out"
                 continue
             except requests.exceptions.RequestException as e:
                 error = str(e)
                 break
 
         write_push_log("Web Hook", status, title)
-        return error
+        return error if error else None
+
+    @staticmethod
+    def _build_real_data(msg: str, title:str, push_type:str = None, custom_parameter: dict = None):
+        if not custom_parameter:
+            custom_parameter = {}
+        if not push_type:
+            push_type = title
+        default_data = {
+            "title": title,
+            "msg": msg,
+            "type": push_type,
+        }
+        _build_by_replace = False
+
+        def _replace(tmp_data: Union[str, list, dict,]):
+            nonlocal _build_by_replace
+            if isinstance(tmp_data, str):
+                if "$1" in tmp_data:
+                    _build_by_replace = True
+                    tmp_data = tmp_data.replace("$1", json.dumps(default_data, ensure_ascii=False))
+                if "$msg" in tmp_data:
+                    _build_by_replace = True
+                    tmp_data = tmp_data.replace("$msg", msg)
+                if "$title" in tmp_data:
+                    _build_by_replace = True
+                    tmp_data = tmp_data.replace("$title", title)
+                if "$type" in tmp_data:
+                    _build_by_replace = True
+                    tmp_data = tmp_data.replace("$type", push_type)
+                return tmp_data
+            elif isinstance(tmp_data, list):
+                new_data = []
+                for i in tmp_data:
+                    new_data.append(_replace(i))
+                return new_data
+            elif isinstance(tmp_data, dict):
+                new_data = {}
+                for k, v in tmp_data.items():
+                    new_data[k] = _replace(v)
+                return new_data
+            else:
+                return tmp_data
+
+        real_data = _replace(custom_parameter)
+        if _build_by_replace:
+            return real_data
+        else:
+            custom_parameter["title"] = title
+            custom_parameter["msg"] = msg
+            custom_parameter["type"] = push_type
+            return custom_parameter
 
     @classmethod
-    def check_args(cls, args) -> Union[str, dict]:
+    def check_args(cls, args):
         """配置hook"""
         try:
             title = args['title']
             url = args["url"]
             query = args.get("query", {})
+
             headers = args.get("headers", {})
+            if headers == "":
+                headers = {}
+            headers = json.loads(headers) if isinstance(headers, str) else headers
+
             body_type = args.get("body_type", "json")
+            if body_type == "application/json":
+                body_type = "json"
+
             custom_parameter = args.get("custom_parameter", {})
+            if custom_parameter == "":
+                custom_parameter = {}
+            custom_parameter = json.loads(custom_parameter) if isinstance(custom_parameter, str) else custom_parameter
+
             method = args.get("method", "POST")
             ssl_verify = args.get("ssl_verify", None)  # null Ture
-        except (ValueError, KeyError):
-            return public.lang('The parameter is incorrect')
+        except Exception as e:
+            return False, str(e)
 
         the_url = parse_url(url)
         if the_url.scheme is None or the_url.host is None:
-            return"URL parsing error, which may not be a legitimate URL"
+            return False, "URL parsing error, which may not be a legitimate URL"
 
         for i in (query, headers, custom_parameter):
             if not isinstance(i, dict):
-                return public.lang('Parameter format error')
+                return False, public.lang('Parameter format error')
 
         if body_type not in ('json', 'form_data', 'null'):
-            return public.lang('The body type must be json,form data, or null')
+            return False, public.lang('The body type must be json,form data, or null')
 
         if method not in ('GET', 'POST', 'PUT', 'PATCH'):
-            return public.lang('The sending method is incorrect')
+            return False, public.lang('The sending method is incorrect')
 
         if ssl_verify not in (True, False, None):
-            return public.lang('Verify if the SSL option is wrong')
+            return False, public.lang('Verify if the SSL option is wrong')
 
         title = title.strip()
         if title == "":
-            return"The name cannot be empty"
+            return False, "The name cannot be empty"
 
         data = {
             "title": title,
@@ -203,22 +258,19 @@ class WebHookMsg(object):
 
         res = test_obj.send_msg(
             test_task.to_web_hook_msg(test_msg, test_task.the_push_public_data()),
-            "Message channel configuration reminders",
             "Message channel configuration reminders"
         )
         if res is None:
-            return data
-
-        return res
+            return True, data
+        return False, res
 
     def test_send_msg(self) -> Optional[str]:
         test_msg = {
-            "msg_list": ['>configuration state: <font color=#20a53a> Success </font>\n\n']
+            "msg_list": ['>configuration state:  Success \n\n']
         }
         test_task = get_test_msg("Message channel configuration reminders")
         res = self.send_msg(
             test_task.to_web_hook_msg(test_msg, test_task.the_push_public_data()),
-            "Message channel configuration reminders",
             "Message channel configuration reminders"
         )
         if res is None:

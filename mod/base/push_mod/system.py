@@ -15,26 +15,55 @@ WAIT_TASK_LIST: List[Thread] = []
 
 
 class PushSystem:
+    # 通道配置映射: (类 xxxMsg, 格式化方法 to_xxx_msg)
+    # 注: 方法为 None，表示需要特殊处理 (sms的格式化特俗处理保持原有逻辑)
+    _channel_config = {
+        "weixin": ("WeiXinMsg", "to_weixin_msg"),
+        "mail": ("MailMsg", "to_mail_msg"),
+        "webhook": ("WebHookMsg", "to_web_hook_msg"),
+        "feishu": ("FeiShuMsg", "to_feishu_msg"),
+        "dingding": ("DingDingMsg", "to_dingding_msg"),
+        "sms": ("SMSMsg", None),
+        "tg": ("TgMsg", "to_tg_msg"),
+        "discord": ("DiscordMsg", "to_discord_msg"),
+    }
+
     def __init__(self):
         self.task_cls_cache: Dict[str, Type[T_CLS]] = {}  # NOQA
         self._today_zero: Optional[datetime.datetime] = None
-        self._sender_type_class: Optional[dict] = {}
+        # 类缓存, 方法缓存
+        self._channel_cls_cache: Optional[dict] = {}
         self.sd_cfg = SenderConfig()
 
     def sender_cls(self, sender_type: str):
-        if not self._sender_type_class:
-            from mod.base.msg import WeiXinMsg, MailMsg, WebHookMsg, FeiShuMsg, DingDingMsg, SMSMsg, TgMsg
-            self._sender_type_class = {
-                "weixin": WeiXinMsg,
-                "mail": MailMsg,
-                "webhook": WebHookMsg,
-                "feishu": FeiShuMsg,
-                "dingding": DingDingMsg,
-                "sms": SMSMsg,
-                # "wx_account": WeChatAccountMsg,
-                "tg": TgMsg,
+        """获取通道类"""
+        if not self._channel_cls_cache:
+            from mod.base.msg import (
+                WeiXinMsg, MailMsg, WebHookMsg, FeiShuMsg,
+                DingDingMsg, SMSMsg, TgMsg, DiscordMsg
+            )
+            class_map = {
+                "WeiXinMsg": WeiXinMsg,
+                "MailMsg": MailMsg,
+                "WebHookMsg": WebHookMsg,
+                "FeiShuMsg": FeiShuMsg,
+                "DingDingMsg": DingDingMsg,
+                "SMSMsg": SMSMsg,
+                "TgMsg": TgMsg,
+                "DiscordMsg": DiscordMsg,
             }
-        return self._sender_type_class[sender_type]
+            # 完整映射
+            self._channel_cls_cache = {
+                k: class_map[v[0]] for k, v in self._channel_config.items()
+            }
+        # 返回对应的通道类实例
+        return self._channel_cls_cache[sender_type]
+
+    def get_msg_method(self, sender_type: str) -> Optional[str]:
+        """获取格式化方法名"""
+        return self._channel_config.get(
+            sender_type, (None, None)
+        )[1]
 
     @staticmethod
     def remove_old_task(task: dict):
@@ -143,6 +172,13 @@ class PushRunner:
         self.tr_cfg = TaskRecordConfig(task["id"])
         self.is_number_rule_by_func = False  # 记录这个任务是否使用自定义的次数检测， 如果是，就不需要做次数更新
 
+    def __call__(self):
+        self.run()
+        self.save_result()
+        if self.task_obj:
+            self.task_obj.task_run_end_hook(self.result)
+        return self.result_to_return()
+
     def save_result(self):
         t = TaskConfig()
         tmp = t.get_by_id(self.task["id"])
@@ -184,13 +220,6 @@ class PushRunner:
         data['timestamp'] = int(time.time())
         return data
 
-    def __call__(self):
-        self.run()
-        self.save_result()
-        if self.task_obj:
-            self.task_obj.task_run_end_hook(self.result)
-        return self.result_to_return()
-
     def result_to_return(self) -> dict:
         return self.result
 
@@ -201,7 +230,7 @@ class PushRunner:
             for k, v in self.task["task_data"][key].items():
                 try:
                     val = ", ".join(v) if isinstance(v, list) else str(v)
-                    act = k.capitalize() if k and isinstance(k , str) else k
+                    act = k.capitalize() if k and isinstance(k, str) else k
                     push_data['msg_list'].append(f">{key.capitalize()}: {act} - {val} ")
                 except Exception as e:
                     public.print_log(f"Append {key} hook msg error: {e}")
@@ -359,71 +388,49 @@ class PushRunner:
     def send_message(self, push_data: dict):
         self.result["do_send"] = True
         self.result["push_data"] = push_data
+
         for sender_id in self.task["sender"]:
             conf = self.push_system.sd_cfg.get_by_id(sender_id)
             if conf is None:
                 continue
+
             if not conf["used"]:
                 self.result["send_data"][sender_id] = "The alarm channel {} is closed, skip sending".format(
                     conf["data"].get("title"))
                 continue
+
             sd_cls = self.push_system.sender_cls(conf["sender_type"])
-            res = None
-            if conf["sender_type"] == "weixin":
-                res = sd_cls(conf).send_msg(
-                    self.task_obj.to_weixin_msg(push_data, self.public_push_data),
-                    self.task_obj.title
-                )
+            sender_type = conf["sender_type"]
 
-            elif conf["sender_type"] == "mail":
-                res = sd_cls(conf).send_msg(
-                    self.task_obj.to_mail_msg(push_data, self.public_push_data),
-                    self.task_obj.title
-                )
-
-            elif conf["sender_type"] == "webhook":
-                res = sd_cls(conf).send_msg(
-                    self.task_obj.to_web_hook_msg(push_data, self.public_push_data),
-                    self.task_obj.title,
-                )
-
-            elif conf["sender_type"] == "feishu":
-                res = sd_cls(conf).send_msg(
-                    self.task_obj.to_feishu_msg(push_data, self.public_push_data),
-                    self.task_obj.title
-                )
-            elif conf["sender_type"] == "dingding":
-                res = sd_cls(conf).send_msg(
-                    self.task_obj.to_dingding_msg(push_data, self.public_push_data),
-                    self.task_obj.title
-                )
-            elif conf["sender_type"] == "sms":
+            # 短信通道保持原来的特殊处理
+            if sender_type == "sms":
                 sm_type, sm_args = self.task_obj.to_sms_msg(push_data, self.public_push_data)
                 if not sm_type or not sm_args:
                     continue
                 sm_args = sms_msg_normalize(sm_args)
-                res = sd_cls(conf).send_msg(sm_type, sm_args)
-
-            elif conf["sender_type"] == "tg":
-                # public.print_log("tg -- 发送数据 {}".format(self.task_obj.to_tg_msg(push_data, self.public_push_data)))
-                from mod.base.msg import TgMsg
-                # Home CPU alarms<br>
-                # >Server:xxx<br>
-                # >IPAddress: xxx.xxx.xxx.xxx(Internet) xxx.xxx.xxx.xxx(Internal)<br>
-                # >SendingTime: 2024-00-00 00:00:00<br>
-                # >Notification type: High CPU usage alarm<br>
-                # >Content of alarm: The average CPU usage of the machine in the last 5 minutes is 3.24%, which is higher than the alarm value 1%.
-
-                try:
-                    res = sd_cls(conf).send_msg(
-                        # res = TgMsg().send_msg(
-                        self.task_obj.to_tg_msg(push_data, self.public_push_data),
-                        self.task_obj.title
-                    )
-                except:
-                    public.print_log(public.get_error_info())
+                res = sd_cls(conf).send_msg(msg=sm_type, title=sm_args)
+            # 标准通道处理
             else:
-                continue
+                # 获取方法
+                method_name = self.push_system.get_msg_method(sender_type)
+                if not method_name:
+                    continue
+
+                # msg_method -> to_xxx_msg, from push_mod base_task
+                msg_method = getattr(self.task_obj, method_name)
+                if not msg_method or not callable(msg_method):
+                    continue
+
+                markdown_format_msg = msg_method(
+                    push_data=push_data,
+                    push_public_data=self.public_push_data
+                )
+                res = sd_cls(conf).send_msg(
+                    msg=markdown_format_msg,
+                    title=self.task_obj.title
+                )
+
+            # 处理发送结果
             if isinstance(res, str) and res.find("Traceback") != -1:
                 self.result["send_data"][sender_id] = ("An error occurred during the execution of the message "
                                                        "transmission, and the transmission was not successful")
@@ -450,7 +457,7 @@ def push_by_task_keyword(source: str, keyword: str, push_data: Optional[dict] = 
     if not target_task:
         return "The task was not found"
 
-    target_template = TaskTemplateConfig().get_by_id(target_task["template_id"]) # NOQA
+    target_template = TaskTemplateConfig().get_by_id(target_task["template_id"])  # NOQA
     if not target_template["used"]:
         return "This task type has been banned"
     if not target_task['status']:

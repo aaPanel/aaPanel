@@ -3911,6 +3911,9 @@ CREATE TABLE index_tb(
             get.uid = pwd.getpwnam('www').pw_uid
             get.gid = pwd.getpwnam('www').pw_gid
         path = get.path
+        if not os.path.exists(path):
+            return public.return_msg_gettext(False, public.lang("The path does not exist{}.", path))
+
         if os.path.isfile(path):
             os.chown(path, get.uid, get.gid)
             os.chmod(path, 0o644)

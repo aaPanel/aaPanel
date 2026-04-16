@@ -60,7 +60,8 @@
 				"index_18": "Немедленный импорт резервной копии перезапишет существующие данные. Убедитесь, что важные данные сохранены",
 				"index_19": "Выберите файл для загрузки"
 			},
-			"app_list_18": "One-click login"
+			"app_list_18": "Однократный вход",
+			"app_list_19": "Terminal"
 		},
 		"Overview": {
 			"index_1": "Запущенные контейнеры",
@@ -71,22 +72,23 @@
 			"index_6": "{0} обзор использования CPU и памяти",
 			"index_7": "Скрыть",
 			"index_8": "Показать",
-			"overviewTitle": "Resource Overview",
-			"containerCount": "Containers",
-			"spaceUsed": "Space used",
+			"overviewTitle": "Обзор ресурсов",
+			"containerCount": "Контейнеры",
+			"spaceUsed": "Используемое пространство",
 			"composeCount": "Compose",
-			"composeProjects": "Docker Compose Projects",
-			"imageCount": "Images",
-			"networkCount": "Networks",
-			"networksCreated": "Created networks",
-			"volumeCount": "Volumes",
-			"mirrorRepoCount": "Registries",
-			"repositoriesConfigured": "Configured repositories",
-			"containerList": "Container List",
-			"filterAll": "All",
-			"filterRunning": "Running",
-			"filterStopped": "Stopped",
-			"searchPlaceholder": "Search container name or image name"
+			"composeProjects": "Проекты Docker Compose",
+			"imageCount": "Образы",
+			"networkCount": "Сети",
+			"networksCreated": "Созданные сети",
+			"volumeCount": "Тома",
+			"mirrorRepoCount": "Реестры",
+			"repositoriesConfigured": "Настроенные репозитории",
+			"containerList": "Список контейнеров",
+			"filterAll": "Все",
+			"filterRunning": "Запущенные",
+			"filterStopped": "Остановленные",
+			"searchPlaceholder": "Поиск по имени контейнера или образа",
+			"goToApp": "Go to App Store to install"
 		},
 		"Container": {
 			"index_1": "Создать контейнер",
@@ -380,36 +382,36 @@
 				"index_15": "Входящий"
 			},
 			"search": {
-				"placeholder": "Search container name, ID, container image"
+				"placeholder": "Поиск по имени, ID контейнера или образу"
 			},
 			"batch": {
 				"start": {
-					"title": "Batch Start Containers",
-					"desc": "Batch start selected containers, continue operation?"
+					"title": "Запуск контейнеров",
+					"desc": "Запустить выбранные контейнеры? Продолжить операцию?"
 				},
 				"restart": {
-					"title": "Batch Restart Containers",
-					"desc": "Batch restart selected containers, continue operation?"
+					"title": "Перезапуск контейнеров",
+					"desc": "Перезапустить выбранные контейнеры? Продолжить операцию?"
 				},
 				"stop": {
-					"title": "Batch Stop Containers",
-					"desc": "Batch stop selected containers, continue operation?"
+					"title": "Остановка контейнеров",
+					"desc": "Остановить выбранные контейнеры? Продолжить операцию?"
 				},
 				"kill": {
-					"title": "Batch Force Stop Containers",
-					"desc": "Batch force stop selected containers, continue operation?"
+					"title": "Принудительная остановка контейнеров",
+					"desc": "Принудительно остановить выбранные контейнеры? Продолжить операцию?"
 				},
 				"pause": {
-					"title": "Batch Pause Containers",
-					"desc": "Batch pause selected containers, continue operation?"
+					"title": "Приостановка контейнеров",
+					"desc": "Приостановить выбранные контейнеры? Продолжить операцию?"
 				},
 				"unpause": {
-					"title": "Batch Resume Containers",
-					"desc": "Batch resume selected containers, continue operation?"
+					"title": "Возобновление работы контейнеров",
+					"desc": "Возобновить работу выбранных контейнеров? Продолжить операцию?"
 				},
 				"del": {
-					"title": "Batch Delete Containers",
-					"desc": "Batch delete selected containers, continue operation?"
+					"title": "Удаление контейнеров",
+					"desc": "Удалить выбранные контейнеры? Продолжить операцию?"
 				}
 			}
 		},
@@ -427,22 +429,22 @@
 			"index_12": "Удалить образ [{0}]",
 			"index_13": "Вы уверены, что хотите удалить образ [{0}]?",
 			"detail": {
-				"lastUpdated": "Last Updated:",
-				"isOfficial": "Official Image:",
-				"source": "Source:",
+				"lastUpdated": "Последнее обновление:",
+				"isOfficial": "Официальный образ:",
+				"source": "Источник:",
 				"dockerHub": "Docker Hub",
-				"pullsCount": "Pulls:",
-				"selectPlaceholder": "Please select or search image",
-				"pullButton": "Pull",
-				"yes": "Yes",
-				"no": "No",
-				"updated": "Updated",
-				"selectImageError": "Please select an image",
-				"pullImageTitle": "Pull Image"
+				"pullsCount": "Загрузки:",
+				"selectPlaceholder": "Выберите или найдите образ",
+				"pullButton": "Загрузить",
+				"yes": "Да",
+				"no": "Нет",
+				"updated": "Обновлено",
+				"selectImageError": "Выберите образ",
+				"pullImageTitle": "Загрузка образа"
 			},
 			"pull": {
-				"success": "Pull successful",
-				"failed": "Pull failed"
+				"success": "Загрузка завершена",
+				"failed": "Ошибка загрузки"
 			}
 		},
 		"LocalImage": {
@@ -499,10 +501,10 @@
 				"index_13": "Введите команду",
 				"index_14": "Ошибка загрузки"
 			},
-			"searchPlaceholder": "Search image name, ID, containers in use",
-			"batchDelete": "Batch Delete",
-			"batchDeleteTitle": "Batch Delete Project Images",
-			"batchDeleteDesc": "Batch delete selected project images, continue operation?"
+			"searchPlaceholder": "Поиск по имени, ID образа или используемым контейнерам",
+			"batchDelete": "Удалить выбранные",
+			"batchDeleteTitle": "Удаление образов проекта",
+			"batchDeleteDesc": "Удалить выбранные образы проекта? Продолжить операцию?"
 		},
 		"ComposeNew": {
 			"index_1": "Добавить",
@@ -746,75 +748,75 @@
 				"index_3": "После настройки ускорения требуется перезапуск Docker",
 				"index_4": "Для отключения ускорения оставьте поле пустым",
 				"index_5": "Ускорение отключено",
-				"confirmTitle": "Set Acceleration URL",
-				"confirmContent": "Docker needs to be restarted after setting. Please ensure Docker can be restarted before proceeding!"
+				"confirmTitle": "Настройка URL ускорения",
+				"confirmContent": "После настройки требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить!"
 			},
-			"cgroupDriver": "cgroup driver",
-			"setCgroupDriverTitle": "Set cgroup driver",
-			"setCgroupDriverConfirm": "After setting the cgroup driver, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
-			"logRotation": "Log Rotation",
-			"logRotationSet": "Set Log Rotation",
-			"logRotationSummary": "* Log file size {size}MB, retain {num} copies",
-			"closeLogRotationTitle": "Disable Log Rotation",
-			"closeLogRotationConfirm": "After disabling log rotation, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
+			"cgroupDriver": "Драйвер cgroup",
+			"setCgroupDriverTitle": "Настройка драйвера cgroup",
+			"setCgroupDriverConfirm": "После настройки драйвера cgroup требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить. Продолжить?",
+			"logRotation": "Ротация логов",
+			"logRotationSet": "Настроить ротацию логов",
+			"logRotationSummary": "* Размер файла {size} МБ, сохранить {num} копий",
+			"closeLogRotationTitle": "Отключение ротации логов",
+			"closeLogRotationConfirm": "После отключения ротации логов требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить. Продолжить?",
 			"logRotationConfig": {
-				"fileSize": "File Size",
-				"retainCount": "Retain Count",
-				"unitMB": "MB",
-				"unitCount": "files",
-				"fileSizeRequired": "Please enter file size",
-				"retainCountRequired": "Please enter retain count",
-				"configTip1": "Current configuration will only affect newly created containers. Existing containers need to be recreated for the configuration to take effect",
-				"configTip2": "If your container contains important data, ensure to backup before performing rebuild operations"
+				"fileSize": "Размер файла",
+				"retainCount": "Количество копий",
+				"unitMB": "МБ",
+				"unitCount": "файлов",
+				"fileSizeRequired": "Введите размер файла",
+				"retainCountRequired": "Введите количество копий",
+				"configTip1": "Текущая конфигурация применяется только к новым контейнерам. Для существующих контейнеров требуется пересоздание",
+				"configTip2": "Если контейнер содержит важные данные, создайте резервную копию перед пересозданием"
 			},
 			"iptables": {
-				"description": "* Docker's automatic configuration of iptables rules",
-				"enableTitle": "Enable iptables",
-				"disableTitle": "Disable iptables",
-				"enableConfirm": "After enabling iptables, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
-				"disableConfirm": "After disabling iptables, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?"
+				"description": "* Автоматическая настройка правил iptables в Docker",
+				"enableTitle": "Включение iptables",
+				"disableTitle": "Отключение iptables",
+				"enableConfirm": "После включения iptables требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить. Продолжить?",
+				"disableConfirm": "После отключения iptables требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить. Продолжить?"
 			},
 			"liveRestore": {
-				"description": "* When enabled, preserves the state of running containers when the Docker daemon stops unexpectedly or crashes",
-				"enableTitle": "Enable live_restore",
-				"disableTitle": "Disable live_restore",
-				"enableConfirm": "After enabling live_restore, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?",
-				"disableConfirm": "After disabling live_restore, Docker needs to restart. Please ensure you can restart Docker before proceeding. Do you want to continue?"
+				"description": "* При включении сохраняет состояние работающих контейнеров при неожиданной остановке или сбое демона Docker",
+				"enableTitle": "Включение live_restore",
+				"disableTitle": "Отключение live_restore",
+				"enableConfirm": "После включения live_restore требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить. Продолжить?",
+				"disableConfirm": "После отключения live_restore требуется перезапуск Docker. Убедитесь, что Docker можно перезапустить, прежде чем продолжить. Продолжить?"
 			},
 			"registry": {
-				"label": "Private Registry",
-				"placeholder": "Docker private registry address",
-				"modalTitle": "Set Private Registry",
-				"configPlaceholder": "Please enter private registry addresses, one per line, e.g.:\n192.168.1.111:8087\n192.168.1.112:8087",
-				"restartTip": "* Docker will restart after setting",
-				"restartTitle": "Restart Docker",
-				"restartConfirm": "Docker will restart. Do you want to continue?"
+				"label": "Частный реестр",
+				"placeholder": "Адрес частного реестра Docker",
+				"modalTitle": "Настройка частного реестра",
+				"configPlaceholder": "Введите адреса частных реестров (по одному на строку), например:\n192.168.1.111:8087\n192.168.1.112:8087",
+				"restartTip": "* Docker будет перезапущен после настройки",
+				"restartTitle": "Перезапуск Docker",
+				"restartConfirm": "Docker будет перезапущен. Продолжить?"
 			},
 			"path": {
-				"label": "One-Click Install Dir",
-				"modifyButton": "Modify",
-				"disabledTip": "Applications already exist, cannot modify",
-				"validationError": "Please enter a valid directory path!",
-				"confirmTitle": "Modify App Store Directory",
-				"confirmContent": "Modifying the app store directory will restart the panel. Do you want to continue?"
+				"label": "Директория установки",
+				"modifyButton": "Изменить",
+				"disabledTip": "Приложения уже существуют, изменение невозможно",
+				"validationError": "Введите корректный путь к директории!",
+				"confirmTitle": "Изменение директории магазина приложений",
+				"confirmContent": "Изменение директории магазина приложений приведёт к перезапуску панели. Продолжить?"
 			},
 			"systemInfo": {
-				"hostname": "Hostname",
-				"systemVersion": "System Version",
-				"architecture": "Architecture",
-				"kernelVersion": "Kernel Version",
-				"cpuCore": "CPU Core",
-				"memorySize": "Memory Size",
-				"dockerVersion": "Docker Version",
-				"dockerComposeVersion": "Docker Compose Version",
-				"unixAddress": "Unix Address",
-				"dataDirectory": "Data Directory",
-				"updateButton": "Update",
-				"updateComposeTitle": "Update Docker Compose Version",
-				"updateComposeContent": "Do you want to update Docker Compose version?",
-				"updateLogsTitle": "Update Logs",
-				"updateSuccess": "Update successful",
-				"updateFailed": "Update failed"
+				"hostname": "Имя узла",
+				"systemVersion": "Версия системы",
+				"architecture": "Архитектура",
+				"kernelVersion": "Версия ядра",
+				"cpuCore": "Ядра CPU",
+				"memorySize": "Размер памяти",
+				"dockerVersion": "Версия Docker",
+				"dockerComposeVersion": "Версия Docker Compose",
+				"unixAddress": "Unix-адрес",
+				"dataDirectory": "Директория данных",
+				"updateButton": "Обновить",
+				"updateComposeTitle": "Обновление версии Docker Compose",
+				"updateComposeContent": "Обновить версию Docker Compose?",
+				"updateLogsTitle": "Логи обновления",
+				"updateSuccess": "Обновление завершено",
+				"updateFailed": "Ошибка обновления"
 			}
 		},
 		"install": {

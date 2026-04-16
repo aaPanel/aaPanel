@@ -28,6 +28,7 @@
 			"app_list_16": "管理網站",
 			"app_list_17": "備份",
 			"app_list_18": "一鍵登錄",
+			"app_list_19": "終端",
 			"app_category_0": "已安裝",
 			"app_category_1": "更多",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "全部",
 			"filterRunning": "運行中",
 			"filterStopped": "已停止",
-			"searchPlaceholder": "搜索容器名稱或鏡像名稱"
+			"searchPlaceholder": "搜索容器名稱或鏡像名稱",
+			"goToApp": "前往應用程式商店安裝應用"
 		},
 		"Container": {
 			"index_1": "創建容器",

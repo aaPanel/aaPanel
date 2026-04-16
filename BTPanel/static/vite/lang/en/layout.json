@@ -23,7 +23,7 @@
 			"docker_4": "Container",
 			"docker_5": "Cloud image",
 			"docker_6": "Local image",
-			"docker_7": "Compose",
+			"docker_7": "Docker Compose",
 			"docker_8": "Template",
 			"docker_9": "Network",
 			"docker_10": "Volume",

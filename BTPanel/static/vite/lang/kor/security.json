@@ -1,10 +1,10 @@
 {
 	"Security": {
 		"Firewall": {
-			"index_1": "방화벽으로 켜십시오",
-			"index_2": "블록 ICMP로 켜십시오",
+			"index_1": "방화벽 켜기",
+			"index_2": "ICMP 차단 켜기",
 			"index_3": "사이트 로그 : ",
-			"index_4": "분명한",
+			"index_4": "초기화",
 			"index_5": "방화벽이 활성화되지 않았습니다 ",
 			"index_6": "활성화하려면 클릭하세요",
 			"index_7": "포트 규칙 : {0}",
@@ -24,7 +24,7 @@
 			"index_21": "규칙 없이는 수출 할 수 없습니다",
 			"index_22": "차단 해제 ICMP",
 			"Port": {
-				"index_1": "포트 규칙을 추가하세요",
+				"index_1": "포트 규칙 추가",
 				"index_2": "수입 규칙",
 				"index_3": "수출 규칙",
 				"index_4": "모든 방향",
@@ -197,7 +197,7 @@
 				"index_1": "규칙 수입, 기다려주세요 ...",
 				"index_2": "방화벽 상태 설정, 기다려주세요 ...",
 				"index_3": "핑 상태 설정, 기다려주세요 ...",
-				"index_4": "통나무 지우기, 잠깐만 ...",
+				"index_4": "로그 지우기, 잠깐만 ...",
 				"index_5": "포트 추가, 잠깐만 ...",
 				"index_6": "포트 수정, 기다려주세요 ...",
 				"index_7": "포트 전략 수정, 기다려주세요 ...",
@@ -395,7 +395,7 @@
 			"Index_5": "시스템을 끄면 사용자가 작동 한 명령 만 기록하고 추적합니다.",
 			"Index_6": "현재 기본값은 사용자 www, redis, mySQL 작업으로 인한 침입 문제에만 해당됩니다.",
 			"Index_7": "총",
-			"Index_8": "통나무",
+			"Index_8": "로그",
 			"Index_9": "프로세스는 절대 경로를 채워야합니다. 예 :/usr/bin/curl",
 			"Index_10": "프로세스 화이트리스트 추가",
 			"Index_11": "화이트리스트를 처리하세요",
@@ -467,65 +467,82 @@
 		},
 		"SiteSecurity": {
 			"Header": {
-				"scanning": "Scanning",
-				"lastScanTime": "Last scan time:",
-				"cancelScan": "Cancel Scan",
-				"scanNow": "Scan Now",
-				"title": "Intelligent Website Security",
-				"desc": "Free website security powered by a robust engine. With one click you can check for website risk signals; aaPanel automatically provides optimization and remediation suggestions so you can harden your site with simple operations.",
-				"noPhpSite": "No PHP websites found"
+				"scanning": "검사 중",
+				"lastScanTime": "최근 검사 시간:",
+				"cancelScan": "검사 취소",
+				"scanNow": "지금 검사",
+				"title": "지능형 웹사이트 보안",
+				"desc": "강력한 엔진 기반의 무료 웹사이트 보안 서비스입니다. 클릭 한 번으로 웹사이트의 위험 신호를 점검할 수 있으며, aaPanel이 제공하는 최적화 및 복구 제안을 통해 간편하게 보안을 강화할 수 있습니다.",
+				"noPhpSite": "PHP 웹사이트를 찾을 수 없습니다"
 			},
 			"Metric": {
-				"duration": "Duration",
-				"seconds": "seconds",
-				"durationDesc": "Total duration of this website scan",
-				"xssDesc": "XSS attacks in this website scan",
-				"sqlDesc": "SQL injection in this website scan",
-				"maliciousScan": "Malicious Scan",
-				"maliciousScanDesc": "Malicious scans in this website scan",
-				"phpAttack": "PHP Attack",
-				"phpAttackDesc": "PHP attacks in this website scan"
+				"duration": "소요 시간",
+				"seconds": "초",
+				"durationDesc": "이번 웹사이트 검사에 소요된 전체 시간",
+				"xssDesc": "이번 검사에서 탐지된 XSS 공격",
+				"sqlDesc": "이번 검사에서 탐지된 SQL 인젝션",
+				"maliciousScan": "악성 스캔",
+				"maliciousScanDesc": "이번 검사에서 탐지된 악성 스캔 시도",
+				"phpAttack": "PHP 공격",
+				"phpAttackDesc": "이번 검사에서 탐지된 PHP 공격"
 			},
 			"Summary": {
-				"scoreTitle": "Website Security Score",
-				"scoreLabel": "Score"
+				"scoreTitle": "웹사이트 보안 점수",
+				"scoreLabel": "점수"
 			},
 			"Top": {
-				"title": "IP (Top 5)",
+				"title": "IP 순위 (Top 5)",
 				"columns": {
-					"ip": "IP Address",
-					"count": "Visits"
+					"ip": "IP 주소",
+					"count": "방문 수"
 				},
-				"banTitle": "Ban IP [{0}]",
-				"banContent": "After banning this IP, it will no longer be allowed to access the server. Continue?",
-				"unbanTitle": "Unban IP [{0}]",
-				"unbanContent": "After unbanning this IP, access from this IP to the server will be restored. Continue?",
-				"banBrief": "Website security manually block IP"
+				"banTitle": "IP 차단 [{0}]",
+				"banContent": "이 IP를 차단하면 더 이상 서버에 접속할 수 없습니다. 계속하시겠습니까?",
+				"unbanTitle": "IP 차단 해제 [{0}]",
+				"unbanContent": "차단을 해제하면 해당 IP의 서버 접속이 다시 허용됩니다. 계속하시겠습니까?",
+				"banBrief": "웹사이트 보안 관리자에 의한 수동 IP 차단"
 			},
 			"Project": {
-				"title": "Security Items",
-				"waiting": "Waiting to scan",
-				"foundRisk": "{0} risks",
-				"noRisk": "No risks",
-				"expand": "Expand",
+				"title": "보안 점검 항목",
+				"waiting": "검사 대기 중",
+				"foundRisk": "{0}개의 위험 발견",
+				"noRisk": "위험 없음",
+				"expand": "펼치기",
 				"items": {
-					"webscan": "Website Configuration Security",
-					"fileleak": "File Leak Detection",
-					"webshell": "Webshell Detection",
-					"backup": "Backup Files",
-					"weakpass": "Weak Password Detection",
-					"weblog": "Website Logs"
+					"webscan": "웹사이트 구성 보안",
+					"fileleak": "파일 유출 탐지",
+					"webshell": "웹쉘(Webshell) 탐지",
+					"backup": "백업 파일 점검",
+					"weakpass": "취약한 비밀번호 탐지",
+					"weblog": "웹사이트 로그"
 				}
 			},
 			"Risk": {
-				"detailLabel": "Details:",
-				"repairLabel": "Fix:"
+				"detailLabel": "상세 정보:",
+				"repairLabel": "복구 방법:"
 			},
 			"RiskLevel": {
-				"warning": "Warning",
-				"low": "Low",
-				"middle": "Medium",
-				"high": "High"
+				"warning": "주의",
+				"low": "낮음",
+				"middle": "중간",
+				"high": "높음"
+			},
+			"Project_Info": {
+				"overviewTitle": "개요",
+				"features": {
+					"scan": {
+						"title": "강력한 무료 통합 침입 검사",
+						"desc": "웹사이트 침입 위험을 차단하기 위한 포괄적인 무료 검사를 제공합니다."
+					},
+					"trojan": {
+						"title": "위험한 트로이 목마 정밀 검사",
+						"desc": "심층 스캔을 통해 숨겨진 위협을 정확하게 탐지합니다."
+					},
+					"log": {
+						"title": "전문적인 웹사이트 접속 로그 분석",
+						"desc": "로그 분석을 통해 이상 징후와 보안 리스크를 찾아냅니다."
+					}
+				}
 			},
 			"Info": {
 				"overviewTitle": "Overview",

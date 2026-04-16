@@ -1,0 +1,1 @@
+System.register(["./index-legacy-BWAC5Pxb.js?v=1776326513599"],function(e,t){"use strict";var s,c,r;return{setters:[e=>{s=e.aR,c=e.m,r=e.a6}],execute:function(){e("c",async e=>{const{copy:t,isSupported:i}=s({legacy:!0});i.value?(t(e),c.success(r.global.t("Utils.Copy.index_1"))):c.error(r.global.t("Utils.Copy.index_2"))})}}});

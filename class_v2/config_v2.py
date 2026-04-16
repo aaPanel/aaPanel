@@ -2465,7 +2465,7 @@ class config:
             public.ExecShell('chown www.www {}'.format(session_path))
         import panel_site_v2
         site_run_info = panel_site_v2.panelSite().GetSiteRunPath(get)
-        if not site_run_info.get('status', False) or 'message' not in site_run_info:
+        if site_run_info.get('status', -1) != 0  or 'message' not in site_run_info:
             return public.return_message(-1, 0, "Site operation directory information cannot be obtained")
         run_path = site_run_info['message'].get('runPath', '')
         if not run_path:
@@ -2507,7 +2507,11 @@ class config:
         if site_info:
             import panel_site_v2
             try:
-                run_path = panel_site_v2.panelSite().GetSiteRunPath(get)['message']["runPath"]
+                # 修复 处理错误响应
+                res = panel_site_v2.panelSite().GetSiteRunPath(get)
+                if res.get('status', -1) == -1 or 'message' not in res:
+                    return public.return_message(0, 0, False)
+                run_path =  res.get('message', {}).get('runPath', '/')
             except:
                 return public.return_message(0, 0, False)
             # run_path = panelSite.panelSite().GetSiteRunPath(get)["runPath"]
@@ -2657,12 +2661,30 @@ class config:
         """
         menu_path = 'config/menu.json'
         hide_menu_file = 'config/hide_menu.json'
-        menu_file = public.ReadFile(menu_path)
-        menu_init_data = json.loads(menu_file) if menu_file else []
-        if not os.path.exists(hide_menu_file):
-            public.writeFile(hide_menu_file, '[]')
-        hide_menu = public.ReadFile(hide_menu_file)
-        hide_menu = json.loads(hide_menu) if hide_menu else []
+        menu_init_data = []
+        try:
+            menu_file = public.ReadFile(menu_path)
+            if menu_file:
+                parsed = json.loads(menu_file)
+                # 确保解析结果是 list,且每个元素是 dict
+                if isinstance(parsed, list):
+                    menu_init_data = [item for item in parsed if isinstance(item, dict) and 'id' in item]
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            menu_init_data = []
+
+        hide_menu = []
+        try:
+            if not os.path.exists(hide_menu_file):
+                public.writeFile(hide_menu_file, '[]')
+
+            hide_content = public.ReadFile(hide_menu_file)
+            if hide_content:
+                hide_parsed = json.loads(hide_content)
+                if isinstance(hide_parsed, list):
+                    hide_menu = [item for item in hide_parsed if isinstance(item, str)]
+        except Exception as e:
+            hide_menu = []
+
         result = [
             {
                 'id': d['id'],

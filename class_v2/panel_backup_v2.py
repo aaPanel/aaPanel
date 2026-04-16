@@ -692,6 +692,7 @@ class backup:
             return False
         save_local = self.__backup_site_check_local_flag()
         find = public.M('sites').where('name=?', (siteName,)).select()[0]
+
         if not find:
             error_msg = 'The specified website [{}] does not exist!'.format(siteName)
             self.echo_error(error_msg)
@@ -1822,11 +1823,55 @@ Please handle it as soon as possible""".format(
             else:
                 self.echo_error("Message notification sending failed.")
 
+    def _send_new_channels(self, sender_ids, title, msg, total, failture_count):
+        """通过新通道(sender_id)发送通知, 返回已发送的sender_type集合"""
+        try:
+            from mod.base.push_mod.system import PushSystem
+            push_system = PushSystem()
+            sent_sender_types = set()
+
+            for sender_id in sender_ids:
+                conf = push_system.sd_cfg.get_by_id(sender_id)
+                if not conf or not conf.get("used", True):
+                    self.echo_info("Sender {} not used or not found, skipped".format(sender_id))
+                    continue
+                sender_type = conf["sender_type"]
+
+                # 跳过 sms
+                if sender_type == "sms":
+                    continue
+
+                sd_cls = push_system.sender_cls(sender_type)
+
+                # 消息格式与旧通道保持一致
+                try:
+                    if sender_type == "mail":
+                        msg_content = msg.replace("\n", "<br/>")
+                        res = sd_cls(conf).send_msg(msg=msg_content, title=title)
+                    else:
+                        # dingding/weixin/feishu/tg/discord...
+                        res = sd_cls(conf).send_msg(msg=msg, title=title)
+                except Exception as e:
+                    self.echo_error("Sender {} ({}) send exception: {}".format(sender_id, sender_type, e))
+                    continue
+
+                if isinstance(res, str) and "Traceback" in res:
+                    self.echo_error("Sender {} ({}) send failed".format(sender_id, sender_type))
+                else:
+                    sent_sender_types.add(sender_type)
+                    self.echo_info("Message sent via {} (sender: {})".format(sender_type, sender_id))
+
+            return sent_sender_types
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return set()
+
     def send_notification(self, channel, title, msg="", total=0, failture_count=0, cron_info=None):
         """发送通知
 
         Args:
-            channel (str): 消息通道，多个用英文逗号隔开
+            channel (str): 消息通道，多个用英文逗号隔开 (可包含sender_id或旧通道名)
             title (str): 通知标题
             msg (str, optional): 消息内容. Defaults to "".
 
@@ -1834,13 +1879,67 @@ Please handle it as soon as possible""".format(
             bool: 通知是否发送成功
         """
         try:
+            # ========== 解析 channel 列表 ==========
+            channels = channel.split(",") if "," in channel else [channel]
+
+            # ========== ALL: 使用所有已启用的通道, 旧的配置, 全部通道发送 ==========
+            from mod.base.push_mod.mods import SenderConfig
+            sender_config = SenderConfig()
+            all_old_channels = [
+                "mail", "dingding", "weixin", "feishu", "wx_account", "tg"
+            ]
+            still_use_all_old = False
+            if channel == "ALL": # 源入参channel
+                channels = [
+                    s["id"] for s in sender_config.config
+                    if s.get("used", True) and s.get("data")
+                ]
+                if not channels:
+                    # 新通道为空时, 触发旧通道全部发送
+                    still_use_all_old = True
+
+            # ========== 分离新通道(sender_id)和旧通道 ==========
+            sender_ids = []
+            old_channels = []
+
+            sender_ids_in_db = {
+                s["id"] for s in sender_config.config if s.get("used", True) and s.get("data")
+            }
+
+            if still_use_all_old:
+                # 全部发送但是新通道空, 触发全部旧通道
+                old_channels = all_old_channels
+            else:
+                # 分离通道
+                for ch in channels:
+                    ch = ch.strip()
+                    if not ch:
+                        continue
+                    if ch in sender_ids_in_db: # 新通道
+                        sender_ids.append(ch)
+                    elif ch in all_old_channels: # 确保为旧通道
+                        old_channels.append(ch)
+
+            # ========== 发送新通道 ==========
+            sent_sender_types = set()
+            if sender_ids:
+                sent_sender_types = self._send_new_channels(
+                    sender_ids, title, msg, total, failture_count
+                )
+
+            # ========== 发送旧通道(去重: 跳过sms, 跳过新通道已覆盖的type) ==========
+            filtered_old_channels = [
+                ch for ch in old_channels
+                if ch != "sms" and ch not in sent_sender_types
+            ]
+
+            if not filtered_old_channels:
+                # 全部由新通道覆盖
+                return len(sent_sender_types) > 0
+
+            # ========== 保留原有旧通道逻辑 ==========
             from config import config
             from panelPush import panelPush
-            tongdao = []
-            if channel.find(",") >= 0:
-                tongdao = channel.split(",")
-            else:
-                tongdao = [channel]
 
             error_count = 0
             con_obj = config()
@@ -1850,7 +1949,7 @@ Please handle it as soon as possible""".format(
             error_channel = []
             channel_data = {}
             msg_data = {}
-            for ch in tongdao:
+            for ch in filtered_old_channels:
                 # 根据不同的消息通道准备不同的内容
                 if ch == "mail":
                     msg_data = {
@@ -1859,97 +1958,25 @@ Please handle it as soon as possible""".format(
                     }
                 if ch in ["dingding", "weixin", "feishu", "wx_account", "tg"]:
                     msg_data["msg"] = msg
-                    # print("msg",msg_data["msg"])
-                if ch in ["sms"]:
-                    if not cron_info:
-                        task_name = self.cron_info["name"]
-                    else:
-                        task_name = cron_info["name"]
-                    if total > 0 and failture_count > 0:
-                        msg_data["sm_type"] = "backup_all"
-                        msg_data["sm_args"] = {
-                            "panel_name": public.GetConfigValue('title'),
-                            "task_name": task_name,
-                            "failed_count": failture_count,
-                            "total": total
-                        }
-                    else:
-                        msg_data["sm_type"] = "backup"
-                        msg_data["sm_args"] = {
-                            "panel_name": public.GetConfigValue('title'),
-                            "task_name": task_name
-                        }
+
                 channel_data[ch] = msg_data
-            # print("channel data:")
-            # print(channel_data)
+
             # 即时推送
             pp = panelPush()
-
             push_res = pp.push_message_immediately(channel_data)
+            # push_message_immediately -> if not msg_obj: continue 不考虑不存在旧通道.
             if push_res["status"]:
                 channel_res = push_res["msg"]
                 for ch, res in channel_res.items():
                     if not res["status"]:
                         if ch in msg_channels:
                             error_channel.append(msg_channels[ch]["title"])
-                            error_count += 1
-            if not push_res["status"] or error_count:
-                self.echo_error("Message channel: {} failed to send!".format(",".join(error_channel)))
-            else:
-                self.echo_info("Message sent successfully.")
-            if error_count == len(tongdao):
+            if error_count == len(filtered_old_channels):
                 return False
             return True
         except Exception as e:
             import traceback
             print(traceback.format_exc())
-        return False
-
-    def send_notification2(self, channel, title, msg=""):
-        try:
-            from send_mail import send_mail
-            tongdao = []
-            if channel.find(",") >= 0:
-                tongdao = channel.split(",")
-            else:
-                tongdao = [channel]
-
-            sm = send_mail()
-            send_res = []
-            error_count = 0
-            channel_names = {
-                "mail": "mail",
-                "dingidng": "dingidng"
-            }
-            error_channel = []
-            settings = sm.get_settings()
-            for td in tongdao:
-                _res = False
-                if td == "mail":
-                    if len(settings["user_mail"]['mail_list']) == 0:
-                        continue
-                    mail_list = settings['user_mail']['mail_list']
-                    if len(mail_list) == 1:
-                        mail_list = mail_list[0]
-                    _res = sm.qq_smtp_send(mail_list, title=title, body=msg.replace("\n", "<br/>"))
-                    if not _res:
-                        error_count += 1
-                        error_channel.append(channel_names[td])
-                if td == "dingding":
-                    if len(settings["dingding"]['info']) == 0:
-                        continue
-                    _res = sm.dingding_send(msg)
-                    send_res.append(_res)
-                    if not _res:
-                        error_count += 1
-                        error_channel.append(channel_names[td])
-            if error_count > 0:
-                print("Message channel: {} failed to send!".format(",".join(error_channel)))
-            if error_count == len(tongdao):
-                return False
-            return True
-        except Exception as e:
-            print(e)
         return False
 
     def save_backup_status(self, status, target="", msg=""):

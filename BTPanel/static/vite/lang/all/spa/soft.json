@@ -70,5 +70,8 @@
 	"f02acf9ce69d78f7502b5ab478645c6a": "Alojamiento de múltiples servidores web",
 	"ada8a81c9d7eb120155c1b33d439886e": "Por favor seleccione el servicio que desea conservar",
 	"09dd63272d4e76bf461175487ed9775a": "Después de habilitar múltiples servicios, se instalarán Apache, Nginx y Openlitespeed.",
-	"19cbf2cc98f5c63c5bd8a39d58c76c6e": "Esperando instalación"
+	"19cbf2cc98f5c63c5bd8a39d58c76c6e": "Esperando instalación",
+	"3345e78daf88ec9ca3d783501fff8dd7": "Mostrar en casa",
+	"6ba2a7297005492dad4e82247875ab1f": "Por favor ingresa a la aplicación para buscar",
+	"167d43470dfa0dd34eca2f40c3bd0f93": "Mostrar en Inicio"
 }

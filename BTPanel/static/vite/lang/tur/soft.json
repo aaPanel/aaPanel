@@ -73,6 +73,7 @@
 			"index_17": "Çoklu web sunucusu barındırma",
 			"index_18": "Korumak istediğiniz hizmeti seçin",
 			"index_19": "Birden fazla hizmeti etkinleştirdikten sonra Apache, Nginx ve Openlitespeed yüklenecektir"
-		}
+		},
+		"index_55": "Please enter the app to search"
 	}
 }

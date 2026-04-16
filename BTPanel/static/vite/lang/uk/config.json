@@ -1,5 +1,29 @@
 {
 	"Config": {
+		"Theme": {
+			"Title": "Налаштування теми",
+			"Style": "Стиль теми",
+			"Auto": "Авто",
+			"Light": "Світла",
+			"Dark": "Темна",
+			"StyleDesc": "Виберіть стиль теми інтерфейсу, що впливає на загальний світлий і темний стиль інтерфейсу",
+			"Mode": "Режим теми",
+			"NewVersion": "Нова версія",
+			"OldVersion": "Стара версія",
+			"ModeDesc": "Виберіть стиль теми інтерфейсу, який впливає на загальний візуальний стиль інтерфейсу. Примітка: Перемикання вплине на деякі встановлені стилі",
+			"Color": "Колір теми",
+			"ForestGreen": "Зелений",
+			"EmeraldGreen": "М'ята",
+			"Violet": "Фіолетовий",
+			"SkyBlue": "Небесно-блакитний",
+			"CherryPink": "Сакура",
+			"DarkGold": "Чорне Золото",
+			"Custom": "Кастомний",
+			"ColorDesc": "Виберіть попередньо встановлену колірну схему теми або власний колір, що впливає на загальний тон інтерфейсу",
+			"RestoreDefault": "Відновити за замовчуванням",
+			"GoldNotSupportedDefault": "Тема чорного золота не підтримується в авто/світлому режимі, автоматично перемикається на колір за замовчуванням",
+			"GoldNotSupportedDark": "Тема чорного золота не підтримується в авто/світлому режимі, автоматично перемикається на темний режим"
+		},
 		"Panel": {
 			"index_1": "Налаштування панелей",
 			"index_2": "Закрити панель",
@@ -583,7 +607,7 @@
 			"sidebarSettings": "Налаштування бічної панелі",
 			"mainBackgroundSettings": "Налаштування головної сторінки",
 			"loginInterfaceSettings": "Налаштування сторінки входу",
-			"resetAllDefaults": "Скинути всі налаштування за замовчуванням",
+			"resetAllDefaults": "Відновити стандартні налаштування",
 			"transparencyTip": "(1-100, меньше значення, більш прозоре)",
 			"resetDefault": "Скинути до замовчувань",
 			"uploadImagePlaceholder": "Завантажити зображення",
@@ -607,9 +631,9 @@
 			"backgroundOpacity": "Непрозорість фону",
 			"contentOpacity": "Непрозорість вмісту",
 			"sidebarBackgroundOpacity": "Непрозорість фону бічної панелі",
-			"savingInterfaceSettings": "Збереження налаштувань інтерфейсу, будь ласка, зачекайте...",
+			"savingInterfaceSettings": "Збереження налаштувань, будь ласка, зачекайте...",
 			"restoreDefaultSettings": "Відновити початкові налаштування",
-			"confirmRestore": "Ви дійсно бажаєте відновити {name} за замовчуванням?",
+			"confirmRestore": "Ви впевнені, що хочете відновити [{name}] до значень за замовчуванням?",
 			"uploadingImage": "Завантажується зображення, будь ласка, зачекайте...",
 			"confirmRestoreAll": "Ви впевнені, що хочете відновити всі налаштування інтерфейсу до значень за замовчуванням? Цю операцію не можна скасувати.",
 			"loginLogoImage": "Лого для входу",
@@ -639,30 +663,6 @@
 		"All": {
 			"searchPlaceholder": "Пошук налаштувань",
 			"emptyResult": "Результати пошуку не знайдено"
-		},
-		"Theme": {
-			"Title": "Theme Settings",
-			"Style": "Theme Style",
-			"Auto": "Auto",
-			"Light": "Light",
-			"Dark": "Dark",
-			"StyleDesc": "Select the interface theme style, affecting the overall interface light and dark style",
-			"Mode": "Theme Mode",
-			"NewVersion": "New Version",
-			"OldVersion": "Old Version",
-			"ModeDesc": "Select the interface theme style, affecting the overall interface visual style. Note: Switching will affect some set styles",
-			"Color": "System Theme Color",
-			"ForestGreen": "Forest Green",
-			"EmeraldGreen": "Emerald Green",
-			"Violet": "Violet",
-			"SkyBlue": "Sky Blue",
-			"CherryPink": "Cherry Pink",
-			"DarkGold": "Dark Gold",
-			"Custom": "Custom",
-			"ColorDesc": "Select a preset system theme color scheme or custom color, affecting the overall interface tone",
-			"RestoreDefault": "Restore Default",
-			"GoldNotSupportedDefault": "Dark gold theme is not supported in auto/light mode, automatically switched to default color",
-			"GoldNotSupportedDark": "Dark gold theme is not supported in auto/light mode, automatically switched to dark mode"
 		}
 	}
 }

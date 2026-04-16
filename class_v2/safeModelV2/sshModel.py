@@ -327,11 +327,15 @@ class main(safeBase):
     #改远程端口
     def SetSshPort(self,get):
         port = get.port
-        if int(port) < 22 or int(port) > 65535: return public.returnMsg(False,'Port range must be between 22 and 65535!')
+        if int(port) < 22 or int(port) > 65535: return public.return_message(-1, 0, public.lang("Do NOT use common default port!"))
         ports = ['21','25','80','443','8080','888','8888']
-        if port in ports: return public.returnMsg(False,'Please dont use default ports for common programs!')
+        if port in ports: return public.return_message(-1, 0, public.lang("Do NOT use common default port!"))
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
+        # 修复 配置文件不存在或内容异常
+        if not conf: return public.return_message(-1, 0, public.lang("The SSH configuration file is abnormal"))
+        if not isinstance(conf, str):
+            return public.return_message(-1, 0, public.lang("Failed to read the SSH configuration file."))
 
         rep = r"#*Port\s+([0-9]+)\s*\n"
         conf = re.sub(rep, "Port "+port+"\n", conf)

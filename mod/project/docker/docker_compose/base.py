@@ -9,6 +9,7 @@
 # ------------------------------
 # docker模型 - docker compose 基类
 # ------------------------------
+import os
 import sys
 import time
 from typing import List
@@ -49,6 +50,18 @@ class Compose():
             self.path = path.replace("\'", "\\'").replace("\"", "\\\"").replace(" ", "\\ ").replace("|", "\\|")
         else:
             self.path = path
+        # 自动解析实际的 compose project name，避免因 project name 不匹配导致操作失败
+        if self.compose_name is None and self.path and os.path.exists(self.path):
+            try:
+                cmd_result = public.ExecShell(self.cmd + ' ls -a --format json')[0]
+                if "Segmentation fault" not in cmd_result:
+                    import json as _json
+                    for item in _json.loads(cmd_result):
+                        if item.get('ConfigFiles', '') == self.path:
+                            self.compose_name = item.get('Name', None)
+                            break
+            except:
+                pass
         return self
 
     def set_tail(self, tail: str) -> 'Compose':
@@ -68,37 +81,82 @@ class Compose():
         return self
 
     def get_compose_up(self) -> List[str] or str:
-        return self.cmd + ' -f {} up -d| {}'.format(self.path, self.grep_version)
+        if self.type == 0:
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} up -d| {}'.format(self.path, self.grep_version)
+        else:
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'up', '-d'])
+            return parts
 
     def get_compose_up_remove_orphans(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} up -d --remove-orphans'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} up -d --remove-orphans'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'up', '-d', '--remove-orphans']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'up', '-d', '--remove-orphans'])
+            return parts
 
     def get_compose_down(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} down'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} down'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'down']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'down'])
+            return parts
 
     def kill_compose(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} kill'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} kill'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'kill']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'kill'])
+            return parts
 
     def rm_compose(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} rm -f'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} rm -f'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'rm', '-f']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'rm', '-f'])
+            return parts
 
     def get_compose_delete(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} down --volumes --remove-orphans'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} down --volumes --remove-orphans'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'down', '--volumes', '--remove-orphans']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'down', '--volumes', '--remove-orphans'])
+            return parts
 
     def get_compose_delete_for_ps(self) -> List[str] or str:
         if self.type == 0:
@@ -108,45 +166,90 @@ class Compose():
 
     def get_compose_restart(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} restart'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} restart'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'restart']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'restart'])
+            return parts
 
     def get_compose_stop(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} stop'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} stop'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'stop']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'stop'])
+            return parts
 
     def get_compose_start(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} start'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} start'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'start']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'start'])
+            return parts
 
     def get_compose_pull(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} pull'.format(self.path)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} pull'.format(self.path)
         else:
-            return [self.cmd, '-f', self.path, 'pull']
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'pull'])
+            return parts
 
     def get_compose_logs(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} logs -f --tail {}'.format(self.path, self.tail)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} logs -f --tail {}'.format(self.path, self.tail)
         else:
-            return [self.cmd, '-f', self.path, 'logs', '-f', '--tail', self.tail]
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'logs', '-f', '--tail', self.tail])
+            return parts
 
     def get_tail_compose_log(self) -> List[str] or str:
         if self.type == 0:
-            return self.cmd + ' -f {} logs --tail {}'.format(self.path, self.tail)
+            cmd = self.cmd
+            if self.compose_name:
+                cmd += ' -p {}'.format(self.compose_name)
+            return cmd + ' -f {} logs --tail {}'.format(self.path, self.tail)
         else:
-            return [self.cmd, '-f', self.path, 'logs', '--tail', self.tail]
+            parts = [self.cmd]
+            if self.compose_name:
+                parts.extend(['-p', self.compose_name])
+            parts.extend(['-f', self.path, 'logs', '--tail', self.tail])
+            return parts
 
     def get_compose_ls(self) -> List[str] or str:
         return self.cmd + ' ls -a --format json| {}'.format(self.grep_version)
 
     def get_compose_ps(self) -> List[str] or str:
-        return self.cmd + ' -f {} ps -a --format json| {}'.format(self.path, self.grep_version)
+        cmd = self.cmd
+        if self.compose_name:
+            cmd += ' -p {}'.format(self.compose_name)
+        return cmd + ' -f {} ps -a --format json| {}'.format(self.path, self.grep_version)
 
     def get_compose_config(self) -> List[str] or str:
         return self.cmd + ' -f {} config| {}'.format(self.path, self.grep_version)

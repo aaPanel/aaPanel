@@ -130,6 +130,11 @@
 				"untitledFile": "новий файл"
 			}
 		},
+		"api": {
+			"saving": "Збереження, будь ласка, зачекайте...",
+			"deleting": "Видалення, будь ласка, зачекайте...",
+			"recovering": "Відновлення, будь ласка, зачекайте..."
+		},
 		"fileOperation": {
 			"cut": "Виріз.",
 			"rename": "Переім.",
@@ -418,75 +423,54 @@
 		},
 		"videoPlayerModal": {
 			"title": "Відеоплеєр"
-		},
-		"api": {
-			"saving": "Saving, please wait...",
-			"deleting": "Deleting, please wait...",
-			"recovering": "Restoring, please wait..."
 		}
-	},
-	"editor": {
-		"title": "Онлайн-редактор тексту",
-		"save": "Зберегти",
-		"saveAll": "Зберегти все",
-		"refresh": "Оновити",
-		"search": "Пошук",
-		"replace": "Замінити",
-		"jumpLine": "Перейти до рядка",
-		"font": "Шрифт",
-		"theme": "Тема",
-		"settings": "Налаштування",
-		"help": "Довідка",
-		"directory": "Каталог",
-		"back": "Назад",
-		"new": "Створити"
 	},
 	"fileEditor": {
 		"common": {
-			"save": "Save"
+			"save": "Зберегти"
 		},
 		"title": {
-			"onlineTextEditor": "Online Text Editor",
-			"minimize": "Minimize",
-			"restore": "Restore",
-			"restoreDown": "Restore Down",
-			"maximize": "Maximize",
-			"close": "Close"
+			"onlineTextEditor": "Онлайн-редактор тексту",
+			"minimize": "Згорнути",
+			"restore": "Відновити",
+			"restoreDown": "Відновити вниз",
+			"maximize": "Збільшити",
+			"close": "Закрити"
 		},
 		"toolbar": {
-			"save": "Save",
-			"saveAll": "Save All",
-			"refresh": "Refresh",
-			"search": "Search",
-			"replace": "Replace",
-			"jumpLine": "Jump Line",
-			"fontSize": "Font Size",
-			"theme": "Theme",
-			"setting": "Settings",
-			"shortcut": "Shortcuts",
-			"refreshing": "Refreshing, please wait...",
-			"refreshed": "File content updated",
-			"fontSizeSaved": "Font size updated"
+			"save": "Зберегти",
+			"saveAll": "Зберегти все",
+			"refresh": "Оновити",
+			"search": "Пошук",
+			"replace": "Замінити",
+			"jumpLine": "Стрибкова лінія",
+			"fontSize": "Розмір шрифту",
+			"theme": "Тема",
+			"setting": "Налаштування",
+			"shortcut": "Ярлики",
+			"refreshing": "Освіжаючий, будь ласка, зачекайте...",
+			"refreshed": "Оновлений вміст файлу",
+			"fontSizeSaved": "Оновлено розмір шрифту"
 		},
 		"messages": {
-			"noRefresh": "This page cannot be refreshed in editor mode. Close the editor and try again."
+			"noRefresh": "Цю сторінку не можна оновити в режимі редактора. Закрийте редактор і спробуйте ще раз."
 		},
 		"fileExplorer": {
-			"directory": "Directory",
-			"up": "Up",
-			"refresh": "Refresh",
-			"new": "New",
-			"search": "Search",
-			"searchPanelTitle": "Search Directory Files",
-			"close": "Close",
-			"searchPlaceholder": "Search",
-			"includeSubdir": "Include subdirectories",
-			"newFolder": "New Folder",
-			"newFile": "New File"
+			"directory": "Каталог",
+			"up": "Вгору.",
+			"refresh": "Оновити",
+			"new": "Новий",
+			"search": "Пошук",
+			"searchPanelTitle": "Пошук файлів каталогу",
+			"close": "Закрити",
+			"searchPlaceholder": "Пошук",
+			"includeSubdir": "Включити підкаталоги",
+			"newFolder": "Нова папка",
+			"newFile": "Новий файл"
 		},
 		"tree": {
-			"newFilePlaceholder": "New file",
-			"newFolderPlaceholder": "New folder",
+			"newFilePlaceholder": "Новий файл",
+			"newFolderPlaceholder": "Нова папка",
 			"rename": "Rename",
 			"download": "Download",
 			"delete": "Delete",
@@ -497,136 +481,136 @@
 			"renameOpenedWarning": "This file is currently open and cannot be renamed."
 		},
 		"dialogs": {
-			"encodingTitle": "Set file encoding",
-			"settingTitle": "Editor settings",
+			"encodingTitle": "Встановити кодування файлу",
+			"settingTitle": "Налаштування редактора",
 			"setting": {
-				"wrap": "Word wrap",
-				"enableLiveAutocompletion": "Live autocompletion",
-				"enableSnippets": "Enable snippets",
-				"showInvisibles": "Show invisibles",
-				"showLineNumbers": "Show line numbers"
+				"wrap": "Вступне слово",
+				"enableLiveAutocompletion": "Автодоповнення в реальному часі",
+				"enableSnippets": "Увімкнути фрагменти",
+				"showInvisibles": "Показати невидимих",
+				"showLineNumbers": "Показати номери рядків"
 			},
-			"themeTitle": "Set editor theme",
+			"themeTitle": "Встановлення теми редактора",
 			"theme": {
-				"chrome": "chrome (Light)",
-				"monokai": "monokai (Dark)"
+				"chrome": "хром (Light)",
+				"monokai": "монокай (темний)"
 			},
-			"goToLineTitle": "Go to line",
-			"goToLineHint": "Current: line {line}, column {column}. Enter a line number (1-{max}).",
-			"fontSizeTitle": "Set editor font size",
-			"tabSizeTitle": "Tab settings",
-			"tabSizeLengthTitle": "Tab size",
+			"goToLineTitle": "Перейдіть на лінію",
+			"goToLineHint": "Поточний: рядок {line}, стовпець {column}. Введіть номер рядка (1-{max}).",
+			"fontSizeTitle": "Встановити розмір шрифту редактора",
+			"tabSizeTitle": "Налаштування вкладки",
+			"tabSizeLengthTitle": "Розмір вкладки",
 			"tabSize": {
-				"useSpaces": "Indent using spaces",
-				"useTabs": "Indent using tabs"
+				"useSpaces": "Відступ з використанням пробілів",
+				"useTabs": "Відступ за допомогою табуляції"
 			},
-			"lineEndingTitle": "Set line ending",
-			"lineEndingChangeTitle": "Change line ending",
-			"lineEndingChangeContent1": "Change file \"{file}\" line ending from {from} to {to}?",
-			"lineEndingChangeContent2": "This will rewrite all line endings in the file and take effect after {save}.",
+			"lineEndingTitle": "Встановити закінчення рядка",
+			"lineEndingChangeTitle": "Змінити закінчення рядка",
+			"lineEndingChangeContent1": "Змінити закінчення рядка файлу \"{file}\" з {from} на {to}?",
+			"lineEndingChangeContent2": "Це перепише всі закінчення рядків у файлі і набуде чинності після {save}.",
 			"fileHistory": {
-				"title": "File history",
-				"time": "Time",
-				"actions": "Actions",
-				"diff": "Diff",
-				"recover": "Restore",
-				"delete": "Delete",
-				"recoverTitle": "Restore history",
-				"recoverContent": "Restore history version {time}? Current file content will be overwritten.",
-				"deleteTitle": "Delete history",
-				"deleteContent": "Delete history version {time}? This cannot be undone.",
-				"fileContentUpdated": "File content updated."
+				"title": "Історія файлів",
+				"time": "Час",
+				"actions": "Дії",
+				"diff": "Різниця",
+				"recover": "Відновити",
+				"delete": "Видалити",
+				"recoverTitle": "Відновити історію",
+				"recoverContent": "Відновити версію історії {time}? Поточний вміст файлу буде замінено.",
+				"deleteTitle": "Видалити історію",
+				"deleteContent": "Видалити версію історії {time}? Це не можна скасувати.",
+				"fileContentUpdated": "Вміст файлу оновлено."
 			}
 		},
 		"editorHeader": {
-			"tipTitle": "Notice",
-			"modifiedSaveConfirm": "This file has been modified. Save changes?",
-			"dontSave": "Don't Save",
+			"tipTitle": "Повідомлення",
+			"modifiedSaveConfirm": "Цей файл було змінено. Зберегти зміни?",
+			"dontSave": "Не заощаджуй",
 			"close": "Close",
 			"closeOthers": "Close Others",
 			"closeAll": "Close All"
 		},
 		"editorFooter": {
-			"fileLocation": "File: {path}",
-			"readOnlyHistory": "Read-only file: {path}  History [{time}]",
-			"clickRecoverLeft": "Restore left history version",
+			"fileLocation": "Файл: {path}",
+			"readOnlyHistory": "Файл тільки для читання: {path}  Історія [{time}]",
+			"clickRecoverLeft": "Відновити ліву версію історії",
 			"lineColumn": "Ln {line}, Col {column}",
-			"historyCount": "History: {count}",
-			"tabSize": "Tab: {size}",
-			"encoding": "Encoding: {encoding}",
-			"language": "Language: {language}",
-			"readOnlyMode": "Read-only"
+			"historyCount": "Історія: {count}",
+			"tabSize": "Вкладка: {size}",
+			"encoding": "Кодування: {encoding}",
+			"language": "Мова: {language}",
+			"readOnlyMode": "Тільки для читання"
 		},
 		"store": {
-			"untitled": "Untitled",
-			"fileTooLarge": "Sorry! Files larger than 3MB are not supported for online editing.",
-			"shortcutTabName": "Shortcuts",
-			"conflictTitle": "Conflict warning",
-			"conflictContentFallback": "This file may have a timestamp conflict or you do not have write permission. Force save?",
-			"forceSave": "Force Save",
-			"saveAllLoading": "Saving all modified files, please wait...",
-			"saveAllSuccess": "All changes saved.",
-			"tabSettingsRefreshed": "Settings updated.",
-			"nameRequired": "Please enter a valid name.",
-			"newFile": "New file",
-			"newFolder": "New folder",
-			"createSuccess": "{type} created successfully."
+			"untitled": "Без назви",
+			"fileTooLarge": "Вибачте! Файли розміром більше 3 МБ не підтримуються для редагування онлайн.",
+			"shortcutTabName": "Ярлики",
+			"conflictTitle": "Попередження про конфлікт",
+			"conflictContentFallback": "Цей файл може мати конфлікт міток часу або у вас немає прав на запис. Примусове збереження?",
+			"forceSave": "Примусове збереження",
+			"saveAllLoading": "Збереження всіх змінених файлів, будь ласка, зачекайте...",
+			"saveAllSuccess": "Всі зміни збережено.",
+			"tabSettingsRefreshed": "Налаштування оновлено.",
+			"nameRequired": "Будь ласка, введіть дійсне ім'я.",
+			"newFile": "Новий файл",
+			"newFolder": "Нова папка",
+			"createSuccess": "{type} створений успішно."
 		},
 		"shortcut": {
 			"common": {
-				"title": "Common Shortcuts",
-				"saveFile": "Save file",
-				"copy": "Copy",
-				"cut": "Cut",
-				"paste": "Paste",
-				"selectAll": "Select all",
-				"undo": "Undo",
-				"redo": "Redo",
-				"find": "Find",
-				"replace": "Replace",
-				"esc": "Exit search / cancel suggestions"
+				"title": "Загальні ярлики",
+				"saveFile": "Зберегти файл",
+				"copy": "Зрозумів.",
+				"cut": "Знято.",
+				"paste": "Вставити",
+				"selectAll": "Вибрати все",
+				"undo": "Відмінити",
+				"redo": "Повторити",
+				"find": "Знайти",
+				"replace": "Замінити",
+				"esc": "Вийти з пошуку / скасувати пропозиції"
 			},
 			"cursorMove": {
-				"title": "Cursor Movement",
-				"docStartEnd": "Move cursor to document start/end",
-				"matchingTag": "Jump to matching tag",
-				"pageUpDown": "Page up/down",
-				"lineStartEnd": "Move cursor to line start/end"
+				"title": "Переміщення курсору",
+				"docStartEnd": "Переміщення курсору на початок/кінець документа",
+				"matchingTag": "Перейти до відповідного тегу",
+				"pageUpDown": "Сторінка вгору/вниз",
+				"lineStartEnd": "Перемістіть курсор на початок/кінець рядка"
 			},
 			"selection": {
-				"title": "Selection",
-				"mouseBox": "Mouse select",
-				"drag": "Drag",
-				"mouseDrag": "Mouse drag",
-				"pageSelect": "Select while paging up/down",
-				"cursorToStartEnd": "From cursor to start/end",
-				"blockSelect": "Block selection"
+				"title": "Вибір",
+				"mouseBox": "Вибір мишею",
+				"drag": "Перетягни.",
+				"mouseDrag": "Перетягування мишею",
+				"pageSelect": "Виберіть під час гортання вгору/вниз",
+				"cursorToStartEnd": "Від курсору до початку/кінця",
+				"blockSelect": "Вибір блоку"
 			},
 			"edit": {
-				"title": "Edit",
-				"toggleComment": "Toggle comment",
-				"indent": "Indent",
+				"title": "Редагувати",
+				"toggleComment": "Переключити коментар",
+				"indent": "Відступ",
 				"outdent": "Outdent",
-				"delete": "Delete",
-				"deleteLine": "Delete line",
-				"copyLineUpDown": "Duplicate line up/down",
-				"deleteRight": "Delete to the right of cursor",
-				"swapLineUpDown": "Swap current line with previous/next",
-				"copyLineDown": "Duplicate line below"
+				"delete": "Видалити",
+				"deleteLine": "Видалити рядок",
+				"copyLineUpDown": "Дублювання лінії вгору/вниз",
+				"deleteRight": "Видалення праворуч від курсору",
+				"swapLineUpDown": "Поміняти місцями поточний рядок з попереднім/наступним",
+				"copyLineDown": "Продублюйте рядок нижче"
 			}
 		}
 	},
 	"FolderPicker": {
-		"SearchPlaceholder": "Search file/directory",
-		"NewFile": "New file",
-		"NewFolder": "New folder",
-		"CurrentSelection": "Current selection: ",
-		"Name": "Name",
-		"NamePlaceholder": "Please enter name",
-		"Create": "Create",
-		"ModifyTime": "Modification time",
-		"PermissionOwner": "Permissions/Owner",
+		"SearchPlaceholder": "Пошук файлу/каталогу",
+		"NewFile": "Новий файл",
+		"NewFolder": "Нова папка",
+		"CurrentSelection": "Поточний вибір: ",
+		"Name": "Ім'я",
+		"NamePlaceholder": "Будь ласка, введіть ім'я",
+		"Create": "Створити",
+		"ModifyTime": "Час модифікації",
+		"PermissionOwner": "Дозволи/Власник",
 		"RootDir": "Root dir",
-		"PathPlaceholder": "Please enter path"
+		"PathPlaceholder": "Будь ласка, введіть шлях"
 	}
 }

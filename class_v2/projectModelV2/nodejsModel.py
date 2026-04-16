@@ -759,9 +759,34 @@ export PATH
         self.install_packages(get)
         self.start_project(get)
         return_message=public.return_data(True,'Added project successfully',project_id)
+
+        # ================ git start ======================
+        try:
+            if get.get('deploy_type') in ['ssh', 'github']:
+                if get.get('deploy_type') == 'ssh':
+                    from git_tools import GitTools
+                    git_obj = GitTools()
+
+                    # 已clone项目，使用.git导入
+                    res = git_obj.get_git_directory(public.to_dict_obj({"site_id":project_id}))
+                    if res['status'] != 0:
+                        return public.return_message(-1, 0, res['message'])
+                    res = res['message']
+                    res = git_obj.import_existing_repository(public.to_dict_obj({"site_id":project_id, "repo" : res['repo'],
+                                                                           "branch": res['branch'],"key_path":res['key_path'], "project_type":'node'}))
+                    if res['status'] != 0:
+                        return public.return_message(-1, 0, res['message'])
+        except Exception as e:
+            print(e)
+            # 失败不删除项目
+            return public.return_message(-1, 0, public.lang("There was an error while configuring Git tools!"))
+        # ================ git end ======================
+
         del return_message['status']
         return public.return_message(0,0, return_message)
-        
+
+
+
     def modify_project(self,get):
         '''
             @name 修改指定项目
@@ -949,7 +974,6 @@ export PATH
             try:
                 project['project_config'] = json.loads(project['project_config'])
                 p_type = 'pm2' if project['project_config'].get('pm2_name') else 'nodejs'
-                res = None
                 if operation_type == 'delete':
                     temp_get = public.to_dict_obj({'project_name': project['name'],'project_type': p_type,'pm2_name':project['project_config'].get('pm2_name')})
                     res = comMod.main().delete(temp_get)
@@ -957,11 +981,17 @@ export PATH
                     res = comMod.main().set_project_status(public.to_dict_obj(
                         {"project_name": project['name'], "project_type": p_type, "status": operation_type,
                          "pm2_name": project['project_config'].get('pm2_name'),"run_user":project['project_config'].get('run_user')}))
-                if res is None or res['status'] != 0:
+
+                if res['status'] != 0:
                     msg_list.append({'name': project['name'],'status':False,'msg':res['message']['result']})
                 else:
                     success_count += 1
                     msg_list.append({'name': project['name'],'status':True, 'msg': res['message']['result']})
+
+                    if operation_type == 'delete':
+                        # 删除git
+                        from git_tools import GitTools
+                        GitTools().del_site_git(public.to_dict_obj({'site_id': project['id']}))
 
             except Exception as e:
                 msg_list.append({'name': project['name'], 'status': False, 'msg': str(e)})
@@ -1642,11 +1672,14 @@ export PATH
         for i in self._pids:
             try:
                 p = psutil.Process(i)
-            except: continue
-            if p.ppid() == pid:
-                if i in project_pids: continue
-                if p.name() in ['bash']: continue
-                project_pids.append(i)
+                if p.status() == "zombie":
+                    continue
+                if p.ppid() == pid:
+                    if i in project_pids:
+                        continue
+                    project_pids.append(i)
+            except:
+                continue
 
         other_pids = []
         for i in project_pids:
@@ -2299,6 +2332,8 @@ cd {}
             return public.return_message(0,0,False)
         data=public.readFile(pid_file)
         if isinstance(data,str) and data:
+            if not data.isdigit():
+                return public.return_message(0,0,False)
             pid = int(data)
             pids = self.get_project_pids(pid=pid, without_request=True)
         else:

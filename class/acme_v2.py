@@ -3258,7 +3258,7 @@ fullchain.pem       Paste into certificate input box
                             temp_ssl.deploy_panel()
                             reload = True
                         write_log(f"|- Domain Subject:【{ssl.subject}】 {panel_apply.get('msg')}")
-                        continue
+                        # 面板 SSL HTTP 失败后尝试 DNS-01 兜底
 
                 # other site ssl
                 site_path = ssl.auth_info.get("auth_to").rstrip("/")
@@ -3268,6 +3268,17 @@ fullchain.pem       Paste into certificate input box
                     if site_name:
                         site_info = public.S("sites").where("name=?", site_name).find()
                         site_path = site_info.get("path", "") if site_info else site_path
+
+                # 第三层兜底: 按证书域名遍历查找站点
+                if not site_info:
+                    from ssl_domainModelV2.service import find_site_with_domain
+                    for d in ssl.dns:
+                        if d.startswith("*."):
+                            continue
+                        site_info = find_site_with_domain(d)
+                        if site_info:
+                            site_path = site_info.get("path", "")
+                            break
 
                 site_name = site_info.get("name") if site_info else ""
                 if self._check_site(site_path, site_info, ssl):
@@ -3295,6 +3306,10 @@ fullchain.pem       Paste into certificate input box
                             f"|- Domain Subject:【{ssl.subject}】File Verification "
                             f"Renewal SSL certificate Failed:{str(e)}"
                         )
+                        write_log(
+                            f"|- Domain Subject:【{ssl.subject}】HTTP-01 failed, "
+                            f"falling back to DNS-01 verification..."
+                        )
                     finally:
                         if is_rep:
                             self.rep_httptohttps(site_name)
@@ -3302,22 +3317,25 @@ fullchain.pem       Paste into certificate input box
             # try dns verfication
             provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
             if not provider or ssl.provider_id == 0:
-                if ssl.auth_info and ssl.auth_info.get("auth_to"):
+                auth_to = ssl.auth_info.get("auth_to", "") if ssl.auth_info else ""
+                # 手动申请的dns直接进入fallback兜底
+                if auth_to and auth_to != "dns":
                     write_log(
                         f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, try to apply, please wait..."
                     )
                     try:
                         try_res = ssl.try_to_apply_ssl()
-                        write_log(f"|- Domain Subject:【{ssl.subject}】try to apply result: {try_res.get('msg')}...")
+                        if not try_res.get("status"):
+                            write_log(f"|- Domain Subject:【{ssl.subject}】try to apply failed: {try_res.get('msg')}")
+                        else:
+                            write_log(f"|- Domain Subject:【{ssl.subject}】try to apply result: {try_res.get('msg')}...")
                         continue
                     except Exception as e:
-                        write_log(e)
+                        write_log(f"|- Domain Subject:【{ssl.subject}】try to apply failed: {str(e)}")
                         continue
                 else:
-                    write_log(
-                        f"|- Domain Subject:【{ssl.subject}】is not found the dns-api info, "
-                        f"so the DNS Verification Renewal can only be Skipped."
-                    )
+                    if self.http_fallback_renew(ssl):
+                        continue
                     continue
 
             # 判断是否有归属的dns api
@@ -3332,6 +3350,8 @@ fullchain.pem       Paste into certificate input box
                     not_belong = True
                     break
             if not_belong:
+                if self.http_fallback_renew(ssl):
+                    continue
                 continue
             write_log(f"|- Domain Subject:【{ssl.subject}】Trying to use DNS Verification for Renewal!")
             try:
@@ -3354,11 +3374,47 @@ fullchain.pem       Paste into certificate input box
                     f"|- Domain Subject:【{ssl.subject}】DNS Verification "
                     f"Renewal SSL certificate Failed:{str(e)}"
                 )
+                if self.http_fallback_renew(ssl):
+                    continue
                 continue
 
         if reload:
             public.writeFile("/www/server/panel/data/reload.pl", "1")
         return
+
+    def http_fallback_renew(self, ssl):
+        """HTTP-01 最终兜底续签"""
+        if any("*." in d for d in ssl.dns):
+            return False
+        write_log(
+            f"|- Domain Subject:【{ssl.subject}】Trying HTTP-01 fallback verification..."
+        )
+        try:
+            from ssl_domainModelV2.service import HttpFallback
+            fallback_domain = [d for d in ssl.dns if not d.startswith("*.")][0]
+            fallback = HttpFallback()
+            auth_to, mode = fallback.prepare(fallback_domain)
+            try:
+                http_res = self.apply_cert_domain(
+                    domains=ssl.dns, auth_to=auth_to, auth_type="http"
+                )
+                if http_res.get("status"):
+                    write_log(
+                        f"|- Domain Subject:【{ssl.subject}】HTTP-01 fallback ({mode}) "
+                        f"renewal SSL certificate successfully!"
+                    )
+                    # 仅 webroot 模式保存 auth_info（站点路径持久可用）
+                    if mode == "webroot":
+                        ssl.auth_info = {"auth_type": "http", "auth_to": auth_to}
+                        ssl.save()
+                    return True
+                else:
+                    raise Exception(http_res.get("msg"))
+            finally:
+                fallback.cleanup()
+        except Exception as e:
+            write_log(f"|- Domain Subject:【{ssl.subject}】HTTP-01 fallback failed: {str(e)}")
+        return False
 
     def apply_cert_domain(
             self,

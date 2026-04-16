@@ -1,0 +1,1 @@
+import{aR as l,m as s,a6 as e}from"./index-a1I_Nu26.js?v=1776326513599";const i=async o=>{const{copy:a,isSupported:t}=l({legacy:!0});t.value?(a(o),s.success(e.global.t("Utils.Copy.index_1"))):s.error(e.global.t("Utils.Copy.index_2"))};export{i as c};

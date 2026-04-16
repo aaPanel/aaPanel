@@ -260,30 +260,44 @@ class ssh_security:
             login_send_type_conf = "/www/server/panel/data/ssh_send_type.pl"
             if not os.path.exists(login_send_type_conf):
                 return
-                # login_type = "mail"
-            else:
-                login_type = public.readFile(login_send_type_conf).strip()
-                if not login_type:
-                    login_type = "mail"
-            object = public.init_msg(login_type.strip())
-            if not object:
+            login_send_id = public.readFile(login_send_type_conf).strip()
+            if not login_send_id:
+                return
+
+            from mod.base.push_mod.system import PushSystem
+            from mod.base.push_mod.mods import SenderConfig
+            push_system = PushSystem()
+
+            # 尝试作为 sender_id 查找
+            conf = push_system.sd_cfg.get_by_id(login_send_id)
+            if not conf or not conf.get("used", True):
+                # 兼容旧配置: 如果是旧通道名, 查找对应的 sender_id
+                sender_config = SenderConfig()
+                for sender in sender_config.config:
+                    if not sender.get("used", True):
+                        continue
+                    if sender["sender_type"] == login_send_id:
+                        conf = sender
+                        login_send_id = sender["id"]
+                        break
+
+            if not conf or not conf.get("used", True):
                 return False
-            if login_type == "mail":
-                data = {}
-                data['title'] = title
-                data['msg'] = body
-                object.push_data(data)
-            elif login_type == "wx_account":
+
+            sender_type = conf["sender_type"]
+            sd_cls = push_system.sender_cls(sender_type)
+
+            if sender_type == "mail":
+                res = sd_cls(conf).send_msg(msg=body.replace("\n", "<br/>"), title=title)
+            elif sender_type == "wx_account":
                 from push.site_push import ToWechatAccountMsg
                 if body.find("backdoor user") != -1:
                     msg = ToWechatAccountMsg.ssh_login("")
                 else:
                     msg = ToWechatAccountMsg.ssh_login(login_ip if login_ip != "" else "unknown ip")
-                object.send_msg(msg)
+                res = sd_cls(conf).send_msg(msg=msg, title=title)
             else:
-                msg = public.get_push_info("SSH logon alarm", ['>Send content:' + body])
-                msg['push_type'] = "SSH logon alarm"
-                object.push_data(msg)
+                res = sd_cls(conf).send_msg(msg=body, title=title)
         except:
             pass
 
@@ -694,33 +708,39 @@ class ssh_security:
         login_send_type_conf = "/www/server/panel/data/ssh_send_type.pl"
         set_type = get.type.strip()
 
-        msg_configs = self._get_msg_push_list(get)
-        # public.print_log("22222 --{}".format(msg_configs.keys()))
-        if set_type not in msg_configs.keys():
-            # return public.returnMsg(False, public.lang("This send type is not supported"))
+        # 通过 SenderConfig 查找匹配的 sender_type -> sender_id
+        from mod.base.push_mod.mods import SenderConfig
+        sender_config = SenderConfig()
+        matched_sender_id = None
+        for sender in sender_config.config:
+            if not sender.get("used", True):
+                continue
+            if sender["sender_type"] == set_type:
+                matched_sender_id = sender["id"]
+                break
+
+        if not matched_sender_id:
             return public.return_message(-1, 0, public.lang("This send type is not supported"))
 
-        from panelMessage import panelMessage
-        pm = panelMessage()
-        obj = pm.init_msg_module(set_type)
-        if not obj:
-            # return public.returnMsg(False, public.lang("The message channel is not installed."))
-            return public.return_message(-1, 0, public.lang("The message channel is not installed"))
-
-        public.writeFile(login_send_type_conf, set_type)
+        public.writeFile(login_send_type_conf, matched_sender_id)
         self.start_jian(get)
-        # return public.returnMsg(True, public.lang("Successfully set"))
         return public.return_message(0, 0, public.lang("Successfully set"))
 
     # 查看告警
     def get_login_send(self, get):
-        # 仅返回当前配置的通道
+        # 返回旧通道名称(兼容前端显示)
         login_send_type_conf = "/www/server/panel/data/ssh_send_type.pl"
         if os.path.exists(login_send_type_conf):
             send_type = public.readFile(login_send_type_conf).strip()
+            # sender_id反向查找对应的 sender_type
+            from mod.base.push_mod.mods import SenderConfig
+            sender_config = SenderConfig()
+            for sender in sender_config.config:
+                if sender["id"] == send_type:
+                    send_type = sender["sender_type"]
+                    break
         else:
             send_type = "error"
-        # return public.returnMsg(True, send_type)
         return public.return_message(0, 0, send_type)
 
     def GetSshInfo(self, get):

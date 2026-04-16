@@ -25,7 +25,6 @@ if "/www/server/panel" not in sys.path:
     sys.path.insert(0, "/www/server/panel")
 from mod.project.nodejs import base
 
-
 class main(base.NodeJs):
 
     def __init__(self):
@@ -530,6 +529,31 @@ class main(base.NodeJs):
         start_result = self.start_project(get)
         if start_result["status"] != 0 :
             self.ws_err_exit(False, start_result["message"]['result'], code=5)
+        import traceback
+        # ================ git start ======================
+        try:
+            if get.get('deploy_type') in ['ssh', 'github']:
+                if get.get('deploy_type') == 'ssh':
+                    from git_tools import GitTools
+                    git_obj = GitTools()
+
+                    # 已clone项目，使用.git导入
+                    res = git_obj.get_git_directory(public.to_dict_obj({"site_id": project_id}))
+                    if res['status'] != 0:
+                        self.ws_err_exit(False,res['message'], code=5)
+
+                    res = res['message']
+                    res = git_obj.import_existing_repository(
+                        public.to_dict_obj({"site_id": project_id, "repo": res['repo'],
+                                            "branch": res['branch'], "key_path": res['key_path'], "project_type":'node'}))
+                    if res['status'] != 0:
+                        self.ws_err_exit(False, res['message'], code=5)
+        except Exception as e:
+            print(traceback.format_exc())
+            # 失败不删除项目
+            self.ws_err_exit(False, public.lang("There was an error while configuring Git tools!"), code=5)
+        # ================ git end ======================
+
         get._ws.send(json.dumps(self.wsResult(True, "Project created successfully!", code=-1)))
         get._ws.close()
 
@@ -542,6 +566,7 @@ class main(base.NodeJs):
         if not os.path.exists(log_path):
             os.makedirs(log_path, 493, True)
         out_file = os.path.join(str(log_path), "out.log")
+
         if os.path.exists(out_file) and os.path.isfile(out_file):
             public.writeFile(out_file, "")
         err_file = os.path.join(str(log_path), "err.log")

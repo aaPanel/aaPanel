@@ -1912,48 +1912,155 @@ def send_favicon():
     return send_file(s_file, conditional=True, etag=True)
 
 
+
+# 全局缓存 Rspamd 主版本号
+_rspamd_major_version = None
+# 获取Rspamd 主版本号
+def get_rspamd_major_version():
+    global _rspamd_major_version
+    if _rspamd_major_version is not None:
+        return _rspamd_major_version
+
+    try:
+        version_output = public.ExecShell('rspamd -v 2>&1')[0].strip()
+        version_match = re.search(r'version\s+(\d+)', version_output)
+        if version_match:
+            _rspamd_major_version = int(version_match.group(1))
+        else:
+            _rspamd_major_version = 0
+    except Exception as e:
+        public.print_log(f"Failed to detect Rspamd version: {e}")
+        _rspamd_major_version = 0
+
+    return _rspamd_major_version
+
 @app.route('/rspamd', defaults={'path': ''}, methods=method_all)
 @app.route('/rspamd/<path:path>', methods=method_all)
 def proxy_rspamd_requests(path):
     comReturn = comm.local()
-    if comReturn: return comReturn
-    param = str(request.url).split('?')
-    param = "" if len(param) < 2 else param[-1]
+    if comReturn:
+        return comReturn
     import requests
-    headers = {}
-    for h in request.headers.keys():
-        headers[h] = request.headers[h]
-    if request.method == "GET":
-        if re.search(r"\.(js|css)$", path):
-            return send_file('/usr/share/rspamd/www/rspamd/' + path,
-                             conditional=True,
-                             etag=True)
-        if path == "/":
-            return send_file('/usr/share/rspamd/www/rspamd/',
-                             conditional=True,
-                             etag=True)
-        url = "http://127.0.0.1:11334/rspamd/" + path + "?" + param
-        for i in [
-            'stat', 'auth', 'neighbours', 'list_extractors',
-            'list_transforms', 'graph', 'maps', 'actions', 'symbols',
-            'history', 'errors', 'check_selector', 'saveactions',
-            'savesymbols', 'getmap'
-        ]:
-            if i in path:
-                url = "http://127.0.0.1:11334/" + path + "?" + param
+
+    # 检测 Rspamd 版本
+    rspamd_ver = get_rspamd_major_version()
+
+    passwd_path = '/etc/rspamd/passwd'
+    rspamd_passwd = None
+
+    # 统一读取密码（如果存在）
+    if os.path.exists(passwd_path):
+        rspamd_passwd = public.readFile(passwd_path).strip()
+
+    if rspamd_ver >= 4:
+        param = str(request.url).split('?')
+        param = "" if len(param) < 2 else param[-1]
+        import requests
+        headers = {}
+        for h in request.headers.keys():
+            headers[h] = request.headers[h]
+
+            # rspamd 密码注入 - 统一处理 GET 和 POST 请求
         if os.path.exists('/etc/rspamd/passwd'):
-            headers['Password'] = public.readFile('/etc/rspamd/passwd')
-        req = requests.get(url, headers=headers, stream=True)
-        return Resp(stream_with_context(req.iter_content()),
-                    content_type=req.headers['content-type'], status=req.status_code)
+            headers['Password'] = rspamd_passwd
+
+        if request.method == "GET":
+            if re.search(r"\.(js|css)$", path):
+                return send_file('/usr/share/rspamd/www/rspamd/' + path,
+                                 conditional=True,
+                                 etag=True)
+            if path == "/":
+                # 读取 rspamd 首页 HTML，注入自动登录脚本
+                html_file = '/usr/share/rspamd/www/rspamd/index.html'
+                if os.path.exists(html_file):
+                    html_content = public.readFile(html_file)
+                    rspamd_passwd = ''
+                    if os.path.exists('/etc/rspamd/passwd'):
+                        rspamd_passwd = public.readFile(passwd_path).strip()
+                    if rspamd_passwd:
+                        # 注入脚本：在 rspamd.js 加载前设置密码到 sessionStorage
+                        auto_login_script = '''<script>                                                                                                                                                                                                                                                            
+        // 自动登录：设置 rspamd 密码到 sessionStorage                                                                                                                                                                                                                                                                 
+        sessionStorage.setItem("Password", "''' + rspamd_passwd + '''");                                                                                                                                                                                                                                               
+        </script>'''
+                        if '<head>' in html_content:
+                            html_content = html_content.replace('<head>', '<head>' + auto_login_script, 1)
+                        return Response(html_content, content_type='text/html; charset=utf-8')
+                return send_file('/usr/share/rspamd/www/rspamd/',
+                                 conditional=True,
+                                 etag=True)
+            url = "http://127.0.0.1:11334/rspamd/" + path + "?" + param
+            for i in [
+                'stat', 'auth', 'neighbours', 'list_extractors',
+                'list_transforms', 'graph', 'maps', 'actions', 'symbols',
+                'history', 'errors', 'check_selector', 'saveactions',
+                'savesymbols', 'getmap'
+            ]:
+                if i in path:
+                    url = "http://127.0.0.1:11334/" + path + "?" + param
+            req = requests.get(url, headers=headers, stream=True)
+            # 构建响应，包含原始 rspamd 的 Content-Encoding 头
+            resp_headers = {
+                'Content-Type': req.headers.get('content-type', 'application/json'),
+            }
+            if 'Content-Encoding' in req.headers:
+                resp_headers['Content-Encoding'] = req.headers['Content-Encoding']
+            if 'Cache-Control' in req.headers:
+                resp_headers['Cache-Control'] = req.headers['Cache-Control']
+            return Resp(stream_with_context(req.iter_content()),
+                        headers=resp_headers, status=req.status_code)
+        else:
+            url = "http://127.0.0.1:11334/" + path
+            for i in request.form.keys():
+                data = '{}='.format(i)
+                # public.writeFile('/tmp/2',data+"\n","a+")
+            req = requests.post(url, data=data, headers=headers, stream=True)
+            resp_headers = {
+                'Content-Type': req.headers.get('content-type', 'application/json'),
+            }
+            if 'Content-Encoding' in req.headers:
+                resp_headers['Content-Encoding'] = req.headers['Content-Encoding']
+            return Resp(stream_with_context(req.iter_content()),
+                        headers=resp_headers, status=req.status_code)
+
     else:
-        url = "http://127.0.0.1:11334/" + path
-        for i in request.form.keys():
-            data = '{}='.format(i)
-        # public.writeFile('/tmp/2',data+"\n","a+")
-        req = requests.post(url, data=data, headers=headers, stream=True)
-        return Resp(stream_with_context(req.iter_content()),
-                    content_type=req.headers['content-type'])
+        param = str(request.url).split('?')
+        param = "" if len(param) < 2 else param[-1]
+        import requests
+        headers = {}
+        for h in request.headers.keys():
+            headers[h] = request.headers[h]
+        if request.method == "GET":
+            if re.search(r"\.(js|css)$", path):
+                return send_file('/usr/share/rspamd/www/rspamd/' + path,
+                                 conditional=True,
+                                 etag=True)
+            if path == "/":
+                return send_file('/usr/share/rspamd/www/rspamd/',
+                                 conditional=True,
+                                 etag=True)
+            url = "http://127.0.0.1:11334/rspamd/" + path + "?" + param
+            for i in [
+                'stat', 'auth', 'neighbours', 'list_extractors',
+                'list_transforms', 'graph', 'maps', 'actions', 'symbols',
+                'history', 'errors', 'check_selector', 'saveactions',
+                'savesymbols', 'getmap'
+            ]:
+                if i in path:
+                    url = "http://127.0.0.1:11334/" + path + "?" + param
+            if os.path.exists('/etc/rspamd/passwd'):
+                headers['Password'] = rspamd_passwd
+            req = requests.get(url, headers=headers, stream=True)
+            return Resp(stream_with_context(req.iter_content()),
+                        content_type=req.headers['content-type'], status=req.status_code)
+        else:
+            url = "http://127.0.0.1:11334/" + path
+            for i in request.form.keys():
+                data = '{}='.format(i)
+                # public.writeFile('/tmp/2',data+"\n","a+")
+            req = requests.post(url, data=data, headers=headers, stream=True)
+            return Resp(stream_with_context(req.iter_content()),
+                        content_type=req.headers['content-type'])
 
 
 @app.route('/tips', methods=method_get)
@@ -2035,9 +2142,33 @@ def login():
 
     get = get_input()
     import userlogin
+    # 临时登录逻辑
     if hasattr(get, 'tmp_token'):
         result = userlogin.userlogin().request_tmp(get)
-        return is_login(result)
+        # 临时登录是否成功
+        if not session.get('login') or not session.get('tmp_login'):
+            return is_login(result)
+
+        access_key = 'apsess_token'
+        if not session.get(access_key): # 如果没有apsess_token
+            session[access_key] = build_apsess_session_token()
+        # 传递上下文供后续请求
+        g.apsess_path_token = session[access_key]
+        token_path = '/' + build_apsess_url_token(session[access_key])
+        # 拼接重定向
+        location = getattr(result, 'location', '')
+        if location and location.startswith('/') and not location.startswith(token_path):
+            if location == '/':
+                location = ''
+            return redirect(token_path + location)
+        elif not location:
+            # 找不到location时
+            admin_path_str = public.get_admin_path()
+            if admin_path_str == '/':
+                admin_path_str = ''
+            return redirect(token_path + admin_path_str)
+        # 兜底
+        return redirect(token_path + '')
 
     # 过滤爬虫
     if public.is_spider(): return abort(404)
@@ -3910,6 +4041,7 @@ def site_v2(pdata=None):
         'wp_can_migrate_from_website_to_wptoolkit',
         'wp_create_with_aap_bak',
         'wp_create_with_plesk_or_cpanel_bak',
+        'wp_batch_create_bar',
         'wp_clone',
         'wp_integrity_check',
         'wp_reinstall_files',
@@ -4020,7 +4152,9 @@ def git_tools(pdata=None):
         'get_remote_branches',
         'change_repository_key',
         'import_existing_repository',
-        'get_git_directory'
+        'get_git_directory',
+        'pull_project_git',
+        'get_clone_progress'
     )
     return publicObject(gitObject, defs, None, pdata)
 
@@ -5450,9 +5584,34 @@ def login_v2():
 
     get = get_input()
     import user_login_v2
+    # 临时登录逻辑
     if hasattr(get, 'tmp_token'):
         result = user_login_v2.userlogin().request_tmp(get)
-        return is_login(result)
+        # 临时登录是否成功
+        if not session.get('login') or not session.get('tmp_login'):
+            return is_login(result)
+
+        access_key = 'apsess_token'
+        if not session.get(access_key): # 如果没有apsess_token
+            session[access_key] = build_apsess_session_token()
+        # 传递上下文供后续请求
+        g.apsess_path_token = session[access_key]
+        token_path = '/' + build_apsess_url_token(session[access_key])
+        # 拼接重定向
+        location = getattr(result, 'location', '')
+        if location and location.startswith('/') and not location.startswith(token_path):
+            if location == '/':
+                location = ''
+            return redirect(token_path + location)
+        elif not location:
+            # 找不到location时
+            admin_path_str = public.get_admin_path()
+            if admin_path_str == '/':
+                admin_path_str = ''
+            return redirect(token_path + admin_path_str)
+        # 兜底
+        return redirect(token_path + '')
+
     # 过滤爬虫
     if public.is_spider(): return abort(404)
     if hasattr(get, 'dologin'):

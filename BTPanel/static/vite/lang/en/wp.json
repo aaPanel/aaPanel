@@ -74,12 +74,40 @@
 			"index_1": "Create site",
 			"index_2": "Create from backup",
 			"index_3": "Batch create sites",
+			"index_4": "Batch from backup",
 			"import_1": "Backup Type",
 			"import_2": "Local",
 			"import_3": "Plesk or CPanel",
 			"import_4": "Backup File Path",
 			"import_5": "Subdirectory, blank in the root directory",
-			"import_6": "Please enter backup file path"
+			"import_6": "Please enter backup file path",
+			"BackupBatch": {
+				"unifiedConfig": "Unified settings",
+				"phpVersion": "PHP Version",
+				"sslForAllSites": "Apply SSL for all sites",
+				"importListTitle": "Import list",
+				"clearAll": "Clear all",
+				"localUpload": "Local upload",
+				"serverUpload": "From Server",
+				"emptyHint": "Click the buttons above to upload backup files",
+				"Confirm": {
+					"clearTitle": "Confirm clear",
+					"clearContent": "Are you sure you want to clear all backup file records?",
+					"deleteTitle": "Confirm delete",
+					"deleteContent": "Are you sure you want to delete this backup file item?"
+				},
+				"Errors": {
+					"emptyList": "Please add at least one backup file",
+					"emptyBakFile": "Backup file path for item {index} cannot be empty",
+					"emptyDomain": "Domain for site {index} cannot be empty"
+				},
+				"Item": {
+					"backupFile": "Backup file",
+					"domain": "Domain",
+					"websitePath": "Website Path",
+					"subdirectory": "Subdirectory"
+				}
+			}
 		},
 		"AddBatch": {
 			"index_1": "Please first resolve the A record of this domain to the server IP address",

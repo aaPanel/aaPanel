@@ -77,8 +77,11 @@ def _init_ln_gvm() -> None:
         pass
 
 
-_init_ln_gvm()
-EnvironmentReporter().init_report()
+try:
+    _init_ln_gvm()
+    del _init_ln_gvm
+except Exception:
+    pass
 
 
 class main(projectBase):
@@ -1621,7 +1624,7 @@ echo $! > {pid_file}'''.format(
         block = ''
         nl_count = 0
         start = 0
-        fsock = open(filename, 'rU')
+        fsock = open(filename, 'r')
         try:
             fsock.seek(0, 2)
             curpos = fsock.tell()

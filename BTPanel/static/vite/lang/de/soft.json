@@ -29,7 +29,7 @@
 		"index_27": "Ewig",
 		"index_28": "Nicht aktiviert",
 		"index_29": "Softwarename",
-		"index_30": "Anzeige auf dem Armaturenbrett",
+		"index_30": "Auf der Startseite anzeigen",
 		"index_31": "Bewertet",
 		"index_32": "Nicht bewertet",
 		"index_34": "Jetzt installieren",
@@ -53,6 +53,7 @@
 		"index_52": "Aktualisieren Sie das Protokoll",
 		"index_53": "Bitte beachten Sie, dass der Aktualisierungsprozess zu Serviceunterbrechungen führen kann",
 		"index_54": "Es wird empfohlen, dass Sie Software -Updates durchführen, wenn der Serverlast im Leerlauf ist",
+		"index_55": "Bitte geben Sie die App ein, um zu suchen",
 		"Plugin": {
 			"index_1": "Webserver",
 			"index_2": "Wechsel, bitte warten...",

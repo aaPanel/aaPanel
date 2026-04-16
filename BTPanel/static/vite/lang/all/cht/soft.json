@@ -108,5 +108,6 @@
 	"3142b42d774f0d64b55aa0c41397dc1e": "修復修復服務",
 	"2c7e784a108c433644018743daf448e5": "修復過程將導致網站無法訪問。您想繼續嗎？",
 	"f71f8a6c0cc33484b3cb130c1b634d06": "多網絡服務器託管",
-	"dea31ae85a2da05e474e21e216f7843b": "啟用多個服務後，將安裝Apache、Nginx和Openlitespeed"
+	"dea31ae85a2da05e474e21e216f7843b": "啟用多個服務後，將安裝Apache、Nginx和Openlitespeed",
+	"1086f5713950d691acf466c144cb66cc": "請輸入要搜尋的應用程式"
 }

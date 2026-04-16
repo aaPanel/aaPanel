@@ -23,9 +23,14 @@ from script.restart_services import manual_flag
 from .base_task import BaseTask
 from .mods import PUSH_DATA_PATH, TaskConfig, SenderConfig
 from .send_tool import WxAccountMsg, WxAccountLoginMsg
-from .util import read_file, DB, write_file, check_site_status, GET_CLASS, get_config_value, \
+from .util import read_file, DB, write_file, GET_CLASS, get_config_value, \
     public_get_cache_func, \
     public_set_cache_func, get_network_ip, public_get_user_info, public_http_post, panel_version
+
+
+# -----------------------------
+# 注意: site_push.py 中带有多种类型的综合性告警, 多处硬编码引用, 因此不修改文件名.
+# -----------------------------
 
 import public.PluginLoader as plugin_loader
 
@@ -434,7 +439,7 @@ class SSHLoginErrorTask(BaseTask):
         return "ssh_login_error"
 
     def get_push_data(self, task_id: str, task_data: dict) -> Optional[dict]:
-        import PluginLoader
+        import PluginLoader # noqa
         args = GET_CLASS()
         args.model_index = 'safe'
         args.count = task_data['count']

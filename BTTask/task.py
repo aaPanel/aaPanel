@@ -1420,6 +1420,15 @@ def main(max_workers: int = None):
     sys.stderr.flush()
 
     logger.info("Service Up")
+
+    # 初始化项目启动记录目录, 以免任何其他地方import task重复shutil
+    FAILURE_DIR = '/www/server/panel/data/project_daemon_failures'
+    if os.path.exists(FAILURE_DIR):
+        import shutil
+        shutil.rmtree(FAILURE_DIR)
+    os.makedirs(FAILURE_DIR, exist_ok=True)
+    logger.info(f"Project daemon failure records reset")
+
     time.sleep(5)
     task_version_part()
     # =================== Start ===========================

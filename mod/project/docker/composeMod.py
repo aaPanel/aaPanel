@@ -63,7 +63,7 @@ class main(Compose):
     def __init__(self):
         super(main, self).__init__()
 
-    # 2024/6/25 下午2:41 执行docker-compose命令获取实时输出 
+    # 2024/6/25 下午2:41 执行docker-compose命令获取实时输出
     def exec_cmd(self, get, command):
         '''
             @name 执行docker-compose命令获取实时输出
@@ -223,6 +223,7 @@ class main(Compose):
             return self.wsResult(False, public.lang("[{}] file does not exist",get.path), code=1)
 
         get.option = "Obtain the container information of the specified orchestration"
+
         command = self.set_path(get.path, rep=True).get_compose_ps()
 
         try:
@@ -583,12 +584,14 @@ class main(Compose):
                 dp.sql("stacks").where("name=?", (i['name'])).delete()
 
         if not os.path.exists(get.path):
-            command = self.set_type(0).set_compose_name(get.project_name).get_compose_delete_for_ps()
+            self.set_compose_name(get.project_name)
+            command = self.set_type(0).get_compose_delete_for_ps()
         else:
             command = self.set_type(0).set_path(get.path).get_compose_delete()
         stdout, stderr = public.ExecShell(command)
         if "invalid compose project" in stderr:
-            command = self.set_type(0).set_compose_name(get.project_name).get_compose_delete_for_ps()
+            self.set_compose_name(get.project_name)
+            command = self.set_type(0).get_compose_delete_for_ps()
             stdout, stderr = public.ExecShell(command)
 
         if stderr and "Error" in stderr:
@@ -657,7 +660,8 @@ class main(Compose):
                     name_map.pop(bt_compose_name)
 
             if not os.path.exists(project["path"]):
-                command = self.set_type(0).set_compose_name(project["project_name"]).get_compose_delete_for_ps()
+                self.set_compose_name(project["project_name"])
+                command = self.set_type(0).get_compose_delete_for_ps()
             else:
                 command = self.set_type(0).set_path(project["path"], rep=True).get_compose_delete()
 

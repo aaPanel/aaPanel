@@ -29,7 +29,7 @@
 		"index_27": "Perpetuo",
 		"index_28": "No activado",
 		"index_29": "Nombre de software",
-		"index_30": "Pantalla en el tablero",
+		"index_30": "Mostrar en Inicio",
 		"index_31": "Calificado",
 		"index_32": "No calificado",
 		"index_34": "Instalación ahora",
@@ -53,6 +53,7 @@
 		"index_52": "Registro de actualizaciones",
 		"index_53": "Tenga en cuenta que el proceso de actualización puede causar interrupciones del servicio",
 		"index_54": "Se recomienda que realice actualizaciones de software cuando la carga del servidor está inactiva",
+		"index_55": "Por favor ingresa a la aplicación para buscar",
 		"Plugin": {
 			"index_1": "servidor web",
 			"index_2": "Cambiando, por favor espera...",

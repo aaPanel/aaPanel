@@ -2,7 +2,7 @@
 	"Logs": {
 		"Panel": {
 			"index_1": "작동 로그",
-			"index_2": "로그를 실행",
+			"index_2": "로그 실행",
 			"index_3": "크론 로그",
 			"index_4": "사이트 이름",
 			"index_5": "로그 초기화",
@@ -10,7 +10,7 @@
 			"index_7": "작동 시간",
 			"index_13": "스캔 시간",
 			"index_14": "PHP 공격",
-			"index_15": "통나무를 지우려고 계속?"
+			"index_15": "로그 지우기"
 		},
 		"Website": {
 			"index_1": "URL (Top100)",
@@ -34,7 +34,7 @@
 			"index_6": "MySQL 느린 로그",
 			"index_7": "MySQL 오류 로그",
 			"index_8": "작동 로그",
-			"index_9": "검색 키워드를 입력하세요"
+			"index_9": "검색 키워드 입력"
 		},
 		"Conversion": {
 			"index_1": "로그 감사 - 소개",

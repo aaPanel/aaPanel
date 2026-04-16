@@ -6909,6 +6909,9 @@ def init_msg(module):
     初始化消息通道
     @module 消息通道模块名称
     """
+    # 注意 WARNING: 旧推送系统方法已弃用不再维护.
+    # class/msg/* 弃用
+    # 使用mod/base/msg 的消息通道
     import os, sys
     if not os.path.exists('class/msg'): os.makedirs('class/msg')
     panelPath = get_panel_path()
@@ -9830,10 +9833,11 @@ def get_multi_webservice_list() -> list:
     return server_list
 
 # 操作指定web服务
-def webservice_operation(service: str, type = 'restart') -> bool:
+def webservice_operation(service: str, type = 'restart', msg = False):
     """
         service 服务名称
         type 类型：关闭，重启，开启
+        msg 是否返回详情
     """
     try:
         from class_v2 import system_v2
@@ -9844,12 +9848,20 @@ def webservice_operation(service: str, type = 'restart') -> bool:
         })
         ok = server_restart.ServiceAdmin(get)
 
-        if ok.get('status') == 0:
-            return True
-        return False
+        if not msg:
+            if ok.get('status') == 0:
+                return True
+            return False
+        else:
+            if ok.get('status') == 0:
+                return True, ''
+            return False, ok['message']['result']
     except Exception as e:
         print(e)
-        return False
+        if not msg:
+            return False
+        else:
+            return False, e
 
 # Base64URL 编码
 def base64url_encode(data: bytes) -> str:

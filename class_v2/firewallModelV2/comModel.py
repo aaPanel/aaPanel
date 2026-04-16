@@ -1094,7 +1094,7 @@ class main(Base):
         args1.protocol = get.old_data['Protocol']
         args1.address = get.old_data['Address']
         args1.strategy = get.old_data['Strategy']
-        args1.chain = get.old_data['Chain']
+        args1.chain = get.old_data.get('Chain','INPUT')
         args1.id = get.old_data['id']
         args1.sid = get.old_data['sid']
         args1.reload = "0"

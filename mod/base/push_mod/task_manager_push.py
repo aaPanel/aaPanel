@@ -119,14 +119,7 @@ def load_task_manager_template():
                     "day_num": 3
                 }
             },
-            "send_type_list": [
-                "dingding",
-                "feishu",
-                "mail",
-                "weixin",
-                "webhook",
-                "tg",
-            ],
+            "send_type_list": "ALL",
             "unique": False
         },
         {
@@ -190,14 +183,7 @@ def load_task_manager_template():
                     "day_num": 3
                 }
             },
-            "send_type_list": [
-                "dingding",
-                "feishu",
-                "mail",
-                "weixin",
-                "webhook",
-                "tg",
-            ],
+            "send_type_list": "ALL",
             "unique": False
         },
         {
@@ -261,14 +247,7 @@ def load_task_manager_template():
                     "day_num": 3
                 }
             },
-            "send_type_list": [
-                "dingding",
-                "feishu",
-                "mail",
-                "weixin",
-                "webhook",
-                "tg",
-            ],
+            "send_type_list": "ALL",
             "unique": False
         }
     ])

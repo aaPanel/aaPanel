@@ -332,11 +332,13 @@ class firewalls:
 
         ports = ['21', '25', '80', '443', '8080', '888', '8888', '7800']
         if port in ports:
-            # return public.return_msg_gettext(False, public.lang("Do NOT use common default port!"))
             return public.return_message(-1, 0, public.lang("Do NOT use common default port!"))
         file = '/etc/ssh/sshd_config'
         conf = public.readFile(file)
-
+        # 修复 配置文件不存在或内容异常
+        if not conf: return public.return_message(-1, 0, public.lang("The SSH configuration file is abnormal"))
+        if not isinstance(conf, str):
+            return public.return_message(-1, 0, public.lang("Failed to read the SSH configuration file."))
         rep = r"#*Port\s+([0-9]+)\s*\n"
         conf = re.sub(rep, "Port " + port + "\n", conf)
         public.writeFile(file, conf)

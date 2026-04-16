@@ -73,6 +73,7 @@
 			"index_17": "Хостинг Multi-WebServer",
 			"index_18": "Будь ласка, виберіть послугу, яку ви хочете зберегти",
 			"index_19": "Після ввімкнення декількох сервісів буде встановлено Apache, Nginx та Openlitespeed"
-		}
+		},
+		"index_55": "Please enter the app to search"
 	}
 }

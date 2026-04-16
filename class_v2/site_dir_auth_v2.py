@@ -158,7 +158,7 @@ class SiteDirAuth:
 
     # 获取站点名
     def get_site_info(self,id):
-        site_info = public.M('sites').where('id=?', (id,)).field('name,path').find()
+        site_info = public.S('sites').where('id=?', (id,)).field('name,path').find()
         return {"site_name":site_info["name"],"site_path":site_info["path"]}
 
     def change_dir_auth_file_nginx_phpver(self,site_name,phpv,auth_name):

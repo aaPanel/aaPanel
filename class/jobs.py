@@ -37,6 +37,7 @@ def control_init_now():
     check_enable_php()
     reset_restart_record()
     setup_site_total()
+    update_py_project_env()
 
 def control_init_delay():
     delay_list = [
@@ -104,6 +105,13 @@ def install_packages():
         import ujson
     except ImportError:
         public.ExecShell(f"{public.get_panel_path()}/pyenv/bin/pip3 install ujson")
+    except Exception as e:
+        public.print_log("install_packages error:", str(e))
+
+    try:
+        import asyncssh
+    except ImportError:
+        public.ExecShell(f"{public.get_panel_path()}/pyenv/bin/pip3 install asyncssh")
     except Exception as e:
         public.print_log("install_packages error:", str(e))
 
@@ -460,6 +468,10 @@ def sql_pacth():
         `is_webhook` INTEGER DEFAULT 0
     )"""
         sql.execute(csql, ())
+
+    # 添加项目重启标注
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'site_deploy_script','%auto_restart%')).count():
+        public.M('crontab').execute("ALTER TABLE 'site_deploy_script' ADD 'auto_restart' INTEGER DEFAULT 1",())
 
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'messages')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `messages` (
@@ -1236,6 +1248,17 @@ def update_pubsuffix_dat():
         update_dat()
     except:
         public.print_error()
+
+def update_py_project_env():
+    """获取并更新python项目环境信息"""
+    if "/www/server/panel" not in sys.path:
+        sys.path.append("/www/server/panel")
+    try:
+        from mod.project.python.pyenv_tool import EnvironmentReporter
+        EnvironmentReporter().init_report()
+    except Exception as e:
+        public.print_log(e)
+
 
 if __name__ == '__main__':
     control_init_new()

@@ -1,6 +1,6 @@
 {
 	"Soft": {
-		"index_1": "전개",
+		"index_1": "앱 스토어",
 		"index_2": "플러그인",
 		"index_3": "전문적인",
 		"index_4": "Seach 앱",
@@ -73,6 +73,7 @@
 			"index_17": "다중 웹서버 호스팅",
 			"index_18": "유지하고 싶은 서비스를 선택해주세요",
 			"index_19": "여러 서비스를 활성화한 후 Apache, Nginx 및 Openlitespeed가 설치됩니다."
-		}
+		},
+		"index_55": "Please enter the app to search"
 	}
 }

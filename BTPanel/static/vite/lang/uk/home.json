@@ -149,7 +149,7 @@
 			"index_26": "Updating panel, please wait...",
 			"index_27": "Please press Ctrl+F5 to refresh cache, or wait 5s for auto-refresh!",
 			"index_28": "Upgrade Panel",
-			"index_29": "New version found. Continue repairing panel can fix various abnormal issues encountered during use",
+			"index_29": "Upgrading fixes known bugs and adds the latest features. Your data will not be affected",
 			"index_30": "About to update to: ",
 			"index_31": "Update time: ",
 			"index_32": "Current version is already the latest",
@@ -157,7 +157,7 @@
 			"index_34": "Continue upgrade",
 			"index_35": "Continue fix",
 			"index_36": "Fix panel",
-			"index_37": "New version available. Repairing the panel resolves various unexpected issues"
+			"index_37": "Repairing the panel resolves various unexpected issues"
 		},
 		"Restart": {
 			"index_1": "сервер",

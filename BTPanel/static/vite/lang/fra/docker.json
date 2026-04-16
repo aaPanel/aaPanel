@@ -27,6 +27,7 @@
 			"app_list_15": "Cliquez pour rediriger vers le domaine:",
 			"app_list_16": "Gérer le site Web",
 			"app_list_17": "Sauvegarde",
+			"app_list_19": "Terminal",
 			"app_category_0": "Installé",
 			"app_category_1": "Plus",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "Tous",
 			"filterRunning": "En cours d'exécution",
 			"filterStopped": "Arrêté",
-			"searchPlaceholder": "Rechercher le nom du conteneur ou le nom de l'image"
+			"searchPlaceholder": "Rechercher le nom du conteneur ou le nom de l'image",
+			"goToApp": "Go to App Store to install"
 		},
 		"Container": {
 			"index_1": "Créer un conteneur",

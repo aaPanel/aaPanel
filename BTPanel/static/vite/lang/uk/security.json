@@ -467,80 +467,80 @@
 		},
 		"SiteSecurity": {
 			"Header": {
-				"scanning": "Scanning",
-				"lastScanTime": "Last scan time:",
-				"cancelScan": "Cancel Scan",
-				"scanNow": "Scan Now",
-				"title": "Intelligent Website Security",
-				"desc": "Free website security powered by a robust engine. With one click you can check for website risk signals; aaPanel automatically provides optimization and remediation suggestions so you can harden your site with simple operations.",
-				"noPhpSite": "No PHP websites found"
+				"scanning": "Сканування",
+				"lastScanTime": "Час останнього сканування:",
+				"cancelScan": "Скасувати сканування",
+				"scanNow": "Сканувати зараз",
+				"title": "Інтелектуальний захист веб-сайту",
+				"desc": "Безкоштовний надійний захист веб-сайту на основі потужного рушія: виявлення ризиків в один клік, автоматичні пропозиції aaPanel щодо оптимізації/виправлення, легке зміцнення безпеки веб-сайту.",
+				"noPhpSite": "Не знайдено жодного PHP-сайту"
 			},
 			"Metric": {
-				"duration": "Duration",
-				"seconds": "seconds",
-				"durationDesc": "Total duration of this website scan",
-				"xssDesc": "XSS attacks in this website scan",
-				"sqlDesc": "SQL injection in this website scan",
-				"maliciousScan": "Malicious Scan",
-				"maliciousScanDesc": "Malicious scans in this website scan",
-				"phpAttack": "PHP Attack",
-				"phpAttackDesc": "PHP attacks in this website scan"
+				"duration": "Тривалість",
+				"seconds": "секунди",
+				"durationDesc": "Загальна тривалість сканування цього веб-сайту",
+				"xssDesc": "Атаки XSS у цьому скануванні веб-сайту",
+				"sqlDesc": "SQL-ін'єкції при скануванні цього веб-сайту",
+				"maliciousScan": "Шкідливе сканування",
+				"maliciousScanDesc": "Шкідливі сканування в цьому скануванні веб-сайту",
+				"phpAttack": "Атака на PHP",
+				"phpAttackDesc": "Атаки на PHP у цьому скануванні веб-сайту"
 			},
 			"Summary": {
-				"scoreTitle": "Website Security Score",
-				"scoreLabel": "Score"
+				"scoreTitle": "Рейтинг безпеки веб-сайту",
+				"scoreLabel": "Рейтинг"
 			},
 			"Top": {
-				"title": "IP (Top 5)",
+				"title": "IP (Топ 5)",
 				"columns": {
-					"ip": "IP Address",
-					"count": "Visits"
+					"ip": "IP-адреса",
+					"count": "Відвідування"
 				},
-				"banTitle": "Ban IP [{0}]",
-				"banContent": "After banning this IP, it will no longer be allowed to access the server. Continue?",
-				"unbanTitle": "Unban IP [{0}]",
-				"unbanContent": "After unbanning this IP, access from this IP to the server will be restored. Continue?",
-				"banBrief": "Website security manually block IP"
+				"banTitle": "Заблокувати IP [{0}]",
+				"banContent": "Після блокування цього IP він більше не зможе отримувати доступ до сервера. Продовжити?",
+				"unbanTitle": "Розблокувати IP [{0}]",
+				"unbanContent": "Після розблокування цього IP доступ до серверу з цієї IP-адреси буде відновлено. Продовжити?",
+				"banBrief": "Ручне блокування IP-адреси веб-сайту"
 			},
 			"Project": {
-				"title": "Security Items",
-				"waiting": "Waiting to scan",
-				"foundRisk": "{0} risks",
-				"noRisk": "No risks",
-				"expand": "Expand",
+				"title": "Елементи безпеки",
+				"waiting": "Очікує на сканування",
+				"foundRisk": "{0} ризиків",
+				"noRisk": "Ризиків немає",
+				"expand": "Розгорнути",
 				"items": {
-					"webscan": "Website Configuration Security",
-					"fileleak": "File Leak Detection",
-					"webshell": "Webshell Detection",
-					"backup": "Backup Files",
-					"weakpass": "Weak Password Detection",
-					"weblog": "Website Logs"
+					"webscan": "Конфігурація безпеки веб-сайту",
+					"fileleak": "Виявлення витоку файлів",
+					"webshell": "Виявлення веб-шелів",
+					"backup": "Резервні файли",
+					"weakpass": "Виявлення слабких паролів",
+					"weblog": "Журнали веб-сайту"
 				}
 			},
 			"Risk": {
-				"detailLabel": "Details:",
-				"repairLabel": "Fix:"
+				"detailLabel": "Деталі:",
+				"repairLabel": "Пропозиція:"
 			},
 			"RiskLevel": {
-				"warning": "Warning",
-				"low": "Low",
-				"middle": "Medium",
-				"high": "High"
+				"warning": "Застереження",
+				"low": "Низький",
+				"middle": "Середній",
+				"high": "Високий"
 			},
 			"Info": {
-				"overviewTitle": "Overview",
+				"overviewTitle": "Огляд",
 				"features": {
 					"scan": {
-						"title": "Free and powerful all-in-one website intrusion scan",
-						"desc": "Comprehensive free scan to block website intrusion risks"
+						"title": "Безкоштовне та потужне комплексне сканування вторгнень на веб-сайт",
+						"desc": "Комплексне безкоштовне сканування для блокування ризиків вторгнення на веб-сайт"
 					},
 					"trojan": {
-						"title": "Deep scan for dangerous trojans",
-						"desc": "Accurately detect hidden threats with deep trojan scanning"
+						"title": "Глибоке сканування на наявність небезпечних троянів",
+						"desc": "Точне виявлення прихованих загроз завдяки глибокому скануванню троянів"
 					},
 					"log": {
-						"title": "Professional analysis of website access logs",
-						"desc": "Discover anomalies and security risks through log analysis"
+						"title": "Професійний аналіз журналів доступу до веб-сайту",
+						"desc": "Виявлення аномалій та ризиків безпеки через аналіз журналів"
 					}
 				}
 			}

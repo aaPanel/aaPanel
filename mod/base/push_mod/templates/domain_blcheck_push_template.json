@@ -1,0 +1,74 @@
+[
+  {
+    "id": "80",
+    "ver": "1",
+    "used": true,
+    "source": "mail_domain_black",
+    "title": "Your IP is on the email blacklist",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.domain_blcheck_push",
+      "name": "MailDomainBlcheck"
+    },
+    "template": {
+      "field": [],
+      "sorted": []
+    },
+    "default": {},
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": "ALL",
+    "unique": true
+  },
+  {
+    "id": "81",
+    "ver": "1",
+    "used": true,
+    "source": "mail_server_status",
+    "title": "Your Mail Service is down",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.domain_blcheck_push",
+      "name": "MailServerDown"
+    },
+    "template": {
+      "field": [],
+      "sorted": []
+    },
+    "default": {},
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 3
+      }
+    },
+    "send_type_list": "ALL",
+    "unique": true
+  },
+  {
+    "id": "82",
+    "ver": "1",
+    "used": true,
+    "source": "mail_domain_quota_alert",
+    "title": "Your Mail Domain Quota Alert",
+    "load_cls": {
+      "load_type": "path",
+      "cls_path": "mod.base.push_mod.domain_blcheck_push",
+      "name": "MailDomainQuota"
+    },
+    "template": {
+      "field": [],
+      "sorted": []
+    },
+    "default": {},
+    "advanced_default": {
+      "number_rule": {
+        "day_num": 1
+      }
+    },
+    "send_type_list": "ALL",
+    "unique": true
+  }
+]

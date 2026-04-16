@@ -41,13 +41,15 @@ class PushManager:
                 continue
             else:
                 new_sender.append(i)
-            if sender_conf["sender_type"] not in template["send_type_list"]:
-                if sender_conf["sender_type"] == "sms":
-                    return "SMS alerts are not supported"
+
+            if sender_conf["sender_type"] == "sms":
+                return "SMS alerts are not supported"
+            
+            allowed = template.get("send_type_list", [])
+            if allowed != "ALL" and sender_conf["sender_type"] not in allowed:
                 return "Unsupported alerting methods:{}".format(sender_conf['data']["title"])
+            
             if not sender_conf["used"]:
-                if sender_conf["sender_type"] == "sms":
-                    return "The SMS alert channel has been closed"
                 return "Closed alert mode:{}".format(sender_conf['data']["title"])
 
         result["sender"] = new_sender
@@ -121,10 +123,12 @@ class PushManager:
 
         if not template:
             # 如果没有找到模板，则尝试加载默认的安全推送模板
-            from .mods import load_task_template_by_file
-            if not os.path.exists("/www/server/panel/mod/base/push_mod/safe_mod_push_template.json"):
+            from mod.project.push.taskMod import TEMPLATE_DIR
+            safe_temp = os.path.join(TEMPLATE_DIR, "safe_mod_push_template.json")
+            if not os.path.exists(safe_temp):
                 return "No alarm template was found"
-            load_task_template_by_file("/www/server/panel/mod/base/push_mod/safe_mod_push_template.json")
+            from .mods import load_task_template_by_file
+            load_task_template_by_file(safe_temp)
             self.template_conf = TaskTemplateConfig()
             template = self.template_conf.get_by_id(template_id)
             if not template:

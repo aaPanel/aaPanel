@@ -74,12 +74,40 @@
 			"index_1": "創建站點",
 			"index_2": "從備份創建",
 			"index_3": "批量建站",
+			"index_4": "從備份批量創建",
 			"import_1": "備份類型",
-			"import_2": "當地的",
+			"import_2": "本地",
 			"import_3": "plesk或cpanel",
 			"import_4": "備份文件路徑",
 			"import_5": "子目錄，根目錄中的空白",
-			"import_6": "請輸入備份文件路徑"
+			"import_6": "請輸入備份文件路徑",
+			"BackupBatch": {
+				"unifiedConfig": "統一配置",
+				"phpVersion": "PHP 版本",
+				"sslForAllSites": "為所有網站申請SSL",
+				"importListTitle": "導入列表",
+				"clearAll": "清除所有",
+				"localUpload": "本機上傳",
+				"serverUpload": "從伺服器上傳",
+				"emptyHint": "點擊上方按鈕上傳備份文件",
+				"Confirm": {
+					"clearTitle": "確認清空",
+					"clearContent": "是否確認清除目前所有的備份檔案記錄？",
+					"deleteTitle": "確認刪除",
+					"deleteContent": "是否確認刪除該備份檔案項目？"
+				},
+				"Errors": {
+					"emptyList": "請至少新增一個備份文件",
+					"emptyBakFile": "第 {index} 個備份檔案路徑不能為空",
+					"emptyDomain": "第 {index} 個站點的網域不能為空"
+				},
+				"Item": {
+					"backupFile": "備份文件",
+					"domain": "網域",
+					"websitePath": "網站目錄",
+					"subdirectory": "子目錄"
+				}
+			}
 		},
 		"AddBatch": {
 			"index_1": "請先指定網域名稱的A記錄解析到伺服器IP位址",

@@ -756,7 +756,11 @@ class panelAuth:
         @get.limit_time 限制时间  永久 -100
         """
         if not hasattr(get, 'limit_time')or not get.limit_time: return public.return_message(-1, 0, public.lang("Missing parameter limit_time or parameter cannot be empty!"))
-        limit_time = int(get.limit_time)
+        try:
+            limit_time = int(get.limit_time)
+        except :
+            return public.return_message(-1, 0, public.lang("the limit_time parameter is incorrect"))
+        # limit_time = int(get.limit_time)
         if limit_time < time.time() and limit_time > 0:
             return public.return_message(-1, 0, public.lang("Time cannot be less than the current time!"))
 

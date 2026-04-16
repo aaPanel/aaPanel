@@ -28,6 +28,7 @@
 			"app_list_16": "Gerenciar site",
 			"app_list_17": "Backup",
 			"app_list_18": "Login com um clique",
+			"app_list_19": "Terminal",
 			"app_category_0": "Instalado",
 			"app_category_1": "Mais ",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "Todos",
 			"filterRunning": "Em Execução",
 			"filterStopped": "Parado",
-			"searchPlaceholder": "Pesquisar nome do contêiner ou nome da imagem"
+			"searchPlaceholder": "Pesquisar nome do contêiner ou nome da imagem",
+			"goToApp": "Go to App Store to install"
 		},
 		"Container": {
 			"index_1": "Criar Contêiner",

@@ -73,6 +73,7 @@
 			"index_17": "Hosting multi-server web",
 			"index_18": "Seleziona il servizio che desideri mantenere",
 			"index_19": "Dopo aver abilitato più servizi, Apache, Nginx e Openlitespeed verranno installati"
-		}
+		},
+		"index_55": "Please enter the app to search"
 	}
 }

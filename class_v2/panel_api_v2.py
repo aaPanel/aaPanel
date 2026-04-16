@@ -79,9 +79,14 @@ class panelApi:
             tmp = public.ReadFile(self.save_path)
 
         try:
-            data = json.loads(tmp)
+            if isinstance(tmp, str):
+                data = json.loads(tmp)
+            else:
+                data = {"open": False, "token": "", "limit_addr": [], "binds": [], "apps": []}
+
+            # data = json.loads(tmp)
         except json.JSONDecodeError:
-            default_config = {"open": False, "token": "", "limit_addr": []}
+            default_config = {"open": False, "token": "", "limit_addr": [], "binds": [], "apps": []}
             return default_config
 
         is_save = False

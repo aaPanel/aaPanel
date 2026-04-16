@@ -1,0 +1,1 @@
+import{r as a,e as c}from"./vue-core-DsYFxYwx.js?v=1776326513599";function u(e){const o=a([]),t=c({data:[],total:0,loading:!1}),s=a(e);return{keys:o,table:t,columns:s,setLoading:(n,r=!0)=>{r&&(t.loading=n)}}}export{u};

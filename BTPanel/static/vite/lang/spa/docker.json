@@ -28,6 +28,7 @@
 			"app_list_16": "Administrar sitio web",
 			"app_list_17": "Respaldo",
 			"app_list_18": "Iniciar sesión con un clic",
+			"app_list_19": "Terminal",
 			"app_category_0": "Instalado",
 			"app_category_1": "Más",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "Todo",
 			"filterRunning": "Correr",
 			"filterStopped": "Interrumpido",
-			"searchPlaceholder": "Buscar nombre del contenedor o nombre de la imagen"
+			"searchPlaceholder": "Buscar nombre del contenedor o nombre de la imagen",
+			"goToApp": "Vaya a App Store para instalar"
 		},
 		"Container": {
 			"index_1": "Crear contenedor",

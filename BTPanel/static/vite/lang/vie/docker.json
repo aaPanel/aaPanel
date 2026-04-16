@@ -28,6 +28,7 @@
 			"app_list_16": "Quản lý trang web",
 			"app_list_17": "Hỗ trợ",
 			"app_list_18": "Đăng nhập bằng một cú nhấp chuột",
+			"app_list_19": "Phần cuối",
 			"app_category_0": "Đã cài đặt",
 			"app_category_1": "Hơn ",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "Tất cả",
 			"filterRunning": "Đang chạy",
 			"filterStopped": "Đã dừng",
-			"searchPlaceholder": "Tìm kiếm tên vùng chứa hoặc tên hình ảnh"
+			"searchPlaceholder": "Tìm kiếm tên vùng chứa hoặc tên hình ảnh",
+			"goToApp": "Vào App Store để cài đặt"
 		},
 		"Container": {
 			"index_1": "Tạo container",

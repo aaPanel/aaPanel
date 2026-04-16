@@ -896,8 +896,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         datauser = get['name'].strip().lower()
                         public.M('databases').where('name=?', (datauser,)).update({"pid": get.pid})
                     data['databaseErrorMsg'] = result['msg']
-            if not multiple:
-                public.serviceReload()
+
             data = self._set_ssl(get, data, siteMenu)
             data = self._set_redirect(get, data['message'])
             public.set_module_logs("sys_domain", "AddSite_Manual", 1)
@@ -922,7 +921,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         from public import websitemgr
                         websitemgr.remove_site(get.pid)
 
-            # ================ git satrt ======================
+            # ================ git start ======================
             if data['status'] == 0 and get.get('deploy_type') in ['ssh', 'github']:
                 dict_obj = {
                     'site_id': data['message']['siteId'],
@@ -953,11 +952,14 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             if public.get_multi_webservice_status() and get.get('type') in ['PHP','WP2']:
                 conf_list = public.get_default_site_conf()
                 if get.type == 'PHP':
-                    dict_obj = public.to_dict_obj({'site_id': get.get('pid', 0), 'service_type': conf_list['php']})
+                    dict_obj = public.to_dict_obj({'site_id': get.get('pid', 0), 'service_type': conf_list['php'],'is_reload': False})
                 elif public.get_multi_webservice_status() and get.type == 'WP2':
-                    dict_obj = public.to_dict_obj({'site_id': get.get('siteId', 0), 'service_type': conf_list['wp']})
+                    dict_obj = public.to_dict_obj({'site_id': get.get('siteId', 0), 'service_type': conf_list['wp'],'is_reload': False})
 
                 self.switch_webservice(dict_obj)
+
+            if not multiple:
+                public.serviceReload()
 
             return data
         except Exception as e:
@@ -1334,8 +1336,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                             public.M('databases').where('name=?', (datauser,)).update({"pid": get.pid})
                         data['databaseErrorMsg'] = result['msg']
 
-                if not multiple:
-                    public.serviceReload()
                 data = self._set_ssl(get, data, siteMenu)
                 data = self._set_redirect(get, data['message'])
                 public.set_module_logs("sys_domain", "AddSite_Manual", 1)
@@ -1412,8 +1412,11 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 #多服务下切换默认服务
                 if public.get_multi_webservice_status():
                     conf_list = public.get_default_site_conf()
-                    dict_obj = public.to_dict_obj({'site_id' : data.get('siteId', 0),'service_type' : conf_list['wp']})
+                    dict_obj = public.to_dict_obj({'site_id' : data.get('siteId', 0),'service_type' : conf_list['wp'],'is_reload': False})
                     self.switch_webservice(dict_obj)
+
+                if not multiple:
+                    public.serviceReload()
 
                 progress_log['initialize_wp_website']['ps'] = public.lang('Success')
                 progress_log['initialize_wp_website']['status'] = 1
@@ -1534,7 +1537,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 get.project_type = 'WP2'
                 from flask import Flask
                 app = Flask(__name__)
-                self.add_sites(get, app)
+                self.add_sites(get, app, multiple=True)
                 res = self.get_wp_progress(public.to_dict_obj({"progress_type":"backup_deploy"}), True)
                 if res['status'] == 0 and res['message'].get('initialize_wp_website').get("status") == 1:
                     result_list.append({f"msg" : "Successfully created","webname": site['domain'],"status": 0})
@@ -1560,6 +1563,9 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.writeFile(task_status,  json.dumps(progress_log))
 
                 time.sleep(1)
+
+            # 重启服务
+            public.serviceReload()
 
             progress_log = {
                 "status": 1,
@@ -2781,7 +2787,7 @@ listener SSL443 {{
         if not 'first_domain' in get: get.first_domain = siteName
         if 'isBatch' in get and siteName != get.first_domain: get.first_domain = siteName
 
-        site_info = public.S("sites").where("name=?", (siteName,)).field("id,project_type").find()
+        site_info = public.S("sites").where("name=?", (siteName,)).field("id,project_type,service_type").find()
         if not site_info:
             return public.returnMsg(False, "Site [{}] does not exist".format(siteName))
 
@@ -2877,6 +2883,15 @@ listener SSL443 {{
                             listen_add_str.append("\n    listen 443 ssl " + default_site + ";")
                         listen_add_str_data = "".join(listen_add_str)
                         ng_conf = ng_conf.replace(listen, listen + listen_add_str_data)
+                # 多服务下修改对应的端口
+                try:
+                    if public.get_multi_webservice_status() and site_info['project_type'] in ['PHP','WP2']:
+                        if site_info['service_type'] == 'apache':
+                            ng_conf = ng_conf.replace('http://127.0.0.1:8288','https://127.0.0.1:8290')
+                        elif site_info['service_type'] == 'openlitespeed':
+                            ng_conf = ng_conf.replace('http://127.0.0.1:8188', 'https://127.0.0.1:8190')
+                except:
+                    pass
                 # 覆盖配置
                 public.writeFile(file, ng_conf)
         except Exception as ng_err:
@@ -3052,6 +3067,9 @@ listener SSL443 {{
         # python
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
+        # go项目
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/go_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             if conf.find('ssl_certificate') == -1:
@@ -3124,6 +3142,9 @@ listener SSL443 {{
         # python
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
+        # go项目
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/go_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             rep = "\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"
@@ -3196,6 +3217,9 @@ listener SSL443 {{
         # python
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/nginx/python_' + siteName + '.conf'
+        # go项目
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/nginx/go_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
             rep = "\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"
@@ -3236,18 +3260,41 @@ listener SSL443 {{
             conf = re.sub(rep, '', conf)
             rep = r"\s+http2\s+on;"
             conf = re.sub(rep, '', conf)
+
+            # 修改多服务代理端口
+            try:
+                if public.get_multi_webservice_status():
+                    site_info = public.S("sites").where("name=?", (siteName,)).field("id,project_type,service_type").find()
+                    if site_info['project_type'] in ['PHP','WP2']:
+                        if site_info['service_type'] == 'apache':
+                            conf = conf.replace('https://127.0.0.1:8290', 'http://127.0.0.1:8288')
+                        elif site_info['service_type'] == 'openlitespeed':
+                            conf = conf.replace( 'https://127.0.0.1:8190', 'http://127.0.0.1:8188')
+            except:
+                pass
+
             public.writeFile(file, conf)
 
+        # apache
+        apache_ssl = '443'
+        if public.get_multi_webservice_status():
+            apache_ssl = '8290'
         file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/apache/node_' + siteName + '.conf'
+        # python
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/apache/python_' + siteName + '.conf'
+        # go项目
+        if not os.path.exists(file):
+            file = self.setupPath + '/panel/vhost/apache/go_' + siteName + '.conf'
         conf = public.readFile(file)
         if conf:
-            rep = "\n<VirtualHost \\*\\:443>(.|\n)*<\\/VirtualHost>"
+            rep = f"\n<VirtualHost \\*\\:{apache_ssl}>(.|\n)*<\\/VirtualHost>"
             conf = re.sub(rep, '', conf)
             rep = "\n\\s*#HTTP_TO_HTTPS_START(.|\n){1,250}#HTTP_TO_HTTPS_END"
             conf = re.sub(rep, '', conf)
-            rep = "NameVirtualHost  *:443\n"
+            rep = f"NameVirtualHost  *:{apache_ssl}\n"
             conf = conf.replace(rep, '')
             public.writeFile(file, conf)
 
@@ -3328,6 +3375,9 @@ listener SSL443 {{
         # 是否为py项目
         if not os.path.exists(file):
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/python_' + siteName + '.conf'
+        # 是否为go项目
+        if not os.path.exists(file): 
+            file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/go_' + siteName + '.conf'
 
         if public.get_webserver() == "openlitespeed":
             file = self.setupPath + '/panel/vhost/' + public.get_webserver() + '/detail/' + siteName + '.conf'
@@ -4568,6 +4618,12 @@ server
                         tmp['name'] = 'Customize'
                     else:
                         continue
+
+                if val not in ['other','00']:
+                    tmp['title'] = 'PHP-' + val[0] + '.' + val[1]
+                else:
+                    tmp['title'] = ''
+
                 data.append(tmp)
         if is_http:
             return public.return_message(0, 0, data)
@@ -5754,8 +5810,7 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
                         if re.search(cache_rep, ng_conf):
                             expires_rep = "\\{\n\\s+expires\\s+12h;"
                             ng_conf = re.sub(expires_rep, "{", ng_conf)
-                            ng_conf = re.sub(cache_rep, "proxy_cache_valid 200 304 301 302 {0}m;".format(get.cachetime),
-                                             ng_conf)
+                            ng_conf = re.sub(cache_rep, "proxy_cache_valid 200 304 301 302 {0}m;".format(get.cachetime), ng_conf)
                         else:
                             #                         ng_cache = """
                             # proxy_ignore_headers Set-Cookie Cache-Control expires;
@@ -5773,13 +5828,11 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
     proxy_cache_valid 200 304 301 302 %sm;""" % (get.cachetime)
                             if self.check_annotate(ng_conf):
                                 cache_rep = '\n\\s*#Set\\s*Nginx\\s*Cache(.|\n)*no-cache;\\s*\n*\\s*\\}'
-                                ng_conf = re.sub(cache_rep, '\n\t#Set Nginx Cache\n' + ng_cache, ng_conf)
+                                ng_conf = re.sub(cache_rep, r'\n\t#Set Nginx Cache\n' + ng_cache, ng_conf)
                             else:
                                 # cache_rep = r'#proxy_set_header\s+Connection\s+"upgrade";'
                                 cache_rep = r"proxy_set_header\s+REMOTE-HOST\s+\$remote_addr;"
-                                ng_conf = re.sub(cache_rep,
-                                                 r"\n\tproxy_set_header\s+REMOTE-HOST\s+\$remote_addr;\n\t#Set Nginx Cache" + ng_cache,
-                                                 ng_conf)
+                                ng_conf = re.sub(cache_rep, r"\n\tproxy_set_header\s+REMOTE-HOST\s+\$remote_addr;\n\t#Set Nginx Cache" + ng_cache, ng_conf)
                     else:
                         no_cache = r"""
     #Set Nginx Cache
@@ -5844,7 +5897,14 @@ RewriteRule ^%s(.*)$ http://%s/$1 [P,E=Proxy-Host:%s]
 
                     # 修改apache配置
                     ap_conf = public.readFile(ap_conf_file)
-                    ap_conf = re.sub(r"ProxyPass\s+%s\s+%s" % (conf[i]["proxydir"], conf[i]["proxysite"]),
+
+                    # 修复proxydir和proxysite布尔值报错
+                    proxydir = str(conf[i].get("proxydir", "")).strip()
+                    proxysite = str(conf[i].get("proxysite", "")).strip()
+                    if not proxydir or not proxysite:
+                        continue
+
+                    ap_conf = re.sub(r"ProxyPass\s+%s\s+%s" % (re.escape(proxydir), re.escape(proxysite)),
                                      "ProxyPass %s %s" % (get.proxydir, get.proxysite), ap_conf)
                     ap_conf = re.sub(r"ProxyPassReverse\s+%s\s+%s" % (conf[i]["proxydir"], conf[i]["proxysite"]),
                                      "ProxyPassReverse %s %s" % (get.proxydir, get.proxysite), ap_conf)
@@ -6176,21 +6236,33 @@ location %s
 
         if get.siteName.find('node_') == 0:
             get.siteName = get.siteName.replace('node_', '')
+        if get.siteName.find('java_') == 0:
+            get.siteName = get.siteName.replace('java_', '')
+        if get.siteName.find('python_') == 0:
+            get.siteName = get.siteName.replace('python_', '')
+        if get.siteName.find('go_') == 0:
+            get.siteName = get.siteName.replace('go_', '')
+        if get.siteName.find('other_') == 0:
+            get.siteName = get.siteName.replace('other_', '')
+        if get.siteName.find('net_') == 0:
+            get.siteName = get.siteName.replace('net_', '')
+        if get.siteName.find('html_') == 0:
+            get.siteName = get.siteName.replace('html_', '')
         rewriteList = {}
+
+        service = public.M('sites').where("name=?", (get.siteName,)).field('id,service_type').find()
+        if not service:
+            return public.return_message(-1, 0, 'The website does not exist.')
+        get.id = service['id']
 
         # 处理多服务
         if public.get_multi_webservice_status():
-            service = public.M('sites').where("name=?", (get.siteName,)).field('id,service_type').find()
-            if not service:
-                return public.return_message(-1, 0, 'The website does not exist.')
-            get.id = service['id']
             ws = service['service_type'] if service['service_type'] else 'nginx'
         else:
             ws = public.get_webserver()
         if ws == "openlitespeed":
             ws = "apache"
         if ws == 'apache':
-            get.id = public.M('sites').where("name=?", (get.siteName,)).getField('id')
             runPath = self.GetSiteRunPath(get).get('message', {})
             if runPath.get('runPath', '').find('/www/server/stop') != -1:
                 runPath['runPath'] = runPath['runPath'].replace('/www/server/stop', '')
@@ -9060,6 +9132,18 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         return public.success_v2(msg)
 
+    # 批量备份创建 aapanel/cpanel
+    def wp_batch_create_bar(self, args: public.dict_obj):
+        from wp_toolkit import wpbackup
+        args.batch = True
+        args.domain = "domian"
+        ok, msg = wpbackup.wp_backup_deploy(args)
+
+        if not ok:
+            return public.fail_v2(msg)
+
+        return public.success_v2(msg)
+
     # 克隆WP站点
     def wp_clone(self, args: public.dict_obj):
         # 参数校验
@@ -10200,43 +10284,65 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             print(e)
         return {}
 
-
     def startScan(self, get):
         '''
         @name 开始扫描
         @author lkq<2022-3-30>
-        @param get
+        @modified 2026-03-30
         '''
         self.__cachekey = public.Md5('vulnerability_scanning' + time.strftime('%Y-%m-%d'))
         self.__config_file = '/www/server/panel/config/vulnerability_scanning.json'
-        result22 = []
+
         time_info = int(time.time())
-        webInfo = self.getWebInfo(None)
+        webInfo = self.getWebInfo(None)  # 获取包含 {'id': 31, 'name': 'love-dog.cc', ...} 的列表
         config = self.get_config()
+
+        all_domains = []  # 存放所有扫描的域名 (如: love-dog.cc)
+        vulnerable_sites = []  # 存放有风险的域名
+        total_loopholes = 0  # 漏洞总数计数
+
         for web in webInfo:
+            domain = web.get('name', 'Unknown')
+            all_domains.append(domain)
+
+            # 初始化当前站点的漏洞列表
+            if 'cms' not in web:
+                web['cms'] = []
+
+            # 匹配插件/CMS配置
             for cms in config:
-                data = cms
                 if 'cms_name' in web:
                     if web['cms_name'] != cms['cms_name']:
-                        if not web['cms_name'] in cms['cms_list']: continue
-                if self.getCmsType(web, data):
-                    if not 'cms' in web:
-                        web['cms'] = []
-                        web['cms'].append(cms)
-                    else:
-                        web['cms'].append(cms)
-                else:
-                    if not 'cms' in web:
-                        web['cms'] = []
-            if not 'is_vufix' in web:
-                web['is_vufix'] = False
-        for i in webInfo:
-            if i['is_vufix']:
-                result22.append(i)
-        result = {"info": [], "time": time_info}
-        loophole_num = sum([len(i['cms']) for i in result22])
-        result['loophole_num'] = loophole_num
-        result['site_num'] = len(webInfo)
+                        if web['cms_name'] not in cms['cms_list']:
+                            continue
+
+                # 如果检测到符合某种CMS漏洞特征
+                if self.getCmsType(web, cms):
+                    web['cms'].append(cms)
+
+            # 核心逻辑：判断当前站点是否有风险
+            current_site_loopholes = len(web['cms'])
+            if current_site_loopholes > 0:
+                total_loopholes += current_site_loopholes
+                vulnerable_sites.append(domain)
+
+        # 构造返回结果
+        result = {
+            "time": time_info,
+            "site_num": len(webInfo),
+            "loophole_num": total_loopholes,
+            "info": []  # 可根据需要存放详细描述
+        }
+
+        # 根据是否存在漏洞，动态调整返回的域名列表
+        if total_loopholes > 0:
+            # 存在风险：输出有风险的域名
+            result['status'] = "warning"
+            result['target_domains'] = vulnerable_sites
+        else:
+            # 不存在风险：输出所有已扫描域名
+            result['status'] = "safe"
+            result['target_domains'] = all_domains
         return result
 
     def getWebInfo(self, get):
@@ -11649,10 +11755,6 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         # 切换服务
         if status == 'enable':
-            # if multi_webservice_status:
-            #     return public.return_message(-1, 0, public.lang('The multi-service of the website has been enabled. '
-            #                                                     'If a service is unavailable, please try to disable it and then re-enable it.'))
-
             ok, msg = self.enable_multi_webservice()
             if not ok:
                 return public.return_message(-1, 0, f'Error: {msg}')
@@ -11672,10 +11774,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
     # 开启多服务
     def enable_multi_webservice(self) -> tuple[bool, str]:
-        from panel_plugin_v2 import panelPlugin
         from panelModelV2.publicModel import main
         from files_v2 import files
-        plugin = panelPlugin()
         files_obj = files()
         public_obj = main()
 
@@ -11745,12 +11845,18 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         except Exception as e:
             if os.path.exists('/tmp/multi_service_install.log'):
                 os.remove('/tmp/multi_service_install.log')
+            err_res = str(e)
             try:
                 # 开启失败，关闭服务
                 self.disable_multi_webservice(current_status)
+
+                # 判断apache是否缺少模块
+                if "modules/mod_lua.so" in str(e) and "No such file or directory" in str(e):
+                    err_res = public.lang(
+                        "Please uninstall the 【Apache WAF】 and 【WebSite Speed】 plugins and then restart the program.\n") + str(e)
             except:
                 pass
-            return False, str(e)
+            return False, err_res
 
     # 关闭多服务, 保留指定服务，卸载其他
     def disable_multi_webservice(self, reserve: str) -> tuple[bool, str]:
@@ -11885,11 +11991,10 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         # 重启ols
         if is_restart:
             public.kill_process_strictly('litespeed', True) # 强制杀死进程残留
-            ok = public.webservice_operation('openlitespeed')
+            ok, msg = public.webservice_operation('openlitespeed',msg=True)
 
             if not ok:
-                return False, public.lang(
-                    "The service restart failed. Please check the openlitespeed configuration file!")
+                return False, "The service restart failed." + msg
 
         return True, "The ols configuration modification was successful!"
 
@@ -11978,10 +12083,11 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             public.writeFile(httpd_ssl, content)
 
         if is_restart:
-            ok = public.webservice_operation('apache')
+            ok, msg = public.webservice_operation('apache', msg=True)
 
             if not ok:
-                return False, public.lang("The service restart failed. Please check the apache configuration file!")
+                return False, "The service restart failed." + msg
+
         return True, ' '
 
     # apache主配置文件监听端口去重
@@ -12149,84 +12255,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             ssl_port = '8290'
             listen_port = '8288'
 
-            new_block = r"""upstream {site_name} {{
-    server 127.0.0.1:{listen_port};
-    keepalive 64;
-}}
-server 
-{{
-{listen}
-    {server_name}
-{default_document} 
-    root {site_path};   
-    {rert_apply_check}
-
-    #PHP-INFO-START\s+PHP reference configuration, allowed to be commented, deleted or modified
-    {include_php}
-    #PHP-INFO-END
-
-    #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
-    {ssl}
-    #SSL-END
-    {referenced_redirect}
-    #REWRITE-START URL rewrite rule reference, any modification will invalidate the rewrite rules set by the panel
-    # include /www/server/panel/vhost/rewrite/{site_name}.conf;
-    #REWRITE-END
-
-    #ERROR-PAGE-START  Error page configuration, allowed to be commented, deleted or modified
-    #error_page 404 /404.html;
-    #error_page 502 /502.html;
-    #ERROR-PAGE-END
-    {begin_deny}
-
-    location / {{
-        proxy_pass http://{site_name};
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        set $connection_conf "";
-        if ($http_upgrade = "websocket") {{
-            set $connection_conf "upgrade";
-        }}
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $connection_conf;
-        add_header Cache-Control no-cache;
-    }}
-
-    # Forbidden files or directories
-    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
-    {{
-        return 404;
-    }}
-
-    location ~ \.well-known{{
-        allow all;
-        root {site_path};
-        try_files $uri =404;
-    }}
-
-    #Prohibit putting sensitive files in certificate verification directory
-    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {{
-        return 403;
-    }}
-    
-    access_log {_log}.log;
-    error_log  {_log}.error.log;  
-
-    {Monitor}
-}} """.format(server_name=res['server_name'], include_php=res['include_php'],
-                          rert_apply_check=res['rert_apply_check'],
-                          listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'], Monitor=res['Monitor'],
-                          begin_deny=res['begin_deny'],
-                          site_name=site_name, site_path=site_path, listen=res['listen'], _log=log_path,
-                          default_document=res['default_document'],
-                          referenced_redirect=res['referenced_redirect'])
-
         elif service_type == 'openlitespeed':
             ssl_port = '8190'
             listen_port = '8188'
+
+        # 申请证书后切换代理头
+        proxy_host = f'http://127.0.0.1:{listen_port}'
+        if res['ssl'] != '#error_page 404/404.html;':
+            proxy_host = f'https://127.0.0.1:{ssl_port}'
 
         new_block = r"""server 
 {{
@@ -12255,7 +12291,7 @@ server
     {begin_deny}
 
     location / {{
-        proxy_pass http://127.0.0.1:{listen_port};
+        proxy_pass {proxy_host};
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -12295,7 +12331,7 @@ server
     {Monitor}
 }} """.format(server_name=res['server_name'], include_php=res['include_php'],
           rert_apply_check=res['rert_apply_check'],
-          listen_port=listen_port, ssl_port=ssl_port, ssl=res['ssl'], Monitor=res['Monitor'],
+          proxy_host=proxy_host, ssl_port=ssl_port, ssl=res['ssl'], Monitor=res['Monitor'],
           begin_deny=res['begin_deny'],
           site_name=site_name, site_path=site_path, listen=res['listen'], _log=log_path,
           default_document=res['default_document'],
@@ -12303,11 +12339,11 @@ server
         public.writeFile(config_path, new_block)
 
         # 处理apache配置ssl后，强制重定向
-        wp_path = os.path.join(site_path, 'wp-config.php')
-        if service_type == 'apache' and os.path.exists(wp_path):
-            self.wp_https_conf(wp_path)
-        elif old_type == 'apache' and os.path.exists(wp_path):
-            self.wp_https_conf(wp_path,'delete')
+        # wp_path = os.path.join(site_path, 'wp-config.php')
+        # if service_type == 'apache' and os.path.exists(wp_path):
+        #     self.wp_https_conf(wp_path)
+        # elif old_type == 'apache' and os.path.exists(wp_path):
+        #     self.wp_https_conf(wp_path,'delete')
         return True
 
     # 添加wp https识别
@@ -12665,10 +12701,12 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
             site_name = public.M('sites').where('id = ?', (site_port['pid'],)).getField('name')
             project_type = public.M('sites').where('id = ?', (site_port['pid'],)).getField('project_type')
 
-            # 处理apache占用 Python特殊处理
+            # 处理apache占用
             apache_conf_path = None
             if project_type == 'Python':
                 apache_conf_path = os.path.join(apache_path, 'python_' + site_name +'.conf')
+            elif project_type == 'Go':
+                apache_conf_path = os.path.join(apache_path, 'go_' + site_name +'.conf')
             else:
                 apache_conf_path = os.path.join(apache_path, site_name +'.conf')
 

@@ -1,0 +1,194 @@
+{
+  "list" : [
+    {
+      "name": "Drupal",
+      "type": 1,
+      "ps": "Drupal is powered by an open source community",
+      "min_image": "/static/img/dep_ico/Drupal.svg",
+      "official": "https://new.drupal.org/",
+      "version_list": [
+        {
+          "title": "Drupal 11.3.6",
+          "version": "11.3.6",
+          "run": "/",
+          "php": "83,84,85",
+          "ext": "opcache",
+          "download": "{Download}/drupal-11.3.6.zip",
+          "md5": "d81b309a29d725d14d885f4f4861704b",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": ""
+        },
+        {
+          "title": "Drupal 10.3.5",
+          "version": "10.3.5",
+          "type": 1,
+          "php": "81,82,83",
+          "run": "/",
+          "ext": "opcache",
+          "download": "{Download}/drupal-10.3.5.zip",
+          "md5": "b02e03457bcbccb8778b9d40a5d51740",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": ""
+        }
+      ]
+    },
+    {
+      "name": "Joomla",
+      "type": 1,
+      "ps": "Joomla! is a free and open-source content management system (CMS) for publishing web content.",
+      "min_image": "/static/img/dep_ico/Joomla.svg",
+      "official": "https://www.joomla.org/",
+      "version_list": [
+         {
+          "title": "Joomla 5.4.4",
+          "version": "5.4.4",
+          "run": "/",
+          "php": "81,82,83,84",
+          "ext": "",
+          "download": "{Download}/Joomla-5.4.4.zip",
+          "md5": "83b9f240228bfe233029434c477dd648",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": ""
+        },
+        {
+          "title": "Joomla 4.4.8",
+          "version": "4.4.8",
+          "run": "/",
+          "php": "80,81,82",
+          "ext": "",
+          "download": "{Download}/Joomla-4.4.8.zip",
+          "md5": "ae7aea4da8720f8858316e0ac1c10615",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": ""
+        }
+      ]
+    },
+    {
+      "name": "Laravel",
+      "type": 5,
+      "ps": "Elegant PHP development framework",
+      "min_image": "/static/img/dep_ico/Laravel.svg",
+      "official": "https://learnku.com/",
+      "version_list": [
+        {
+          "title": "Laravel-auto",
+          "version": "auto",
+          "run": "/public",
+          "ext": "pathinfo,fileinfo,mbstring",
+          "php": "84,85",
+          "download": "{Download}/Laravel-latest.zip",
+          "md5": "682be84d993684e8d74953aabdc7b784",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": ""
+        }
+      ]
+    },
+    {
+      "name": "OpenCart",
+      "type": 2,
+      "ps": "Opencart is an easy to-use, powerful, Open Source online store management program...",
+      "min_image": "/static/img/dep_ico/OpenCart.svg",
+      "official": "https://www.opencart.com/",
+      "version_list": [
+        {
+          "title": "OpenCart 4.1",
+          "version": "4.1",
+          "run": "",
+          "ext": "",
+          "php": "82,83",
+          "download": "{Download}/opencart-4.1.zip",
+          "md5": "7ae49991223ab1262eaff5f8024914d9",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "remove_file": ".user.ini",
+          "install_msg": ""
+        },
+        {
+          "title": "OpenCart 4.0.2.3",
+          "version": "4.0.2.3",
+          "run": "",
+          "ext": "",
+          "php": "74,80,81,82",
+          "download": "{Download}/opencart-4.0.2.3.zip",
+          "md5": "c202e35f6ab3faa5115baff35c3591e8",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": ""
+        }
+      ]
+    },
+    {
+      "name": "PrestaShop",
+      "type": 2,
+      "ps": "The PrestaShop project is a universal open-source software platform...",
+      "min_image": "/static/img/dep_ico/PrestaShop.svg",
+      "official": "https://prestashop.com/",
+      "version_list": [
+        {
+          "title": "PrestaShop 9.1.0",
+          "version": "9.1.0",
+          "run": "/",
+          "ext": "fileinfo,intl,mbstring",
+          "php": "81,82,83,84",
+          "download": "{Download}/prestashop-9.1.0.zip",
+          "md5": "c264f4db48dafa09e40bd551c29c182b",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": "1.After the website is initialized, please delete the [/install] directory.\n2.Make sure that the memory_limit in PHP is greater than 512MB."
+        },
+        {
+          "title": "PrestaShop 8.1.7",
+          "version": "8.1.7",
+          "run": "/",
+          "ext": "fileinfo,intl,mbstring",
+          "php": "74,80,81,82",
+          "download": "{Download}/prestashop-8.1.7.zip",
+          "md5": "7e9a57ebf84685dfa741f5cd5b2b5445",
+          "config": "",
+          "chmod": "",
+          "install": "",
+          "username": "",
+          "password": "",
+          "install_msg": "1.After the website is initialized, please delete the [/install] directory."
+        }
+      ]
+    }
+  ],
+  "type" : [
+  { "type": 0, "title": "Recommend", "ps": "", "label": "Recommend" },
+  { "type": 1, "title": "CMS",       "ps": "", "label": "CMS" },
+  { "type": 2, "title": "Mall",      "ps": "", "label": "Mall" },
+  { "type": 3, "title": "Forum",     "ps": "", "label": "Forum" },
+  { "type": 4, "title": "Blog",      "ps": "", "label": "Blog" },
+  { "type": 5, "title": "Frame",     "ps": "", "label": "Frame" }
+]
+}

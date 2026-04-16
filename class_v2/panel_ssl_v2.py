@@ -683,6 +683,13 @@ class panelSSL:
             get.path = public.M('sites').where('id=?',
                                                (get.id,)).getField('path')
             runPath = ''
+        # 判断是否是go项目
+        elif public.M('sites').where(
+                'id=?', (get.id,)).getField('project_type') == 'Go':
+            get.path = public.M('sites').where('id=?',
+                                               (get.id,)).getField('path')
+            runPath = ''
+        
         else:
             runPath = self.GetRunPath(get)
         if runPath != False and runPath != '/': get.path += runPath

@@ -47,7 +47,7 @@ class panelSetup:
             if ua.find('spider') != -1 or g.ua.find('bot') != -1:
                 return abort(403)
 
-        g.version = '8.4.0'
+        g.version = '8.7.0'
         g.title = public.GetConfigValue('title')
         g.uri = request.path
         g.debug = os.path.exists('data/debug.pl')
@@ -401,20 +401,30 @@ class panelAdmin(panelSetup):
 
     # 检查系统配置
     def checkConfig(self):
-        if not 'config' in session:
-            session['config'] = public.M('config').where("id=?", ('1',)).field(
-                'webserver,sites_path,backup_path,status,mysql_root').find()
+        # 修复 session['config'] 类型错误
+        config = session.get('config')
 
-            # 4.29 修复config可能是空列表导致赋值不上的问题
-            if not session['config']:
-                session['config'] = {}
+        if not isinstance(config, dict):
+            config = public.M('config').where("id=?", ('1',)).field(
+                'webserver,sites_path,backup_path,status,mysql_root'
+            ).find()
 
-            # if not 'email' in session['config']:
-            if session['config'] and not 'email' in session['config']:
-                session['config']['email'] = public.M(
-                    'users').where("id=?", ('1',)).getField('email')
-            if not 'address' in session:
-                session['address'] = public.GetLocalIp()
+            # 显式检查数据类型
+            if not isinstance(config, dict):
+                config = {}
+
+            # 保存回 session
+            session['config'] = config
+
+        # 补充 email 字段
+        if 'email' not in config:
+            email = public.M('users').where("id=?", ('1',)).getField('email')
+            config['email'] = email if email else ''
+
+        # 处理 address
+        if 'address' not in session:
+            session['address'] = public.GetLocalIp()
+
         return False
 
     # 获取操作系统类型

@@ -50,8 +50,18 @@ class BackupManager(SiteModule, DatabaseModule, FtpModule, SSLModel):
 
     def get_local_backup(self, get=None):
         backup_list = []
+        # 修复 备份目录不存在
+        if not os.path.exists(self.base_path):
+            os.makedirs(self.base_path, exist_ok=True)
+
         if os.path.exists(self.bakcup_task_json):
-            backup_list = json.loads(public.ReadFile(self.bakcup_task_json))
+            # 修复 JSON解析崩溃
+            content = public.ReadFile(self.bakcup_task_json)
+            if content and content.strip():
+                try:
+                    backup_list = json.loads(content)
+                except:
+                    backup_list = []
 
         file_names = os.listdir(self.base_path)
         pattern = re.compile(r"\d{8}-\d{4}_\d+_backup\.tar\.gz")

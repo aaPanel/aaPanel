@@ -369,7 +369,15 @@ class main(dockerBase):
                     if net_result["status"] == -1:
                         return net_result
 
-            res.start()
+            # res.start()
+
+            try:
+                res.start()
+            except docker.errors.APIError as e:
+                if "permission denied" in str(e) and "sysctl" in str(e):
+                    return public.return_message(-1, 0, "Container startup failed: sysctl privileges are insufficient, do not set kernel parameters or use privilege mode")
+                raise
+
             return public.return_message(0, 0, {
                 "status": True,
                 "result": "Successfully created!",
@@ -1221,9 +1229,20 @@ class main(dockerBase):
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
+        # 修复 container['Names'] 为空
+        names = container.get('Names', [])
+        if not names:
+            # 使用容器 ID 作为 fallback（前12位）
+            container_id = container.get('Id', '')
+            container_name = container_id[:12] if container_id else 'unknown'
+        else:
+            container_name  = names[0].lstrip('/')
+
+
         tmp = {
             "id": container["Id"],
-            "name": dp.rename(container['Names'][0].replace("/", "")),
+            # "name": dp.rename(container['Names'][0].replace("/", "")),
+            "name": dp.rename(container_name ),  # 修复
             "status": container["State"],
             "image": container["Image"],
             "created_time": container["Created"],

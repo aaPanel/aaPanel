@@ -96,9 +96,9 @@
 			"index_93": "Заплановане завдання успішно зупинено",
 			"index_94": "Частина",
 			"index_95": "Виконується кожні {0} секунд",
-			"index_96": "Select script",
-			"index_97": "Please select a script (search supported)",
-			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
+			"index_96": "Виберіть скрипт",
+			"index_97": "Будь ласка, виберіть скрипт (пошук підтримується)",
+			"index_98": "Для підтримки стабільності сервісу та забезпечення безперебійної роботи, будь ласка, утримайтеся від частого запуску високонавантажених скриптів і не додавайте занадто багато таких завдань"
 		},
 		"arrange": {
 			"index_1": "Виконайте завдання скрипта в [{0}] негайно, процес виконання може тривати довго, будь ласка, наберіться терпіння. Ви хочете продовжити?",

@@ -74,12 +74,40 @@
 			"index_1": "Buat Situs",
 			"index_2": "Buat dari cadangan",
 			"index_3": "Pembuatan situs secara batch",
+			"index_4": "Batch dari cadangan",
 			"import_1": "Jenis cadangan",
 			"import_2": "Lokal",
 			"import_3": "Plesk atau cpanel",
 			"import_4": "Jalur file cadangan",
 			"import_5": "Subdirektori, kosong di direktori root",
-			"import_6": "Harap masukkan jalur file cadangan"
+			"import_6": "Harap masukkan jalur file cadangan",
+			"BackupBatch": {
+				"unifiedConfig": "Pengaturan terpadu",
+				"phpVersion": "Versi PHP",
+				"sslForAllSites": "Terapkan SSL untuk semua situs",
+				"importListTitle": "Impor daftar",
+				"clearAll": "Hapus semuanya",
+				"localUpload": "Unggahan lokal",
+				"serverUpload": "Dari Server",
+				"emptyHint": "Klik tombol di atas untuk mengunggah file cadangan",
+				"Confirm": {
+					"clearTitle": "Konfirmasi jelas",
+					"clearContent": "Apakah Anda yakin ingin menghapus semua catatan file cadangan?",
+					"deleteTitle": "Konfirmasi penghapusan",
+					"deleteContent": "Apakah Anda yakin ingin menghapus item file cadangan ini?"
+				},
+				"Errors": {
+					"emptyList": "Harap tambahkan setidaknya satu file cadangan",
+					"emptyBakFile": "Jalur file cadangan untuk item {index} tidak boleh kosong",
+					"emptyDomain": "Domain untuk situs {index} tidak boleh kosong"
+				},
+				"Item": {
+					"backupFile": "berkas cadangan",
+					"domain": "Domain",
+					"websitePath": "Jalur Situs Web",
+					"subdirectory": "Subdirektori"
+				}
+			}
 		},
 		"AddBatch": {
 			"index_1": "Harap selesaikan terlebih dahulu catatan A domain ini ke alamat IP server",

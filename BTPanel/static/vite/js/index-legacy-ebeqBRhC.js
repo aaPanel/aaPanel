@@ -1,0 +1,1 @@
+System.register(["./index-legacy-BWAC5Pxb.js?v=1776326513599","./vue-core-legacy--By1RlVK.js?v=1776326513599","./prismjs-legacy-D2M4lU8R.js?v=1776326513599","./naive-ui-legacy-DWYRJHUU.js?v=1776326513599"],function(e,s){"use strict";return{setters:[s=>{s.eP,e("default",s.eP)},null,null,null],execute:function(){}}});

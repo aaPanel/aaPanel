@@ -10,22 +10,19 @@
 # | 支持升级环境,升级面板,修复面板；环境相关由shell部分处理，面板升级沿用python脚本处理
 # ------------------------------
 
-# coding: utf-8
+import argparse
+import hashlib
+import json
 import os
+import re
+import shutil
+import subprocess
 import sys
 import time
-import json
-import re
-import hashlib
-import shutil
-import socket
-import argparse
-import subprocess
+from dataclasses import dataclass
+from typing import Tuple, Optional, Dict, List
 
 import psutil
-from urllib.parse import urlparse, urlunparse
-from dataclasses import dataclass, field
-from typing import Tuple, Optional, Dict, List
 
 # 全局变量
 UPGRADE_MODEL = 'python'
@@ -194,56 +191,15 @@ class Version:
         if not self:
             print_x("No version information available; cannot run pre-processing script")
             return False
-
-        # down_url = "https://node.aapanel.com/install/update/update_prep_script.sh"
-        # try:
-        #     sh_content = http_get(down_url)
-        #     sh_content = sh_content.replace("\r\n", "\n")
-        #     if len(sh_content) < 10:
-        #         print_x("ERROR: Failed to download pre-processing script")
-        #         return False
-        # except:
-        #     print_x("ERROR: Failed to download pre-processing script")
-        #     return False
-        #
-        # prep_sh_path = "{}/script/update_prep_script.sh".format(PANEL_PATH)
-        # write_file(prep_sh_path, sh_content)
-        # shell = "bash {} {} {} prepare".format(prep_sh_path, self, self.is_lts)
-        #
-        # update_ready = False
-        #
-        # def print_and_check(log: str):
-        #     nonlocal update_ready
-        #     print_x(log, end="")
-        #     if log.find("BT-Panel Update Ready") != -1:
-        #         update_ready = True
-        #
-        # run_command_with_call_log(shell, print_and_check)
-        # if update_ready:
-        #     print_x("Pre-processing script executed successfully")
-        #     return True
-        # print_x("ERROR: Pre-processing script execution failed")
-        # return False
-
         print_x("Pre-processing script executed successfully")
         return True
 
     def run_after_script(self):
-        # prep_sh_path = "{}/script/update_prep_script.sh".format(PANEL_PATH)
-        # shell = "bash {} {} {} after".format(prep_sh_path, self, self.is_lts)
-        # update_ready = False
-        #
-        # def print_and_check(log: str):
-        #     nonlocal update_ready
-        #     print_x(log, end="")
-        #     if log.find("BT-Panel Update Ready") != -1:
-        #         update_ready = True
-        #
-        # run_command_with_call_log(shell, print_and_check)
-        # if update_ready:
-        #     print_x("Startup check script executed successfully")
-        # else:
-        #     print_x("Warning: Startup check script execution failed")
+        if args_data.action == 'repair_panel' and os.path.exists('/www/server/panel/data/is_beta.pl'):
+            try:
+                os.system('rm -f /www/server/panel/data/is_beta.pl')
+            except Exception as e:
+                print_x('WARNING: Failed to remove beta.pl: {}'.format(str(e)))
 
         print_x("Startup check script executed successfully")
 
@@ -610,6 +566,7 @@ def check_hash(f_list, src_dir, dst_dir):
 
         if d_file.endswith('.whl'): continue
         if d_file == '/www/server/panel/BTPanel/languages/settings.json': continue
+        if d_file.endswith('bt-ipfilter'): continue
 
         # 校验文件hash
         if file_hash(s_file) != file_hash(d_file):
@@ -819,7 +776,7 @@ def install_with_pkg_file(package_file: str, start_func=None):
     bak_dir = PANEL_PATH.replace('panel', 'panel_bak_{}'.format(int(time.time())))
     if copy_dir(f_list, PANEL_PATH, bak_dir, 'Backing up:'):
         print_x("Backup completed...")
-        if not update_panel_files(f_list, src_dir, start_func=start_func): # 更新结果
+        if not update_panel_files(f_list, src_dir, start_func=start_func):  # 更新结果
             # 恢复备份
             copy_dir(f_list, bak_dir, PANEL_PATH, "Restoring backup files:")
             print_x('Operation failed, backup has been restored successfully...')
@@ -856,7 +813,7 @@ def run() -> int:
     if not v.checksum:
         print_x('ERROR: No remote version checksum information available')
         return 1
-
+    # 前置 run_pre_script
     if not v.run_pre_script():
         print_x('ERROR: Pre-processing failed, cannot continue upgrade; please check network connectivity')
         return 1
@@ -870,7 +827,10 @@ def run() -> int:
 
     action_text = "repair" if args_data.action == 'repair_panel' else "upgrade"
     print_x('Package downloaded successfully: {}, starting {}...'.format(tmp_file, action_text))
-    install_with_pkg_file(tmp_file, start_func=v.run_after_script)
+    install_with_pkg_file(
+        tmp_file,
+        start_func=v.run_after_script  # 后置 run_after_script
+    )
     return 0
 
 

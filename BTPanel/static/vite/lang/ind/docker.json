@@ -28,6 +28,7 @@
 			"app_list_16": "Kelola situs web",
 			"app_list_17": "Cadangan",
 			"app_list_18": "Masuk sekali klik",
+			"app_list_19": "Terminal",
 			"app_category_0": "Terpasang",
 			"app_category_1": "Lagi ",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "Semua",
 			"filterRunning": "Berlari",
 			"filterStopped": "Berhenti",
-			"searchPlaceholder": "Cari nama wadah atau nama gambar"
+			"searchPlaceholder": "Cari nama wadah atau nama gambar",
+			"goToApp": "Buka App Store untuk menginstal"
 		},
 		"Container": {
 			"index_1": "Buat wadah",

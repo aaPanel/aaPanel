@@ -349,7 +349,7 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             return public.return_message(-1, 0, public.lang("If there is a file with the same name as the upload folder, please check and try again"))
         if not os.path.exists(args.f_path):
             try:
-                os.makedirs(args.f_path, 493)
+                os.makedirs(args.f_path, 493, exist_ok=True)
             except PermissionError:
                 return public.return_message(-1, 0, public.lang("The current user does not have enough permissions to access or modify {}", args.f_path))
 
@@ -4330,10 +4330,14 @@ CREATE TABLE index_tb(
             get.uid = pwd.getpwnam('www').pw_uid
             get.gid = pwd.getpwnam('www').pw_gid
         path = get.path
+        if not os.path.exists(path):
+            return public.return_message(-1, 0, public.lang("The path does not exist{}.", path))
+
         if os.path.isfile(path):
             os.chown(path, get.uid, get.gid)
             os.chmod(path, 0o644)
             return public.return_message(0, 0, public.lang("Permission repair succeeded"))
+
         os.chown(path, get.uid, get.gid)
         os.chmod(path, 0o755)
         for file in os.listdir(path):

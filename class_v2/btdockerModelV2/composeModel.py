@@ -10,6 +10,8 @@
 # ------------------------------
 # Docker模型
 # ------------------------------
+import uuid
+import subprocess
 import json
 import os
 import time
@@ -25,6 +27,289 @@ from public.validate import Param
 
 
 class main(dockerBase):
+
+    def _compose_task_dir(self):
+        return "{}/data/docker_compose_tasks".format(public.get_panel_path())
+
+    def _compose_task_file(self, task_id):
+        return "{}/{}.json".format(self._compose_task_dir(), task_id)
+
+    def _compose_task_log(self, task_id):
+        return "{}/{}.log".format(self._compose_task_dir(), task_id)
+
+    def _ensure_compose_task_dir(self):
+        task_dir = self._compose_task_dir()
+        if not os.path.exists(task_dir):
+            os.makedirs(task_dir, 0o755, True)
+        return task_dir
+
+    def _write_task_meta(self, task_id, data):
+        self._ensure_compose_task_dir()
+        task_file = self._compose_task_file(task_id)
+        tmp_file = task_file + ".tmp"
+        public.writeFile(tmp_file, json.dumps(data, ensure_ascii=False))
+        os.replace(tmp_file, task_file)
+
+    def _read_task_meta(self, task_id):
+        task_file = self._compose_task_file(task_id)
+        if not os.path.exists(task_file):
+            return None
+        content = public.readFile(task_file)
+        if not content:
+            return None
+        try:
+            return json.loads(content)
+        except Exception:
+            return None
+
+    def _update_task_meta(self, task_id, **kwargs):
+        task_data = self._read_task_meta(task_id)
+        if not task_data:
+            return
+        task_data.update(kwargs)
+        self._write_task_meta(task_id, task_data)
+
+    def _append_task_log(self, task_id, text):
+        log_file = self._compose_task_log(task_id)
+        if isinstance(text, bytes):
+            text = text.decode('utf-8', errors='ignore')
+        if not text.endswith("\n"):
+            text += "\n"
+        public.writeFile(log_file, text, "a+")
+
+    def _run_cmd_and_stream(self, cmd, task_id, cwd=None):
+        p = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=cwd,
+            text=True,
+            bufsize=1,
+            encoding='utf-8',
+            errors='ignore'
+        )
+        while True:
+            line = p.stdout.readline() if p.stdout else ""
+            if line:
+                self._append_task_log(task_id, line.rstrip("\n"))
+            if p.poll() is not None:
+                break
+        if p.stdout:
+            remain = p.stdout.read()
+            if remain:
+                self._append_task_log(task_id, remain.rstrip("\n"))
+        return p.returncode
+
+    def _create_project_in_path_stream(self, name, path, task_id):
+        workdir = "/".join(path.split("/")[:-1])
+        cmd = ["/usr/bin/docker-compose", "-p", name, "up", "-d"]
+        return self._run_cmd_and_stream(cmd, task_id, cwd=workdir)
+
+    def _create_project_in_file_stream(self, project_name, file, task_id):
+        project_path = "{}/{}".format(self.compose_path, project_name)
+        project_file = "{}/docker-compose.yaml".format(project_path)
+        if not os.path.exists(project_path):
+            os.makedirs(project_path)
+        template_content = public.readFile(file)
+        public.writeFile(project_file, template_content)
+        cmd = ["/usr/bin/docker-compose", "-p", project_name, "-f", project_file, "up", "-d"]
+        return self._run_cmd_and_stream(cmd, task_id)
+
+    def _cleanup_compose_tasks(self):
+        task_dir = self._compose_task_dir()
+        if not os.path.exists(task_dir):
+            return
+        now = int(time.time())
+        for file_name in os.listdir(task_dir):
+            if not file_name.endswith(".json"):
+                continue
+            task_id = file_name[:-5]
+            task_data = self._read_task_meta(task_id)
+            if not task_data:
+                continue
+            status = task_data.get("status", "")
+            ended_at = int(task_data.get("ended_at", 0) or 0)
+            created_at = int(task_data.get("created_at", 0) or 0)
+            base_time = ended_at or created_at
+            # 成功任务保留 1 小时
+            # 失败任务保留 24 小时
+            if status == "success":
+                expire = 3600
+            elif status == "failed":
+                expire = 86400
+            else:
+                continue
+            if base_time and now - base_time > expire:
+                task_file = self._compose_task_file(task_id)
+                log_file = self._compose_task_log(task_id)
+                if os.path.exists(task_file):
+                    os.remove(task_file)
+                if os.path.exists(log_file):
+                    os.remove(log_file)
+    def create_async(self, get):
+        try:
+            get.validate([
+                Param('template_id').Require().Integer(),
+                Param('project_name').Require().String().Xss(),
+                Param('remark').Require().String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            return public.return_message(-1, 0, str(ex))
+        # 清理旧日志和文件
+        self._cleanup_compose_tasks()
+        self._ensure_compose_task_dir()
+        task_dir = self._compose_task_dir()
+        for file_name in os.listdir(task_dir):
+            if not file_name.endswith('.json'):
+                continue
+            try:
+                content = public.readFile("{}/{}".format(task_dir, file_name))
+                if not content:
+                    continue
+                item = json.loads(content)
+                if item.get('project_name') == public.xsssec(get.project_name) and item.get('status') == 'deploying':
+                    return public.return_message(-1, 0, public.lang(
+                        "There is already a deployment task in progress for this project"))
+            except Exception:
+                continue
+        task_id = "dc_{}_{}".format(int(time.time()), uuid.uuid4().hex[:8])
+        log_file = self._compose_task_log(task_id)
+        self._write_task_meta(task_id, {
+            "task_id": task_id,
+            "project_name": public.xsssec(get.project_name),
+            "status": "deploying",
+            "result_msg": "",
+            "error_msg": "",
+            "log_file": log_file,
+            "created_at": int(time.time()),
+            "started_at": 0,
+            "ended_at": 0,
+            "request_data": {
+                "template_id": int(get.template_id),
+                "project_name": str(get.project_name),
+                "remark": str(get.remark)
+            }
+        })
+        public.writeFile(log_file, "", "w+")
+        python_bin = "/www/server/panel/pyenv/bin/python"
+        if not os.path.exists(python_bin):
+            python_bin = "python3"
+        cmd = "nohup {} /www/server/panel/script/docker_compose_async_task.py --task-id {} > /dev/null 2>&1 &".format(
+            python_bin, task_id
+        )
+        public.ExecShell(cmd)
+        return public.return_message(0, 0, {
+            "task_id": task_id,
+            "status": "deploying"
+        })
+
+    # def task_status(self, get):
+    #     task_id = get.get("task_id/s", "")
+    #     if not task_id:
+    #         return public.return_message(-1, 0, public.lang("Please pass task_id"))
+    #     task_data = self._read_task_meta(task_id)
+    #     if not task_data:
+    #         return public.return_message(-1, 0, public.lang("Task does not exist"))
+    #     return public.return_message(0, 0, {
+    #         "task_id": task_id,
+    #         "status": task_data.get("status", "failed"),
+    #         "result_msg": task_data.get("result_msg", ""),
+    #         "error_msg": task_data.get("error_msg", "")
+    #     })
+
+    def task_logs(self, get):
+        task_id = get.get("task_id/s", "")
+        if not task_id:
+            return public.return_message(-1, 0, public.lang("Please pass task_id"))
+        task_data = self._read_task_meta(task_id)
+        if not task_data:
+            return public.return_message(-1, 0, public.lang("Task does not exist"))
+        log_file = task_data.get("log_file", self._compose_task_log(task_id))
+        logs = ""
+        if os.path.exists(log_file):
+            logs = public.readFile(log_file)
+            if not logs:
+                logs = ""
+        return public.return_message(0, 0, {
+            "task_id": task_id,
+            "status": task_data.get("status", "failed"),
+            "logs": logs,
+            "result_msg": task_data.get("result_msg", ""),
+            "error_msg": task_data.get("error_msg", "")
+        })
+
+    def run_create_task(self, task_id):
+        task_data = self._read_task_meta(task_id)
+        if not task_data:
+            return
+        self._update_task_meta(task_id, status='deploying', started_at=int(time.time()))
+        req = task_data.get('request_data', {})
+        get = public.to_dict_obj(req)
+        try:
+            self._append_task_log(task_id, "[INFO] Start deploying project: {}".format(get.project_name))
+            project_name = public.md5(public.xsssec(get.project_name))
+            template_id = get.template_id
+            template_info = dp.sql("templates").where("id=?", template_id).find()
+            if len(template_info) < 1:
+                raise Exception(public.lang("This template was not found, or file is corrupt!"))
+            if not os.path.exists(template_info['path']):
+                raise Exception(public.lang("Template file does not exist"))
+            template_exist = dp.sql("stacks").where("template_id=?", (template_id,)).find()
+            if template_exist:
+                raise Exception(public.lang(
+                    "Template [{}] has been deployed by project: [{}], please change a template and try again!",
+                    template_info['name'], template_exist['name']
+                ))
+            name_exist = self.check_project_container_name(public.readFile(template_info['path']), get)
+            if name_exist:
+                raise Exception(name_exist['message'])
+            stacks_info = dp.sql("stacks").where("name=?", (public.xsssec(get.project_name))).find()
+            if stacks_info:
+                raise Exception(public.lang("The project name already exists!"))
+            dp.sql("stacks").insert({
+                "name": public.xsssec(get.project_name),
+                "status": "1",
+                "path": template_info['path'],
+                "template_id": template_id,
+                "time": time.time(),
+                "remark": public.xsssec(get.remark)
+            })
+            self._append_task_log(task_id, "[INFO] Stack metadata inserted")
+            if template_info.get('add_in_path') == 1:
+                code = self._create_project_in_path_stream(project_name, template_info['path'], task_id)
+            else:
+                code = self._create_project_in_file_stream(project_name, template_info['path'], task_id)
+            if code != 0:
+                raise Exception("docker-compose up failed with code {}".format(code))
+            check_shell = "/usr/bin/docker-compose -p {} ps -q".format(project_name)
+            container_ids, _ = public.ExecShell(check_shell)
+            if not container_ids.strip():
+                raise Exception("Docker deployment failed. Please check logs")
+            dp.write_log("Project [{}] deployed successfully!".format(public.xsssec(get.project_name)))
+            public.set_module_logs('docker', 'add_project', 1)
+            self._append_task_log(task_id, "[INFO] Deployment finished successfully")
+            self._update_task_meta(
+                task_id,
+                status='success',
+                result_msg=public.lang("Successful deployment!"),
+                error_msg='',
+                ended_at=int(time.time())
+            )
+        except Exception as ex:
+            dp.sql("stacks").where("name=?", (public.xsssec(get.project_name),)).delete()
+            err = str(ex)
+            self._append_task_log(task_id, "[ERROR] {}".format(err))
+            self._update_task_meta(
+                task_id,
+                status='failed',
+                result_msg='',
+                error_msg=err,
+                ended_at=int(time.time())
+            )
+            public.print_log(traceback.format_exc())
+
 
     def get_docker_compose_version(self):
         try:
@@ -313,12 +598,7 @@ class main(dockerBase):
         data = dp.sql("templates").where("id=?", (get.template_id,)).find()
         if not data:
             return public.return_message(-1, 0, public.lang("This template was not found!"))
-        if os.path.exists(data['path']):
-            # 删除模板文件 目录不处理
-            try:
-                os.remove(data['path'])
-            except:
-                pass
+
 
         get.id = get.template_id
 

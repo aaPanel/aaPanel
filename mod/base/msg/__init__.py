@@ -9,6 +9,7 @@ from .dingding_msg import DingDingMsg
 from .sms_msg import SMSMsg
 # from .wx_account_msg import WeChatAccountMsg
 from .tg_msg import TgMsg
+from .discord_msg import DiscordMsg
 from .manager import SenderManager
 from .util import read_file,write_file
 

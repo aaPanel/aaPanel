@@ -20,7 +20,7 @@
 			"docker_1": "Docker",
 			"docker_2": "Установка в 1-клик",
 			"docker_3": "Обзор",
-			"docker_4": "Container",
+			"docker_4": "Контейнеры",
 			"docker_5": "Облачный образ",
 			"docker_6": "Локальный образ",
 			"docker_7": "Compose",
@@ -88,14 +88,14 @@
 			"logout_3": "Уверены, что хотите выйти?",
 			"account_1": "Аккаунт",
 			"account_2": "Аккаунт",
-			"account_3": "Package",
+			"account_3": "Пакеты",
 			"account_4": "Журналы",
 			"account_5": "Хранилище",
 			"account_6": "Настройки",
 			"domain_1": "Домены",
 			"domain_2": "Сертификат",
-			"config_8": "Page",
-			"security_8": "Website Security"
+			"config_8": "Страница",
+			"security_8": "Безопасность сайтов"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux panel ©2014-{0} aaPanel",

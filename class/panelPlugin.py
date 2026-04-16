@@ -2788,7 +2788,8 @@ class panelPlugin:
                 headers_total_size = int(download_res.headers['File-size'])
             except:
                 try:
-                    return json.loads(download_res.text).json()
+                    if json.loads(download_res.text):
+                        return download_res.json()
                 except:
                     if download_res.text.find('<html>') != -1:
                         raise public.PanelError(

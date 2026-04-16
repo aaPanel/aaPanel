@@ -18,11 +18,21 @@ class main:
         from panel_site_v2 import panelSite
         site_obj = panelSite()
         res = site_obj.get_Scan(None)
+        domains_str ='\n' + ",\n".join(res.get('target_domains', [])) + '\n'
         if int(res['loophole_num']):
-            msg_list.append('Scan the website {} and find {} vulnerabilities'.format(res['site_num'], res['loophole_num']))
+            msg = 'Scan {} websites and found {} vulnerabilities.\n Risk domains: [{}]'.format(
+                res['site_num'],
+                res['loophole_num'],
+                domains_str
+            )
+            msg_list.append(msg)
         else:
-            msg_list.append('Scan the website [{}], status is [Security]'.format(res['site_num']))
-        return {"msg_list": msg_list}
+            msg = 'Scan {} websites, status is [Security].\n Scanned domains: [{}]'.format(
+                res['site_num'],
+                domains_str
+            )
+            msg_list.append(msg)
+            return {"msg_list": msg_list}
 
 
 if __name__ == '__main__':

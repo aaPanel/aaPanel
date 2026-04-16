@@ -259,15 +259,7 @@ def load_rsync_template():
                     "day_num": 3
                 }
             },
-            "send_type_list": [
-                "wx_account",
-                "dingding",
-                "feishu",
-                "mail",
-                "weixin",
-                "webhook",
-                "tg",
-            ],
+            "send_type_list": "ALL",
             "unique": True
         }]
     )

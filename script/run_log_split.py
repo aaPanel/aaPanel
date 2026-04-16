@@ -20,11 +20,13 @@ import public, json
 
 try:
     from projectModelV2.pythonModel import main as pythonMod
+    from projectModelV2.goModel import main as goMod
     from projectModelV2.nodejsModel import main as nodejsMod
 
     mods = {
         "python": pythonMod(),
         "node": nodejsMod(),
+        "go": goMod(),
     }
 except Exception as e:
     print(str(e))

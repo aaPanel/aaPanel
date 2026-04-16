@@ -28,6 +28,7 @@
 			"app_list_16": "Website verwalten",
 			"app_list_17": "Backup",
 			"app_list_18": "Ein-Klick-Anmeldung",
+			"app_list_19": "Terminal",
 			"app_category_0": "Installiert",
 			"app_category_1": "Mehr",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "Alle",
 			"filterRunning": "Läuft",
 			"filterStopped": "Angehalten",
-			"searchPlaceholder": "Suchen Sie nach Containernamen oder Bildnamen"
+			"searchPlaceholder": "Suchen Sie nach Containernamen oder Bildnamen",
+			"goToApp": "Gehen Sie zur Installation zum App Store"
 		},
 		"Container": {
 			"index_1": "Container erstellen",

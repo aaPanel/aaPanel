@@ -74,12 +74,40 @@
 			"index_1": "Site erstellen",
 			"index_2": "Erstellen Sie aus dem Backup",
 			"index_3": "Websites im Batch erstellen",
+			"index_4": "Batch aus Backup",
 			"import_1": "Sicherungstyp",
 			"import_2": "Lokal",
 			"import_3": "Plesk oder CPanel",
 			"import_4": "Sicherungsdateipfad",
 			"import_5": "Unterverzeichnis, im Stammverzeichnis leer",
-			"import_6": "Bitte geben Sie den Sicherungsdateipfad ein"
+			"import_6": "Bitte geben Sie den Sicherungsdateipfad ein",
+			"BackupBatch": {
+				"unifiedConfig": "Einheitliche Einstellungen",
+				"phpVersion": "PHP-Version",
+				"sslForAllSites": "Wenden Sie SSL für alle Websites an",
+				"importListTitle": "Liste importieren",
+				"clearAll": "Alles löschen",
+				"localUpload": "Lokaler Upload",
+				"serverUpload": "Vom Server",
+				"emptyHint": "Klicken Sie auf die Schaltflächen oben, um Sicherungsdateien hochzuladen",
+				"Confirm": {
+					"clearTitle": "Bestätigen Sie das Löschen",
+					"clearContent": "Sind Sie sicher, dass Sie alle Datensätze der Sicherungsdatei löschen möchten?",
+					"deleteTitle": "Bestätigen Sie das Löschen",
+					"deleteContent": "Sind Sie sicher, dass Sie dieses Sicherungsdateielement löschen möchten?"
+				},
+				"Errors": {
+					"emptyList": "Bitte fügen Sie mindestens eine Sicherungsdatei hinzu",
+					"emptyBakFile": "Der Pfad der Sicherungsdatei für Element {index} darf nicht leer sein",
+					"emptyDomain": "Die Domain für die Site {index} darf nicht leer sein"
+				},
+				"Item": {
+					"backupFile": "Sicherungsdatei",
+					"domain": "Domäne",
+					"websitePath": "Website-Pfad",
+					"subdirectory": "Unterverzeichnis"
+				}
+			}
 		},
 		"AddBatch": {
 			"index_1": "Bitte lösen Sie zunächst den A-Eintrag dieser Domain in die Server-IP-Adresse auf",

@@ -341,7 +341,7 @@ class App(composeMod):
         public.ExecShell("unzip -o {}/dkapp_ico.zip -d {}".format(tmp_path, zip_ico_path))
         public.ExecShell("cd {} && mv dkapp_ico dkapp".format(zip_ico_path))
 
-        public.ExecShell("chmod -R 644 {}".format(ico_path))
+        public.ExecShell("chmod -R 755 {}".format(ico_path))
         public.ExecShell("chown -R root:root {}".format(ico_path))
         public.ExecShell("rm -rf {}".format(tmp_path))
 

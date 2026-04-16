@@ -173,7 +173,7 @@
 			"index_63": "Выберите расположение сервера",
 			"index_64": "Выберите внешний сервер",
 			"index_65": "Пароль root не может быть пустым",
-			"index_67": "Localhost",
+			"index_67": "Локальный сервер",
 			"index_68": "Внешняя БД",
 			"index_69": "Список внешних БД",
 			"index_70": "Изменить пароль БД",
@@ -184,7 +184,7 @@
 			"index_75": "Пароль root",
 			"index_76": "Расположение",
 			"index_77": "Дата добавления",
-			"index_78": "Show Logs"
+			"index_78": "Журналы"
 		},
 		"PhpAdmin": {
 			"index_1": "Сервис",
@@ -219,7 +219,7 @@
 			"index_30": "Пароли не совпадают!",
 			"index_31": "Версия PHP",
 			"index_32": "Выберите версию PHP-CLI",
-			"index_33": "The Adminer driver depends on the currently running PHP version environment. If you find that the driver is missing, please go to PHP extensions to install php_mongodb and pdo_pgsql"
+			"index_33": "Драйвер Adminer зависит от текущей версии PHP. Если драйвер отсутствует, установите расширения php_mongodb и pdo_pgsql"
 		},
 		"Api": {
 			"Index_1": "Подключение к удалённому серверу, ожидайте...",
@@ -265,34 +265,34 @@
 			"index_27": "После настройки требуется перезапуск БД для применения изменений",
 			"index_28": "Скачать самоподписанный SSL-сертификат MySQL",
 			"type": {
-				"import": "Import",
-				"recover": "Recover",
-				"backup": "Backup"
+				"import": "Импорт",
+				"recover": "Восстановление",
+				"backup": "Резервное копирование"
 			},
 			"logs": {
-				"index_1": "{0} database file, please wait...",
-				"index_2": "Current {0} task is running in the background, you can close this page to perform other operations",
-				"index_3": "{0} Database: ",
-				"index_4": "{0} Size: ",
-				"index_5": "{0} Speed: ",
-				"index_6": "After the import is completed, you can view the import results in the import log"
+				"index_1": "{0} файл базы данных, ожидайте...",
+				"index_2": "Текущая задача {0} выполняется в фоновом режиме, вы можете закрыть эту страницу и выполнить другие операции",
+				"index_3": "{0} База данных: ",
+				"index_4": "{0} Размер: ",
+				"index_5": "{0} Скорость: ",
+				"index_6": "После завершения импорта результаты можно просмотреть в журнале импорта"
 			}
 		},
 		"adminerManager": {
 			"service": {
-				"currentStatus": "Current Status: ",
-				"fixed": "Fixed",
-				"install": "Install",
-				"uninstall": "Uninstall",
-				"confirmFixed": "Are you sure you want to fixed?",
-				"confirmInstall": "Are you sure you want to install?",
-				"confirmUninstall": "Are you sure you want to uninstall?",
-				"jumpingToAdminer": "Jumping to Adminer, please wait..."
+				"currentStatus": "Текущий статус: ",
+				"fixed": "Исправить",
+				"install": "Установить",
+				"uninstall": "Удалить",
+				"confirmFixed": "Вы уверены, что хотите исправить?",
+				"confirmInstall": "Вы уверены, что хотите установить?",
+				"confirmUninstall": "Вы уверены, что хотите удалить?",
+				"jumpingToAdminer": "Переход в Adminer, ожидайте..."
 			},
-			"switchingPhp": "Switching PHP version, please wait...",
-			"installing": "Installing, please wait...",
-			"uninstalling": "Uninstalling, please wait...",
-			"switchingPort": "Switching port, please wait..."
+			"switchingPhp": "Переключение версии PHP, ожидайте...",
+			"installing": "Установка, ожидайте...",
+			"uninstalling": "Удаление, ожидайте...",
+			"switchingPort": "Переключение порта, ожидайте..."
 		}
 	}
 }

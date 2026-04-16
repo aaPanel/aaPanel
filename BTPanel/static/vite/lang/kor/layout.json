@@ -4,7 +4,7 @@
 			"home_1": "홈",
 			"site_1": "웹 사이트",
 			"site_2": "PHP 프로젝트",
-			"site_3": "node 프로젝트",
+			"site_3": "Node.js 프로젝트",
 			"site_4": "프록시 프로젝트",
 			"wp_1": "로컬 관리",
 			"wp_2": "원격 관리",
@@ -41,7 +41,7 @@
 			"wap_1": "WAF",
 			"wap_2": "개요",
 			"wap_3": "웹 사이트",
-			"wap_4": "봉쇄",
+			"wap_4": "차단",
 			"wap_5": "차단 목록",
 			"wap_6": "지역",
 			"wap_7": "맞춤규칙",
@@ -80,7 +80,7 @@
 			"config_2": "글로벌",
 			"config_3": "패널 설정",
 			"config_4": "보안",
-			"config_5": "경보",
+			"config_5": "알림",
 			"config_6": "백업 복원",
 			"config_7": "마이그레이션",
 			"config_8": "페이지",
@@ -95,7 +95,7 @@
 			"account_6": "설정",
 			"domain_1": "도메인",
 			"domain_2": "자격증",
-			"security_8": "Website Security"
+			"security_8": "웹사이트 보안"
 		},
 		"Footer": {
 			"index_1": "Aapanel Linux 패널 © 2014- {0} Aapanel",
@@ -109,7 +109,7 @@
 			"index_4": "메시지 목록",
 			"index_5": "실행 로그",
 			"index_6": "메시지 상자",
-			"index_7": "시간 소비"
+			"index_7": "시간 소모"
 		}
 	}
 }

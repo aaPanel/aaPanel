@@ -38,6 +38,7 @@
 			"security_5": "Доступ до компілятора",
 			"security_6": "Захист від вторгнення",
 			"security_7": "Укріплення системи",
+			"security_8": "Безпека сайту",
 			"wap_1": "WAF",
 			"wap_2": "Огляд",
 			"wap_3": "Вебсайт",
@@ -94,8 +95,7 @@
 			"account_5": "Сховище",
 			"account_6": "Налаштування",
 			"domain_1": "Домени",
-			"domain_2": "Сертифікат",
-			"security_8": "Website Security"
+			"domain_2": "Сертифікат"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux панель ©2014-{0} aaPanel",

@@ -9,6 +9,7 @@ from .web_hook_msg import WebHookMsg
 from .feishu_msg import FeiShuMsg
 from .dingding_msg import DingDingMsg
 from .sms_msg import SMSMsg
+from .discord_msg import DiscordMsg
 # from .wx_account_msg import WeChatAccountMsg
 import json
 from mod.base import json_response
@@ -24,10 +25,8 @@ class SenderManager:
     def __init__(self):
         self.custom_parameter_filename = "/www/server/panel/data/mod_push_data/custom_parameter.pl"
         self.init_default_sender()
+
     def set_sender_conf(self, get):
-
-        args = json.loads(get.sender_data.strip())
-
         try:
             sender_id = None
             try:
@@ -39,6 +38,7 @@ class SenderManager:
                 args = json.loads(get.sender_data.strip())
             except (json.JSONDecoder, AttributeError, TypeError):
                 return json_response(status=False, msg=public.lang('The parameter is incorrect'))
+
             sender_config = SenderConfig()
             if sender_id is not None:
                 tmp = sender_config.get_by_id(sender_id)
@@ -62,18 +62,22 @@ class SenderManager:
 
                 if isinstance(data, str):
                     return json_response(status=False, data=data, msg=data)
+
             elif sender_type == "webhook":
                 custom_parameter = args.get("custom_parameter", {})
-                if custom_parameter:
-                    try:
-                        public.writeFile(self.custom_parameter_filename, json.dumps(custom_parameter))
-                    except:
-                        pass
+                if custom_parameter == "":
+                    custom_parameter = {}
 
+                try:
+                    if isinstance(custom_parameter, str):
+                        custom_parameter = json.loads(custom_parameter)
+                    public.writeFile(self.custom_parameter_filename, json.dumps(custom_parameter))
+                except Exception as e:
+                    return json_response(status=False, data=str(e), msg=str(e))
 
-                data = WebHookMsg.check_args(args)
+                _, data = WebHookMsg.check_args(args)
                 if isinstance(data, str):
-                    return json_response(status=False, data=data, msg=public.lang('Test send failed'))
+                    return json_response(status=False, data=data, msg=data)
 
                 # 从文件读取并删除文件
                 try:
@@ -93,6 +97,11 @@ class SenderManager:
                 data = DingDingMsg.check_args(args)
                 if isinstance(data, str):
                     return json_response(status=False, data=data, msg=public.lang('Test send failed'))
+
+            elif sender_type == "discord":
+                data = DiscordMsg.check_args(args)
+                if isinstance(data, str):
+                    return json_response(status=False, data=data, msg=public.lang('Test send failed'))
             else:
                 return json_response(status=False, msg=public.lang('A type that is not supported by the current interface'))
                 # Check if the sender configuration already exists
@@ -102,25 +111,9 @@ class SenderManager:
                 if conf['sender_type'] == sender_type and 'title' in conf['data'] and conf['data']['title'] == data['title'] and conf['id'] != sender_id
             )
 
-
-            # for conf in sender_config.config:
-            #     if conf['sender_type'] == sender_type and 'title' in conf['data'] and conf['data']['title'] == data[
-            #         'title'] and conf['id'] != sender_id:
-            #         public.print_log('000   -{}'.format(conf['sender_type']))
-            #         public.print_log('000   -{}'.format(sender_type))
-            #
-            #         public.print_log('111 conf  -{}'.format(conf['sender_type']))
-            #         public.print_log('111   -{}'.format(sender_type))
-            #
-            #         public.print_log('222 conf -{}'.format(conf['data']['title']))
-            #         public.print_log('222 data  -{}'.format(data['title']))
-            #
-            #         public.print_log('333 conf  -{}'.format(conf['id']))
-            #         public.print_log('333   -{}'.format(sender_id))
-
             if existing_sender:
                 return json_response(status=False, msg=public.lang('The same send configuration already exists and cannot be added repeatedly'))
-            now_sender_id = None
+
             if not sender_id:
                 now_sender_id = sender_config.nwe_id()
                 sender_config.config.append(
@@ -142,8 +135,9 @@ class SenderManager:
             #         conf["original"] = (conf['id'] == now_sender_id)
 
             sender_config.save_config()
-            if sender_type == "webhook":
-                self.set_default_for_compatible(sender_config.get_by_id(now_sender_id))
+            # 旧系统写入配置 弃用
+            # if sender_type == "webhook":
+            #     self.set_default_for_compatible(sender_config.get_by_id(now_sender_id))
 
             return json_response(status=True, msg=public.lang('Saved successfully'))
         except:
@@ -196,7 +190,7 @@ class SenderManager:
 
         res = []
         # WeChatAccountMsg.refresh_config(force=refresh)
-        simple = ("weixin", "mail", "webhook", "feishu", "dingding", "tg")
+        simple = ("weixin", "mail", "webhook", "feishu", "dingding", "tg", "discord")
 
         for conf in SenderConfig().config:
             if conf["sender_type"] in simple or conf["sender_type"] == "wx_account":
@@ -221,8 +215,8 @@ class SenderManager:
             return json_response(status=False, msg=public.lang('Corresponding sender not found'))
 
         sender_type = tmp["sender_type"]
-
         if sender_type == "weixin":
+            # 这个是企业微信
             sender_obj = WeiXinMsg(tmp)
 
         elif sender_type == "mail":
@@ -236,16 +230,22 @@ class SenderManager:
 
         elif sender_type == "dingding":
             sender_obj = DingDingMsg(tmp)
+
         elif sender_type == "tg":
             sender_obj = TgMsg(tmp)
+
+        elif sender_type == "discord":
+            sender_obj = DiscordMsg(tmp)
+
         # elif sender_type == "wx_account":
         #     sender_obj = WeChatAccountMsg(tmp)
+
         else:
             return json_response(status=False, msg=public.lang('A type that is not supported by the current interface'))
 
         res = sender_obj.test_send_msg()
         if isinstance(res, str):
-            return json_response(status=False, data=res, msg=public.lang('Test send failed'))
+            return json_response(status=False, data=res, msg=res or public.lang('Test send failed'))
         return json_response(status=True, msg=public.lang('The sending was successful'))
 
     @staticmethod

@@ -1615,7 +1615,8 @@ class one_key_wp:
             'login_url': wp_toolkit_config_data['login_url'],
             'site_url': wp_toolkit_config_data['site_url'],
             'cache_enabled': self.get_cache_status(args.s_id),
-            'admin_user': wp_toolkit_config_data['admin_info']['user_login'],
+            # 'admin_user': wp_toolkit_config_data['admin_info']['user_login'],
+            'admin_user': wp_toolkit_config_data.get("admin_info", {}).get('user_login', ''), # 修复当admin_info不存在时导致的KeyError
             'admin_email': wp_toolkit_config_data['admin_info']['user_email'],
             'whl_enabled': wp_toolkit_config_data['whl_config'].get('activated', False),
             'whl_page': wp_toolkit_config_data['whl_config'].get('whl_page', 'login'),

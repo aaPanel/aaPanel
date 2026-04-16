@@ -23,7 +23,7 @@
 			"docker_4": "Container",
 			"docker_5": "Wolkenbild",
 			"docker_6": "Lokales Bild",
-			"docker_7": "Komponieren",
+			"docker_7": "Docker Compose",
 			"docker_8": "Vorlage",
 			"docker_9": "Netzwerk",
 			"docker_10": "Volumen",

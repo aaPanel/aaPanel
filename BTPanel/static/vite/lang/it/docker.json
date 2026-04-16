@@ -27,6 +27,7 @@
 			"app_list_15": "Fai clic per reindirizzare al dominio:",
 			"app_list_16": "Gestisci il sito web",
 			"app_list_17": "Backup",
+			"app_list_19": "Terminal",
 			"app_category_0": "Installato",
 			"app_category_1": "Di più ",
 			"Install": {
@@ -86,7 +87,8 @@
 			"filterAll": "All",
 			"filterRunning": "Running",
 			"filterStopped": "Stopped",
-			"searchPlaceholder": "Search container name or image name"
+			"searchPlaceholder": "Search container name or image name",
+			"goToApp": "Go to App Store to install"
 		},
 		"Container": {
 			"index_1": "Crea contenitore",

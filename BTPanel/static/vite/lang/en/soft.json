@@ -29,7 +29,7 @@
 		"index_27": "Perpetual",
 		"index_28": "NOT activated",
 		"index_29": "Software name",
-		"index_30": "Display on dashboard",
+		"index_30": "Display on Home",
 		"index_31": "Rated",
 		"index_32": "Not rated",
 		"index_34": "Install Now",
@@ -53,6 +53,7 @@
 		"index_52": "Update Log",
 		"index_53": "Please note that the update process may cause service interruptions",
 		"index_54": "It is recommended that you perform software updates when the server load is idle",
+		"index_55": "Please enter the app to search",
 		"Plugin": {
 			"index_1": "Web server",
 			"index_2": "Switching, please wait...",
