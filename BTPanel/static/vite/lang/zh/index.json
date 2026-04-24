@@ -588,7 +588,6 @@
     "You can modify the pseudo-static rules, and save them after modification": "您可以修改伪静态规则，并在修改后保存",
     "cPanel Migrate": "cPanel迁移",
     "SDK Manage": "SDK管理",
-    "Account": "账户",
     "Data Size": "数据大小",
     "Migration Checklist": "迁移清单",
     "Next Step": "下一步",
@@ -596,11 +595,11 @@
     "Certificate Vertification": "证书认证",
     "Custom Parameters": "自定义参数",
     "How to configure and use a custom message channel": "如何配置和使用自定义消息通道",
-    "Optional, standard JSON format string, eg: {aa:bb}": "可选的标准JSON格式字符串，例如：{aa:bb}",
     "Parameter Format": "参数格式",
     "Please enter custom webhook robot URL": "请输入自定义webhook机器人URL",
     "Please enter the name": "请输入名称",
     "Request Header": "请求头",
     "Request Method": "请求方法",
-    "Robot name or remark": "机器人名称或备注"
+    "Robot name or remark": "机器人名称或备注",
+    "Command version": "命令版本"
 }

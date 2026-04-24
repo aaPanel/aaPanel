@@ -1,1 +1,0 @@
-System.register(["./echarts-legacy-o84d8UDR.js?v=1776326513599"],function(e,t){"use strict";var s,r,c,u,i,n,a,f,g,h,l,m,o,y,b;return{setters:[e=>{e.e,s=e.u,r=e.i,c=e.a,u=e.b,i=e.c,n=e.d,a=e.f,f=e.g,g=e.h,h=e.q,l=e.s,m=e.k,o=e.l,y=e.m,b=e.t}],execute:function(){s([r,c,u,i,n,a,f,g,h,l,m,o,y,b])}}});

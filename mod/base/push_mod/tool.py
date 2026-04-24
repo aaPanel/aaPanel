@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Optional, Type, TypeVar
 import traceback
+import inspect
 from importlib import import_module
 
 from .base_task import BaseTask
@@ -54,7 +55,7 @@ def load_task_cls_by_function(
         return None
     elif isinstance(res, BaseTask):
         return res.__class__
-    elif issubclass(res, BaseTask):
+    elif inspect.isclass(res) and issubclass(res, BaseTask):
         return res
     return None
 
@@ -70,21 +71,14 @@ def load_task_cls_by_path(path: str, cls_name: str) -> Optional[Type[T_CLS]]:
 
         module = import_module(path)
         cls = getattr(module, cls_name, None)
-        if issubclass(cls, BaseTask):
-            return cls
-        elif isinstance(cls, BaseTask):
+        if cls is None:
+            return None
+        if isinstance(cls, BaseTask):
             return cls.__class__
-        else:
-            debug_log("Error: The loaded class is not a subclass of BaseTask")
-            return None
-    except ModuleNotFoundError as e:
-        # todo暂时忽略 ssl_push
-        if 'mod.base.push_mod.ssl_push' in str(e):
-            return None
-        else:
-            debug_log(traceback.format_exc())
-            debug_log("ModuleNotFoundError: {}".format(str(e)))
-            return None
+        if inspect.isclass(cls) and issubclass(cls, BaseTask):
+            return cls
+        debug_log("Error: The loaded class '{}' is not a subclass of BaseTask".format(cls_name))
+        return None
     except Exception:
         print(traceback.format_exc())
         print(sys.path)

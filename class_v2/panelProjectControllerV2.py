@@ -113,7 +113,12 @@ class ProjectController:
         else:
             mod_file = '{}/class_v2/projectModelV2/{}.py'.format(public.get_panel_path(),mod_name)
         plugin_class = plugin_loader.get_module(mod_file)
-        plugin_object = getattr(plugin_class,class_string)()
+        # 如果模块不存在, 可能上次加载异常导致残留
+        if not hasattr(plugin_class, class_string):
+            if mod_file in sys.modules:
+                del sys.modules[mod_file]
+            plugin_class = plugin_loader.get_module(mod_file)
+        plugin_object = getattr(plugin_class, class_string)()
         result = getattr(plugin_object,def_name)(pdata)
         if isinstance(result,dict):
             if 'status' in result and result['status'] == False and 'msg' in result:

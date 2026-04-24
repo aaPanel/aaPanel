@@ -1,0 +1,1 @@
+import{aR as l,m as s,a6 as e}from"./index-Cr9LAN38.js?v=1777002971908";const i=async o=>{const{copy:a,isSupported:t}=l({legacy:!0});t.value?(a(o),s.success(e.global.t("Utils.Copy.index_1"))):s.error(e.global.t("Utils.Copy.index_2"))};export{i as c};

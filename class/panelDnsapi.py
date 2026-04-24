@@ -33,6 +33,7 @@ __all__ = [
     "GodaddyDns",
     "ClouDns",
     "SpaceShipDNS",
+    "AmazonRoute53Dns",
 ]
 
 
@@ -604,49 +605,104 @@ class CloudFlareDns(BaseDns):
             return {"X-Auth-Email": self.api_user, "X-Auth-Key": self.api_key}
 
     def find_dns_zone(self, domain_name):
-        url = self.cf_base_url + "zones?status=active&per_page=1000"
-        headers = self._get_auth_headers()
-        find_dns_zone_response = requests.get(url, headers=headers, timeout=self.time_out)
-        if find_dns_zone_response.status_code != 200:
-            raise HintException(
-                "Error find cloudflare dns zone, please check your Api Account and Password:"
-                " status_code={status_code} response={response}".format(
-                    status_code=find_dns_zone_response.status_code,
-                    response=self.log_response(find_dns_zone_response),
-                )
-            )
-        result = find_dns_zone_response.json()["result"]
-
         domain = domain_name.lstrip("*.")
-        matched_zones = [
-            x for x in result if domain == x.get("name") or domain.endswith("." + x.get("name"))
-        ]
-        if not matched_zones:
-            raise HintException(
-                "Error unable to get DNS zone for domain={domain}".format(
-                    domain=domain
-                )
-            )
-        # 优先最长匹配, max时len相等, 即eq, not eq时max为最精确
-        best_match = max(matched_zones, key=lambda x: len(x.get("name", "")))
-        setattr(self, "cf_zone_id", best_match.get("id"))
+        url = self.cf_base_url + "zones?status=active&per_page=20"
+        headers = self._get_auth_headers()
+        page = 1
 
-        if self.cf_zone_id is None:
-            raise HintException(
-                "Error unable to get DNS zone for domain={domain} "
-                ", please check your Api Account and Password: status_code={status_code} response={response}".format(
-                    domain=domain,
-                    status_code=find_dns_zone_response.status_code,
-                    response=self.log_response(find_dns_zone_response),
+        while True:
+            paginated_url = url + f"&page={page}"
+            find_dns_zone_response = requests.get(paginated_url, headers=headers, timeout=self.time_out)
+            if find_dns_zone_response.status_code != 200:
+                raise HintException(
+                    "Error find cloudflare dns zone, please check your Api Account and Password:"
+                    " status_code={status_code} response={response}".format(
+                        status_code=find_dns_zone_response.status_code,
+                        response=self.log_response(find_dns_zone_response),
+                    )
                 )
+            result = find_dns_zone_response.json()["result"]
+
+            matched_zones = [
+                x for x in result if domain == x.get("name") or domain.endswith("." + x.get("name"))
+            ]
+            if matched_zones:
+                # 优先最长匹配, max时len相等, 即eq, not eq时max为最精确
+                best_match = max(matched_zones, key=lambda x: len(x.get("name", "")))
+                self.cf_zone_id = best_match.get("id")
+                return
+
+            if len(result) < 20:
+                break
+            page += 1
+
+        raise HintException(
+            "Error unable to get DNS zone for domain={domain}".format(
+                domain=domain
             )
+        )
 
     # =============== acme ======================
+
+    @staticmethod
+    def _build_cf_value(record_type: str, record_value: str, priority: int = -1) -> dict:
+        """
+        A/AAAA/CNAME/NS/TXT -> {"content": value}
+        MX -> {"data": {"priority": N, "target": value}}
+        CAA -> {"data": {"flags": N, "tag": tag, "value": value}}
+        """
+        record_type = str(record_type or "").upper()
+
+        if record_type == "MX":
+            pref = priority if str(priority) not in {"", "-1", "None"} else 10
+            return {"data": {"priority": pref, "target": record_value}}
+
+        if record_type == "CAA":
+            parts = str(record_value or "").strip().split(None, 2)
+            if len(parts) == 3:
+                flag_str, tag, caa_val = parts
+                try:
+                    flags = int(flag_str)
+                except ValueError:
+                    flags = 0
+                return {"data": {"flags": flags, "tag": tag, "value": caa_val}}
+            return {"content": record_value}
+
+        return {"content": record_value}
+
+    @staticmethod
+    def _parse_cf_value(record_type: str, item: dict) -> str:
+        """从返回的记录中解析值"""
+        record_type = str(record_type or "").upper()
+        data = item.get("data")
+        if record_type == "MX" and data:
+            return str(data.get("target", ""))
+        if record_type == "CAA" and data:
+            flags = data.get("flags", 0)
+            tag = data.get("tag", "")
+            val = data.get("value", "")
+            return f"{flags} {tag} {val}"
+        return str(item.get("content", ""))
+
+    @staticmethod
+    def _parse_cf_priority(record_type: str, item: dict) -> int:
+        """提取优先级: MX -> data.priority 或顶层 priority"""
+        if str(record_type or "").upper() == "MX":
+            data = item.get("data", {})
+            pref = data.get("priority", item.get("priority", -1))
+        else:
+            pref = item.get("priority", -1)
+        try:
+            return int(pref)
+        except (TypeError, ValueError):
+            return -1
 
     def create_dns_record(self, domain_name, domain_dns_value):
         # acme 调用
         domain_name = domain_name.lstrip("*.")
         self.find_dns_zone(domain_name)
+        # CloudFlare 的 acme 记录名称是 _acme-challenge.{完整域名}
+        acme_txt = "_acme-challenge." + domain_name
         url = urljoin(
             self.cf_base_url,
             "zones/{0}/dns_records".format(self.cf_zone_id),
@@ -654,16 +710,14 @@ class CloudFlareDns(BaseDns):
         headers = self._get_auth_headers()
         body = {
             "type": "TXT",
-            "name": "_acme-challenge" + "." + domain_name + ".",
-            "content": "{0}".format(domain_dns_value),
+            "name": acme_txt,
+            "content": str(domain_dns_value),
         }
 
         create_cloudflare_dns_record_response = requests.post(
             url, headers=headers, json=body, timeout=self.time_out
         )
         if create_cloudflare_dns_record_response.status_code != 200:
-            # raise error so that we do not continue to make calls to ACME
-            # server
             raise HintException(
                 "Error creating cloudflare dns record: status_code={status_code} response={response}".format(
                     status_code=create_cloudflare_dns_record_response.status_code,
@@ -673,9 +727,11 @@ class CloudFlareDns(BaseDns):
 
     def delete_dns_record(self, domain_name, domain_dns_value):
         # 移除挑战值
-        domain_name, _, acme_txt = extract_zone(domain_name)
-        acme_txt = acme_txt + "." + domain_name
-        self.remove_record(domain_name, acme_txt, "TXT")
+        domain_name = domain_name.lstrip("*.")
+        self.find_dns_zone(domain_name)
+        # CloudFlare 的 acme 记录名称是 _acme-challenge.{完整域名}
+        acme_txt = "_acme-challenge." + domain_name
+        self.remove_record(domain_name, acme_txt, "TXT", record_value=domain_dns_value)
 
     # =============== 域名管理 ====================
 
@@ -684,10 +740,10 @@ class CloudFlareDns(BaseDns):
         headers = self._get_auth_headers()
         domains = []
         page = 1
-        count = 1
+        per_page = 50
         fail_count = 0
-        while count != 0:
-            params = {"page": page, "per_page": 50}
+        while True:
+            params = {"page": page, "per_page": per_page}
             try:
                 res = requests.get(url, headers=headers, params=params, timeout=self.time_out)
                 time.sleep(1)  # 限流
@@ -700,8 +756,9 @@ class CloudFlareDns(BaseDns):
                         time.sleep(1)
                         continue
                 result = resp.get("result", [])
-                count = resp.get("result_info", {}).get("count", 0)
                 domains.extend([i.get("name", "") for i in result])
+                if len(result) < per_page:
+                    break
                 page += 1
             except Exception as e:
                 public.print_log(f"cloudflare get_domains error {e}")
@@ -720,21 +777,26 @@ class CloudFlareDns(BaseDns):
             params = {"page": page, "per_page": per_page}
             try:
                 response = requests.get(
-                    url, headers=self._get_auth_headers(), params=params
+                    url, headers=self._get_auth_headers(), params=params, timeout=self.time_out
                 )
                 data = response.json()
                 if data.get("success"):
                     records = data.get("result", [])
-                    result.extend([
-                        {
+                    for i in records:
+                        r_type = i.get("type", "").upper()
+                        # 跳过 SOA 和根 NS 记录
+                        if r_type == "SOA":
+                            continue
+                        r_value = self._parse_cf_value(r_type, i)
+                        priority = self._parse_cf_priority(r_type, i)
+                        result.append({
                             "record": i.get("name", ""),
-                            "record_value": i.get("content", ""),
-                            "record_type": i.get("type", ""),
+                            "record_value": r_value,
+                            "record_type": r_type,
                             "proxy": i.get("proxied", False),
-                            "priority": i.get("priority", -1),
+                            "priority": priority,
                             "ttl": i.get("ttl", 1),
-                        } for i in records
-                    ])
+                        })
                     if len(records) < per_page:
                         break
                     page += 1
@@ -754,14 +816,12 @@ class CloudFlareDns(BaseDns):
         self.find_dns_zone(domain_name)
         url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records"
         headers = self._get_auth_headers()
-        body = {
-            "content": record_value,
-            "name": record,
-            "proxied": proxied,
-            "ttl": ttl,
-            "type": record_type
-        }
-        body = white_kwargs(body, self.kw_prefix, kwargs)  # 接受其他关键参数
+        ttl_val = 600 if int(ttl) == 1 else int(ttl)
+        priority = kwargs.get("priority", -1)
+
+        body = {"name": record, "type": record_type, "ttl": ttl_val, "proxied": proxied}
+        body.update(self._build_cf_value(record_type, record_value, priority))
+        body = white_kwargs(body, self.kw_prefix, kwargs)
 
         try:
             create_res = requests.post(url, headers=headers, json=body, timeout=self.time_out)
@@ -784,17 +844,38 @@ class CloudFlareDns(BaseDns):
         list_dns_response = requests.get(
             list_dns_url, params=list_dns_payload, headers=headers, timeout=self.time_out
         )
+        if list_dns_response.status_code != 200:
+            return {"status": False, "msg": f"HTTP {list_dns_response.status_code}: {list_dns_response.text}"}
         try:
-            for i in range(0, len(list_dns_response.json()["result"])):
-                dns_record_id = list_dns_response.json()["result"][i]["id"]
+            results = list_dns_response.json().get("result", [])
+            if not results:
+                return {"status": True, "msg": "Dns Record is empty."}
+
+            # 如果提供了record_value，需要匹配正确的记录
+            record_value = kwargs.get("record_value")
+            if record_value:
+                # 解析记录值以进行匹配
+                for item in results:
+                    parsed_value = self._parse_cf_value(record_type, item)
+                    if parsed_value == record_value:
+                        dns_record_id = item["id"]
+                        url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records/{dns_record_id}"
+                        remove_res = requests.delete(url, headers=headers, timeout=self.time_out)
+                        remove_res = remove_res.json()
+                        if remove_res.get("success"):
+                            return {"status": True, "msg": remove_res}
+                        return {"status": False, "msg": str(remove_res.get("errors"))}
+                # 没有找到匹配的记录
+                return {"status": False, "msg": "Dns Record not found with specified value"}
+            else:
+                # 没有提供record_value，删除第一条匹配的记录
+                dns_record_id = results[0]["id"]
                 url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records/{dns_record_id}"
                 remove_res = requests.delete(url, headers=headers, timeout=self.time_out)
                 remove_res = remove_res.json()
                 if remove_res.get("success"):
                     return {"status": True, "msg": remove_res}
                 return {"status": False, "msg": str(remove_res.get("errors"))}
-            # is empty
-            return {"status": True, "msg": "Dns Record is empty."}
         except requests.exceptions.HTTPError as http_err:
             return {"status": False, "msg": http_err}
         except Exception as e:
@@ -809,21 +890,31 @@ class CloudFlareDns(BaseDns):
         get_url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records?type={record_type}&name={record_name}"
         try:
             # get record id
-            get_response = requests.get(get_url, headers=self._get_auth_headers())
+            get_response = requests.get(get_url, headers=self._get_auth_headers(), timeout=self.time_out)
             get_result = get_response.json()
             if get_result.get("success") and get_result.get("result"):
                 record_id = get_result["result"][0]["id"]
                 update_url = self.cf_base_url + f"zones/{self.cf_zone_id}/dns_records/{record_id}"
+
+                new_type = new_record.get("record_type", record_type)
+                new_value = new_record.get("record_value", "")
+                new_ttl = int(new_record.get("ttl", 600))
+                if new_ttl == 1:
+                    new_ttl = 600
+                proxied = True if new_record.get("proxy") == 1 else False
+                priority = new_record.get("priority", -1)
+
                 body = {
-                    "type": new_record.get("record_type"),
+                    "type": new_type,
                     "name": new_record.get("record"),
-                    "content": new_record.get("record_value"),
-                    "ttl": new_record.get("ttl", 1),
-                    "proxied": True if new_record.get("proxy") == 1 else False,
+                    "ttl": new_ttl,
+                    "proxied": proxied,
                 }
+                body.update(self._build_cf_value(new_type, new_value, priority))
                 body = white_kwargs(body, self.kw_prefix, new_record)
 
-                update_response = requests.put(update_url, headers=self._get_auth_headers(), json=body)
+                update_response = requests.put(update_url, headers=self._get_auth_headers(), json=body,
+                                               timeout=self.time_out)
                 update_result = update_response.json()
                 if update_result.get("success"):
                     return {"status": True, "msg": update_result}
@@ -1468,8 +1559,6 @@ class GodaddyDns(BaseDns):
 
 class ClouDns(BaseDns):
     dns_provider_name = "cloudns"
-    support_record_types = {"A", "AAAA", "MX", "TXT", "NS", "CAA", "CNAME"}
-
     kw_prefix = {
         "priority": "priority"
     }
@@ -1596,9 +1685,6 @@ class ClouDns(BaseDns):
     def _build_record_payload(self, domain_name: str, record: str, record_value: str, record_type: str,
                               ttl: int, extra: dict) -> dict:
         record_type = str(record_type or "").upper()
-        if record_type not in self.support_record_types:
-            raise HintException(f"Unsupported record type: {record_type}")
-
         payload = {
             "host": self._normalize_host(domain_name, record),
             "record-type": record_type,
@@ -1828,9 +1914,9 @@ class ClouDns(BaseDns):
             raise HintException(public.lang(f"Verify fail, please check your Api Account and Password: {e}"))
         return True
 
+
 class SpaceShipDNS(BaseDns):
     dns_provider_name = "spaceshipdns"
-    support_record_types = {"A", "AAAA", "MX", "TXT", "NS", "CAA", "CNAME", "SRV"}
     kw_prefix = {
         "priority": "priority"
     }
@@ -1891,69 +1977,72 @@ class SpaceShipDNS(BaseDns):
             return record[:-len(suffix)]
         return record
 
-    def _build_acme_record(self, domain_name: str) -> tuple:
-        """构造 ACME 挑战
-        blog.example.com   -> ("example.com", "_acme-challenge.blog")
-        example.com        -> ("example.com", "_acme-challenge")
-        *.blog.example.com -> ("example.com", "_acme-challenge.blog")
-        """
-        domain = str(domain_name or "").strip().rstrip(".").lstrip("*.")
-        zone_domain = self._normalize_zone_domain(domain)
-        sub = self._get_sub_domain(zone_domain, domain)
-        if sub:
-            acme_host = f"_acme-challenge.{sub}"
-        else:
-            acme_host = "_acme-challenge"
-        return zone_domain, acme_host
-
     @staticmethod
     def _parse_record_value(item: dict) -> str:
-        """返回的记录中提取值
-        TXT/A/AAAA/CNAME/NS -> "value"
-        MX -> "exchange"
-        CAA -> "<flag> <tag> <value>"
-        SRV -> 组合字段
+        """从返回记录中解析值, 各类型字段不同
+        A/AAAA  -> address
+        CNAME   -> target
+        MX      -> exchange
+        NS      -> host
+        TXT     -> value
+        CAA     -> "flag tag value"
         """
         record_type = str(item.get("type", "")).upper()
+        if record_type in ("A", "AAAA"):
+            return str(item.get("address", ""))
+        if record_type == "CNAME":
+            return str(item.get("cname", ""))
         if record_type == "MX":
             return str(item.get("exchange", ""))
+        if record_type == "NS":
+            return str(item.get("nameserver", ""))
         if record_type == "CAA":
             flag = item.get("flag", 0)
             tag = item.get("tag", "")
             value = item.get("value", "")
             return f"{flag} {tag} {value}"
-        if record_type == "SRV":
-            return str(item.get("target", "") or item.get("value", ""))
         return str(item.get("value", ""))
 
     @staticmethod
     def _parse_record_priority(item: dict) -> int:
-        """提取优先级: MX -> preference, SRV -> priority"""
+        """提取优先级: MX -> preference"""
         record_type = str(item.get("type", "")).upper()
         if record_type == "MX":
             pref = item.get("preference", -1)
-        elif record_type == "SRV":
-            pref = item.get("priority", -1)
         else:
             pref = item.get("priority", -1)
         try:
             pref = int(pref)
         except (TypeError, ValueError):
             pref = -1
-        return pref if str(pref) not in {"", "0", "-1", "None"} else -1
+        return pref if str(pref) not in {"", "-1", "None"} else -1
 
     def _build_record_body(self, zone_domain: str, record: str, record_value: str,
                            record_type: str, ttl: int, extra: dict) -> dict:
         """
-        构造单条记录 body
-        Spaceship PUT 创建记录字段: type, name, value, ttl (TXT/A/AAAA/CNAME/NS)
-        MX 额外需要: exchange, preference
+        构造PUT创建记录的单条 body
+        各类型使用不同值字段:
+          A/AAAA -> address,
+          CNAME -> target,
+          MX -> exchange+preference
+          NS -> host,
+          TXT -> value,
+          CAA -> flag+tag+value
         """
         record_type = str(record_type or "").upper()
         name = self._get_sub_domain(zone_domain, record) or record
         ttl_val = 600 if int(ttl) == 1 else int(ttl)
 
-        if record_type == "MX":
+        if record_type in ("A", "AAAA"):
+            body = {"type": record_type, "name": name, "address": record_value, "ttl": ttl_val}
+
+        elif record_type == "CNAME":
+            body = {"type": record_type, "name": name, "cname": record_value, "ttl": ttl_val}
+
+        elif record_type == "NS":
+            body = {"type": record_type, "name": name, "nameserver": record_value, "ttl": ttl_val}
+
+        elif record_type == "MX":
             body = {
                 "type": record_type,
                 "name": name,
@@ -1961,47 +2050,67 @@ class SpaceShipDNS(BaseDns):
                 "preference": int(extra.get("priority", 10)),
                 "ttl": ttl_val,
             }
+
         elif record_type == "CAA":
-            # record_value 格式: "flag tag value"
             parts = str(record_value).strip().split(None, 2)
             if len(parts) == 3:
                 body = {
-                    "type": record_type,
-                    "name": name,
-                    "flag": int(parts[0]),
-                    "tag": parts[1],
+                    "type": record_type, "name": name,
+                    "flag": int(parts[0]), "tag": parts[1],
                     "value": parts[2].strip('"').strip("'"),
                     "ttl": ttl_val,
                 }
             else:
                 body = {"type": record_type, "name": name, "value": record_value, "ttl": ttl_val}
         else:
-            body = {
-                "type": record_type,
-                "name": name,
-                "value": record_value,
-                "ttl": ttl_val,
-            }
+            # TXT 及其他
+            body = {"type": record_type, "name": name, "value": record_value, "ttl": ttl_val}
         return body
 
-    def _build_delete_body(self, zone_domain: str, record: str, record_type: str,
-                           record_value: str = None) -> dict:
-        """构造DELETE单条记录匹配 body"""
+    def _build_delete_body(self, zone_domain: str, record: str, record_type: str, **kwargs) -> dict:
+        """构造DELETE单条记录匹配 body, 各类型值字段不同"""
         record_type = str(record_type or "").upper()
         name = self._get_sub_domain(zone_domain, record) or record
+        val = kwargs.get("record_value") or ""
 
-        if record_type == "MX":
-            body = {"type": record_type, "name": name, "exchange": record_value or ""}
+        if record_type in ("A", "AAAA"):
+            body = {"type": record_type, "name": name, "address": val}
+
+        elif record_type == "CNAME":
+            body = {"type": record_type, "name": name, "cname": val}
+
+        elif record_type == "NS":
+            body = {"type": record_type, "name": name, "nameserver": val}
+
+        elif record_type == "MX":
+            body = {
+                "type": record_type, "name": name,
+                "exchange": val,
+                "preference": int(kwargs.get("priority", 0)),
+            }
+
+        elif record_type == "CAA":
+            parts = str(val).strip().split(None, 2)
+            if len(parts) == 3:
+                body = {
+                    "type": record_type, "name": name,
+                    "flag": int(parts[0]), "tag": parts[1],
+                    "value": parts[2].strip('"').strip("'"),
+                }
+            else:
+                body = {"type": record_type, "name": name, "value": val}
+
         else:
-            body = {"type": record_type, "name": name, "value": record_value or ""}
+            # TXT / 其他
+            body = {"type": record_type, "name": name, "value": val}
         return body
 
     # =============== acme ======================
     def create_dns_record(self, domain_name: str, domain_dns_value: str) -> None:
-        zone_domain, acme_host = self._build_acme_record(domain_name)
+        _, _, acme_txt = extract_zone(domain_name)
         res = self.create_org_record(
-            domain_name=zone_domain,
-            record=acme_host,
+            domain_name=domain_name,
+            record=acme_txt,
             record_value=domain_dns_value,
             record_type="TXT",
             ttl=600,
@@ -2010,8 +2119,8 @@ class SpaceShipDNS(BaseDns):
             raise HintException(res.get("msg") or "create dns record failed")
 
     def delete_dns_record(self, domain_name: str, domain_dns_value: str) -> None:
-        zone_domain, acme_host = self._build_acme_record(domain_name)
-        res = self.remove_record(zone_domain, acme_host, "TXT", record_value=domain_dns_value)
+        _, _, acme_txt = extract_zone(domain_name)
+        res = self.remove_record(domain_name, acme_txt, "TXT", record_value=domain_dns_value)
         if not res.get("status"):
             raise HintException(res.get("msg") or "delete dns record failed")
 
@@ -2112,7 +2221,7 @@ class SpaceShipDNS(BaseDns):
         """DELETE /dns/records/{domain} + 裸数组 [...] 删除记录"""
         zone_domain = self._normalize_zone_domain(domain_name)
         try:
-            body = self._build_delete_body(zone_domain, record, record_type, kwargs.get("record_value"))
+            body = self._build_delete_body(zone_domain, record, record_type, **kwargs)
             res = self._make_request("DELETE", f"/dns/records/{zone_domain}", payload=[body])
             return {"status": True, "msg": res}
         except Exception as e:
@@ -2127,7 +2236,7 @@ class SpaceShipDNS(BaseDns):
                 zone_domain,
                 record.get("record", ""),
                 record.get("record_type", ""),
-                record.get("record_value"),
+                **record,
             )
             self._make_request("DELETE", f"/dns/records/{zone_domain}", payload=[del_body])
 
@@ -2150,4 +2259,706 @@ class SpaceShipDNS(BaseDns):
             self.get_domains(verify=True)
         except Exception as e:
             raise HintException(f"Verify fail, please check your Api Key and Secret: {e}")
+        return True
+
+
+# noinspection PyUnusedLocal
+class AmazonRoute53Dns(BaseDns):
+    dns_provider_name = "route53"
+    kw_prefix = {
+        "priority": "priority"
+    }
+    # DNS 记录类型中支持多值的(同一 name + type 可存多个value)
+    _MULTI_VALUE_TYPES = {"TXT", "CAA", "MX"}
+
+    def __init__(self, api_user, api_key, **kwargs):  # noqa
+        super().__init__()
+        self.api_user = str(api_user or "").strip()  # AWS AccessKeyId
+        self.api_key = str(api_key or "").strip()  # AWS SecretAccessKey
+        try:
+            import boto3
+            from botocore.config import Config
+            from botocore.exceptions import ClientError
+        except ImportError:
+            os.system("btpip install boto3")
+            try:
+                import boto3
+                from botocore.config import Config
+                from botocore.exceptions import ClientError
+            except ImportError:
+                raise HintException("Aws SDK boto3 is not installed, please install it first: btpip install boto3")
+
+        self.boto3 = boto3
+        self.ClientError = ClientError
+        self.Config = Config
+        session = self.boto3.Session(
+            aws_access_key_id=self.api_user,
+            aws_secret_access_key=self.api_key,
+            region_name="us-east-1",
+        )
+        config = self.Config(retries={"max_attempts": 3, "mode": "standard"})
+        self.r53 = session.client("route53", config=config)
+        self._hosted_zones_cache = None
+
+    def _find_hosted_zone(self, domain_name: str) -> Optional[str]:
+        """查找域名对应的Zone (最长匹配, 参考cf处理)"""
+        domain = domain_name.strip().rstrip(".").lstrip("*.")
+        zones = self.get_domains()
+        matched = [
+            z for z in zones if domain == z or domain.endswith("." + z)
+        ]
+        if not matched:
+            return None
+        return max(matched, key=lambda x: len(x))
+
+    def _get_zone_id(self, domain_name: str) -> str:
+        """获取托管区 ID"""
+        domain = str(domain_name or "").strip().rstrip(".")
+        if not domain.endswith("."):
+            domain = domain + "."
+
+        paginator = self.r53.get_paginator("list_hosted_zones")
+        for page in paginator.paginate():
+            for zone in page.get("HostedZones", []):
+                zone_name = zone.get("Name", "").rstrip(".")
+                if zone_name == domain.rstrip("."):
+                    zone_id = zone.get("Id", "")
+                    if zone_id.startswith("/hostedzone/"):
+                        zone_id = zone_id[len("/hostedzone/"):]
+                    return zone_id
+
+        raise HintException(f"Hosted zone not found for domain: {domain_name}")
+
+    @staticmethod
+    def _normalize_host(domain_name: str, record: str) -> str:
+        """标准化子域名
+
+        处理输入的record可能带域名也可能不带域名的情况:
+        - "test" -> "test"
+        - "test.example.com" -> "test"
+        - "test.example.com." -> "test"
+        - "@" -> "@"
+        - "example.com" -> "@"
+        """
+        # 标准化domain_name，去掉末尾点
+        domain = str(domain_name or "").strip().rstrip(".")
+        # 标准化record，去掉末尾点和空格
+        record = str(record or "").strip().rstrip(".")
+
+        if not record or record in ("@", domain):
+            return "@"
+
+        # 检查record是否包含完整域名，如果是则提取子域名部分
+        suffix = f".{domain}"
+        if record.endswith(suffix):
+            return record[:-len(suffix)] or "@"
+
+        # record本身就是一个子域名（不带domain后缀）
+        return record
+
+    @staticmethod
+    def _parse_caa_value(value: str) -> tuple:
+        """解析 CAA 值: 'flag tag value' -> (flag, tag, value)"""
+        parts = str(value or "").strip().split(None, 2)
+        if len(parts) != 3:
+            raise HintException("CAA record_value format error, expected: '<flag> <tag> <value>'")
+        flag_str, tag, caa_value = parts
+        if not tag or caa_value == "":
+            raise HintException("CAA record_value format error, expected: '<flag> <tag> <value>'")
+        if (caa_value.startswith('"') and caa_value.endswith('"')) or (
+                caa_value.startswith("'") and caa_value.endswith("'")
+        ):
+            caa_value = caa_value[1:-1].strip()
+        if caa_value == "":
+            raise HintException("CAA record_value format error, expected: '<flag> <tag> <value>'")
+        try:
+            flag = int(flag_str)
+        except Exception:
+            raise HintException("CAA flag must be integer")
+        return flag, tag, caa_value
+
+    @staticmethod
+    def _format_caa_value(flag: int, tag: str, caa_value: str) -> str:
+        """格式化 CAA 值为 Route53 Value: 'flag tag "value"'"""
+        return f'{flag} {tag} "{caa_value}"'
+
+    @staticmethod
+    def _ensure_upper(s: str) -> str:
+        """确保字符串大写"""
+        return str(s or "").upper()
+
+    @staticmethod
+    def _ensure_trailing_dot(name: str) -> str:
+        """确保域名以点结尾"""
+        return name + "." if name and not name.endswith(".") else name
+
+    def _build_r53_value(self, record_type: str, record_value: str, priority: int = -1) -> str:
+        """构造各类型使用不同字段格式"""
+        record_type = self._ensure_upper(record_type)
+
+        if record_type == "MX":
+            pref = priority if str(priority) not in {"", "-1", "None"} else 10
+            return f"{pref} {record_value}"
+
+        if record_type == "TXT":
+            val = str(record_value or "")
+            if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                val = val[1:-1]
+            return f'"{val}"'
+
+        if record_type == "CAA":
+            flag, tag, caa_val = self._parse_caa_value(record_value)
+            return self._format_caa_value(flag, tag, caa_val)
+
+        return record_value
+
+    def _parse_r53_value(self, record_type: str, value: str) -> str:
+        """解析返回的 Value 为外部格式"""
+        record_type = self._ensure_upper(record_type)
+        value = str(value or "")
+
+        if record_type == "TXT":
+            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                value = value[1:-1]
+            return value
+
+        if record_type == "MX":
+            parts = value.strip().split(None, 1)
+            return parts[1] if len(parts) > 1 else value
+
+        if record_type == "CAA":
+            parts = value.strip().split(None, 2)
+            if len(parts) == 3:
+                flag_str, tag, caa_val = parts
+                if (caa_val.startswith('"') and caa_val.endswith('"')) or (
+                        caa_val.startswith("'") and caa_val.endswith("'")):
+                    caa_val = caa_val[1:-1]
+                return f"{flag_str} {tag} {caa_val}"
+            return value
+
+        return value
+
+    @staticmethod
+    def _parse_priority(record_type: str, value: str) -> int:
+        """提取优先级: MX 从 value 解析"""
+        record_type = str(record_type or "").upper()
+        if record_type == "MX":
+            parts = str(value or "").strip().split(None, 1)
+            try:
+                return int(parts[0])
+            except (ValueError, IndexError):
+                return -1
+        return -1
+
+    def _get_full_name(self, domain_name: str, record: str) -> str:
+        """获取完整域名 (不带末尾点)"""
+        host = self._normalize_host(domain_name, record)
+        return domain_name if host == "@" else f"{host}.{domain_name}"
+
+    def _make_change(self, action: str, name: str, record_type: str,
+                     ttl: int, value: str, priority: int = -1) -> dict:
+        """构造单条 Change 字典, 支持 A/AAAA/MX/TXT/NS/CAA/CNAME"""
+        record_type = self._ensure_upper(record_type)
+
+        # CAA 需要特殊处理(值格式不同)
+        if record_type == "CAA":
+            flag, tag, caa_val = self._parse_caa_value(value)
+            r53_val = self._format_caa_value(flag, tag, caa_val)
+            return {
+                "Action": action,
+                "ResourceRecordSet": {
+                    "Name": self._ensure_trailing_dot(name),
+                    "Type": "CAA",
+                    "TTL": ttl,
+                    "ResourceRecords": [{"Value": r53_val}],
+                },
+            }
+
+        # DELETE 操作使用原始值，CREATE 操作需要格式化
+        r_value = value if action == "DELETE" else self._build_r53_value(record_type, value, priority)
+
+        return {
+            "Action": action,
+            "ResourceRecordSet": {
+                "Name": self._ensure_trailing_dot(name),
+                "Type": record_type,
+                "TTL": ttl,
+                "ResourceRecords": [{"Value": r_value}],
+            },
+        }
+
+    # =============== acme ======================
+    def create_dns_record(self, domain_name: str, domain_dns_value: str) -> None:
+        """ACME 挑战专用, 自动合并相同记录名的多个挑战值"""
+        domain_name = domain_name.lstrip("*.")
+        _, _, acme_txt = extract_zone(domain_name)
+        # 优化获取现有 TXT 记录
+        existing_values = []
+        try:
+            existing_records = self._get_acme_txt_record(domain_name, acme_txt)
+            for r in existing_records:
+                val = r.get("record_value", "")
+                if val and val not in existing_values:
+                    existing_values.append(val)
+        except Exception:
+            pass
+
+        # 合并去重
+        all_values = existing_values + [domain_dns_value]
+        all_values = list(dict.fromkeys(all_values).keys())
+
+        # 创建或更新记录
+        if len(all_values) == 1:
+            # 单值使用普通创建
+            res = self.create_org_record(
+                domain_name=domain_name,
+                record=acme_txt,
+                record_value=domain_dns_value,
+                record_type="TXT",
+                ttl=600,
+            )
+        else:
+            # 多值使用UPSERT合并所有值
+            res = self._upsert_dns_record_multi(
+                domain_name=domain_name,
+                record=acme_txt,
+                record_values=all_values,
+                record_type="TXT",
+                ttl=600,
+            )
+
+        if not res.get("status"):
+            raise HintException(res.get("msg") or "create dns record failed")
+
+    def _make_change_multi(self, action: str, name: str, record_type: str,
+                           ttl: int, values: list[str]) -> dict:
+        """
+        构造多值的 Change 字典
+        用于一个记录名存储多个 TXT 值（ACME 多域名挑战）
+        """
+        record_type = self._ensure_upper(record_type)
+
+        # 为 TXT 记录构建多个值
+        resource_records = []
+        for value in values:
+            if record_type == "TXT":
+                # TXT 记录需要带引号
+                formatted_value = self._build_r53_value(record_type, value, -1)
+                resource_records.append({"Value": formatted_value})
+            else:
+                resource_records.append({"Value": value})
+
+        return {
+            "Action": action,
+            "ResourceRecordSet": {
+                "Name": self._ensure_trailing_dot(name),
+                "Type": record_type,
+                "TTL": ttl,
+                "ResourceRecords": resource_records,
+            },
+        }
+
+    def _upsert_dns_record_multi(self, domain_name: str, record: str, record_values: list[str],
+                                  record_type: str, ttl: int = 600) -> dict:
+        """
+        创建或更新 DNS 记录，支持多值（ACME 批处理）
+        """
+        domain_name = self._find_hosted_zone(domain_name) or domain_name
+        try:
+            zone_id = self._get_zone_id(domain_name)
+            full_name = self._get_full_name(domain_name, record)
+
+            ttl_val = 600 if int(ttl) == 1 else int(ttl)
+
+            # 使用多值 Change
+            change = self._make_change_multi("UPSERT", full_name, record_type, ttl_val, record_values)
+            if self._change_record(zone_id, "UPSERT", [change]):
+                return {"status": True, "msg": "success"}
+            return {"status": False, "msg": "upsert dns record failed"}
+        except HintException:
+            raise
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def delete_dns_record(self, domain_name: str, domain_dns_value: str) -> None:
+        domain_name = domain_name.lstrip("*.")
+        _, _, acme_txt = extract_zone(domain_name)
+        res = self.remove_record(
+            domain_name, acme_txt, "TXT", record_value=domain_dns_value
+        )
+        if not res.get("status"):
+            raise HintException(res.get("msg") or "delete dns record failed")
+
+    # =============== 域名管理 ====================
+    def get_domains(self, verify: bool = False) -> list:
+        if self._hosted_zones_cache is not None and not verify:
+            return self._hosted_zones_cache
+
+        try:
+            domains = []
+            paginator = self.r53.get_paginator("list_hosted_zones")
+            for page in paginator.paginate():
+                for zone in page.get("HostedZones", []):
+                    # 私有托管区
+                    if zone.get("Config", {}).get("PrivateZone", False):
+                        continue
+                    if verify:
+                        return []
+                    name = zone.get("Name", "").strip().rstrip(".")
+                    if name:
+                        domains.append(name)
+            result = sorted(set(domains))
+            if not verify:
+                self._hosted_zones_cache = result
+            return result
+        except self.ClientError as e:
+            raise HintException(f"get domains error: {e}")
+        except Exception as e:
+            raise HintException(f"get domains error {e}")
+
+    def get_dns_record(self, domain_name: str) -> list:
+        zone_domain = self._find_hosted_zone(domain_name)
+        if not zone_domain:
+            raise HintException(f"Unable to find hosted zone for domain: {domain_name}")
+
+        try:
+            zone_id = self._get_zone_id(zone_domain)
+            result = []
+
+            paginator = self.r53.get_paginator("list_resource_record_sets")
+            for page in paginator.paginate(HostedZoneId=zone_id):
+                for rs in page.get("ResourceRecordSets", []):
+                    r_type = rs.get("Type", "").upper()
+                    r_name = rs.get("Name", "").strip().rstrip(".")
+                    r_ttl = rs.get("TTL", 600)
+                    host = self._normalize_host(zone_domain, r_name)
+                    # 跳过 SOA 记录
+                    if r_type == "SOA":
+                        continue
+                    # 跳过zone根 NS 记录
+                    if r_type == "NS" and host == "@" and zone_domain in r_name:
+                        continue
+                    for rr in rs.get("ResourceRecords", []):
+                        r_value = rr.get("Value", "")
+                        record_value = self._parse_r53_value(r_type, r_value)
+                        priority = self._parse_priority(r_type, r_value)
+                        result.append({
+                            "record": host,
+                            "record_value": record_value,
+                            "record_type": r_type,
+                            "ttl": r_ttl,
+                            "priority": priority,
+                            "proxy": -1,
+                        })
+
+            return result
+        except self.ClientError as e:
+            raise HintException(f"get dns record error: {e}")
+        except Exception as e:
+            raise HintException(f"get dns record error {e}")
+
+    def _get_acme_txt_record(self, domain_name: str, record: str) -> list:
+        """
+        获取 ACME record TXT 挑战记录（ACME 专用优化快速查找）
+        """
+        zone_domain = self._find_hosted_zone(domain_name)
+        if not zone_domain:
+            return []
+
+        try:
+            zone_id = self._get_zone_id(zone_domain)
+            target_host = self._normalize_host(domain_name, record)
+            full_name_with_dot = self._get_full_name(domain_name, record) + "."
+
+            paginator = self.r53.get_paginator("list_resource_record_sets")
+            for page in paginator.paginate(HostedZoneId=zone_id):
+                for rs in page.get("ResourceRecordSets", []):
+                    r_type = rs.get("Type", "").upper()
+                    r_name = rs.get("Name", "")
+                    if r_type != "TXT":
+                        continue
+                    # 标准化记录名进行比较
+                    r_name_stripped = r_name.strip().rstrip(".")
+                    if r_name_stripped != full_name_with_dot.rstrip("."):
+                        continue
+                    # 解析值并返回
+                    r_ttl = rs.get("TTL", 600)
+                    result = []
+                    for rr in rs.get("ResourceRecords", []):
+                        r_value = rr.get("Value", "")
+                        record_value = self._parse_r53_value(r_type, r_value)
+                        result.append({
+                            "record": target_host,
+                            "record_value": record_value,
+                            "record_type": r_type,
+                            "ttl": r_ttl,
+                            "priority": -1,
+                            "proxy": -1,
+                        })
+                    return result
+            return []
+        except Exception as e:
+            public.print_log(f"get acme txt record error: {e}")
+            return []
+
+    def _change_record(self, zone_id: str, action: str, changes: list) -> bool:
+        """执行 Record 变更, action: CREATE/DELETE/UPSERT"""
+        try:
+            self.r53.change_resource_record_sets(
+                HostedZoneId=zone_id,
+                ChangeBatch={
+                    "Changes": changes,
+                },
+            )
+            return True
+        except self.ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "")
+            error_msg = e.response.get("Error", {}).get("Message", "")
+            # DELETE 时记录不存在视为成功
+            if action == "DELETE" and error_code == "InvalidChangeBatch" and "but it does not exist" in error_msg:
+                return True
+            public.print_log(f"Route53 {action} error: {error_msg}")
+            return False
+        except Exception as e:
+            public.print_log(f"Route53 {action} error: {e}")
+            return False
+
+    def create_org_record(self, domain_name, record, record_value, record_type, ttl=1, **kwargs):
+        """
+        创建 DNS 记录
+        - 可合并类型存在时合并新值
+        - 不可合并类型存在时直接返回失败, 避免创建表数据
+        - 不存在时正常创建
+        """
+        domain_name = self._find_hosted_zone(domain_name) or domain_name
+        try:
+            zone_id = self._get_zone_id(domain_name)
+            full_name = self._get_full_name(domain_name, record)
+            record_type_upper = self._ensure_upper(str(record_type))
+
+            ttl_val = 600 if int(ttl) == 1 else int(ttl)
+            priority = kwargs.get("priority", -1)
+
+            if record_type_upper in self._MULTI_VALUE_TYPES:
+                # 可合并类型: 查询现有值并追加
+                existing_values = []
+                records = self.get_dns_record(domain_name)
+                target_host = self._normalize_host(domain_name, record)
+                for r in records:
+                    if (self._normalize_host(domain_name, r.get("record")) == target_host and
+                            self._ensure_upper(r.get("record_type", "")) == record_type_upper):
+                        val = r.get("record_value", "")
+                        if val and val not in existing_values:
+                            existing_values.append(val)
+
+                # 追加新值(去重)
+                normalized_new_value = self._parse_r53_value(
+                    record_type_upper, record_value
+                ) if record_type_upper in ("TXT", "CAA") else record_value
+
+                if normalized_new_value not in existing_values:
+                    existing_values.append(normalized_new_value)
+
+                if len(existing_values) == 1:
+                    change = self._make_change("UPSERT", full_name, record_type_upper,
+                                               ttl_val, existing_values[0], priority)
+                else:
+                    change = self._make_change_multi("UPSERT", full_name, record_type_upper,
+                                                     ttl_val, existing_values)
+
+                if self._change_record(zone_id, "UPSERT", [change]):
+                    return {"status": True, "msg": "success"}
+                return {"status": False, "msg": "upsert record failed"}
+            else:
+                # 不可合并类型: 检查是否存在
+                records = self.get_dns_record(domain_name)
+                target_host = self._normalize_host(domain_name, record)
+                for r in records:
+                    if (self._normalize_host(domain_name, r.get("record")) == target_host and
+                            self._ensure_upper(r.get("record_type", "")) == record_type_upper):
+                        # 已存在，返回失败, 避免添加到缓存表中
+                        return {"status": False, "msg": "Record already exists."}
+
+                # 不存在，正常创建
+                change = self._make_change("UPSERT", full_name, record_type_upper,
+                                           ttl_val, record_value, priority)
+                if self._change_record(zone_id, "UPSERT", [change]):
+                    return {"status": True, "msg": "success"}
+                return {"status": False, "msg": "create record failed"}
+        except HintException:
+            raise
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
+        """
+        删除 DNS 记录
+        多值类型+指定值: 仅移除该值, 保留其余
+        其余情况: 删除全部匹配记录
+        """
+        domain_name = self._find_hosted_zone(domain_name) or domain_name
+        try:
+            zone_id = self._get_zone_id(domain_name)
+            full_name = self._get_full_name(domain_name, record)
+            record_type_upper = str(record_type).upper()
+
+            # 查询所有记录
+            records = self.get_dns_record(domain_name)
+            target_host = self._normalize_host(domain_name, record)
+
+            # 收集所有匹配的记录值
+            matched_records = []
+            for r in records:
+                if (self._normalize_host(domain_name, r.get("record")) != target_host or
+                        r.get("record_type", "").upper() != record_type_upper):
+                    continue
+                matched_records.append(r)
+
+            if not matched_records:
+                return {"status": True, "msg": "Dns Record not found."}
+
+            provided_value = kwargs.get("record_value", "")
+            ttl = matched_records[0].get("ttl", 600)
+            priority = matched_records[0].get("priority", -1)
+
+            # === 多值类型 + 指定了具体值 → 只删这一个值, 保留其余 ===
+            if record_type_upper in self._MULTI_VALUE_TYPES and provided_value:
+                # 标准化要删除的值
+                compare_value = self._parse_r53_value(record_type_upper, provided_value)
+
+                # 检查值是否存在
+                if compare_value not in [r.get("record_value", "") for r in matched_records]:
+                    return {"status": False, "msg": f"No matching record found with value: {provided_value}"}
+
+                # 过滤出要保留的值
+                remaining_values = [
+                    r.get("record_value", "") for r in matched_records
+                    if r.get("record_value", "") != compare_value
+                ]
+
+                if remaining_values:
+                    # 还有剩余值 → UPSERT 保留
+                    if len(remaining_values) == 1:
+                        change = self._make_change("UPSERT", full_name, record_type_upper,
+                                                   ttl, remaining_values[0], priority)
+                    else:
+                        change = self._make_change_multi("UPSERT", full_name, record_type_upper,
+                                                         ttl, remaining_values)
+                else:
+                    # 没有剩余值 → DELETE 整个记录集
+                    change = self._make_change_multi("DELETE", full_name, record_type_upper,
+                                                     ttl, [r.get("record_value", "") for r in matched_records])
+
+                if self._change_record(zone_id, change.get("Action"), [change]):
+                    return {"status": True, "msg": "success"}
+                return {"status": False, "msg": "delete record failed"}
+
+            # === 其余情况: 删除全部匹配记录 ===
+            change = self._make_change_multi("DELETE", full_name, record_type_upper, ttl,
+                                              [r.get("record_value", "") for r in matched_records])
+            if self._change_record(zone_id, "DELETE", [change]):
+                return {"status": True, "msg": "success"}
+            return {"status": False, "msg": "delete record failed"}
+        except HintException:
+            raise
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def update_record(self, domain_name, record: dict, new_record: dict, **kwargs):
+        """
+        更新 DNS 记录
+        多值类型同 name+type 时: 在值列表中替换, 保留其他值
+        其余情况: 先删后建或直接 UPSERT
+        """
+        domain_name = self._find_hosted_zone(domain_name) or domain_name
+        try:
+            old_full_name = self._get_full_name(domain_name, record.get("record"))
+            new_full_name = self._get_full_name(domain_name, new_record.get("record"))
+            old_record_type = record.get("record_type", "TXT")
+            new_record_type = new_record.get("record_type", "TXT")
+            old_record_type_upper = self._ensure_upper(old_record_type)
+            new_record_type_upper = self._ensure_upper(new_record_type)
+
+            ttl_val = int(new_record.get("ttl", 600))
+            if ttl_val == 1:
+                ttl_val = 600
+
+            priority = new_record.get("priority", -1)
+
+            # === 记录名或类型变化 → 先删后建 ===
+            if old_full_name != new_full_name or old_record_type_upper != new_record_type_upper:
+                del_res = self.remove_record(domain_name, record.get("record"), old_record_type)
+                if not del_res.get("status"):
+                    return {"status": False, "msg": f"delete old record failed: {del_res.get('msg')}"}
+
+                create_change = self._make_change(
+                    "UPSERT", new_full_name, new_record_type_upper,
+                    ttl_val, new_record.get("record_value", ""), priority,
+                )
+                if self._change_record(self._get_zone_id(domain_name), "UPSERT", [create_change]):
+                    return {"status": True, "msg": "success"}
+                return {"status": False, "msg": "create new record failed"}
+
+            # === name+type 相同 ===
+            if new_record_type_upper in self._MULTI_VALUE_TYPES:
+                # 多值类型: 在值列表中替换指定值, 保留其他值
+                records = self.get_dns_record(domain_name)
+                target_host = self._normalize_host(domain_name, record.get("record"))
+                existing_values = [
+                    r.get("record_value", "") for r in records
+                    if (self._normalize_host(domain_name, r.get("record")) == target_host and
+                        self._ensure_upper(r.get("record_type", "")) == new_record_type_upper)
+                ]
+
+                old_value = record.get("record_value", "")
+                new_value = new_record.get("record_value", "")
+
+                # 找到旧值并替换
+                if old_value in existing_values:
+                    idx = existing_values.index(old_value)
+                    existing_values[idx] = new_value
+                else:
+                    # 旧值不在列表中, 检查是否只是格式差异(TXT引号)
+                    normalized_old = self._parse_r53_value(new_record_type_upper, old_value)
+                    found = False
+                    for i, v in enumerate(existing_values):
+                        if v == normalized_old:
+                            existing_values[i] = new_value
+                            found = True
+                            break
+                    if not found:
+                        # 找不到旧值, 视为新增
+                        if new_value not in existing_values:
+                            existing_values.append(new_value)
+
+                # 去重
+                existing_values = list(dict.fromkeys(existing_values))
+
+                if len(existing_values) == 1:
+                    change = self._make_change("UPSERT", new_full_name, new_record_type_upper,
+                                               ttl_val, existing_values[0], priority)
+                else:
+                    change = self._make_change_multi("UPSERT", new_full_name, new_record_type_upper,
+                                                     ttl_val, existing_values)
+            else:
+                # 单值类型: 直接 UPSERT 覆盖
+                change = self._make_change(
+                    "UPSERT", new_full_name, new_record_type_upper,
+                    ttl_val, new_record.get("record_value", ""), priority,
+                )
+
+            if self._change_record(self._get_zone_id(domain_name), "UPSERT", [change]):
+                return {"status": True, "msg": "success"}
+            return {"status": False, "msg": "update record failed"}
+
+        except HintException:
+            raise
+        except Exception as e:
+            return {"status": False, "msg": str(e)}
+
+    def verify(self) -> Optional[bool]:
+        try:
+            self.get_domains(verify=True)
+        except Exception as e:
+            raise HintException(f"Verify fail, please check your AccessKeyId and SecretAccessKey: {e}")
         return True

@@ -1,0 +1,1 @@
+System.register(["./vue-core-legacy-BYkyrx0G.js?v=1777002971908"],(function(e,t){"use strict";var r,s;return{setters:[e=>{r=e.a4,s=e.r}],execute:function(){e("u",r("logs",(()=>{const e=s(),t=s(),r=s();return{currentId:e,websiteName:t,logName:r,setLogName:e=>{r.value=e},setCurrentId:t=>{e.value=t},setWebsite:e=>{t.value=e}}})))}}}));

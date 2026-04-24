@@ -8074,6 +8074,14 @@ def check_client_hash():
         return True
 
     if session[skey] != client_hash:
+        # 如果登录时间存在, 且登录时间小于2分钟, 不强制退出登录
+        login_time = session.get('login_time')
+        if login_time:
+            max_timeout = 120
+            if time.time() - login_time < max_timeout:
+                session[skey] = get_client_hash()
+                return True
+
         WriteLog('User login', 'Client HASH verification failed, has been forced to log out!')
         return False
     return True
@@ -9927,6 +9935,37 @@ def cp_dir(src: str, dst: str, ignores: List[str] | Set[str] = None, overwrite: 
             cp_dir(src_item, dst_item, ignores, overwrite)
         else:
             _copy2(src_item, dst_item)
+
+# 压缩zip到指定目录
+def compress_zip(source_dir: str, output_zip: str, exclude: tuple = ()) -> str:
+    """将目录打包成zip, 行为遵循shuitl.make_archive的实现
+    shuitl打包平替, 跳过中间需要copy file的场景
+    :param source_dir: 要打包的源目录路径
+    :param output_zip: 输出zip文件路径
+    :param exclude: (/test1, /test2) 要排除的顶层目录名元组
+    :return: 返zip文件路径
+    """
+    import zipfile
+    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for dirpath, dirnames, filenames in os.walk(source_dir):
+            if exclude:
+                # 原地替换
+                dirnames[:] = [d for d in dirnames if d not in exclude]
+            arcdirpath = os.path.relpath(dirpath, source_dir)
+            arcdirpath = os.path.normpath(arcdirpath)
+            # 排序并写入目录条目
+            for name in sorted(dirnames):
+                path = os.path.join(dirpath, name)
+                arcname = os.path.join(arcdirpath, name)
+                zf.write(path, arcname)
+            # 写入文件
+            for name in filenames:
+                path = os.path.join(dirpath, name)
+                path = os.path.normpath(path)
+                if os.path.isfile(path):
+                    arcname = os.path.join(arcdirpath, name)
+                    zf.write(path, arcname)
+    return output_zip
 
 # 解压到指定目录下
 def extract_archive_to_target(archive_path, target_dir):

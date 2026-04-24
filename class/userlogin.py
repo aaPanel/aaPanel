@@ -249,6 +249,8 @@ class userlogin:
             session['username'] = userInfo['username']
             session['tmp_login'] = True
             session['uid'] = userInfo['id']
+            # 显式生成 client_hash
+            session['client_hash'] = public.md5(request.remote_addr)
             ids=public.WriteLog('TYPE_LOGIN','Login success',(userInfo['username'],public.GetClientIp()+ ":" + str(request.environ.get('REMOTE_PORT'))))
             public.cache_set(public.GetClientIp() + ":" + str(request.environ.get('REMOTE_PORT')), ids)
             self.limit_address('-')
@@ -261,7 +263,10 @@ class userlogin:
             self.set_request_token()
             self.login_token()
             self.set_cdn_host(get)
-            return redirect('/')
+            # 显式保存 session
+            session.modified = True
+            # 返回空对象，让 __init__.py 处理重定向
+            return public.dict_obj()
         except:
             return public.returnJson(False, public.lang('Login failed,') + public.get_error_info()),json_header
 

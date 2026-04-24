@@ -781,8 +781,8 @@ class main(dockerBase):
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, ex)
         try:
-
-            user_root = "-u root" if hasattr(get, "sudo_i") else ""
+            # user_root = "-u root" if hasattr(get, "sudo_i") else ""
+            user_root = "-u root" if (hasattr(get, "sudo_i") and int(get.sudo_i) == 1) else ""
 
             cmd = 'docker container exec -it {} {} {}'.format(user_root, get.id, get.shell)
             return public.return_message(0, 0, cmd)

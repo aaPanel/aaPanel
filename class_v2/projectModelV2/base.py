@@ -11,12 +11,12 @@ public.sys_path_append("class_v2")
 from projectModelV2.common import LimitNet, Redirect
 from public.exceptions import HintException
 
-try:
-    from public.hook_import import hook_import
-
-    hook_import()
-except:
-    pass
+# try:
+#     from public.hook_import import hook_import
+#
+#     hook_import()
+# except:
+#     pass
 try:
     import idna
 except:
@@ -354,9 +354,9 @@ class projectBase(LimitNet, Redirect):
         # 判断通配符域名格式
         if domain.find('*') != -1 and domain.find('*.') == -1:
             return False
-        from ssl_domainModelV2.service import DomainValid
-        if not DomainValid.is_valid_domain(domain):
-            return False
+        # from ssl_domainModelV2.service import DomainValid
+        # if not DomainValid.is_valid_domain(domain):
+        #     return False
         return domain
 
     def _release_firewall(self, get) -> tuple[bool, str]:

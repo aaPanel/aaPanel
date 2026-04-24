@@ -1,0 +1,1 @@
+System.register(["./index-legacy-dEHRWiZw.js?v=1777002971908"],(function(e,t){"use strict";var n,r;return{setters:[e=>{n=e.be,r=e.cu}],execute:function(){e({i:function(e,t){const r=n(e),u=n(t);return+r<+u},s:function(){return r(Date.now())}})}}}));

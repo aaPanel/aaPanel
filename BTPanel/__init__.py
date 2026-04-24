@@ -736,7 +736,8 @@ REQUEST_FORM: {request_form}
 def index_new(sub_path: str = ''):
     if session.get('login', False):
         if not getattr(g, 'apsess_verified', False):
-            session['request_token_head'] = INVALID_REQUEST_TOKEN_HEAD
+            if sub_path not in ('robots.txt', 'favicon.ico'):
+                session['request_token_head'] = INVALID_REQUEST_TOKEN_HEAD
         else:
             html_token_key = public.get_csrf_html_token_key()
             cookie_token_key = public.get_csrf_cookie_token_key()
@@ -1204,7 +1205,7 @@ def panel_warning(pdata=None):
     if comReturn: return comReturn
     if public.get_csrf_html_token_key() in session and 'login' in session:
         if not check_csrf():
-            return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+            return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
     get = get_input()
     ikey = 'warning_list'
     import panelWarning
@@ -1827,7 +1828,7 @@ def panel_cloud(is_csrf=True):
     if comReturn: return comReturn
     if is_csrf:
         if not check_csrf():
-            return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+            return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
     get = get_input()
     _filename = get.filename
     plugin_name = ""
@@ -2150,25 +2151,28 @@ def login():
             return is_login(result)
 
         access_key = 'apsess_token'
-        if not session.get(access_key): # 如果没有apsess_token
-            session[access_key] = build_apsess_session_token()
+
+        # 强制刷新 apsess_session
+        session[access_key] = build_apsess_session_token()
+
         # 传递上下文供后续请求
         g.apsess_path_token = session[access_key]
         token_path = '/' + build_apsess_url_token(session[access_key])
         # 拼接重定向
         location = getattr(result, 'location', '')
+        flag = "?tem_login=true"
+
         if location and location.startswith('/') and not location.startswith(token_path):
             if location == '/':
                 location = ''
-            return redirect(token_path + location)
+            return redirect(token_path + location + flag)
+
         elif not location:
             # 找不到location时
-            admin_path_str = public.get_admin_path()
-            if admin_path_str == '/':
-                admin_path_str = ''
-            return redirect(token_path + admin_path_str)
+            return redirect(token_path + flag)
+
         # 兜底
-        return redirect(token_path + '')
+        return redirect(token_path + flag)
 
     # 过滤爬虫
     if public.is_spider(): return abort(404)
@@ -2935,7 +2939,7 @@ def publicObject(toObject, defs, action=None, get=None, is_csrf=True):
         # 模块访问前置检查
         if is_csrf and public.get_csrf_sess_html_token_value() and session.get('login', None):
             if not check_csrf():
-                return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+                return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
 
         if not get:
             get = get_input()
@@ -3483,7 +3487,8 @@ def close_sock_shell():
     if comReturn: return comReturn
     args = get_input()
     if not check_csrf():
-        return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+        return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
+
     cmdstring = args.cmdstring.strip()
     skey = public.md5(cmdstring)
     pid = cache.get(skey)
@@ -3956,6 +3961,7 @@ def site_v2(pdata=None):
         'GetPHPVersion',
         'SetPHPVersion',
         'DeleteSite',
+        'delete_wp_site',
         'AddDomain',
         'DelDomain',
         'GetDirBinding',
@@ -4438,7 +4444,8 @@ def panel_warning_v2(pdata=None):
     if comReturn: return comReturn
     if public.get_csrf_html_token_key() in session and 'login' in session:
         if not check_csrf():
-            return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+            return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
+
     get = get_input()
     ikey = 'warning_list'
     import panel_warning_v2
@@ -5008,7 +5015,7 @@ def panel_data_v2(pdata=None):
     import data_v2
     dataObject = data_v2.data()
     defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal', 'get_wp_classification',
-            'get_wp_site_list', 'get_aacloud_data')
+            'get_wp_site_list', 'get_aacloud_data','get_wp_sub_sites')
     return publicObject(dataObject, defs, None, pdata)
 
 
@@ -5389,7 +5396,8 @@ def panel_cloud_v2(is_csrf=True):
     if comReturn: return comReturn
     if is_csrf:
         if not check_csrf():
-            return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+            return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
+
     get = get_input()
     _filename = get.filename
     plugin_name = ""
@@ -5592,25 +5600,28 @@ def login_v2():
             return is_login(result)
 
         access_key = 'apsess_token'
-        if not session.get(access_key): # 如果没有apsess_token
-            session[access_key] = build_apsess_session_token()
+
+        # 强制刷新 apsess_session
+        session[access_key] = build_apsess_session_token()
+
         # 传递上下文供后续请求
         g.apsess_path_token = session[access_key]
         token_path = '/' + build_apsess_url_token(session[access_key])
         # 拼接重定向
         location = getattr(result, 'location', '')
+        flag = "?tem_login=true"
+
         if location and location.startswith('/') and not location.startswith(token_path):
             if location == '/':
                 location = ''
-            return redirect(token_path + location)
+            return redirect(token_path + location + flag)
+
         elif not location:
             # 找不到location时
-            admin_path_str = public.get_admin_path()
-            if admin_path_str == '/':
-                admin_path_str = ''
-            return redirect(token_path + admin_path_str)
+            return redirect(token_path + flag)
+
         # 兜底
-        return redirect(token_path + '')
+        return redirect(token_path + flag)
 
     # 过滤爬虫
     if public.is_spider(): return abort(404)
@@ -6537,7 +6548,8 @@ def close_sock_shell_v2():
     if comReturn: return comReturn
     args = get_input()
     if not check_csrf():
-        return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+        return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
+
     cmdstring = args.cmdstring.strip()
     skey = public.md5(cmdstring)
     pid = cache.get(skey)
@@ -6744,7 +6756,8 @@ def panel_mod_v2(name=None, sub_name=None, fun=None, stype=None):
     if fun:
         if public.get_csrf_cookie_token_key() in session and 'login' in session:
             if not check_csrf():
-                return public.ReturnJson(False, 'INIT_CSRF_ERR'), json_header
+                return Response(public.ReturnJson(False, 'INIT_CSRF_ERR'), content_type='application/json; charset=utf-8')
+
 
     args = get_mod_input()
 

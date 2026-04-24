@@ -760,6 +760,11 @@ CREATE INDEX IF NOT EXISTS idx_process_top_list_addtime ON process_top_list (add
         clear_expire_data(conn)
     except sqlite3.OperationalError as e:
         logger.error(f"SQLite OperationalError in systemTask: {e}")
+        if os.path.exists(db_file):
+            try:
+                os.system(f"rm -f {db_file}")
+            except:
+                pass
         ensure_table(db_file)
         _system_task_state["table_ensure"] = False
     except Exception:

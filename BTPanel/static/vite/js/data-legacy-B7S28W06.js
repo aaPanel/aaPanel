@@ -1,1 +1,0 @@
-System.register(["./naive-ui-legacy-DWYRJHUU.js?v=1776326513599"],function(e,t){"use strict";var r;return{setters:[e=>{r=e.t}],execute:function(){e("c",e=>e.split(" ").map(e=>e.charAt(0).toUpperCase()+e.slice(1).toLowerCase()).join(" ")),e("i",e=>{try{return JSON.parse(e),!0}catch{return!1}}),e("g",e=>Number.isNaN(r(e))?0:r(e))}}});

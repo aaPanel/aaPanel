@@ -1636,9 +1636,21 @@ var soft = {
 							(data.status ? '#20a53a;' : 'red;') +
 							' margin-left: 3px;" class="glyphicon ' +
 							(data.status ? 'glyphicon glyphicon-play' : 'glyphicon-pause') +
-							'"></span></p'
+							'"></span></p>'
 					);
 					tabCon.append(btns);
+					if (data.name.indexOf('php-') >= 0) {
+						var phpCmdHtml = '<div style="margin-top: 25px; padding: 15px; background: #fbfcff; border: 1px solid #ebedf0; border-radius: 4px;">' +
+							'<div style="color: #333; margin-bottom: 12px; font-size: 13px; font-weight: 500;">' +
+							'<span class="glyphicon glyphicon-info-sign" style="color: #20a53a; margin-right: 6px; font-size: 14px; top: 2px;"></span>' +
+							'Please use the following command to call this version of PHP:' +
+							'</div>' +
+							'<div style="display: flex; flex-direction: column; gap: 10px; padding-left: 20px;">' +
+							'<div style="display: flex; align-items: center;"><code style="color: #666; background-color:#fbfcff !important; padding: 5px 10px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; white-space: nowrap;">/www/server/php/' + version + '/bin/php</code><span class="php-copy-btn" data-cmd="/www/server/php/' + version + '/bin/php" onclick="var self=this;var cmd=self.getAttribute(\'data-cmd\');navigator.clipboard.writeText(cmd).then(function(){layer.msg(\'Copied successfully!\',{icon:1});}).catch(function(){var ta=document.createElement(\'textarea\');ta.value=cmd;document.body.appendChild(ta);ta.select();document.execCommand(\'copy\');document.body.removeChild(ta);layer.msg(\'Copied successfully!\',{icon:1})})" style="margin-left: 10px; color: #20a53a; font-size: 13px; cursor: pointer; user-select: none;" onmouseover="this.style.color=\'#188a4f\'" onmouseout="this.style.color=\'#20a53a\'">Copy</span></div>' +
+							'</div>' +
+							'</div>';
+						tabCon.append(phpCmdHtml);
+					}
 				}
 
 				// var btns = $('<div class="sfm-opt"></div>');

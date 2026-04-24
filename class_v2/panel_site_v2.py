@@ -1613,7 +1613,12 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
         # 批量创建/单创建
         thread = ThreadPoolExecutor(max_workers=1)
-        if args.get('websites_content'):
+        if args.get('websites_content'): # 初始化
+            args.validate([
+                Param('email').Require().Email(),
+            ], [
+                public.validate.trim_filter(),
+            ])
             thread.submit(self.batch_add_wp, args, app)
         else:
             thread.submit(self.add_sites, args, app)

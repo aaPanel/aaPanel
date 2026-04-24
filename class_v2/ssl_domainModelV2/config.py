@@ -33,7 +33,8 @@ DNS_MAP = {
     "NameSiloDns": NameSiloDns,
     "aaPanelDns": aaPanelDns,
     "GodaddyDns": GodaddyDns,
-    # "SpaceShipDNS": SpaceShipDNS,
+    "SpaceShipDNS": SpaceShipDNS,
+    "AmazonRoute53Dns": AmazonRoute53Dns,
 }
 
 

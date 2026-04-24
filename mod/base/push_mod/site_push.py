@@ -1044,6 +1044,10 @@ class ProjectStatusTask(BaseTask):
 
         model_obj = import_module(".{}".format(self._to_project_model(task_data["cycle"])), package="projectModelV2")
         model_main_obj = model_obj.main()
+        if not hasattr(model_main_obj, "get_project_status"):
+            raise Exception(
+                "does not support this type of project"
+            )
         running, project_name = getattr(model_main_obj, "get_project_status")(task_data["project"])
         if running is not False:
             return None

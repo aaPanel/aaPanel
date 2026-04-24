@@ -3783,11 +3783,11 @@ echo $! > {pid_file}'''.format(
         # 仅使用在项目停止告警中
         project_info = public.M('sites').where('project_type=? AND id=?', ('Python', project_id)).find()
         if not project_info:
-            return None, project_info["name"]
+            return None, ""
         if self.is_stop_by_user(project_id):
-            return True, project_info["name"]
-        res = self.get_project_run_state(project_name=project_info["name"])
-        return bool(res), project_info["name"]
+            return True, project_info.get("name", "")
+        res = self.get_project_run_state(project_name=project_info.get("name", ""))
+        return bool(res), project_info.get("name", "")
 
     @staticmethod
     def _serializer_of_list(s: list, installed: List[str]) -> List[Dict]:

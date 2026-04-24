@@ -351,11 +351,12 @@
           "index_23": "Please fill in the certificate content",
           "index_24": "Domain Name",
           "index_25": "Expiration Date",
-          "index_26": "Brand"
+          "index_26": "Brand",
+          "index_27": "Free Cert"
         }
       },
       "terminal": {
-        "index_1": "Please select Shell",
+        "index_1": "Shell",
         "index_2": "Terminal",
         "index_3": "Open Terminal",
         "index_4": "Execute with Root Privileges"

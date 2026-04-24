@@ -423,12 +423,10 @@ class DnsManager:
         name = record_data.get("name", "@")
         value_to_check = record_data.get("value")
 
-        if name == "@" or name == domain:
+        if name == "@":
             q_name = f"{domain}."
-        elif name.endswith("."):
-            q_name = name
         else:
-            q_name = f"{name}.{domain}"
+            q_name = f"{name}.{domain}."
         found_records = self.query_dns(
             q_name=q_name, record_type=record_type, ns_server=["127.0.0.1"]
         )
@@ -650,6 +648,30 @@ class DnsManager:
 
         return False
 
+    def _normalize_record_name(self, name: str, domain: str) -> str:
+        """
+        标准化记录名为 BIND9 相对格式
+        - "www" → "www"
+        - "www.example.com" → "www" (剥离域名后缀)
+        - "www.example.com." → "www" (去尾点+剥离后缀)
+        - "@" → "@"
+        - "example.com" → "@" (等价于根)
+        - "mail.sub.example.com" → "mail.sub" (保留子域名)
+        """
+        name = str(name or "").strip().rstrip(".")
+        domain_clean = str(domain or "").strip().rstrip(".")
+
+        if not name or name == "@" or name == domain_clean:
+            return "@"
+
+        # 剥离域名后缀
+        suffix = f".{domain_clean}"
+        if name.endswith(suffix):
+            return name[:-len(suffix)]
+
+        # 不以 domain 结尾, 保持原样(相对名称)
+        return name
+
     def _build_record_line(self, domain: str, **kwargs) -> str:
         """构建DNS记录行"""
 
@@ -667,6 +689,7 @@ class DnsManager:
         name, record_type, ttl, value, priority = _get_params(kwargs)
         if "new_record" in kwargs:
             name, record_type, ttl, value, priority = _get_params(kwargs["new_record"])
+
         # === 仅校验 ===
         if record_type == "A" and not DomainValid.is_ip4(value):
             raise HintException(f"Invalid A record value: {value}")
@@ -726,22 +749,15 @@ class DnsManager:
                 value = f"{value}."
             value = f"{priority} {value}"
 
-        # 最后格式化 FQDN
-        record_name = name
-        if record_type in ["A", "AAAA"]:
-            if record_name == "@" or record_name == domain:
-                record_name = f"{domain}."
-            # 其他情况保持原样，不转换为FQDN
+        # 格式化 FQDN (name 已标准化为相对格式)
+        if name == "@":
+            record_name = f"{domain}."
         else:
-            # 其他记录类型强制保持FQDN格式
-            if record_name == "@" or record_name == domain:
-                record_name = f"{domain}."
-            elif not record_name.endswith("."):
-                record_name = f"{record_name}.{domain}."
+            record_name = f"{name}.{domain}."
         # 构造兼容旧格式
         return f"{record_name}\t{ttl}\tIN\t{record_type}\t{value}"
 
-    def _find_record_line_index(self, lines: list, **kwargs) -> Optional[int]:
+    def _find_record_line_index(self, lines: list, domain: str, **kwargs) -> Optional[int]:
         """查找DNS记录行索引"""
         name = kwargs.get("name", "@")
         record_type = kwargs.get("type", "A").upper()
@@ -773,7 +789,12 @@ class DnsManager:
                         import traceback
                         public.print_log(f"find record error: {traceback.format_exc()}")
 
-                if r_name == name and r_type.upper() == record_type and r_value == value:
+                # 标准化 zone 文件中的名字 (去尾点+剥离域名后缀)
+                r_name_normalized = r_name.rstrip(".")
+                if domain:
+                    r_name_normalized = self._normalize_record_name(r_name.rstrip("."), domain)
+
+                if r_name_normalized == name and r_type.upper() == record_type and r_value == value:
                     return i
         return None
 
@@ -790,7 +811,7 @@ class DnsManager:
             if not self._update_soa(lines):
                 raise HintException("SOA record not found, cannot update serial number.")
             modify = False
-            line_index = self._find_record_line_index(lines, **kwargs)
+            line_index = self._find_record_line_index(lines, domain, **kwargs)
             if action.lower() == "create":
                 if line_index is not None:
                     raise HintException("Record already exists, skipping creation.")
@@ -824,6 +845,14 @@ class DnsManager:
 
     def __apply_and_validate_change(self, action: str, domain: str, **kwargs) -> None:
         """配置变动和验证管理"""
+        # 统一标准化记录名
+        if kwargs.get("name"):
+            kwargs["name"] = self._normalize_record_name(kwargs["name"], domain)
+        if kwargs.get("new_record") and kwargs["new_record"].get("name"):
+            kwargs["new_record"]["name"] = self._normalize_record_name(
+                kwargs["new_record"]["name"], domain
+            )
+
         zone_file = os.path.join(ZONES_DIR, f"{domain}.zone")
         try:
             if domain not in self.parser.get_zones():

@@ -224,17 +224,11 @@ class plugin_deployment:
         try:
             res_data = {}
             res_data['databaseStatus'] = res['message']['databaseStatus']
+
             # 检查数据库是否安装
-            try:
-                from panelModelV2.publicModel import main
-                public_config = main().get_public_config(public.to_dict_obj({}))
-                if public_config['status'] == 0 and not public_config['message']['mysql']['setup']:
-                    res_data['databaseStatus'] = False
-                    res['message']['databaseErrorMsg'] = public.lang("The MYSQL database has not been installed. Please add the database manually!")
-            except:
+            if not os.path.exists(public.get_setup_path() +'/mysql/bin/mysql'):
                 res_data['databaseStatus'] = False
-                res['message']['databaseErrorMsg'] = public.lang(
-                    "There is an error in the verification of the MYSQL database. Please check the status of the database.")
+                res['message']['databaseErrorMsg'] = public.lang("The MYSQL database has not been installed. Please add the database manually!")
 
             if res_data['databaseStatus']:
                 res_data['databaseUser'] = res['message']['databaseUser']

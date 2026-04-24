@@ -15,6 +15,7 @@ import public
 from btdockerModelV2 import dk_public as dp
 from btdockerModelV2.dockerBase import dockerBase
 from public.validate import Param
+from ssl_domainModelV2.api import DomainObject
 class main(dockerBase):
 
     # 2023/12/27 下午 2:56 创建容器反向代理
@@ -33,8 +34,10 @@ class main(dockerBase):
                 Param('container_port').Require(),
                 Param('container_name').Require(),
                 Param('container_id').Require(),
-                Param('privateKey').Require(),
-                Param('certPem').Require(),
+                Param('privateKey'),
+                Param('certPem'),
+                Param('auth_type').String(),
+                Param('auto_wildcard').Integer(),
             ], [
                 public.validate.trim_filter(),
             ])
@@ -85,7 +88,10 @@ class main(dockerBase):
             # if not create_result['status']:
             #     return public.returnResult(False, create_result['msg'])
 
-            if hasattr(get, "privateKey") and hasattr(get, "certPem") and get.privateKey != "" and get.certPem != "":
+            has_custom_ssl = hasattr(get, "privateKey") and hasattr(get, "certPem") and get.privateKey != "" and get.certPem != ""
+            enable_free_ssl = hasattr(get, "auth_type") and get.auth_type != ""
+            ssl_result = {}
+            if has_custom_ssl:
                 args.site_name = self.siteName
                 args.key = get.privateKey
                 args.csr = get.certPem
@@ -100,6 +106,25 @@ class main(dockerBase):
                     pMod.delete(args)
                     return ssl_result
                     # return public.returnResult(False, ssl_result['msg'])
+            elif enable_free_ssl:
+                site_info = public.M('sites').where("name=?", (self.siteName,)).find()
+                if not site_info:
+                    return public.return_message(-1, 0, public.lang("Failed to obtain the reverse proxy site information!"))
+
+                ssl_args = public.to_dict_obj({
+                    "domains": json.dumps([self.siteName]),
+                    "auth_type": getattr(get, 'auth_type', 'http') or 'http',
+                    "auto_wildcard": int(getattr(get, 'auto_wildcard', 0) or 0),
+                    "deploy": 1,
+                    "site_id": int(site_info['id']),
+                })
+                ssl_result = DomainObject().apply_new_ssl(ssl_args)
+                if ssl_result['status'] == -1:
+                    args.id = site_info['id']
+                    args.siteName = self.siteName
+                    args.remove_path = 1
+                    pMod.delete(args)
+                    return ssl_result
 
             self.sitePath = '/www/wwwroot/' + self.siteName
 
@@ -117,7 +142,8 @@ class main(dockerBase):
                     'pid,name,addtime',
                     (site_pid, self.siteName, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 )
-
+            if enable_free_ssl:
+                return ssl_result
             return public.return_message(0, 0, public.lang("successfully added!"))
         except Exception as e:
             result = public.M('sites').where("name=?", (self.siteName,)).find()
