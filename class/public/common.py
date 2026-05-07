@@ -99,6 +99,12 @@ def default_languages_config():
                     "google": "zh-tw",
                     "title": "繁體中文",
                     "cn": "繁體中文"
+                },
+                {
+                    "name": "fa",
+                    "google": "fa",
+                    "title": "فارسی",
+                    "cn": "波斯语"
                 }
             ]
         }
