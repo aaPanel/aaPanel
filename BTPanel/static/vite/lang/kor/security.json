@@ -15,7 +15,7 @@
 			"index_12": "방화벽이 비활성화되면 서버는 보안 보호를 잃습니다. 계속 하시겠습니까?",
 			"index_13": "블록 ICMP",
 			"index_14": "ICMP 차단을 해제 한 후 해커에서 서버를 찾을 수 있습니다. ICMP를 차단 해제해야합니까?",
-			"index_15": "Clear Web Logs",
+			"index_15": "로그 초기화",
 			"index_16": "웹 로그가 지워지면 웹 사이트 액세스 데이터가 삭제됩니다. 이 작업은 돌이킬 수 없습니다. 계속할지 여부를 결정하세요.",
 			"index_17": "청소!",
 			"index_18": "시스템 방화벽을 활성화하세요",
@@ -29,7 +29,7 @@
 				"index_3": "수출 규칙",
 				"index_4": "모든 방향",
 				"index_5": "인바운드",
-				"index_6": "배 밖으로",
+				"index_6": "아웃바운드",
 				"index_7": "포트에 들어가십시오",
 				"index_8": "포트 규칙 편집",
 				"index_9": "MySQL 서비스의 기본 포트",
@@ -88,10 +88,10 @@
 				"form_18": "지정된 IP를 입력하세요",
 				"form_19": "지정된 도메인을 입력하세요",
 				"form_20": "모두",
-				"form_21": "허용하다",
-				"form_22": "부인하다",
+				"form_21": "허용",
+				"form_22": "차단",
 				"form_23": "인바운드 (기본값)",
-				"form_24": "배 밖으로"
+				"form_24": "아웃바운드"
 			},
 			"IP": {
 				"index_1": "IP 규칙을 추가하세요",
@@ -99,7 +99,7 @@
 				"index_3": "수출 규칙",
 				"index_4": "모든 방향",
 				"index_5": "인바운드",
-				"index_6": "배 밖으로",
+				"index_6": "아웃바운드",
 				"index_7": "IP 또는 비고를 입력하세요",
 				"index_8": "IP 규칙 편집",
 				"index_9": "소스 IP",
@@ -107,8 +107,8 @@
 				"index_11": "전략",
 				"index_12": "차단하다",
 				"index_13": "방향",
-				"index_14": "발언",
-				"index_15": "시간을 추가하세요",
+				"index_14": "비고",
+				"index_15": "시간 추가",
 				"index_16": "IP 전략 수정 [{0}]",
 				"index_17": "IP 주소 정책을 변경하도록 변경하세요. IP 주소가 설정된 후 정상 액세스가 복원됩니다. 계속 하시겠습니까?",
 				"index_18": "IP 규칙 삭제 [{0}]",
@@ -129,9 +129,9 @@
 				"form_9": "IPS 범위를 추가하는 경우 192.168.1.xx-192.168.1.xx를 입력하세요",
 				"form_10": "IP를 입력하세요",
 				"form_11": "풀어 주다",
-				"form_12": "차단하다",
+				"form_12": "차단",
 				"form_13": "인바운드 (기본값)",
-				"form_14": "배 밖으로",
+				"form_14": "아웃바운드",
 				"form_15": "여러 IP를 추가하는 경우 사용하세요. \",\"분리하세요",
 				"form_16": "소스 IP"
 			},
@@ -173,7 +173,7 @@
 				"index_5": "영역 규칙 편집",
 				"index_6": "영역",
 				"index_7": "전략",
-				"index_8": "차단하다",
+				"index_8": "차단",
 				"index_9": "포트",
 				"index_10": "모두",
 				"index_11": "시간을 추가하세요",
@@ -256,7 +256,7 @@
 					"open_1": "SSH 비밀번호 로그인",
 					"open_2": "키 암호화 모드",
 					"open_3": "할 수 있게 하다",
-					"open_4": "장애를 입히다",
+					"open_4": "비활성화",
 					"open_5": "ED25519 (추천)"
 				},
 				"LoginAlarm": {
@@ -317,7 +317,7 @@
 		"Conf": {
 			"Index_1": "Aapanel Brute Force 보호",
 			"Index_2": "현재 IP 주소 [{0}]는 화이트리스트에 없습니다.",
-			"Index_3": "화이트리스트에 추가하세요",
+			"Index_3": "화이트리스트 추가",
 			"Index_4": "항 바일 런스 기능을 켜는 것이 좋습니다. 서버를 더 잘 보호합니다. 계속 하시겠습니까?",
 			"Index_5": "사용자 이름 기반 보호",
 			"Index_6": "사용자 이름 기반 보호는 사용자 계정에 대한 로그인 시도를 추적합니다. 비활성화 된 경우 사용자 계정을 잠그지 않지만 기존 계정 잠금은 남아 있습니다.",
@@ -545,19 +545,19 @@
 				}
 			},
 			"Info": {
-				"overviewTitle": "Overview",
+				"overviewTitle": "개요",
 				"features": {
 					"scan": {
-						"title": "Free and powerful all-in-one website intrusion scan",
-						"desc": "Comprehensive free scan to block website intrusion risks"
+						"title": "강력한 무료 올인원 웹사이트 침입 탐지 스캔",
+						"desc": "웹사이트 침입 위험을 차단하기 위한 종합 무료 스캔 기능을 제공합니다"
 					},
 					"trojan": {
-						"title": "Deep scan for dangerous trojans",
-						"desc": "Accurately detect hidden threats with deep trojan scanning"
+						"title": "위험한 트로이 목마 정밀 검사",
+						"desc": "딥 스캔 기술을 통해 숨겨진 위협과 트로이 목마를 정확하게 탐지합니다"
 					},
 					"log": {
-						"title": "Professional analysis of website access logs",
-						"desc": "Discover anomalies and security risks through log analysis"
+						"title": "웹사이트 접속 로그 전문 분석",
+						"desc": "로그 분석을 통해 이상 징후 및 보안 리스크를 사전에 발견합니다"
 					}
 				}
 			}

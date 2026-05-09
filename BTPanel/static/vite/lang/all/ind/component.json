@@ -122,5 +122,7 @@
 	"59e724270e4dec7ef50a97995c3568ab": "Apakah Anda yakin harus {0} layanan {1} dan lanjutkan?",
 	"ff9d0dd1bc68dd1d39ba7eff4c47ad39": "Mengikat, tunggu ...",
 	"076e135140b204e9b9df44230d0b927e": "Kirimkan umpan balik, harap tunggu ..",
-	"c0abf41ac8b667472cd6cf3a701f17d8": "Mengunggah file, harap tunggu ..."
+	"c0abf41ac8b667472cd6cf3a701f17d8": "Mengunggah file, harap tunggu ...",
+	"c29968f6b73ef423333b74a2215bd6c4": "Silakan masukkan \"{text}\" untuk mengonfirmasi",
+	"dbff4ee2541586010261f5cb27b2b0a4": "{0} selesai! Total {1} ​​item, {2} berhasil, {3} gagal."
 }

@@ -869,5 +869,14 @@
 	"15c2d85f1fae22a3c3a0594510a1f611": "Anfrage",
 	"da691085f28af8a0b41bd602dea331b6": "Echtzeitverkehr: {0} KB/s",
 	"266ba14af58a3dfa4b9e1c90a8879dfb": "Inhaltstyp",
-	"e8a07514353163acb29b80184690cbae": "Cookie-Besuche"
+	"e8a07514353163acb29b80184690cbae": "Cookie-Besuche",
+	"8d64cbb52e5ca5284056924cbaf84f7f": "Exklusive Regeln",
+	"7be05c43691ae2408547ccca25f2dfaa": "Exklusive Regeln sind deaktiviert",
+	"f3ca25a404e4c77ffc788c6e5d32f75d": ". Aktivieren Sie sie, um den Schutz für WordPress, DedeCMS und andere Anwendungen zu verbessern.",
+	"4d263aae337221a257777dd3e4efec32": "Jetzt aktivieren",
+	"2e6a0867c3394acb0c3fa025a1517ddf": "Regel-ID",
+	"5ddc76d22ef4b40dae7b496cd82faef9": "Nach der Aktivierung exklusiver Regeln gelten diese für alle Websites. Sollten Fehlalarme auftreten, können Sie einzelne Regeln deaktivieren.",
+	"af2222c42f2da509217d2ff9cc04ee06": "Exklusive Regeln werden für die wichtigsten CMS basierend auf den Eigenschaften jedes Programms angepasst. Die meisten von ihnen zielen auf die Remotecodeausführung ab.",
+	"c320d66624ca5f2f15032a72165d9bcb": "Regelaktualisierungen: In dieser Phase werden durch die Aktualisierung der Firewall auch die Regeln aktualisiert. Manuelle Regelaktualisierungen werden später hinzugefügt.",
+	"8b818da889c430409d800ffab5c7067c": "Zukünftiger Update-Plan: Gezielte Updates basierend auf verschiedenen CVE-Schwachstellen."
 }

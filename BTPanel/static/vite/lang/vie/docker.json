@@ -88,7 +88,8 @@
 			"filterRunning": "Đang chạy",
 			"filterStopped": "Đã dừng",
 			"searchPlaceholder": "Tìm kiếm tên vùng chứa hoặc tên hình ảnh",
-			"goToApp": "Vào App Store để cài đặt"
+			"goToApp": "Vào App Store để cài đặt",
+			"pullCloudImage": "Kéo hình ảnh từ đám mây"
 		},
 		"Container": {
 			"index_1": "Tạo container",
@@ -350,11 +351,12 @@
 					"index_23": "Vui lòng điền vào nội dung chứng chỉ",
 					"index_24": "Tên miền",
 					"index_25": "Ngày hết hạn",
-					"index_26": "Thương hiệu"
+					"index_26": "Thương hiệu",
+					"index_27": "Chứng chỉ miễn phí"
 				}
 			},
 			"terminal": {
-				"index_1": "Vui lòng chọn Shell",
+				"index_1": "Vỏ",
 				"index_2": "Phần cuối",
 				"index_3": "Terminal mở",
 				"index_4": "Thực thi với các đặc quyền gốc"
@@ -556,7 +558,7 @@
 			"index_47": "Tên mẫu",
 			"index_48": "Vui lòng nhập tên mẫu",
 			"index_49": "Ghi chú",
-			"index_50": "Thêm nhật ký - Vui lòng kiên nhẫn và không đóng cửa sổ này"
+			"index_50": "Tạo Docker Compose - Hãy kiên nhẫn và không đóng cửa sổ này"
 		},
 		"Compose": {
 			"index_1": "Thêm dự án container",
@@ -579,7 +581,10 @@
 				"index_5": "Vui lòng chọn mẫu container",
 				"index_6": "Vui lòng nhập tên mẫu",
 				"index_7": "Thêm mẫu YAML"
-			}
+			},
+			"taskLogsTitle": "Tạo Docker Compose...",
+			"taskSuccess": "Dự án được thêm thành công",
+			"taskFailed": "Không thể thêm dự án"
 		},
 		"Template": {
 			"index_4": "Tên mẫu",

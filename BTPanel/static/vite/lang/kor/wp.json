@@ -4,7 +4,7 @@
 		"index_2": "클론 사이트",
 		"index_3": "WP에서 관리하세요",
 		"index_4": "도메인을 입력하세요",
-		"index_5": "WordPress를 추가하세요",
+		"index_5": "WordPress 추가",
 		"index_6": "서버가 설치되어 있지 않으며 ",
 		"index_7": "PHP 설치",
 		"index_8": "MySQL을 설치하세요",
@@ -12,7 +12,7 @@
 		"index_10": "이 플러그인을 삭제 하시겠습니까?",
 		"index_11": "이 테마를 삭제 하시겠습니까?",
 		"index_12": "최소 1 개의 테마가 활성화되어 있으며 비활성화하기 전에 다른 테마를 활성화합니다.",
-		"index_13": "설정되지 않았습니다",
+		"index_13": "비활성",
 		"index_14": "플러그인 이름을 입력하세요",
 		"index_15": "플러그인을 설치하세요",
 		"index_16": "테마를 설치하세요",
@@ -79,33 +79,33 @@
 			"import_4": "백업 파일 경로",
 			"import_5": "루트 디렉토리의 서브 디렉토리, 빈",
 			"import_6": "백업 파일 경로를 입력하세요",
-			"index_3": "Batch create sites",
-			"index_4": "Batch create from backup",
+			"index_3": "사이트 일괄 생성",
+			"index_4": "백업 파일에서 일괄 생성",
 			"BackupBatch": {
-				"unifiedConfig": "Unified settings",
-				"phpVersion": "PHP Version",
-				"sslForAllSites": "Apply SSL for all sites",
-				"importListTitle": "Import list",
-				"clearAll": "Clear all",
-				"localUpload": "Local upload",
-				"serverUpload": "From Server",
-				"emptyHint": "Click the buttons above to upload backup files",
+				"unifiedConfig": "통합 설정",
+				"phpVersion": "PHP 버전",
+				"sslForAllSites": "모든 사이트에 SSL 적용",
+				"importListTitle": "목록 가져오기",
+				"clearAll": "전체 삭제",
+				"localUpload": "로컬 업로드",
+				"serverUpload": "서버에서 선택",
+				"emptyHint": "위 버튼을 클릭하여 백업 파일을 업로드하세요",
 				"Confirm": {
-					"clearTitle": "Confirm clear",
-					"clearContent": "Are you sure you want to clear all backup file records?",
-					"deleteTitle": "Confirm delete",
-					"deleteContent": "Are you sure you want to delete this backup file item?"
+					"clearTitle": "전체 삭제 확인",
+					"clearContent": "정말로 모든 백업 파일 기록을 삭제하시겠습니까?",
+					"deleteTitle": "항목 삭제 확인",
+					"deleteContent": "정말로 이 백업 파일 항목을 삭제하시겠습니까?"
 				},
 				"Errors": {
-					"emptyList": "Please add at least one backup file",
-					"emptyBakFile": "Backup file path for item {index} cannot be empty",
-					"emptyDomain": "Domain for site {index} cannot be empty"
+					"emptyList": "최소 하나 이상의 백업 파일을 추가해 주세요",
+					"emptyBakFile": "{index}번 항목의 백업 파일 경로가 비어 있습니다",
+					"emptyDomain": "{index}번 사이트의 도메인이 비어 있습니다"
 				},
 				"Item": {
-					"backupFile": "Backup file",
-					"domain": "Domain",
-					"websitePath": "Website Path",
-					"subdirectory": "Subdirectory"
+					"backupFile": "백업 파일",
+					"domain": "도메인",
+					"websitePath": "웹사이트 경로",
+					"subdirectory": "하위 디렉토리"
 				}
 			}
 		},

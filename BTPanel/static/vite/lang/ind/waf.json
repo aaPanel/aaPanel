@@ -582,6 +582,20 @@
 			"index_31": "Atau",
 			"index_32": "Metode verifikasi"
 		},
+		"Exclusive": {
+			"index_1": "Aturan Eksklusif",
+			"index_2": "Aturan eksklusif dinonaktifkan",
+			"index_3": ". Aktifkan mereka untuk meningkatkan perlindungan untuk WordPress, DedeCMS, dan aplikasi lainnya.",
+			"index_4": "Aktifkan sekarang",
+			"index_5": "ID Aturan",
+			"index_6": "Nama",
+			"index_7": "Keterangan",
+			"index_8": "Status",
+			"index_9": "Setelah mengaktifkan aturan eksklusif, aturan tersebut akan berlaku untuk semua situs web. Jika positif palsu terjadi, Anda dapat menonaktifkan aturan individual.",
+			"index_10": "Aturan eksklusif diadaptasi untuk CMS utama berdasarkan karakteristik masing-masing program. Kebanyakan dari mereka menargetkan eksekusi kode jarak jauh.",
+			"index_11": "Pembaruan aturan: pada tahap ini, memperbarui firewall juga memperbarui aturan. Pembaruan aturan manual akan ditambahkan nanti.",
+			"index_12": "Rencana pembaruan di masa mendatang: pembaruan yang ditargetkan berdasarkan berbagai kerentanan CVE."
+		},
 		"Map": {
 			"index_1": "Detail peta serangan (peta hanya untuk referensi)",
 			"index_2": "Bujur: {0}",
@@ -971,7 +985,9 @@
 			"setting_75": "Menambahkan kata -kata terlarang, harap tunggu ...",
 			"setting_76": "Mengimpor kata -kata terlarang, harap tunggu ...",
 			"setting_77": "Menghapus kata -kata terlarang, harap tunggu ...",
-			"setting_78": "Kliring kata -kata terlarang, harap tunggu ..."
+			"setting_78": "Kliring kata -kata terlarang, harap tunggu ...",
+			"exclusive_79": "Mengatur status aturan, harap tunggu ...",
+			"exclusive_80": "Pengaturan status, harap tunggu ..."
 		}
 	}
 }

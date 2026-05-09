@@ -16,6 +16,7 @@ import public
 import sys
 import os
 import re
+import tarfile
 from public.validate import Param
 os.chdir('/www/server/panel')
 if not 'class/' in sys.path:
@@ -70,13 +71,22 @@ class bt_task:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
         sql = public.M(self.__table)
+        where_sql = None
+        where_params = []
         if 'status' in get:
             if get.status == '-3':
-                sql = sql.where('status=? OR status=?', (-1, 0))
+                where_sql = "(status=? OR status=?)"
+                where_params = [-1, 0]
             else:
-                sql = sql.where('status=?', (get.status,))
-        data = sql.field('id,name,type,shell,other,status,exectime,endtime,addtime').order(
-            'id asc').limit('10').select()
+                where_sql = "status=?"
+                where_params = [get.status]
+        if "task_id" in get:
+            if where_sql is None:
+                where_sql = "id=?"
+            else:
+                where_sql += " AND id=?"
+            where_params.append(get.task_id)
+        data = sql.field('id,name,type,shell,other,status,exectime,endtime,addtime').where(where_sql,where_params).order('id asc').limit('10').select()
         if type(data) == str:
             public.WriteLog('TASK_QUEUE', data,not_web = self.not_web)
             return public.return_message(0,0,[])
@@ -117,7 +127,11 @@ class bt_task:
 
     # 删除任务
     def remove_task(self, get):
+        if not hasattr(get, 'id'):
+            return public.return_message(-1,0,'ID cannot be empty.!')
         task_info = self.get_task_find(get.id)
+        if not isinstance(task_info, dict):
+            return public.return_message(-1,0,'The task does not exist.')
         public.M(self.__table).where('id=?', (get.id,)).delete()
         if str(task_info['status']) == '-1':
             public.ExecShell(
@@ -168,10 +182,12 @@ class bt_task:
     # 执行任务
     # task_type  0.执行shell  1.下载文件  2.解压文件  3.压缩文件
     def execute_task(self, id, task_type, task_shell, other=''):
+
+        # public.print_log('开始执行 异步任务000')
         if not os.path.exists(self.__task_path):
             os.makedirs(self.__task_path, 384)
         log_file = self.__task_path + str(id) + '.log'
-
+        # public.print_log(f'task_type ==={task_type}')
         # 标记状态执行时间
         self.modify_task(id, 'status', -1)
         self.modify_task(id, 'exectime', int(time.time()))
@@ -182,20 +198,22 @@ class bt_task:
         elif task_type == 1:  # 下载文件
             if os.path.exists(self.down_log_total_file):
                 os.remove(self.down_log_total_file)
-            public.ExecShell(
-                "wget -O '{}' '{}' --no-check-certificate -T 30 -t 5 -d &> {}".format(other, task_shell, log_file))
+            if not os.path.exists(os.path.dirname(other)):
+                os.makedirs(os.path.dirname(other))
+
+            public.ExecShell("wget -O '{}' '{}' --no-check-certificate -T 30 -t 5 -d &> {}".format(other, task_shell, log_file))
             if os.path.exists(log_file):
                 os.remove(log_file)
         elif task_type == 2:  # 解压文件
             zip_info = json.loads(other)
             self._unzip(task_shell, zip_info['dfile'],
-                        zip_info['password'], log_file)
+                        zip_info['password'], log_file, zip_info.get('power'), zip_info.get('user'))
         elif task_type == 3:  # 压缩文件
             zip_info = json.loads(other)
             if not 'z_type' in zip_info:
                 zip_info['z_type'] = 'tar.gz'
             print(self._zip(
-                task_shell, zip_info['sfile'], zip_info['dfile'], log_file, zip_info['z_type']))
+                task_shell, zip_info['sfile'], zip_info['dfile'], log_file, zip_info['z_type'],zip_info['volume_size'],zip_info['save_path']))
         elif task_type == 4:  # 备份数据库
             self.backup_database(task_shell, log_file)
         elif task_type == 5:  # 导入数据库
@@ -204,9 +222,85 @@ class bt_task:
             self.backup_site(task_shell, log_file)
         elif task_type == 7:  # 恢复网站
             pass
+        elif task_type == 8:  # 复制文件
+            _info = json.loads(other)
+            public.ExecShell("cp -rv {} {} &> {}".format(_info['sfile'], _info['dfile'], log_file))
+        elif task_type == 9:  # 清空回收站
+            _info = json.loads(other)
+            self.Close_Recycle_bin_new(_info["ctype"], _info["recycle_bin_list"], log_file)
+        elif task_type == 10:  # 彻底删除文件
+            _info = json.loads(other)
+            self.Batch_Del_Recycle_bin(_info["filenames"], log_file)
+
         # 标记状态与结束时间
         self.modify_task(id, 'status', 1)
         self.modify_task(id, 'endtime', int(time.time()))
+
+    def Batch_Del_Recycle_bin(self, filenames, log_file):
+        import shutil
+        import database_v2 as database
+        database = database.database()
+        for filename in filenames:
+            with open(log_file, 'a') as f:
+                f.write("deleting：{}\n".format(filename))
+            if os.path.basename(filename).startswith('BTDB_'):
+                database.DeleteTo(filename)
+                with open(log_file, 'a') as f:
+                    f.write("{} has been deleted\n".format(filename))
+                continue
+            public.ExecShell('chattr -R -i ' + filename)
+            if os.path.isdir(filename):
+                try:
+                    shutil.rmtree(filename)
+                except:
+                    public.ExecShell('chattr -R -a ' + filename)
+                    public.ExecShell("rm -rf " + filename)
+            else:
+                try:
+                    os.remove(filename)
+                except:
+                    public.ExecShell("rm -f " + filename)
+            with open(log_file, 'a') as f:
+                f.write("{} has been deleted\n".format(filename))
+
+    def Close_Recycle_bin_new(self, ctype, recycle_bin_list, log_file):
+        import shutil
+        import database_v2 as database
+        database = database.database()
+        for rPath in recycle_bin_list:
+            public.ExecShell('chattr -R -i ' + rPath)
+            rlist = os.listdir(rPath)
+            i = 0
+            l = len(rlist)
+            for name in rlist:
+                i += 1
+                path = os.path.join(rPath, name)
+                try:
+                    progress = int((100.0 * i / l))
+                except:
+                    progress = 0
+                data = "Currently clearing: {} Currently deleting: {} Total: {}, Completed: {}, Progress: {}%\n".format(rPath,
+                                                                                name.replace("_bt_", "/").split('_t_')[
+                                                                                    0], l, i, progress)
+                with open(log_file, 'a') as f:
+                    f.write(data)
+                if name.startswith('BTDB_') and ctype == 'db':
+                    database.DeleteTo(path)
+                elif not name.startswith('BTDB_') and ctype == 'files':
+                    if os.path.isdir(path):
+                        try:
+                            shutil.rmtree(path)
+                        except:
+                            public.ExecShell('chattr -R -a ' + path)
+                            public.ExecShell('rm -rf ' + path)
+                    else:
+                        try:
+                            os.remove(path)
+                        except:
+                            public.ExecShell('rm -f ' + path)
+            with open(log_file, 'a') as f:
+                f.write("{} has been cleared and completed!\n".format(rPath))
+
 
     # 开始检测任务
     def start_task(self):
@@ -227,6 +321,9 @@ class bt_task:
                     'status=?', ('-1',)).setField('status', 0)
                 task_list = self.get_task_list(0)
                 for task_info in task_list:
+                    # if task_info['status'] == 0:
+                    #     public.print_log('~~~~~~~~~~~~~~~~~~~~~~开始执行任务')
+                    #     public.print_log(f'~~~~~~~~~~~~~~~~~~~~~~ {task_info['id']} -->{task_info['name']}')
                     self.execute_task(
                         task_info['id'], task_info['type'], task_info['shell'], task_info['other'])
                 noe = True
@@ -314,8 +411,10 @@ class bt_task:
                     os.remove(filename)
         return True
 
+
+
     # 文件压缩
-    def _zip(self, path, sfile, dfile, log_file, z_type='tar.gz'):
+    def _zip(self, path, sfile, dfile, log_file, z_type='tar.gz',volume_size=None,save_path=None):
         if sys.version_info[0] == 2:
             sfile = sfile.encode('utf-8')
             dfile = dfile.encode('utf-8')
@@ -330,14 +429,20 @@ class bt_task:
             if not sfile:
                 continue
             sfiles += " '" + sfile + "'"
-
-        # 判断压缩格式
+        # 根据压缩格式执行压缩命令
         if z_type == 'zip':
-            public.ExecShell("cd '"+path+"' && zip '"+dfile +
-                             "' -r "+sfiles+" &> "+log_file)
+            if volume_size:
+                self.compress_and_split_zip(path, dfile, sfiles, volume_size, log_file)
+            else:
+                # 创建普通压缩文件
+                zip_cmd = "cd '{}' && zip -r '{}' {} &> {}".format(path, dfile, sfiles, log_file)
+                public.ExecShell(zip_cmd)
         elif z_type == 'tar.gz':
-            public.ExecShell("cd '" + path + "' && tar -zcvf '" +
-                             dfile + "' " + sfiles + " &> " + log_file)
+            if volume_size:
+                self.compress_and_split_tar(path, dfile, sfiles, volume_size, log_file)
+            else:
+                public.ExecShell("cd '" + path + "' && tar -zcvf '" + dfile + "' " + sfiles + " &> " + log_file)
+
         elif z_type == 'rar':
             rar_file = '/www/server/rar/rar'
             if not os.path.exists(rar_file):
@@ -348,52 +453,160 @@ class bt_task:
             _7z_bin = self.get_7z_bin()
             if not _7z_bin:
                 self.install_7zip()
-                err_msg = 'The p7zip component is not installed, an automatic installation has been attempted, please wait a few minutes and try again!'
-                public.WriteLog("File manager","Failed to compress file, reason: {}, file: {}".format(err_msg,sfile))
+                err_msg = 'The p7zip component is not installed. Compression cannot be performed. An attempt to automatically install it has been made. Please try again later!'
+                public.WriteLog("File manager","Compression file failed. Reason: {}, file: {}".format(err_msg,sfile))
                 return public.return_message(-1, 0, err_msg)
             public.ExecShell("cd {} && {} a -t7z {} {} -y &> {}".format(path, _7z_bin, dfile, sfiles, log_file))
         else:
             return public.return_message(-1, 0, public.lang("Specified compression format is not supported!"))
-        if not os.path.exists(dfile):
-            return public.return_message(-1, 0, public.lang("Compression failed: The target file {} is not generated", dfile))
 
         self.set_file_accept(dfile)
-        #public.WriteLog("TYPE_FILE", 'Compression succeeded!', (sfiles, dfile),not_web = self.not_web)
-        public.write_log_gettext("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))
+        #public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (sfiles, dfile),not_web = self.not_web)
+        public.WriteLog("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))
         return public.return_message(0, 0, public.lang("Compression succeeded!"))
 
-    # 文件解压
-    def _unzip(self, sfile, dfile, password, log_file):
+    def compress_and_split_zip(self, path, dfile, sfiles, volume_size, log_file):
+        # 处理 volume_size 参数，转换为 zip 命令支持的格式
+        volume_size = volume_size.upper().replace("KB", "K").replace("MB", "M").replace("GB", "G")
+        dfile_dir = os.path.dirname(dfile)
+        dfile_base = os.path.basename(dfile)
+        # 构造分卷文件的名称，存放在相同目录
+        split_dfile = os.path.join(dfile_dir, "{}/{}_split_".format(os.path.splitext(dfile_base)[0],os.path.splitext(dfile_base)[0]))
+        # 创建分卷压缩文件
+        zip_cmd = "cd '{}' && zip -r '{}' {} &> {}".format(path, dfile, sfiles, log_file)
+        zip_cmd +=" && mkdir -p {} &> {}".format(os.path.splitext(dfile_base)[0], log_file)
+        zip_cmd +=" && split -b {} {} {} &> {}".format(volume_size, dfile,split_dfile, log_file)
+        delete_cmd = " && find {} -type f -name '{}' -exec rm -f {} \; &> {}".format(path, os.path.basename(dfile), "{}", log_file)
+        zip_cmd += delete_cmd
+        public.ExecShell(zip_cmd)
+
+        json_dir = os.path.dirname(split_dfile)
+        json_file_path = os.path.join(os.path.dirname(split_dfile), "{}.split_json".format(os.path.splitext(dfile_base)[0]))
+        split_dfile=split_dfile
+        json_content = {"split_file_path": split_dfile}
+        self.generate_json(json_file_path,json_content)
+
+    def compress_and_split_tar(self, path, dfile, sfiles, volume_size, log_file):
+        volume_size = volume_size.upper().replace("KB", "K").replace("MB", "M").replace("GB", "G")
+        dfile_dir = os.path.dirname(dfile)
+        dfile_base = os.path.basename(dfile).replace(".tar.gz", "")
+
+        # 构建没有扩展名的目录路径
+        split_dfile_dir = os.path.join(dfile_dir, dfile_base)
+        # 构建最终的分卷文件名，包括路径
+        split_dfile = os.path.join(split_dfile_dir, dfile_base + ".tar.gz")
+
+        # 确保目标目录存在
+        if not os.path.exists(split_dfile_dir):
+            os.makedirs(split_dfile_dir)
+
+        # 构建并执行 tar 和 split 命令
+        tar_cmd = "cd '{}' && tar cvzf - {} | split -b {} -d - {}  &> {} ".format(path, sfiles,volume_size, split_dfile, log_file)
+        public.ExecShell(tar_cmd)
+
+        json_dir = os.path.dirname(split_dfile)
+        json_file_path = os.path.join(os.path.dirname(split_dfile), "{}.split_json".format(os.path.splitext(dfile_base)[0]))
+        json_content = {"split_file_path": split_dfile}
+        self.generate_json(json_file_path,json_content)
+
+
+    def generate_json(self, json_file_path, content):
+        try:
+            with open(json_file_path, 'w') as json_file:
+                json.dump(content, json_file)
+            print("JSON file generation successful")
+        except Exception as e:
+            # os.makedirs(json_file_path)
+            print(f"An error occurred while generating the JSON file.: {e}")
+
+
+    def get_path_access(self, path):
+        '''
+            @name 获取文件或目录的权限信息
+            @param path<string> 文件或目录路径
+            @return dict
+        '''
+        access_list = {}
+        try:
+
+            for d in os.listdir(path):
+                d_path = os.path.join(path,d)
+                access_list[d] = public.get_mode_and_user(d_path)
+                if not access_list[d]:
+                    access_list[d] = {"mode":755,"user":"www"}
+        except:
+           pass
+        return access_list
+
+
+    def set_path_access(self, path,old_access_list):
+        '''
+            @name 设置文件或目录的权限信息
+            @param path<string> 文件或目录路径
+            @param old_access_list<dict> 旧的权限信息
+            @return bool
+        '''
+        try:
+            new_access_list = self.get_path_access(path)
+            for d in new_access_list:
+                d_path = os.path.join(path,d)
+                if d in old_access_list:
+                    if new_access_list[d] != old_access_list[d]:
+                        self.set_file_accept(d_path)
+                else:
+                    self.set_file_accept(d_path)
+        except:
+            return False
+
+        return True
+
+
+    def _unzip(self, sfile, dfile, password, log_file, power=None, user=None):
         if sys.version_info[0] == 2:
             sfile = sfile.encode('utf-8')
             dfile = dfile.encode('utf-8')
         if not os.path.exists(sfile):
             return public.return_message(-1, 0, public.lang("Configuration file not exist"))
 
+        if not os.path.isfile(sfile):
+            return public.return_message(-1, 0, public.lang("The directory cannot be decompressed"))
+        sfile = os.path.abspath(sfile)
+        old_dpath_list = self.get_path_access(dfile)
+
+        # 从日志文件获取解压后的文件名
+        split_log = None
         # 判断压缩包格式
         if sfile[-4:] == '.zip':
-            public.ExecShell("unzip -P '"+password+"' -o '" +
-                             sfile + "' -d '" + dfile + "' &> " + log_file)
-        elif sfile[-7:] == '.tar.gz' or sfile[-4:] == '.tgz':
+            public.ExecShell("unzip -X -P '" + password + "' -o '" + sfile + "' -d '" + dfile + "' &> " + log_file)
+            split_log = lambda x: x[len(dfile) + 13 if dfile[-1] == '/' else len(dfile) + 14:].split('/')[
+                0].strip() if not x.startswith('Archive') else ""
+        elif sfile[-7:] == '.tar.gz' or sfile[-4:] == '.tgz' or (tarfile.is_tarfile(sfile) and sfile[-3:] == '.gz'):
             public.ExecShell("tar zxvf '" + sfile +
                              "' -C '" + dfile + "' &> " + log_file)
+            split_log = lambda x: x.strip().split('/')[0]
         elif sfile[-4:] == '.rar':
             rar_file = '/www/server/rar/unrar'
             if not os.path.exists(rar_file):
                 self.install_rar()
             pass_opt = '-p-'
             if password:
-                password = password.replace("&",r"\&").replace('"','\"')
+                password = password.replace("&", r"\&").replace('"', '\"')
                 pass_opt = '-p"{}"'.format(password)
 
-            public.ExecShell(rar_file + ' x '+ pass_opt +' -u -y "' + sfile + '" "' + dfile + '" &> ' + log_file)
+            public.ExecShell(rar_file + ' x ' + pass_opt + ' -u -y "' + sfile + '" "' + dfile + '" &> ' + log_file)
+            split_log = lambda x: \
+            re.search(r"/[^\s]+", x).group().strip()[len(dfile) if dfile[-1] == '/' else len(dfile) + 1:].split('/')[
+                0] if x.strip().endswith('OK') and re.search(r"/[^\s]+", x) else ""
 
         elif sfile[-4:] == '.war':
-            public.ExecShell("unzip -P '"+password+"' -o '" +
+            public.ExecShell("unzip -X -P '" + password + "' -o '" +
                              sfile + "' -d '" + dfile + "' &> " + log_file)
+            split_log = lambda x: x[len(dfile) + 13 if dfile[-1] == '/' else len(dfile) + 14:].split('/')[
+                0].strip() if not x.startswith('Archive') else ""
         elif sfile[-4:] == '.bz2':
             public.ExecShell("tar jxvf '" + sfile +
                              "' -C '" + dfile + "' &> " + log_file)
+            split_log = lambda x: x.strip().split('/')[0]
         elif sfile[-3:] == '.7z':
             _7zbin = self.get_7z_bin()
             if not _7zbin:
@@ -404,9 +617,28 @@ class bt_task:
             pass_opt = ""
             if password:
                 pass_opt = '-p"{}"'.format(password)
-            public.ExecShell('{} x "{}" -o"{}" -y {} &> {}'.format(_7zbin,sfile,dfile,pass_opt,log_file))
+            public.ExecShell('{} x "{}" -o"{}" -bb3 -y {} &> {}'.format(_7zbin, sfile, dfile, pass_opt, log_file))
+            split_log = lambda x: x.strip()[1:].split('/')[0].strip() if x.startswith('-') and not x.startswith(
+                '--') else ""
         else:
             public.ExecShell("gunzip -c " + sfile + " > " + sfile[:-3])
+
+        # 获取解压后的文件
+        # 判断是否能获取解压后的文件名
+        if split_log:
+            file_list = self.get_unzip_files(log_file, split_log)
+            # 解压后设置权限
+            for file in file_list:
+                try:
+                    path = os.path.join(dfile, file)
+                except:
+                    continue
+                if not file.strip() or not os.path.exists(path) or path == dfile:
+                    continue
+                if power:
+                    public.ExecShell("chmod -R {} '{}'".format(power, path))
+                if user:
+                    public.ExecShell("chown -R {}:{} '{}'".format(user, user, path))
 
         # 异常处理
         log_msg = public.readFile(log_file)
@@ -433,15 +665,39 @@ class bt_task:
             sites_path = public.M('config').where(
                 'id=?', (1,)).getField('sites_path')
             if dfile.find('/www/wwwroot') != -1 or dfile.find(sites_path) != -1:
-                self.set_file_accept(dfile)
+                # 只设置新的目录权限
+                self.set_path_access(dfile, old_dpath_list)
             else:
-                import pwd
-                user = pwd.getpwuid(os.stat(dfile).st_uid).pw_name
-                public.ExecShell("chown %s:%s %s" % (user, user, dfile))
+                try:
+                    import pwd
+                    user = pwd.getpwuid(os.stat(dfile).st_uid).pw_name
+                    public.ExecShell("chown %s:%s %s" % (user, user, dfile))
+                except KeyError:
+                    return public.ReturnMsg(False, 'SET_FILE_ACCEPT_ERROR')
 
-        #public.WriteLog("TYPE_FILE", 'Uncompression succeeded!', (sfile, dfile),not_web = self.not_web)
-        public.write_log_gettext("File manager", 'unzip file [ {} ] -> [ {} ] success', (sfile, dfile))
+        public.WriteLog("File manager", 'unzip file [ {} ] -> [ {} ] success', (sfile, dfile))
         return public.return_message(0, 0,  public.lang("Uncompression succeeded!"))
+    def get_unzip_files(self, log_file, split_log):
+        '''
+            @name 获取解压后的文件
+            @param log_file<string> 解压日志文件路径
+            @return set
+        '''
+        files = []
+        try:
+            with open(log_file, 'r') as f:
+                while True:
+                    data = f.readlines(1024 * 1024 * 30)
+                    if data:
+                        for x in data:
+                            file = split_log(x)
+                            if file and file not in files:
+                                files.append(file)
+                    else:
+                        break
+                return set(files)
+        except:
+            return set(files)
 
     def get_7z_bin(self):
         '''

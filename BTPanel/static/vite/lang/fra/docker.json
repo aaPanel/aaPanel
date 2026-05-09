@@ -88,7 +88,8 @@
 			"filterRunning": "En cours d'exécution",
 			"filterStopped": "Arrêté",
 			"searchPlaceholder": "Rechercher le nom du conteneur ou le nom de l'image",
-			"goToApp": "Go to App Store to install"
+			"goToApp": "Go to App Store to install",
+			"pullCloudImage": "Pull image from the cloud"
 		},
 		"Container": {
 			"index_1": "Créer un conteneur",
@@ -350,7 +351,8 @@
 					"index_23": "Veuillez remplir le contenu du certificat",
 					"index_24": "Nom de domaine",
 					"index_25": "Date d'expiration",
-					"index_26": "Marque"
+					"index_26": "Marque",
+					"index_27": "Free Cert"
 				}
 			},
 			"terminal": {
@@ -579,7 +581,10 @@
 				"index_5": "Veuillez sélectionner le modèle de conteneur",
 				"index_6": "Veuillez saisir le nom du modèle",
 				"index_7": "Ajouter le modèle YAML"
-			}
+			},
+			"taskLogsTitle": "Creating Docker Compose...",
+			"taskSuccess": "Project added successfully",
+			"taskFailed": "Failed to add project"
 		},
 		"Template": {
 			"index_4": "Nom de modèle",

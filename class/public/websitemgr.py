@@ -42,11 +42,17 @@ def get_site_php_version(siteName: str) -> str:
         webserver = get_webserver()
         setup_path = get_setup_path()
 
-        conf = readFile(
-            '{setup_path}/panel/vhost/{webserver}/{siteName}.conf'.format(setup_path=setup_path, webserver=webserver,
-                                                                          siteName=siteName))
+        name_list = public.get_parent_site_name(siteName)
         if webserver == 'openlitespeed':
-            conf = readFile(setup_path + '/panel/vhost/' + webserver + '/detail/' + siteName + '.conf')
+            webserver = webserver + '/detail'
+        if name_list:
+            conf = readFile(
+                '{setup_path}/panel/vhost/{webserver}/sub_dir/{parent_name}/{siteName}.conf'.format(setup_path=setup_path,
+                                                                              webserver=webserver,parent_name=name_list[0],
+                                                                              siteName=name_list[1]))
+        else:
+            conf = readFile(
+            '{setup_path}/panel/vhost/{webserver}/{siteName}.conf'.format(setup_path=setup_path, webserver=webserver, siteName=siteName))
         if webserver == 'nginx':
             rep = r"enable-php-(\w{2,5})[-\w]*\.conf"
         elif webserver == 'apache':
@@ -121,8 +127,7 @@ def del_bak(bak_file: str) -> aap_t_simple_result:
 
 # 创建PHP站点
 def create_php_site_with_mysql(
-        domain: str, site_path: str, php_ver_short: str, db_user: str, db_pwd: str,
-        another_domains: typing.List = (), is_clone=False, **kwargs
+        domain: str, site_path: str, php_ver_short: str, db_user: str, db_pwd: str, **kwargs
 ) -> aap_t_simple_site_info:
     """
     :param domain: str              网站主域名
@@ -130,14 +135,14 @@ def create_php_site_with_mysql(
     :param php_ver_short: str       PHP版本号缩写 54、74、80、81...
     :param db_user: str             数据库用户名
     :param db_pwd: str              数据库用户密码
-    :param another_domains: list    网站其它解析域名
+    :param kwargs:                  another_domains, is_clone, ssl_auto, sub_dir
     :return: aap_t_simple_site_info
     """
     from panel_site_v2 import panelSite
     data = panelSite().AddSite(to_dict_obj({
         'webname': json.dumps({
             'domain': domain,
-            'domainlist': list(another_domains),
+            'domainlist': list(kwargs.get('another_domains', [])),
             'count': 0,
         }),
         'type': 'PHP',
@@ -149,8 +154,10 @@ def create_php_site_with_mysql(
         'datapassword': db_pwd,
         'codeing': 'utf8mb4',
         'ps': domain.replace('.', '_').replace('-', '_'),
-        'is_clone' : is_clone,
+        'is_clone': kwargs.get('is_clone', False),
         'ssl_auto': kwargs.get('ssl_auto', 0),
+        'sub_dir': kwargs.get('sub_dir', ''),
+        'project_type': kwargs.get('project_type', 'PHP')
     }))
     if int(data.get('status', 0)) != 0:
         raise HintException(data.get('message', {})['result'])
@@ -185,6 +192,22 @@ def remove_site(site_id: int) -> public.aap_t_simple_result:
         'database': '1',
     }))
 
+    return aap_t_simple_result(int(data.get('status', 0)) == 0, data.get('message', {})['result'])
+
+def wp_remove_site(site_id: int) -> public.aap_t_simple_result:
+    site_info = M('sites').where('`id` = ?', (site_id,)).field('name').find()
+
+    if not isinstance(site_info, dict):
+        return public.aap_t_simple_result(False, public.lang('No found site-info with id {}',site_id))
+
+    from panel_site_v2 import panelSite
+    data = panelSite().delete_wp_site(to_dict_obj({
+        'id': site_id,
+        'webname': site_info['name'],
+        'ftp': '1',
+        'path': '1',
+        'database': '1',
+    }))
     return aap_t_simple_result(int(data.get('status', 0)) == 0, data.get('message', {})['result'])
 
 

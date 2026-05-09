@@ -91,7 +91,54 @@
 			"times": "раз(и)",
 			"edit": "Редагувати",
 			"line": "Рядок",
-			"searching": "Пошук, будь ласка, зачекайте..."
+			"searching": "Пошук, будь ласка, зачекайте...",
+			"searchContent": "Search content",
+			"searchContentPlaceholder": "Please enter search content",
+			"cancelSearch": "Cancel Search",
+			"contentTypeFile": "File",
+			"contentTypeName": "File Name",
+			"caseSensitive": "Case sensitive",
+			"wholeWord": "Whole word",
+			"regularExpression": "Regular expression",
+			"directory": "Directory",
+			"pathPlaceholder": "Please select a directory",
+			"includeSubdir": "Include subdir",
+			"fileSuffix": "File suffix",
+			"suffixPlaceholder": "Select or enter suffix types, separated by commas",
+			"modifyTime": "Modified time",
+			"fileSize": "File size",
+			"greaterThan": "GT",
+			"lessThan": "LT",
+			"suffixAll": "All",
+			"suffixNoExt": "Files without suffix",
+			"suffixPhp": "PHP files",
+			"suffixPython": "Python files",
+			"suffixHtml": "HTML files",
+			"suffixJs": "JS files",
+			"suffixJson": "JSON files",
+			"suffixConf": "Conf files",
+			"suffixLog": "LOG files",
+			"timeAny": "Any time",
+			"timeLast3Hours": "Last 3 hours",
+			"timeLast1Day": "Last 1 day",
+			"timeLast7Days": "Last 7 days",
+			"timeLast30Days": "Last 30 days",
+			"sizeAny": "Any size",
+			"custom": "Custom",
+			"emptySearching": "Searching...",
+			"emptyInput": "Enter search content to search in files",
+			"emptyNoResult": "Sorry, no results found for \"{keyword}\"",
+			"emptyTips": "Detailed options can effectively shorten search time",
+			"fileSearching": "Searching files",
+			"searchCompleted": "Search completed",
+			"contentSummary": "{matches} matches in {files} files",
+			"nameSummary": "Search results, {files} files",
+			"linePrefix": "Line {line}:",
+			"keywordRequired": "Please enter search content",
+			"pathRequired": "Please select a directory",
+			"timeRequired": "Please select a time",
+			"sizeInvalid": "Please enter a valid file size",
+			"parseFailed": "Failed to parse search results"
 		},
 		"resourceManagerModal": {
 			"title": "Вибір шляху",
@@ -145,6 +192,8 @@
 			"decompress": "Розпак."
 		},
 		"contextMenu": {
+			"archivePreview": "ZIP/GZ preview",
+			"archivePreviewWithType": "{type} preview",
 			"createCompression": "Стиснути",
 			"formatConversion": "Конвертація формату",
 			"newFolderFile": "Новий каталог/файл",
@@ -217,6 +266,7 @@
 		"deleteController": {
 			"deleteSingleFileTitle": "Видалити файл [{name}]",
 			"batchDeleteTitle": "Пакетне видалення файлів",
+			"deleteFileConfirmWithName": "Ви дійсно хочете видалити файл [{name}]?",
 			"recycleBinMessage": "Після видалення файли перемістяться у кошик. Для повного видалення використовуйте кошик. Продовжити?",
 			"permanentDeleteMessage": "Небезпечна дія — кошик вимкнено, відновлення неможливе. Продовжити?",
 			"deletingSingle": "Видалення...",
@@ -251,14 +301,18 @@
 		},
 		"decompressModal": {
 			"title": "Розпакування файлу",
+			"titleWithFile": "Розпакування файлу [{name}]",
 			"fileName": "Назва файлу",
 			"compressPath": "Шлях архіву",
 			"password": "Пароль",
 			"passwordPlaceholder": "Без пароля — залиште порожнім",
+			"directoryPermission": "Dir permission",
 			"encoding": "Кодування",
+			"overwriteWarning": "Якщо файл з такою назвою існує, його буде перезаписано після розпакування",
 			"validation": {
 				"fileNameRequired": "Введіть шлях файлу",
-				"pathRequired": "Вкажіть адресу розпакування"
+				"pathRequired": "Вкажіть адресу розпакування",
+				"permissionRequired": "Please enter a 3-digit octal permission"
 			}
 		},
 		"compressionModal": {
@@ -266,7 +320,43 @@
 			"compressPath": "Шлях архіву",
 			"compressFolder": "Стиснути каталог [{name}]",
 			"compressFile": "Стиснути файл [{name}]",
-			"compressFolderAndFile": "Стиснути каталог та файл [{names}]"
+			"compressFolderAndFile": "Стиснути каталог та файл [{names}]",
+			"download": "Compress and download",
+			"downloadFailed": "Unable to download, {msg}"
+		},
+		"archivePreviewModal": {
+			"title": "Archive preview",
+			"titleWithFile": "Archive preview [{name}]",
+			"unsupported": "This archive format cannot be previewed yet",
+			"loadFailed": "Failed to load archive preview",
+			"empty": "No archive content was found",
+			"file": "File",
+			"directory": "Directory",
+			"columns": {
+				"name": "Name",
+				"type": "Type",
+				"size": "Size",
+				"compressedSize": "Compressed",
+				"method": "Method",
+				"modifiedTime": "Modified time",
+				"operation": "Operation"
+			},
+			"extractTo": "Extract to",
+			"extractTitle": "Extract file [{name}]",
+			"addFile": "Add file",
+			"addingFile": "Adding file, please wait...",
+			"editTitle": "Edit file [{name}]",
+			"gettingFile": "Getting file, please wait...",
+			"savingFile": "Saving file, please wait...",
+			"unsupportedEdit": "This file type cannot be edited yet",
+			"currentArchive": "Current archive",
+			"batchPlaceholder": "Select batch action",
+			"batchOperation": "Batch action",
+			"actions": {
+				"edit": "Edit",
+				"extract": "Extract",
+				"delete": "Delete"
+			}
 		},
 		"tableFooter": {
 			"summary": "Всього {dirNum} каталогів, {fileNum} файлів, Розмір: ",
@@ -343,7 +433,33 @@
 			"restoreFileConfirm": "Файл або каталог з такою ж назвою буде перезаписано. Продовжити?",
 			"deleting": "Видалення...",
 			"deleteFileTitle": "Видалити файл [{name}]",
-			"deleteFileConfirm": "Небезпечна дія — після видалення файл буде знищено назавжди. Продовжити?"
+			"deleteFileConfirm": "Небезпечна дія — після видалення файл буде знищено назавжди. Продовжити?",
+			"fileRecycleBinToolbar": "File bin",
+			"databaseRecycleBinToolbar": "Database bin",
+			"databaseRecycleBinMysqlOnly": "Database Recycle Bin (MySQL only)",
+			"emptyRecycleBinToolbar": "Empty bin",
+			"searchPlaceholder": "Enter file name",
+			"summary": "Total {count} {label}, total size {size}",
+			"emptyList": "Recycle bin list is empty",
+			"batchResultTitle": "Batch Operation Result",
+			"batchDeleteResultAction": "Batch delete",
+			"emptyVerifyText": "EMPTY RECYCLE BIN",
+			"emptyDatabaseConfirm": "After emptying the Recycle Bin, all databases in it will be permanently deleted and cannot be recovered. Do you want to continue?",
+			"restoreMethod": "Restore method",
+			"restoreOriginalPath": "Original path",
+			"restoreOtherDirectory": "Other directory",
+			"restoreDirectory": "Restore to",
+			"restorePathRequired": "Please select a restore directory",
+			"restoreDatabaseTitle": "Restore Database [{name}]",
+			"restoreDatabaseConfirm": "Are you sure you want to restore this database?",
+			"deleteFileVerifyText": "DELETE FILE",
+			"deleteSuccess": "Deleted successfully",
+			"deleteFailed": "Delete failed",
+			"deleteDatabaseTitle": "Delete Database [{name}]",
+			"deleteDatabaseVerifyText": "DELETE DATABASE",
+			"deleteDatabaseConfirm": "This operation is risky. Deleted databases cannot be recovered. Continue?",
+			"batchRestoreDatabaseConfirm": "Batch restore selected databases, do you want to continue?",
+			"batchDeleteDatabaseConfirm": "Batch delete selected databases, do you want to continue?"
 		},
 		"task": {
 			"estimatedRemaining": "Орієнтовний час",
@@ -423,6 +539,12 @@
 		},
 		"videoPlayerModal": {
 			"title": "Відеоплеєр"
+		},
+		"tabs": {
+			"closeTab": "Close tab",
+			"maxTabs": "Only up to {count} tabs can be opened",
+			"closeOthers": "Close Others",
+			"closeRight": "Close Right"
 		}
 	},
 	"fileEditor": {

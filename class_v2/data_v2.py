@@ -169,16 +169,23 @@ class data:
         #return "{}:{}".format(ssl_info['issuer'],ssl_info['notAfter'])
 
     # 查询网站对应的PHP版本
-    def get_php_version(self,siteName):
+    def get_php_version(self, siteName):
         try:
 
             if not self.web_server:
                 self.web_server = public.get_webserver()
 
-            conf = public.readFile(self.setupPath + '/panel/vhost/'+self.web_server+'/'+siteName+'.conf')
-            if self.web_server == 'openlitespeed':
-                conf = public.readFile(
-                    self.setupPath + '/panel/vhost/' + self.web_server + '/detail/' + siteName + '.conf')
+            detail = 'detail/' if self.web_server == 'openlitespeed' else ''
+            sub = ''
+            if '/' in siteName:
+                parent_site_name = public.get_parent_site_name(siteName)
+                if parent_site_name:
+                    siteName = parent_site_name[0] + '/' + parent_site_name[1]
+                sub = 'sub_dir/'
+
+            conf_path = f"{self.setupPath}/panel/vhost/{self.web_server}/{detail}{sub}{siteName}.conf"
+            conf = public.readFile(conf_path.replace('//', '/'))
+
             if self.web_server == 'nginx':
                 rep = r"enable-php-(\w{2,5})[-\w]*\.conf"
             elif self.web_server == 'apache':
@@ -1495,17 +1502,35 @@ class data:
         data = public.M("wp_site_types").select()
         return public.return_message(0, 0, data)
 
+    # 获取站点备份数和最后备份时间
+    @staticmethod
+    def _get_backup_count(site_id):
+        res = {"backup_count": 0, "last_backup_time": ""}
+        try:
+            if public.M('sqlite_master').where('type=? AND name=?', ('table', 'wordpress_backups')).count():
+                backups = public.M('wordpress_backups').where('s_id=?', (site_id,)).field(
+                    'COUNT(id) as count, MAX(bak_time) as last_time'
+                ).find()
+                if backups:
+                    res = {
+                        'backup_count': backups['count'],
+                        'last_backup_time': public.format_date("%Y-%m-%d %H:%M:%S", backups['last_time'])
+                    }
+            return res
+        except Exception as e:
+            public.print_log("Error fetching backup count for site_id {}: {}".format(site_id, str(e)))
+            return res
+
     # 获取wp网站列表（新）get_wp_site_list
     def get_wp_site_list(self, get=None):
         try:
-            # 检测类型表，是否正确
+            # 环境检测与参数初始化
             import one_key_wp_v2
             ok, msg = one_key_wp_v2.checklist_fields()
 
             # 未安装wp toolkit时
             if not ok and msg == "no such table: wordpress_onekey":
-                return public.return_message(0, 0, "")
-
+                return public.return_message(0, 0, {"data": [], "total": 0})
             elif not ok:
                 return public.return_message(-1, 0, msg)
 
@@ -1517,203 +1542,497 @@ class data:
                 site_type = get.get('site_type', '').strip()
                 order = get.get('order', 'addtime DESC')
                 table = get.get('table', '')
-                if not isinstance(p, int) or p < 1:
-                    p = 1
-                if not isinstance(limit, int) or limit < 1:
-                    limit = 100
-            except Exception as e:
-                return public.return_message(-1, 0, str(e))
+                if p < 1: p = 1
+                if limit < 1: limit = 100
+            except:
+                return public.return_message(-1, 0, "Parameter error")
 
-            # wp页域名查询
+            # 域名查询特殊路由
             if table == 'domain':
                 data = self.GetSql(get)
                 return public.return_message(0, 0, data)
 
-            # wp部署类型
-            import one_key_wp_v2
             one_key_wp_obj = one_key_wp_v2.one_key_wp()
 
-            # 查询网站列表
+            # 构造基础查询
             query = public.S('sites').prefix('').where('project_type = ?', 'WP2').alias('s')
 
             # 处理搜索条件
             if search:
-                query = query.where('s.name LIKE ? or s.ps LIKE ?', (f'%{search}%',f'%{search}%'))
+                query = query.where('s.name LIKE ? or s.ps LIKE ?', (f'%{search}%', f'%{search}%'))
 
-            # # 获取网站类型
+            # 获取网站类型过滤
             if site_type:
                 query = query.join(
-                'wordpress_onekey wok',
-                's.id = wok.s_id',
-                'INNER'
-            ).join(
-                'wp_site_types wst',
-                'wok.site_type = wst.name',
-                'INNER',
-            ).where('wst.id = ?',site_type)
+                    'wordpress_onekey wok',
+                    's.id = wok.s_id',
+                    'INNER'
+                ).join(
+                    'wp_site_types wst',
+                    'wok.site_type = wst.name',
+                    'INNER',
+                ).where('wst.id = ?', site_type)
 
-            # 检查wordpress_backups表是否存在
-            has_backup_table = True
+            # 检查备份表
             try:
                 has_backup_table = public.S('wordpress_backups').exists()
-            except Exception as e:
+            except:
                 has_backup_table = False
 
-            # 关联备份表（仅当表存在时）
+            # 定义需要查询的字段（确保包含 parent_id 用于层级判断）
+            fields = [
+                's.id', 's.name', 's.path', 's.status', 's.addtime',
+                's.ps', 'edate', 'project_type', 'service_type', 's.parent_id'
+            ]
+
             if has_backup_table:
-                query = query.left_join(
-                    'wordpress_backups wb',
-                    's.id = wb.s_id',
-                )
-                # 筛选字段并添加备份统计字段
-                query = query.field(
-                    's.id',
-                    's.name',
-                    's.path',
-                    's.status',
-                    's.addtime',
-                    's.ps',
-                    'edate',
-                    'project_type',
-                    'service_type',
+                query = query.left_join('wordpress_backups wb', 's.id = wb.s_id')
+                query = query.field(*(fields + [
                     'COALESCE(COUNT(wb.id), 0) AS backup_count',
                     'MAX(wb.bak_time) AS last_backup_time'
-                ).group('s.id')
+                ])).group('s.id')
             else:
-                # 表不存在时，不查询备份相关字段
-                query = query.field(
-                    's.id',
-                    's.name',
-                    's.path',
-                    's.status',
-                    's.addtime',
-                    's.ps',
-                    'edate',
-                    'project_type',
-                    'service_type'
-                )
+                query = query.field(*fields)
 
-            # 排序分页
+            # 基础排序
             order_list = order.split(' ')
+            if order_list[0] not in ['site_ssl', 're_total']:
+                query = query.order(order_list[0], order_list[1])
 
-            # ssl排序特殊处理，后面排序
-            if order_list[0] != 'site_ssl':
-                data = query.order(order_list[0],order_list[1]).select()
-            else:
-                data = query.select()
-
-            total = len(data)
-            data = data[(p - 1) * limit:p * limit]
-
-            # 加载网站图标
+            # 环境状态与图标初始化
             multi_webservice_status = public.get_multi_webservice_status()
             webservice = public.get_webserver()
-            nginx_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-nginx.png"))
-            apache_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/apache.png"))
-            ols_b64_path = public.image_to_base64(os.path.join(public.get_panel_path(), "BTPanel/static/img/soft_ico/ico-openlitespeed.png"))
+            panel_path = public.get_panel_path()
 
-            # 处理网站流量排序
-            re_data = None
-            if get.get('re_order'):
-                re_data = self.get_site_request(public.to_dict_obj({'site_type': 'WP2'}))
-                if re_data['status'] == 0:
-                    re_data = re_data['message']
+            nginx_ico = public.image_to_base64(os.path.join(panel_path, "BTPanel/static/img/soft_ico/ico-nginx.png"))
+            apache_ico = public.image_to_base64(os.path.join(panel_path, "BTPanel/static/img/apache.png"))
+            ols_ico = public.image_to_base64(
+                os.path.join(panel_path, "BTPanel/static/img/soft_ico/ico-openlitespeed.png"))
 
-            # 补充字段
-            for item in data:
-                if re_data:
-                    if item['name'] in re_data:
-                        item['re_total'] = re_data[item['name']]['total']['request']
-                    else:
-                        item['re_total'] = 0
+            # 获取流量信息
+            re_data = {}
+            if get.get('re_order') or True:
+                re_res = self.get_site_request(public.to_dict_obj({'site_type': 'WP2'}))
+                if re_res.get('status') == 0:
+                    re_data = re_res.get('message')
 
-                # 处理备份时间
-                if item.get('last_backup_time', None):
-                    try:
-                        item['last_backup_time'] = public.format_date("%Y-%m-%d %H:%M:%S", item['last_backup_time'])
-                    except:
-                        item['last_backup_time'] = ''
-                else:
-                    item['last_backup_time'] = ''
+            # 执行数据库查询
+            all_data = query.select()
+            if not all_data:
+                return public.return_message(0, 0, {"data": [], "total": 0})
 
-                # 维护模式状态
-                item['maintenance'] = False
-                path = os.path.join(item['path'], '.maintenance')
-                if os.path.exists(path):
-                    item['maintenance'] = True
+            # 构建初始查找映射
+            data_map = {}
+            for item in all_data:
+                data_map[item['id']] = item
 
-                # 添加ssl字段
-                ssl_info = self.get_site_ssl_info(item['name'])
-                item['ssl'] = ssl_info
-                item['site_ssl'] = ssl_info['endtime'] if ssl_info != -1 else -1
 
-                # domain
-                # item['domain'] = public.S('domain').where("pid=?", (item['id'],)).count()
+            # 保存原始结果ID，用于区分"原始主站"与"补充主站"
+            original_ids = set(data_map.keys())
 
-                # PHP版本信息
-                item['php_version'] = self.get_php_version(item['name'])
+            # search 非空时，若子站被搜出但主站不在结果中，补充主站
+            missing_parent_ids = set()
+            if search:
+                for item in all_data:
+                    pid = item.get('parent_id', 0)
+                    if pid and pid != -1 and pid not in data_map:
+                        missing_parent_ids.add(pid)
 
-                # wp版本与缓存，改用v2版本
+            if missing_parent_ids:
                 try:
-                    item['cache_status'] = one_key_wp_obj.get_cache_status(item['id'])
-                    item['wp_version'] = one_key_wp_obj.get_wp_version(item['id'])
-                except Exception as e:
-                    item['cache_status'] = False
-                    item['wp_version'] = '0.0.0'
+                    parent_rows = public.S('sites').prefix('').where_in(
+                        'id', list(missing_parent_ids)
+                    ).where('project_type = ?', 'WP2').select()
+                    if parent_rows:
+                        for p_item in parent_rows:
+                            data_map[p_item['id']] = p_item
+                        all_data.extend(parent_rows)
+                except Exception as ex:
+                    public.print_log('get_wp_site_list fetch missing parents error: {}'.format(ex))
 
-                # 登录url
+            # 统计子站点数量逻辑
+            for item in all_data:
+                item['sub_site'] = 0
+
+            # 遍历全量数据，内存一次过滤，避免多次sql查询
+            for item in all_data:
+                pid = item.get('parent_id', 0)
+                if pid > 0 and pid in data_map:
+                    data_map[pid]['sub_site'] += 1
+
+            # 处理主站点数据并过滤
+            result_list = []
+            for item in all_data:
+                pid = item.get('parent_id', 0)
+                # search模式：命中子站时只返回其主站，命中主站也只返回主站
+                if pid not in [0, -1]:
+                    if search or pid in original_ids:
+                        continue
+
+                try:
+                    # 流量统计
+                    item['re_total'] = re_data.get(item['name'], {}).get('total', {}).get('request', 0)
+                    # 备份时间格式化
+                    item['last_backup_time'] = public.format_date("%Y-%m-%d %H:%M:%S", item.get('last_backup_time', ''))
+                    # 维护模式检测
+                    item['maintenance'] = os.path.exists(os.path.join(item['path'], '.maintenance'))
+                    # PHP版本
+                    item['php_version'] = self.get_php_version(item['name'])
+                    # 登录入口
+                    item['login_url'] = '/v2/wp/login/{}'.format(item['id'])
+
+                    # WP版本
+                    try:
+                        item['wp_version'] = one_key_wp_obj.get_wp_version(item['id'])
+                        item['cache_status'] = one_key_wp_obj.get_cache_status(item['id'])
+
+
+                    except:
+                        item['wp_version'] = '0.0.0'
+                        item['cache_status'] = False
+
+                    # SSL状态处理
+                    ssl_info = self.get_site_ssl_info(item['name'])
+                    item['ssl'] = ssl_info
+                    item['site_ssl'] = ssl_info['endtime'] if (ssl_info and ssl_info != -1) else -1
+
+                    # 图标处理
+                    ico_path = os.path.join(panel_path, "data/site_favs", item['name'] + ".b64")
+                    user_ico = public.readFile(ico_path) if os.path.exists(ico_path) else ''
+                    if user_ico:
+                        item['ico'] = user_ico
+                    else:
+                        st = item.get('service_type', '')
+                        current_ws = st if multi_webservice_status else webservice
+                        if current_ws == 'apache':
+                            item['ico'] = apache_ico
+                        elif current_ws == 'openlitespeed':
+                            item['ico'] = ols_ico
+                        else:
+                            item['ico'] = nginx_ico
+
+                    result_list.append(item)
+                except Exception as ex:
+                    public.print_log('get_wp_site_list enrich item error [id={}, name={}]: {}'.format(
+                        item.get('id'), item.get('name'), ex))
+                    item['site_ssl'] = item.get('site_ssl', -1)
+                    item['ssl'] = item.get('ssl', -1)
+                    item['wp_version'] = item.get('wp_version', '0.0.0')
+                    item['cache_status'] = item.get('cache_status', False)
+                    item['php_version'] = item.get('php_version', 'Static')
+                    item['re_total'] = item.get('re_total', 0)
+                    item['maintenance'] = item.get('maintenance', False)
+                    item['ico'] = item.get('ico', '')
+                    result_list.append(item)
+
+            # 排序处理
+            if order_list[0] == 'site_ssl':
+                is_rev = order_list[1].lower() == 'desc'
+                result_list = sorted(result_list, key=lambda x: x['site_ssl'], reverse=is_rev)
+            elif get.get('re_order'):
+                is_rev = get.get('re_order').lower() == 'desc'
+                result_list = sorted(result_list, key=lambda x: x['re_total'], reverse=is_rev)
+
+            # 8分页返回
+            total = len(result_list)
+            start = (p - 1) * limit
+            end = p * limit
+            paged_data = result_list[start:end]
+
+            for d in paged_data:
+                if d.get('sub_site') > 0:
+                    d['id'] = f'group_{d['id']}'
+
+            return public.return_message(0, 0, {'data': paged_data, 'total': total})
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return public.return_message(-1, 0, "Internal Server Error: " + str(e))
+
+    # 子网站获取
+    def get_wp_sub_site(self, get=None):
+        """
+        获取指定主站下的子站列表（在内存中进行排序和分页）
+        @param get.site_id: 主站ID (s_id)
+        @param get.limit: 每页数量 (默认10)
+        @param get.p: 当前页码 (默认1)
+        """
+        try:
+            import os
+            try:
+                parent_id = int(get.get('site_id'))
+                limit = int(get.get('limit', 10))
+                p = int(get.get('p', 1))
+                search = get.get('search', '').strip()
+                if p < 1: p = 1
+            except:
+                return False, "Parameter error"
+
+            import one_key_wp_v2
+            one_key_wp_obj = one_key_wp_v2.one_key_wp()
+
+            query = public.S('sites').prefix('').where('parent_id = ? AND project_type = ?', (parent_id, 'WP2'))
+            if search:
+                query = query.where('(name LIKE ? OR ps LIKE ?)', (f'%{search}%', f'%{search}%'))
+            data = query.select()
+
+            if not data:
+                return public.return_message(0, 0, {
+                    'data': [],
+                    'total': 0
+                })
+
+            data = sorted(data, key=lambda x: x.get('addtime', 0), reverse=True)
+
+            # 执行分页切片
+            total_count = len(data)
+            start = (p - 1) * limit
+            end = start + limit
+            paged_data = data[start:end]
+
+            # 流量
+            re_data = {}
+            try:
+                re_res = self.get_site_request(public.to_dict_obj({'site_type': 'WP2'}))
+                if re_res.get('status') == 0:
+                    re_data = re_res.get('message')
+            except:
+                pass
+
+            # 重写路径
+            rewrite_path = None
+            server_type = public.get_webserver()
+            site_main = public.S('sites').where('id = ?', (parent_id,)).field('name,service_type').find()
+            if public.get_multi_webservice_status():
+                if site_main:
+                    server_type = site_main['service_type'] if site_main['service_type'] else 'nginx'
+
+            if server_type == 'nginx':
+                rewrite_path = f"{public.get_vhost_path()}/nginx/sub_dir/rewrite/{site_main['name']}/"
+
+            for item in paged_data:
+                path_parts = item['name'].strip('/').split('/')
+                item['display_name'] = '/'.join(path_parts[1:]) if len(path_parts) > 1 else item['name']
+                # 流量统计
+                item['re_total'] = re_data.get(item['name'], {}).get('total', {}).get('request', 0)
+                item['maintenance'] = os.path.exists(os.path.join(item['path'], '.maintenance'))
+                item['php_version'] = self.get_php_version(item['name'])
                 item['login_url'] = '/v2/wp/login/{}'.format(item['id'])
 
-                # 站点图标(用于网站多服务区分)
-                ico_b64_path = os.path.join(public.get_panel_path(), "data/site_favs", item['name'] + ".b64")  # 用户自主图标
-                default = public.readFile(ico_b64_path) if os.path.exists(ico_b64_path) else ''
-
-                if multi_webservice_status:
-                    if default:
-                        item['ico'] = default
-                    elif 'apache' == item['service_type']:
-                        item['ico'] = apache_b64_path
-                    elif 'nginx' == item['service_type'] or not item['service_type']:
-                        item['ico'] = nginx_b64_path
-                    elif 'openlitespeed' == item['service_type']:
-                        item['ico'] = ols_b64_path
-                    else:
-                        item['ico'] = ''
+                if rewrite_path:
+                    item['rewrite_path'] = rewrite_path + item['display_name'].replace('/','_') + '.conf'
                 else:
-                    if default:
-                        item['ico'] = default
-                    elif webservice == 'nginx':
-                        item['ico'] = nginx_b64_path
-                    elif webservice == 'apache':
-                        item['ico'] = apache_b64_path
-                    elif webservice == 'openlitespeed':
-                        item['ico'] = ols_b64_path
-                    else:
-                        item['ico'] = ''
+                    item['rewrite_path'] = f"{item['path']}/.htaccess"
 
-            # 处理ssl排序
-            if order_list[0] == 'site_ssl':
-                if order_list[1] == "asc":
-                    data = sorted(data, key=lambda x: x[order_list[0]])
-                else:
-                    data = sorted(data, key=lambda x: x[order_list[0]], reverse=True)
+                # WP版本
+                try:
+                    item['wp_version'] = one_key_wp_obj.get_wp_version(item['id'])
+                    item['cache_status'] = one_key_wp_obj.get_cache_status(item['id'])
+                except:
+                    item['wp_version'] = '0.0.0'
+                    item['cache_status'] = 0
 
-            # 处理网站流量排序
-            if get.get('re_order') and re_data:
-                if get.get('re_order') == 'desc':
-                    data = sorted(data, key=lambda x: x["re_total"], reverse=True)
-                else:
-                    data = sorted(data, key=lambda x: x["re_total"])
+                # 备份信息处理
+                item.update(self._get_backup_count(item['id']))
 
-            res = {
-                'data': data,
-                'total': total
+            return True, {
+                'data': paged_data,
+                'total': total_count
             }
 
-            return public.return_message(0, 0, res)
         except Exception as e:
+            return False, e
 
-            return public.return_message(-1, 0, str(e))
+    # 主站获取
+    def get_wp_main_site(self, site_id):
+        """
+        根据 ID 获取单个 WordPress 站点的完整详情（保留原列表所有字段）
+        """
+        try:
+            import one_key_wp_v2
+            one_key_wp_obj = one_key_wp_v2.one_key_wp()
+            panel_path = public.get_panel_path()
+
+            # 查询站点基础信息 (对应原 fields 列表)
+            item = public.M('sites').where('id=?', (site_id,)).field(
+                'id,name,path,status,addtime,ps,edate,project_type,service_type,parent_id'
+            ).find()
+
+            if not item: return None
+
+            # 备份信息字段 (backup_count, last_backup_time)
+            item.update(self._get_backup_count(site_id))
+
+            # 子站点统计 (sub_site)
+            item['main_site'] = True
+
+            # 流量统计字段 (re_total)
+            item['re_total'] = 0
+            try:
+                re_res = self.get_site_request(public.to_dict_obj({'site_type': 'WP2'}))
+                if re_res.get('status') == 0:
+                    re_data = re_res.get('message', {})
+                    item['re_total'] = re_data.get(item['name'], {}).get('total', {}).get('request', 0)
+            except:
+                pass
+
+            # 维护模式与基础环境 (maintenance, php_version, login_url)
+            item['maintenance'] = os.path.exists(os.path.join(item['path'], '.maintenance'))
+            item['php_version'] = self.get_php_version(item['name'])
+            item['login_url'] = '/v2/wp/login/{}'.format(item['id'])
+            item['display_name']=  item['name']
+
+            # WordPress 特有字段 (wp_version, cache_status)
+            try:
+                item['wp_version'] = one_key_wp_obj.get_wp_version(item['id'])
+                item['cache_status'] = one_key_wp_obj.get_cache_status(item['id'])
+            except:
+                item['wp_version'] = '0.0.0'
+                item['cache_status'] = False
+
+            # SSL 状态字段 (ssl, site_ssl)
+            ssl_info = self.get_site_ssl_info(item['name'])
+            item['ssl'] = ssl_info
+            item['site_ssl'] = ssl_info['endtime'] if (ssl_info and ssl_info != -1) else -1
+
+            # 图标处理 (ico)
+            ico_path = os.path.join(panel_path, "data/site_favs", item['name'] + ".b64")
+            if os.path.exists(ico_path):
+                item['ico'] = public.readFile(ico_path)
+            else:
+                # 如果没有自定义图标，根据服务类型匹配默认图标
+                webservice = public.get_webserver()
+                st = item.get('service_type', '')
+                # 这里的逻辑参考原函数对多服务状态的判断
+                current_ws = st if public.get_multi_webservice_status() else webservice
+
+                ico_map = {
+                    'apache': 'apache.png',
+                    'openlitespeed': 'soft_ico/ico-openlitespeed.png',
+                    'nginx': 'soft_ico/ico-nginx.png'
+                }
+                icon_file = ico_map.get(current_ws, 'soft_ico/ico-nginx.png')
+                item['ico'] = public.image_to_base64(os.path.join(panel_path, "BTPanel/static/img", icon_file))
+
+            return item
+
+        except:
+            return None
+
+    # 获取子站列表
+    def get_wp_sub_sites(self, get=None):
+        """
+        获取指定主站下的子站列表（在内存中进行排序和分页）
+        @param get.site_id: 主站ID (s_id)
+        @param get.limit: 每页数量 (默认10)
+        @param get.p: 当前页码 (默认1)
+        """
+        try:
+            import os
+            try:
+                parent_id = json.loads(get.get('site_id', []))
+                limit = int(get.get('limit', 10))
+                p = int(get.get('p', 1))
+                search = get.get('search', '').strip()
+                if p < 1: p = 1
+
+                parent_id = [ int(site_id) for site_id in parent_id ]
+            except:
+                return public.return_message(-1, 0, "Parameter error")
+
+            data = []
+            for site_id in parent_id:
+                ok, msg = self.get_wp_sub_site(public.to_dict_obj({'site_id':site_id,'limit':limit,'p':p,'search':search}))
+                if not ok:
+                    return public.return_message(-1, 0, "Failed to obtain sub-sites: " + str(msg))
+                # 添加主站, 只有p=1时插入主站标识
+                if p < 2:
+                    main = self.get_wp_main_site(site_id)
+                    if not main:
+                        return public.return_message(-1, 0, "Could not obtain the main station.")
+                    if main['parent_id'] != -1:
+                        data.append(main)
+                data.extend(msg['data'])
+            return public.return_message(0, 0, data)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return public.return_message(-1, 0, "Failed to obtain sub-sites: " + str(e))
+
+    # 获取所有真实站点列表
+    def get_wp_real_sites(self, get=None):
+        """获取所有真实站点列表(返回所有site_id的完整信息, 包括组, 如果有组按组返回)"""
+        try:
+            get.validate([
+                Param('site_id').String().Require(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+            get.site_id = json.loads(get.get('site_id', []))
+            if not get.site_id:
+                return public.success_v2([])
+        except Exception as ex:
+            public.print_log('error info: {}'.format(ex))
+            return public.return_message(-1, 0, str(ex))
+        try:
+            fields = 'id,name,parent_id'
+            parent_ids = set()
+            direct_ids = [] # 保序
+            direct_ids_set = set()
+            for sid in get.site_id:
+                if isinstance(sid, str) and sid.startswith('group_'):
+                    try:
+                        pid = int(sid.split('_', 1)[1])
+                        parent_ids.add(pid)
+                        if pid not in direct_ids_set:
+                            direct_ids.append(pid)
+                            direct_ids_set.add(pid)
+                    except ValueError:
+                        continue
+                else:
+                    try:
+                        sid_int = int(sid)
+                        if sid_int not in direct_ids_set:
+                            direct_ids.append(sid_int)
+                            direct_ids_set.add(sid_int)
+                    except (ValueError, TypeError):
+                        continue
+            # 天然去重map
+            result_map = {}
+
+            def _query_by_ids(key_field: str, ids: list):
+                """根据字段批量查询站点, 构造到map中"""
+                if not ids:
+                    return
+                rows = public.M('sites').where(
+                    '{} IN ({})'.format(key_field, ','.join(['?'] * len(ids))), ids
+                ).field(fields).select()
+                for item in rows or []:
+                    result_map[item['id']] = item
+
+            _query_by_ids('parent_id', list(parent_ids))
+            _query_by_ids('id', list(direct_ids))
+
+            # 每组父站排第一，后跟其子站点
+            res = []
+            for did in direct_ids:
+                if did in result_map:
+                    res.append(result_map.pop(did))
+                # 提取该子站点
+                children = [
+                    item for item in result_map.values() if item.get('parent_id') == did
+                ]
+                res.extend(children)
+                for c in children:
+                    result_map.pop(c['id'])
+            # 其余追加
+            res.extend(result_map.values())
+            return public.success_v2(res)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return public.fail_v2(f"Failed to obtain real sites: {str(e)}")
 
     # 获取aacloud数据，一次性返回
     def get_aacloud_data(self,get):

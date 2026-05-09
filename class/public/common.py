@@ -3701,16 +3701,37 @@ def get_site_php_version(siteName):
         @param siteName string 网站名称
         @return string
     '''
-    web_server = get_webserver()
-    if public.get_multi_webservice_status():
-        site = public.M('sites').where('name = ?',siteName).field('service_type').find()
-        web_server = site['service_type'] if site['service_type'] else 'nginx'
-    vhost_path = get_vhost_path()
-    conf = readFile(vhost_path + '/' + web_server + '/' + siteName + '.conf')
-    if web_server == 'openlitespeed':
-        conf = readFile(vhost_path + '/' + web_server + '/detail/' + siteName + '.conf')
+    conf_path = get_php_conf_path(siteName)
+    conf = public.readFile(conf_path.replace('//', '/'))
     return get_php_version_conf(conf)
 
+# 获取各服务主站子站配置路径
+def get_php_conf_path(site_name):
+    # 区分网站服务类型
+    web_server = get_webserver()
+    if get_multi_webservice_status():
+        service_type = public.M('sites').where('name = ?', (site_name,)).field('service_type,parent_id').find()
+        if not service_type:
+            return None
+
+        # 如果是子站，则查询其父站服务
+        if service_type['parent_id'] not in [-1, 0]:
+            service_type = public.M('sites').where('id = ?', (service_type['parent_id'],)).field('service_type').find()
+            if not service_type:
+                return None
+
+        web_server = service_type['service_type'] if service_type['service_type'] else 'nginx'
+    vhost_path = get_vhost_path()
+    detail = 'detail/' if web_server == 'openlitespeed' else ''
+    sub = ''
+    if '/' in site_name:
+        parent_site_name = get_parent_site_name(site_name)
+        if parent_site_name:
+            site_name = parent_site_name[0] + '/' + parent_site_name[1]
+        sub = 'sub_dir/'
+
+    conf_path = f"{vhost_path}/{web_server}/{detail}{sub}{site_name}.conf"
+    return conf_path
 
 def check_tcp(ip, port):
     '''
@@ -10070,8 +10091,8 @@ def try_to_apply_ssl(func):
         if ssl_site_id:
             try:
                 print_log(f"Trying To Auto Apply SSL For The Site... Site ID is: {ssl_site_id}")
-                from ssl_domainModelV2.service import apply_ssl_with_siteId
-                apply_ssl_with_siteId(int(ssl_site_id))
+                from ssl_domainModelV2.service import smart_ssl
+                smart_ssl(int(ssl_site_id))
             except Exception as e:
                 import traceback
                 print_log(traceback.format_exc())
@@ -10250,3 +10271,127 @@ def generate_random_string(length, include_special=False):
         chars += string.punctuation
 
     return ''.join(secrets.choice(chars) for _ in range(length))
+
+# 切分主站子站名称
+def get_parent_site_name(site_name: str):
+    """
+        切分子站名称
+        输入 192.168.168.193/aaaa/cccc/test 输出 【192.168.168.193, aaaa_cccc_test, aaaa/cccc/test 】
+    """
+    clean_name = site_name.strip().strip('/')
+
+    if '/' in clean_name:
+        parts = clean_name.split('/', 1)
+
+        if len(parts) == 2:
+            parent = parts[0]
+            child_path = parts[1].replace('/', '_')
+            if parent and child_path and parts[1] :
+                return [parent, child_path, parts[1]]
+
+    return None
+
+# 获取站点的web配置文件路径
+def get_site_web_cfg(id: str = None, site_name: str = None) -> dict:
+    """
+    获取站点的 Nginx/Apache/OLS 配置文件路径
+    id (可选)
+    site_name (可选)
+    :return: dict {'nginx': '', 'apache': '', 'ols': ''}
+    """
+    if id:
+        site_info = public.M('sites').where("id=?", (id,)).field('name,parent_id').find()
+    elif site_name:
+        site_info = public.M('sites').where("name=?", (site_name,)).field('name,parent_id').find()
+    else:
+        return {'nginx': '', 'apache': '', 'ols': ''}
+    if not site_info:
+        return {'nginx': '', 'apache': '', 'ols': ''}
+
+    setup_path = public.get_setup_path()
+    name = site_info['name']
+
+    # 子站: sub_dir/父站名/子站名.conf
+    parent_id = site_info.get('parent_id')
+    if parent_id and str(parent_id) not in [-1, 0]:
+        parent = public.get_parent_site_name(name)
+        if parent:
+            conf_name = f"sub_dir/{parent[0]}/{parent[1]}"
+        else:
+            conf_name = name
+    else:
+        conf_name = name
+
+    return {
+        'nginx': f'{setup_path}/panel/vhost/nginx/{conf_name}.conf',
+        'apache': f'{setup_path}/panel/vhost/apache/{conf_name}.conf',
+        'ols': f'{setup_path}/panel/vhost/openlitespeed/detail/{conf_name}.conf',
+    }
+
+# 在指定区间内(外)替换
+def replace_block(text: str, old: str, new: str, block_start: str = None, block_end: str = None, reverse: bool = True):
+    """
+    按行替换文本, 在指定区间内或区间外操作
+    text: 原始文本
+    old: 被替换的字符串
+    new: 替换后的字符串
+    block_start: 区间开始标记(包含该行)
+    block_end: 区间结束标记(包含该行)
+    闭包区间贪婪, 第一个 start 直到最后一个 end
+    reverse: True=排除区间内不替换, False=仅替换区间内
+    :return: 替换后的文本
+    """
+    if not block_start or not block_end:
+        return text.replace(old, new)
+
+    start_pat = re.escape(block_start)
+    end_pat = re.escape(block_end)
+    # 闭区间: 从 block_start 所在行到 block_end 所在行(含)
+    pattern = re.compile(
+        r'(?P<before>(?:.*\n)*?)'
+        r'(?P<block>.*' + start_pat + r'.*\n(?:.*\n)*?.*'
+        r'(?=' + end_pat + r').*)'
+        r'(?P<after>(?:\n.*)*)'
+    )
+    m = pattern.search(text)
+    if not m:
+        def _should_replace(in_block: bool, reverse: bool) -> bool:
+            return (not in_block) if reverse else in_block
+
+        # 标记不完整, 退回逐行
+        lines = text.split('\n')
+        in_block = False
+        result = []
+        for line in lines:
+            is_start = block_start in line
+            is_end = block_end in line
+            # 同行时: start优先, 该行视为区间内
+            if is_start:
+                in_block = True
+            if _should_replace(in_block, reverse):
+                line = line.replace(old, new)
+            if is_end:
+                in_block = False
+            result.append(line)
+        return '\n'.join(result)
+
+    before = m.group('before')
+    block = m.group('block')
+    after = m.group('after')
+
+    if reverse:
+        # 区间外替换
+        return before.replace(old, new) + block + after.replace(old, new)
+    else:
+        # 仅区间内替换
+        return before + block.replace(old, new) + after
+
+# 修改主配置时保护子站配置
+def replace_conf_without_sub(text, old, new):
+    return replace_block(
+        text=text,
+        old=old,
+        new=new,
+        block_start="#Subdirectory-configuration-start",
+        block_end="#Subdirectory-configuration-end"
+    )

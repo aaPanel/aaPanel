@@ -149,9 +149,9 @@
 			"index_1": "Thêm cấu hình, bấm để xem"
 		},
 		"Confirm": {
-			"index_1": "Nếu bạn xác nhận thao tác, hãy nhập thủ công \"{text_}\"",
+			"manualInputVerification": "Vui lòng nhập \"{text}\" để xác nhận",
 			"index_2": "Lỗi đầu vào, vui lòng thử lại",
-			"index_3": "{0} đã được hoàn thành, tổng số {1} Nhiệm vụ, {2} thành công, {3} thất bại",
+			"index_3": "{0} đã hoàn tất! Tổng số {1} mục, {2} thành công, {3} thất bại.",
 			"index_4": "Kết quả: ",
 			"index_5": "Kết quả không chính xác, vui lòng thử lại"
 		},

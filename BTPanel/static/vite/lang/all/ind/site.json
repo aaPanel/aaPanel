@@ -725,5 +725,7 @@
 	"f440e5504f5a02a7a2721a623db858da": "Akun tidak boleh melebihi 16 karakter",
 	"09a1a00003bee7363f3833b6a82e6f99": "Versi Templat",
 	"dffa53dbdbc610fc606d0bc8d072a5cc": "Silakan pilih versi",
-	"a310dff8a1d57f337fb9c291ad22a07e": "Semua Versi"
+	"a310dff8a1d57f337fb9c291ad22a07e": "Semua Versi",
+	"bbd72b4d28e19599151fec7edaf6f7c5": "Risiko: Fungsi Recycle Bin database tidak diaktifkan saat ini. Setelah database dihapus, database akan hilang selamanya!",
+	"a29965e264f638beb59f4f241eb38bb0": "Risiko: Fungsi Recycle Bin file dinonaktifkan saat ini. Setelah direktori situs dihapus, direktori situs akan hilang selamanya!"
 }

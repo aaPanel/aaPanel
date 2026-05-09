@@ -149,7 +149,7 @@
 			"index_1": "Mais configurações, clique para ver"
 		},
 		"Confirm": {
-			"index_1": "Se você confirmar a operação, digite manualmente \"{text_}\"",
+			"manualInputVerification": "Se você confirmar a operação, digite manualmente \"{text_}\"",
 			"index_2": "Erro de entrada, tente novamente",
 			"index_3": "{0} foi concluído, total {1} tarefas, {2} sucessos, {3} falhas",
 			"index_4": "Resultado: ",

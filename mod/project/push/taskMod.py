@@ -224,6 +224,10 @@ class main(PushManager):
             if i['id'] in ['121', '122', '123', '124']:
                 continue
 
+            if str(i.get('id', '')) == '70':
+                # 废弃 ssl push
+                continue
+
             t = to.filter_template(i["template"])
             if not t:
                 continue

@@ -76,18 +76,31 @@ def split_logs(oldFileName,num,site_name):
 
 def split_log(siteName, num, log_cut_path):
     global logsPath, is_gzip
-    res = public.M('sites').where('name=?', (siteName,)).select()[0]['project_type'].lower()
-    if res == 'php':
-        res = ''
+
+    site_info = public.M('sites').where('name=?', (siteName,)).find()
+    if not site_info or not isinstance(site_info, dict):
+        print('|-Processing website: logs for [{}] site not detected'.format(siteName))
+        return
+    project_type = site_info['project_type'].lower()
+
+    # 按照语言类型格式
+    if project_type in ['php', 'wp', 'wp2']:
+        conf_name = siteName
     else:
-        res = res + '_'
-    # print(res)
+        conf_name = project_type + '_' + siteName
+
+    if str(site_info.get('parent_id', '')) not in ['-1', '0']:
+        parts = public.get_parent_site_name(site_info['name'])
+        if parts:
+            # 按照子站格式
+            conf_name = f"sub_dir/{parts[0]}/{parts[1]}"
+
     directory = '/etc/init.d/'
     files = os.listdir(directory)
     file_list = list(files)
     print('|-Processing website: {}'.format(siteName))
     if 'nginx' in file_list:
-        config_path = '/www/server/panel/vhost/nginx/{}.conf'.format(res + siteName)
+        config_path = '/www/server/panel/vhost/nginx/{}.conf'.format(conf_name)
         config = public.readFile(config_path)
         if not config:
             print('|-Processing website: logs for {} site not detected'.format(siteName))
@@ -95,8 +108,9 @@ def split_log(siteName, num, log_cut_path):
         tmp, _ = nginx_get_log_path(config, is_error_log=False)
         if tmp is not None:
             logsPath = tmp
+
     elif 'httpd' in file_list:
-        config_path = '/www/server/panel/vhost/apache/{}.conf'.format(res + siteName)
+        config_path = '/www/server/panel/vhost/apache/{}.conf'.format(conf_name)
         config = public.readFile(config_path)
         if not config:
             print('|-Processing website: logs for [{}] site not detected'.format(siteName))
@@ -105,8 +119,6 @@ def split_log(siteName, num, log_cut_path):
         if tmp is not None:
             logsPath = tmp
 
-    # print('|-正在处理网站: {}'.format(siteName))
-    # print(logsPath)
     log_path = os.path.join(log_cut_path, 'history_backups', siteName)
     log_path = log_path.replace('history_backups/history_backups/', 'history_backups/')
     if not os.path.exists(log_path): os.makedirs(log_path, 384)
@@ -114,7 +126,6 @@ def split_log(siteName, num, log_cut_path):
     old_logs = sorted(glob.glob(logsPath + '/' + siteName + "*log_*.log"))
     count = len(logs)
     remove_num = count - num
-    # print('|-当前日志数量: {}, 删除：{}'.format(count,remove_num))
     old_list = old_logs[:remove_num+1]
     for i in old_list:
         if os.path.exists(i):

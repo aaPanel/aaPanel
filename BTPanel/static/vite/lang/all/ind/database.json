@@ -257,5 +257,8 @@
 	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} file basis data, harap tunggu...",
 	"da561ddb957ee1dfa466f8e8a757b237": "{0} Basis data: ",
 	"4308f628f9d925687737f2d4e843c47f": "{0} Ukuran: ",
-	"94103f11ea70a356fd537493adc58f7f": "{0} Kecepatan:"
+	"94103f11ea70a356fd537493adc58f7f": "{0} Kecepatan:",
+	"6e15abc210dbf27427eab795031ffa15": "Keranjang Sampah Basis Data tidak diaktifkan, harap operasikan dengan hati-hati! Buka aktifkan -> Manajemen file -> Recycle Bin",
+	"45ac8a67414190f6fd84f24189ac6dfd": "Pindah ke Keranjang Sampah",
+	"3e00f0aa00b5ab654f306691ac0ce625": "Apakah Anda yakin memasukkan file ini [{0}] ke Keranjang Sampah?"
 }

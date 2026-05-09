@@ -582,6 +582,20 @@
 			"index_31": "O",
 			"index_32": "Método de verificación"
 		},
+		"Exclusive": {
+			"index_1": "Reglas exclusivas",
+			"index_2": "Las reglas exclusivas están deshabilitadas",
+			"index_3": ". Habilítelos para mejorar la protección de WordPress, DedeCMS y otras aplicaciones.",
+			"index_4": "Habilitar ahora",
+			"index_5": "ID de regla",
+			"index_6": "Nombre",
+			"index_7": "Descripción",
+			"index_8": "Estado",
+			"index_9": "Después de habilitar reglas exclusivas, se aplicarán a todos los sitios web. Si se producen falsos positivos, puede desactivar reglas individuales.",
+			"index_10": "Las reglas exclusivas se adaptan para los principales CMS en función de las características de cada programa. La mayoría de ellos apuntan a la ejecución remota de código.",
+			"index_11": "Actualizaciones de reglas: en esta etapa, la actualización del firewall también actualiza las reglas. Las actualizaciones manuales de reglas se agregarán más adelante.",
+			"index_12": "Plan de actualización futuro: actualizaciones específicas basadas en varias vulnerabilidades CVE."
+		},
 		"Map": {
 			"index_1": "Detalles del mapa de ataque (mapa solo como referencia)",
 			"index_2": "Longitud: {0}",
@@ -971,7 +985,9 @@
 			"setting_75": "Agregando palabras prohibidas, espere ...",
 			"setting_76": "Importando palabras prohibidas, por favor espere ...",
 			"setting_77": "Eliminar palabras prohibidas, por favor espere ...",
-			"setting_78": "Limpieza de palabras prohibidas, por favor espere ..."
+			"setting_78": "Limpieza de palabras prohibidas, por favor espere ...",
+			"exclusive_79": "Configuración del estado de la regla, espere ...",
+			"exclusive_80": "Estado de configuración, espere ..."
 		}
 	}
 }

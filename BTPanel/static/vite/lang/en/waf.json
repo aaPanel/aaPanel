@@ -582,6 +582,20 @@
 			"index_31": "Or",
 			"index_32": "Verification method"
 		},
+		"Exclusive": {
+			"index_1": "Exclusive Rules",
+			"index_2": "Exclusive rules are disabled",
+			"index_3": ". Enable them to enhance protection for WordPress, DedeCMS, and other applications.",
+			"index_4": "Enable now",
+			"index_5": "Rule ID",
+			"index_6": "Name",
+			"index_7": "Description",
+			"index_8": "Status",
+			"index_9": "After enabling exclusive rules, they will apply to all websites. If false positives occur, you can disable individual rules.",
+			"index_10": "Exclusive rules are adapted for major CMSs based on each program's characteristics. Most of them target remote code execution.",
+			"index_11": "Rule updates: at this stage, updating the firewall also updates the rules. Manual rule updates will be added later.",
+			"index_12": "Future update plan: targeted updates based on various CVE vulnerabilities."
+		},
 		"Map": {
 			"index_1": "Attack map details (map for reference only)",
 			"index_2": "Longitude: {0}",
@@ -971,7 +985,9 @@
 			"setting_75": "Adding prohibited words, please wait...",
 			"setting_76": "Importing prohibited words, please wait...",
 			"setting_77": "Deleting prohibited words, please wait...",
-			"setting_78": "Clearing prohibited words, please wait..."
+			"setting_78": "Clearing prohibited words, please wait...",
+			"exclusive_79": "Setting rule status, please wait...",
+			"exclusive_80": "Setting status, please wait..."
 		}
 	}
 }

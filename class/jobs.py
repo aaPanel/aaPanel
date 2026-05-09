@@ -348,6 +348,10 @@ def sql_pacth():
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%project_config%')).count():
         public.M('sites').execute("alter TABLE sites add project_config STRING DEFAULT '{}'",())
 
+    # 添加子站点区分字段,parent_id： -1 空主站，0 主站 ，其他子站
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%parent_id%')).count():
+        public.M('sites').execute("alter TABLE sites add parent_id STRING DEFAULT 0",())
+
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'backup','%ps%')).count():
         public.M('backup').execute("alter TABLE backup add ps STRING DEFAULT 'No'",())
 

@@ -149,7 +149,7 @@
 			"index_1": "Più configurazione, fai clic per visualizzare"
 		},
 		"Confirm": {
-			"index_1": "Se confermi l'operazione, inseriscila manualmente \"{text_}\"",
+			"manualInputVerification": "Se confermi l'operazione, inseriscila manualmente \"{text_}\"",
 			"index_2": "Errore di input, riprova",
 			"index_3": "{0} è stato completato, totali {1} compiti, {2} successi, {3} fallimenti",
 			"index_4": "Risultato: ",

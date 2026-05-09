@@ -95,7 +95,8 @@
 			"domain_1": "Домены",
 			"domain_2": "Сертификат",
 			"config_8": "Страница",
-			"security_8": "Безопасность сайтов"
+			"security_8": "Безопасность сайтов",
+			"wap_12": "Exclusive Rules"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux panel ©2014-{0} aaPanel",

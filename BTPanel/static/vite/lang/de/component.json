@@ -149,9 +149,9 @@
 			"index_1": "Weitere Konfigurationen klicken Sie, um anzuzeigen, um anzuzeigen"
 		},
 		"Confirm": {
-			"index_1": "Wenn Sie die Operation bestätigen, geben Sie sie manuell \"{text_}\" ein.",
+			"manualInputVerification": "Bitte geben Sie zur Bestätigung „{text}“ ein",
 			"index_2": "Eingabefehler, bitte versuchen Sie es erneut",
-			"index_3": "{0} wurde abgeschlossen, insgesamt {1} Aufgaben, {2} Erfolge, {3} Fehler",
+			"index_3": "{0} abgeschlossen! Insgesamt {1} Elemente, {2} erfolgreich, {3} fehlgeschlagen.",
 			"index_4": "Ergebnis: ",
 			"index_5": "Das Ergebnis ist falsch, bitte versuchen Sie es erneut"
 		},

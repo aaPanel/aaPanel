@@ -134,5 +134,7 @@
 	"6c58c6835cb02cb51c4fdbcf7a9576d2": "Otro pago",
 	"549a85d53762608f8683e26187b70409": "Convierta automáticamente la moneda de pago según su ubicación",
 	"1b498eaafc20a6c7d28810c82c493eba": "Pagar ahora",
-	"23479e6eb6965cbdbe8d9d9d27c5b3a6": "Lotes {0}, progreso actual:"
+	"23479e6eb6965cbdbe8d9d9d27c5b3a6": "Lotes {0}, progreso actual:",
+	"c29968f6b73ef423333b74a2215bd6c4": "Por favor ingresa \"{text}\" para confirmar",
+	"dbff4ee2541586010261f5cb27b2b0a4": "{0} completado! Total de {1} elementos, {2} exitosos, {3} fallidos."
 }

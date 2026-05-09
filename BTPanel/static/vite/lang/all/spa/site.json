@@ -746,5 +746,7 @@
 	"f440e5504f5a02a7a2721a623db858da": "La cuenta no puede exceder los 16 caracteres",
 	"09a1a00003bee7363f3833b6a82e6f99": "Versión de plantilla",
 	"dffa53dbdbc610fc606d0bc8d072a5cc": "Por favor seleccione una versión",
-	"a310dff8a1d57f337fb9c291ad22a07e": "Todas las versiones"
+	"a310dff8a1d57f337fb9c291ad22a07e": "Todas las versiones",
+	"bbd72b4d28e19599151fec7edaf6f7c5": "Riesgos: La función Papelera de reciclaje de la base de datos no está habilitada actualmente. Una vez eliminada la base de datos, ¡la base de datos desaparecerá para siempre!",
+	"a29965e264f638beb59f4f241eb38bb0": "Riesgo: la función Papelera de reciclaje de archivos está deshabilitada actualmente. Después de eliminar un directorio de sitio, ¡el directorio de sitio desaparecerá para siempre!"
 }

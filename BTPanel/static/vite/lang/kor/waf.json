@@ -47,7 +47,7 @@
 			"index_43": "동적/정적 트래픽: {0}{2} / {1}{2}",
 			"index_44": "접속/차단 지도",
 			"index_45": "데이터는 상위 10,000개의 기록을 사용합니다",
-			"index_46": "(*상위 5개 좌표만 표시됩니다)",
+			"index_46": "(상위 5개 좌표만 표시됩니다)",
 			"index_47": "요청 수",
 			"index_48": "차단 수",
 			"index_49": "공격받은 도메인 TOP 10",
@@ -222,7 +222,7 @@
 				"index_102": "브라우저 확인 : 일반 브라우저 요청인지 확인하세요. 웹 사이트가 열린 후 문제가 발생하면 닫으십시오.",
 				"index_103": "점 (.)이없는 파일 확장자, 예를 들어 : SQL",
 				"index_104": "할 수 있게 하다",
-				"index_105": "장애를 입히다",
+				"index_105": "비활성화",
 				"index_106": "권장되지 않습니다",
 				"index_107": "활성화하는 것이 좋습니다. 특정 페이지가 CC 공격하에 있으면 다른 페이지에 영향을 미치지 않고 공격 된 URL에 대한 인간 검증이 트리거됩니다.",
 				"index_108": "24 시간 이내에 IP 당 방문 횟수를 기준으로 가로 채기. 활성화하는 것이 좋습니다. 기본 임계 값은 2000 번 방문보다 낮지 않아야합니다 (Nginx가 다시 시작되면 카운트가 재설정됨).",
@@ -374,7 +374,7 @@
 			"index_74": "IP 블랙리스트에 추가하세요",
 			"index_75": "운영 성공",
 			"index_76": "현재 IP의 URI는 루트 디렉토리이며 오 탐지 작업을 수행 할 수 없습니다!",
-			"index_77": "URL 화이트리스트에 추가하세요",
+			"index_77": "URL 화이트리스트 추가",
 			"index_78": "세부 사항 [{0}]",
 			"index_79": "전체 IP 섹션을 가져 오나요?",
 			"index_80": "URL 화이트리스트에 추가 한 후이 URL은 더 이상 방어되지 않습니다. 작업을 계속 하시겠습니까? ",
@@ -580,7 +580,7 @@
 			"index_29": ", Enter를 눌러 옵션을 작성하세요",
 			"index_30": "그리고",
 			"index_31": "또는",
-			"index_32": "Verification method"
+			"index_32": "인증 방식"
 		},
 		"Map": {
 			"index_1": "공격지도 세부 사항 (참조 만 맵)",
@@ -971,7 +971,23 @@
 			"setting_75": "금지 된 단어를 추가하면 기다려주세요 ...",
 			"setting_76": "금지 된 단어를 가져 오면 기다려주세요 ...",
 			"setting_77": "금지 된 단어 삭제, 기다려주세요 ...",
-			"setting_78": "금지 된 단어를 지우는 것은 기다려주세요 ..."
+			"setting_78": "금지 된 단어를 지우는 것은 기다려주세요 ...",
+			"exclusive_79": "Setting rule status, please wait...",
+			"exclusive_80": "Setting status, please wait..."
+		},
+		"Exclusive": {
+			"index_1": "Exclusive Rules",
+			"index_2": "Exclusive rules are disabled",
+			"index_3": ". Enable them to enhance protection for WordPress, DedeCMS, and other applications.",
+			"index_4": "Enable now",
+			"index_5": "Rule ID",
+			"index_6": "Name",
+			"index_7": "Description",
+			"index_8": "Status",
+			"index_9": "After enabling exclusive rules, they will apply to all websites. If false positives occur, you can disable individual rules.",
+			"index_10": "Exclusive rules are adapted for major CMSs based on each program's characteristics. Most of them target remote code execution.",
+			"index_11": "Rule updates: at this stage, updating the firewall also updates the rules. Manual rule updates will be added later.",
+			"index_12": "Future update plan: targeted updates based on various CVE vulnerabilities."
 		}
 	}
 }

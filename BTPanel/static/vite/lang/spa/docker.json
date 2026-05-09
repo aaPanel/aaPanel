@@ -88,7 +88,8 @@
 			"filterRunning": "Correr",
 			"filterStopped": "Interrumpido",
 			"searchPlaceholder": "Buscar nombre del contenedor o nombre de la imagen",
-			"goToApp": "Vaya a App Store para instalar"
+			"goToApp": "Vaya a App Store para instalar",
+			"pullCloudImage": "Extraer imagen de la nube"
 		},
 		"Container": {
 			"index_1": "Crear contenedor",
@@ -350,11 +351,12 @@
 					"index_23": "Complete el contenido del certificado",
 					"index_24": "Nombre de dominio",
 					"index_25": "Fecha de expiración",
-					"index_26": "Marca"
+					"index_26": "Marca",
+					"index_27": "Certificado gratuito"
 				}
 			},
 			"terminal": {
-				"index_1": "Seleccione Shell",
+				"index_1": "Concha",
 				"index_2": "Terminal",
 				"index_3": "Terminal abierto",
 				"index_4": "Ejecutar con privilegios raíz"
@@ -556,7 +558,7 @@
 			"index_47": "Nombre de plantilla",
 			"index_48": "Ingrese el nombre de la plantilla",
 			"index_49": "Notas",
-			"index_50": "Agregar registros: sea paciente y no cierre esta ventana"
+			"index_50": "Creando Docker Compose: tenga paciencia y no cierre esta ventana"
 		},
 		"Compose": {
 			"index_1": "Agregar proyecto de contenedor",
@@ -579,7 +581,10 @@
 				"index_5": "Seleccione la plantilla de contenedor",
 				"index_6": "Ingrese el nombre de la plantilla",
 				"index_7": "Agregar plantilla Yaml"
-			}
+			},
+			"taskLogsTitle": "Creando Docker Compose...",
+			"taskSuccess": "Proyecto agregado exitosamente",
+			"taskFailed": "No se pudo agregar el proyecto"
 		},
 		"Template": {
 			"index_4": "Nombre de plantilla",

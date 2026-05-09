@@ -259,5 +259,8 @@
 	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} archivo de base de datos, espere...",
 	"da561ddb957ee1dfa466f8e8a757b237": "{0} Base de datos: ",
 	"4308f628f9d925687737f2d4e843c47f": "{0} Tamaño: ",
-	"94103f11ea70a356fd537493adc58f7f": "{0} Velocidad:"
+	"94103f11ea70a356fd537493adc58f7f": "{0} Velocidad:",
+	"6e15abc210dbf27427eab795031ffa15": "La Papelera de reciclaje de la base de datos no está habilitada, ¡opere con precaución! Vaya a habilitar --> Gestión de archivos --> Papelera de reciclaje",
+	"45ac8a67414190f6fd84f24189ac6dfd": "Mover a la papelera de reciclaje",
+	"3e00f0aa00b5ab654f306691ac0ce625": "¿Está seguro de colocar este archivo [{0}] en la Papelera de reciclaje?"
 }

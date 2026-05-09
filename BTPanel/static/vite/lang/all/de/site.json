@@ -746,5 +746,7 @@
 	"f440e5504f5a02a7a2721a623db858da": "Das Konto darf nicht länger als 16 Zeichen sein",
 	"09a1a00003bee7363f3833b6a82e6f99": "Vorlagenversion",
 	"dffa53dbdbc610fc606d0bc8d072a5cc": "Bitte wählen Sie eine Version aus",
-	"a310dff8a1d57f337fb9c291ad22a07e": "Alle Versionen"
+	"a310dff8a1d57f337fb9c291ad22a07e": "Alle Versionen",
+	"bbd72b4d28e19599151fec7edaf6f7c5": "Risiken: Die Datenbank-Papierkorbfunktion ist derzeit nicht aktiviert. Nachdem die Datenbank gelöscht wurde, verschwindet die Datenbank für immer!",
+	"a29965e264f638beb59f4f241eb38bb0": "Risiko: Die Funktion „Papierkorb“ für Dateien ist derzeit deaktiviert. Nachdem ein Site-Verzeichnis gelöscht wurde, verschwindet das Site-Verzeichnis für immer!"
 }

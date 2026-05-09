@@ -4678,7 +4678,7 @@ def files_v2(pdata=None):
             'GetDir', 'GetDirNew', 'CreateFile', 'CreateDir', 'DeleteDir', 'DeleteFile',
             'get_download_url_list', 'remove_download_url',
             'modify_download_url', 'CopyFile', 'CopyDir', 'MvFile',
-            'GetFileBody', 'SaveFileBody', 'Zip', 'UnZip',
+            'GetFileBody', 'SaveFileBody', 'Zip', 'ZipAndDownload', 'get_zip_status', 'merge_split_file', 'UnZip',
             'get_download_url_find', 'set_file_ps', 'SearchFiles', 'upload',
             'read_history', 're_history', 'auto_save_temp',
             'get_auto_save_body', 'get_videos', 'GetFileAccess',
@@ -4689,7 +4689,8 @@ def files_v2(pdata=None):
             'GetTmpFile', 'del_files_store', 'add_files_store',
             'get_files_store', 'del_files_store_types',
             'add_files_store_types', 'exec_git', 'RemoveTask', 'ActionTask',
-            'Re_Recycle_bin', 'Get_Recycle_bin', 'Del_Recycle_bin',
+            'Re_Recycle_bin', 'Get_Recycle_bin', 'download_file','Del_Recycle_bin',
+            'Del_Recycle_bin_new','Close_Recycle_bin_new', 'Batch_Del_Recycle_bin',
             'Close_Recycle_bin', 'Recycle_bin', 'file_webshell_check',
             'dir_webshell_check', 'files_search', 'files_replace',
             'get_replace_logs', 'get_sql_backup', 'test_path', 'upload_files_exists',
@@ -5015,7 +5016,7 @@ def panel_data_v2(pdata=None):
     import data_v2
     dataObject = data_v2.data()
     defs = ('setPs', 'getData', 'getFind', 'getKey', 'getSiteWafConfig', 'getSiteThirtyTotal', 'get_wp_classification',
-            'get_wp_site_list', 'get_aacloud_data','get_wp_sub_sites')
+            'get_wp_site_list', 'get_aacloud_data','get_wp_sub_sites', 'get_wp_real_sites')
     return publicObject(dataObject, defs, None, pdata)
 
 

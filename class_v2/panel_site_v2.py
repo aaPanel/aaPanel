@@ -36,6 +36,7 @@ class panelSite(panelRedirect):
     siteName = None  # 网站名称
     sitePath = None  # 根目录
     sitePort = None  # 端口
+    parentPath = None
     phpVersion = None  # PHP版本
     setupPath = None  # 安装路径
     isWriteLogs = None  # 是否写日志
@@ -433,13 +434,285 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         # open(urlrewriteFile, 'w+').close()
         return public.return_message(0, 0, True)
 
-    # 上传CSV文件
-    # def upload_csv(self, get):
-    #     import files
-    #     f = files.files()
-    #     get.f_path = '/tmp/multiple_website.csv'
-    #     result = f.upload(get)
-    #     return result
+    # nginx子站点配置
+    def sub_dir_nginx_conf(self):
+        """
+        配置子目录站点 Nginx 配置
+        """
+        # 获取主站信息
+        parent_list = public.get_parent_site_name(self.siteName)
+        if not parent_list:
+            return None
+
+        parent_name = parent_list[0]
+        sub_name = parent_list[1] # _
+        sub_path = parent_list[2] # /
+
+        # 定义路径变量
+        vhost_path = '{}/panel/vhost/nginx'.format(self.setupPath)
+        sub_dir_vhost_dir = '{}/sub_dir/{}'.format(vhost_path, parent_name)
+        sub_dir_rewrite_dir = '{}/sub_dir/rewrite/{}'.format(vhost_path, parent_name)
+
+        # 确保目录存在
+        if not os.path.exists(sub_dir_vhost_dir):
+            os.makedirs(sub_dir_vhost_dir)
+            os.chmod(sub_dir_vhost_dir, 0o600)
+        if not os.path.exists(sub_dir_rewrite_dir):
+            os.makedirs(sub_dir_rewrite_dir)
+            os.chmod(sub_dir_rewrite_dir, 0o600)
+
+        # 生成子站伪静态配置文件
+        rewrite_file = '{}/{}.conf'.format(sub_dir_rewrite_dir, sub_name)
+        rewrite_content = '''if (!-e $request_filename) {{
+        rewrite ^/{sub_dir}/(.*)$ /{sub_dir}/index.php?$query_string last;
+    }}'''.format(sub_dir=sub_path)
+        public.writeFile(rewrite_file, rewrite_content)
+
+        # 生成子站主体配置文件
+        sub_conf_file = '{}/{}.conf'.format(sub_dir_vhost_dir, sub_name)
+
+        # 获取PHP版本
+        php_version = self.phpVersion if hasattr(self, 'phpVersion') else '80'
+
+        sub_conf_content = r'''location ^~ /{sub_path} {{
+        root {parentPath}/; 
+        index index.php index.html;
+
+        # access_log /www/wwwlogs/{parent_name}_{sub_name}.log;
+        # error_log  /www/wwwlogs/{parent_name}_{sub_name}.error.log;
+
+        include {rewrite_file};
+
+        location ~ \.php$ {{
+            fastcgi_param SCRIPT_FILENAME $request_filename;
+            include enable-php-{php_v}.conf;
+            include fastcgi_params;
+            fastcgi_param  PHP_VALUE "open_basedir={site_path}/:/tmp/";
+        }}
+    }}'''.format(
+            sub_name=sub_name,
+            sub_path=sub_path,
+            site_path=self.sitePath.rstrip('/'),
+            parentPath=self.parentPath,
+            parent_name=parent_name,
+            rewrite_file=rewrite_file,
+            php_v=php_version
+        )
+        public.writeFile(sub_conf_file, sub_conf_content)
+
+        # 修改主站配置文件，添加 include 引用
+        main_conf_file = '{}/{}.conf'.format(vhost_path, parent_name)
+        if os.path.exists(main_conf_file):
+            main_content = public.readFile(main_conf_file)
+            include_line = '''
+    #Subdirectory-configuration-start 
+    include {}/*.conf;
+    #Subdirectory-configuration-end'''.format(sub_dir_vhost_dir)
+
+            if "#Subdirectory-configuration-start" not in main_content:
+                root_match = re.search(r'root\s+[^;]+;', main_content)
+                if root_match:
+                    insert_pos = root_match.end()
+                    new_content = main_content[:insert_pos] + "\n" + include_line + main_content[insert_pos:]
+                    public.writeFile(main_conf_file, new_content)
+
+        return True
+
+    # apache子站点配置
+    def sub_dir_apache_conf(self):
+        """
+        配置子目录站点 Apache 配置
+        """
+        # 获取主站信息
+        parent_list = public.get_parent_site_name(self.siteName)
+        if not parent_list:
+            return None
+
+        parent_name = parent_list[0]
+        sub_name = parent_list[1] # _
+        sub_path = parent_list[2] # /
+
+        # 定义路径变量
+        vhost_path = '{}/panel/vhost/apache'.format(self.setupPath)
+        sub_dir_vhost_dir = '{}/sub_dir/{}'.format(vhost_path, parent_name)
+
+        # 确保子配置目录存在
+        if not os.path.exists(sub_dir_vhost_dir):
+            os.makedirs(sub_dir_vhost_dir)
+            os.chmod(sub_dir_vhost_dir, 0o600)
+
+        # 生成子站独立伪静态 (.htaccess)
+        htaccess_file = '{}/.htaccess'.format(self.sitePath.rstrip('/'))
+        htaccess_content = r'''<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /{sub_path}/
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{{REQUEST_FILENAME}} !-f
+    RewriteCond %{{REQUEST_FILENAME}} !-d
+    RewriteRule . /{sub_path}/index.php [L]
+    </IfModule>'''.format(sub_path=sub_path)
+
+        # 如果不存在伪静态文件，则写入
+        if not os.path.exists(htaccess_file):
+            public.writeFile(htaccess_file, htaccess_content)
+            # 设置权限
+            public.ExecShell('chown www:www ' + htaccess_file)
+
+        # 生成子站独立 Apache 配置文件
+        sub_conf_file = '{}/{}.conf'.format(sub_dir_vhost_dir, sub_name)
+
+        # 获取 PHP 版本对应的 sock 文件
+        php_version = self.phpVersion if hasattr(self, 'phpVersion') else '80'
+        php_sock = '/tmp/php-cgi-{}.sock'.format(php_version)
+
+        sub_conf_content = '''
+    # SetEnvIf Request_URI "^/{sub_path}/" is_sub_{sub_dir}
+    # SetEnvIf Request_URI "^/{sub_path}/" is_sub_site
+    # 
+    # CustomLog "/www/wwwlogs/{parent_name}_{sub_dir}-access_log" combined env=is_sub_{sub_dir}
+    # ErrorLog "/www/wwwlogs/{parent_name}_{sub_dir}-error_log"
+
+    <Directory "{site_path}">
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+        DirectoryIndex index.php index.html
+
+        <FilesMatch \\.php$>
+            SetHandler "proxy:unix:{php_sock}|fcgi://localhost"
+        </FilesMatch>
+    </Directory>
+    '''.format(
+            sub_path=sub_path,
+            sub_dir=sub_name,
+            parent_name=parent_name,
+            site_path=self.sitePath,
+            php_sock=php_sock
+        )
+        public.writeFile(sub_conf_file, sub_conf_content)
+
+        # 修改主站配置文件，添加 IncludeOptional 引用
+        main_conf_file = '{}/{}.conf'.format(vhost_path, parent_name)
+        self.sub_main_apache_conf(main_conf_file, sub_dir_vhost_dir, parent_name)
+
+        return True
+
+    # apache 主站配置插入
+    def sub_main_apache_conf(self, main_conf_file, sub_dir_vhost_dir, parent_name):
+        """
+        配置主站 Apache 配置文件（支持多个 VirtualHost 块）
+        :param main_conf_file 主站配置文件路径
+        :param sub_dir_vhost_dir 子站配置目录
+        :param parent_name  主站名称
+        """
+        if not os.path.exists(main_conf_file): return
+
+        main_content = public.readFile(main_conf_file)
+
+        include_line = (
+            "\n    #Subdirectory-configuration-start\n"
+            "    IncludeOptional {sub_dir_path}/*.conf\n"
+            "    #Subdirectory-configuration-end"
+        ).format(sub_dir_path=sub_dir_vhost_dir)
+
+        # 删除旧的配置块和日志标识，防止重复堆叠
+        main_content = re.sub(r'\n?\s+#Subdirectory-configuration-start.*?#Subdirectory-configuration-end', '',
+                              main_content, flags=re.DOTALL)
+        # 清理日志标识
+        main_content = main_content.replace(' env=!is_sub_site', '')
+        root_pattern = r'(DocumentRoot\s+["\']?[^"\'\s]+["\']?)'
+        main_content = re.sub(root_pattern, r'\1' + include_line, main_content)
+
+        # # 添加日志隔离
+        # log_path = "/www/wwwlogs/{}-access_log".format(parent_name)
+        # log_pattern = r'(CustomLog\s+["\']?{}["\']?\s+combined)'.format(re.escape(log_path))
+        # main_content = re.sub(log_pattern, r'\1 env=!is_sub_site', main_content)
+
+        public.writeFile(main_conf_file, main_content)
+
+    # ols子站点配置
+    def sub_dir_ols_conf(self):
+        """
+        配置子目录站点 OpenLiteSpeed (OLS) 配置
+        """
+        # 获取主站与子站信息
+        parent_list = public.get_parent_site_name(self.siteName)
+        if not parent_list:
+            return None
+
+        parent_name = parent_list[0]
+        sub_name = parent_list[1]
+        sub_path = parent_list[2]
+
+        # 获取 PHP 版本
+        php_version = self.phpVersion if hasattr(self, 'phpVersion') else '80'
+
+        # 定义路径变量
+        ols_vhost_path = '{}/panel/vhost/openlitespeed'.format(self.setupPath)
+        sub_dir_vhost_dir = '{}/detail/sub_dir/{}'.format(ols_vhost_path, parent_name)
+
+        # 确保子配置目录存在
+        if not os.path.exists(sub_dir_vhost_dir):
+            os.makedirs(sub_dir_vhost_dir)
+            os.chmod(sub_dir_vhost_dir, 0o600)
+
+        # 生成子站独立 OLS 配置文件
+        sub_conf_file = '{}/{}.conf'.format(sub_dir_vhost_dir, sub_name)
+        virtual_suffix = 'php_sub_{}'.format(sub_name)
+
+        sub_conf_content = '''extprocessor php_proc_{sub_name} {{
+      type                    lsapi
+      address                 UDS://tmp/lshttpd/{parent_name}_{sub_name}.sock
+      maxConns                100
+      env                     LSAPI_CHILDREN=100
+      path                    /usr/local/lsws/lsphp{php_v}/bin/lsphp
+      extUser                 www
+      extGroup                www
+      autoStart               1
+    }}
+
+    context /{sub_path}/ {{
+      location                $VH_ROOT/{sub_path}/
+      allowBrowse             1
+      index                   index.php index.html
+      addDefaultCharset       off
+      addMIMEType             application/x-httpd-{virtual_suffix} php
+
+      rewrite  {{
+        enable                1
+        inherit               0
+        rules                 RewriteRule .* - [E=is_sub_{sub_name}:1,E=is_sub_site:1]
+      }}
+    }}'''.format(
+            sub_path=sub_path,
+            sub_name=sub_name,
+            parent_name=parent_name,
+            php_v=php_version,
+            virtual_suffix=virtual_suffix
+        )
+        public.writeFile(sub_conf_file, sub_conf_content)
+
+        # 修改主站配置文件
+        main_conf_file = '{}/detail/{}.conf'.format(ols_vhost_path, parent_name)
+        if os.path.exists(main_conf_file):
+            main_content = public.readFile(main_conf_file)
+
+            # 注入 ScriptHandler (如果不存在)
+            handler_line = '  add                     lsapi:php_proc_{sub_name} {virtual_suffix}'.format(
+                sub_name=sub_name, virtual_suffix=virtual_suffix)
+
+            if handler_line not in main_content:
+                handler_pattern = r'(scripthandler[\s\S]*?\{)'
+                if re.search(handler_pattern, main_content):
+                    main_content = re.sub(handler_pattern, r'\1\n' + handler_line, main_content)
+
+            # 注入 Include 引用 (如果不存在)
+            include_line = 'include {}/*.conf'.format(sub_dir_vhost_dir)
+            if include_line not in main_content:
+                main_content += "\n" + include_line
+
+            public.writeFile(main_conf_file, main_content)
+        return True
 
     # 处理CSV内容
     def __process_cvs(self, key):
@@ -527,6 +800,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             websites_info = self.__process_cvs(key)
         res = self.__create_website_mulitiple(websites_info, site_path, get)
         public.serviceReload()
+        public.set_module_logs('PHP', 'batch_create')
         return res
 
     # 检测enable-php-00.conf
@@ -545,8 +819,9 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         except:
             pass
 
+    # 添加php站点
     @public.try_to_apply_ssl
-    def AddSite(self, get, multiple=None): # php版添加站点
+    def AddSite(self, get, multiple=None):
         # 校验参数
         try:
             if not hasattr(get, 'is_create_default_file'):
@@ -563,18 +838,28 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 Param('codeing').String(),
                 Param('port').Integer(),
                 Param('type_id').Integer(),
-                Param('set_ssl').Integer(),
                 Param('force_ssl').Integer(),
                 Param('ftp').Bool(),
                 Param('is_create_default_file').Bool(),
-                Param('parse_list').String(),  # dns auto
                 Param('ssl_auto').Integer(),  # default ssl auto
+
+                Param('sub_dir').String(),  # sub dir
+                Param('project_type').String(),  # default php
             ], [
                 public.validate.trim_filter(),
             ])
         except Exception as ex:
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
+
+        # 子目录处理
+        sub_dir = get.get('sub_dir', '')
+        is_subdir = False
+        if sub_dir:
+            sub_dir = sub_dir.strip('/')
+            if not sub_dir:
+                return public.return_message(-1, 0, "Subdirectory name cannot be empty")
+            is_subdir = True
 
         # git部署，测试连接
         if get.get('deploy_type') == 'ssh':
@@ -584,20 +869,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             ok, msg = git.check_webhook_install()
             if not ok:
                 return public.return_message(-1, 0, msg)
-
-        parse_list = []
-        main_domain = {}
-        if hasattr(get, "parse_list"):
-            import json
-            parse_list = json.loads(get.parse_list)
-            if not len(parse_list):
-                return public.fail_v2("domain names not found")
-            main_domain = parse_list.pop(0)
-            get.webname = json.dumps({
-                "domain": main_domain.get("domain").strip(),
-                "domainlist": [x.get("domain", "") for x in parse_list],
-                "count": len(parse_list),
-            })
 
         if get.get('ftp', False):
             # 校验参数
@@ -616,16 +887,21 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             return_message = public.return_msg_gettext(False, "Please fill in the website path")
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
+
         if get.path == "/":
             return_message = public.return_msg_gettext(False, "The website path cannot be the root directory [/]")
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
-        rep_email = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
+
         if hasattr(get, 'email'):
-            if not re.search(rep_email, get.email):
+            if not re.search(
+                    r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?",
+                    get.email
+            ):
                 return_message = public.return_msg_gettext(False, "Please check if the [Email] format correct")
                 del return_message['status']
                 return public.return_message(-1, 0, return_message['msg'])
+
         if hasattr(get, 'password') and hasattr(get, 'pw_weak'):
             l = public.check_password(get.password)
             if l == 0 and get.pw_weak == 'off':
@@ -640,12 +916,16 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 del return_message['status']
                 return public.return_message(-1, 0, return_message['msg'])
 
+        if not hasattr(get, 'type_id'): get.type_id = 0
+
+        if not hasattr(get, 'project_type'): get.project_type = "PHP"
+        
         self.check_default()
 
         self.check_php_conf()
 
         isError = public.checkWebConfig()
-        if isError != True:
+        if not isError:
             return_message = public.return_msg_gettext(False,
                                                        'ERROR: %s<br><br><a style="color:red;">' % public.get_msg_gettext(
                                                            'An error was detected in the configuration file. Please solve it before proceeding') + isError.replace(
@@ -740,25 +1020,76 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
         # 是否重复
         sql = public.M('sites')
-        if sql.where("name=?", (self.siteName,)).count():
-            return_message = public.return_msg_gettext(False, 'The site you tried to add already exists!')
-            del return_message['status']
-            return public.return_message(-1, 0, return_message['msg'])
-
-        opid = public.M('domain').where("name=?", (self.siteName,)).getField('pid')
-
-        if opid:
-            if public.M('sites').where('id=?', (opid,)).count():
-                return_message = public.return_msg_gettext(False, 'The domain you tried to add already exists!')
+        if not is_subdir:
+            if sql.where("name=?", (self.siteName,)).count():
+                return_message = public.return_msg_gettext(False, 'The site you tried to add already exists!')
                 del return_message['status']
                 return public.return_message(-1, 0, return_message['msg'])
 
-            public.M('domain').where('pid=?', (opid,)).delete()
+            opid = public.M('domain').where("name=?", (self.siteName,)).getField('pid')
 
-        if public.M('binding').where('domain=?', (self.siteName,)).count():
-            return_message = public.return_msg_gettext(False, 'The domain you tried to add already exists!')
-            del return_message['status']
-            return public.return_message(-1, 0, return_message['msg'])
+            if opid:
+                if public.M('sites').where('id=?', (opid,)).count():
+                    return_message = public.return_msg_gettext(False, 'The domain you tried to add already exists!')
+                    del return_message['status']
+                    return public.return_message(-1, 0, return_message['msg'])
+
+                public.M('domain').where('pid=?', (opid,)).delete()
+
+            if public.M('binding').where('domain=?', (self.siteName,)).count():
+                return_message = public.return_msg_gettext(False, 'The domain you tried to add already exists!')
+                del return_message['status']
+                return public.return_message(-1, 0, return_message['msg'])
+        else:
+            # 子目录：检查子目录是否已存在
+            if os.path.exists(self.sitePath + '/' + sub_dir):
+                return_message = public.return_msg_gettext(False, 'The sub-site directory already exists.')
+                del return_message['status']
+                return public.return_message(-1, 0, return_message['msg'])
+
+            # 主网站不存在，先创建默认网站
+            if not sql.where("name=?", (self.siteName,)).count():
+                res = self.AddSite(public.to_dict_obj({
+                    "webname": get.webname,
+                    "port": "80",
+                    "type": get.type,
+                    "ps": os.path.basename(self.sitePath),
+                    "codeing": 'utf8',
+                    "version": get.version,
+                    "type_id": 0,
+                    "is_create_default_file": True,
+                    "ssl_auto": getattr(get, 'ssl_auto', 0),
+                    "force_ssl": getattr(get, 'force_ssl', 0),
+                    "path": get.path,
+                    "project_type": get.project_type,
+                }),
+                    multiple=1
+                )
+                if res['status'] != 0:
+                    return_message = public.return_msg_gettext(False, 'Failed to add the main site.')
+                    del return_message['status']
+                    return public.return_message(-1, 0, return_message['msg'])
+
+                get.main_site_id = res['message']['siteId']
+                # 修改项目类型, 设置为空站点
+                public.M('sites').where("id=?", (get.main_site_id,)).update(
+                    {"project_type": get.project_type, "parent_id": "-1"}
+                )
+            else:
+                get.ssl_auto = 0
+                get.is_create_default_file = 0
+                site_id = sql.where("name=?", (self.siteName,)).field('id').find()
+                if site_id:
+                    get.main_site_id = site_id['id']
+
+            if not get.get("main_site_id"):
+                return_message = public.return_msg_gettext(False, 'The main station does not exist.')
+                del return_message['status']
+                return public.return_message(-1, 0, return_message['msg'])
+
+            self.parentPath = public.M('sites').where("id=?", (get.main_site_id,)).field('path').find()['path']
+            self.siteName = self.siteName + '/' + sub_dir
+            self.sitePath = self.sitePath + '/' + sub_dir
 
         # 创建根目录
         if not os.path.exists(self.sitePath):
@@ -780,16 +1111,17 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             public.ExecShell('chown root:root ' + userIni)
             public.ExecShell('chattr +i ' + userIni)
 
-        ngx_open_basedir_path = self.setupPath + '/panel/vhost/open_basedir/nginx'
-        if not os.path.exists(ngx_open_basedir_path):
-            os.makedirs(ngx_open_basedir_path, 384)
-        ngx_open_basedir_file = ngx_open_basedir_path + '/{}.conf'.format(self.siteName)
-        ngx_open_basedir_body = '''set $bt_safe_dir "open_basedir";
+        if not is_subdir:
+            ngx_open_basedir_path = self.setupPath + '/panel/vhost/open_basedir/nginx'
+            if not os.path.exists(ngx_open_basedir_path):
+                os.makedirs(ngx_open_basedir_path, 384)
+            ngx_open_basedir_file = ngx_open_basedir_path + '/{}.conf'.format(self.siteName)
+            ngx_open_basedir_body = '''set $bt_safe_dir "open_basedir";
     set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
-        public.writeFile(ngx_open_basedir_file, ngx_open_basedir_body)
+            public.writeFile(ngx_open_basedir_file, ngx_open_basedir_body)
 
         # 判断是否需要生成默认文件
-        if get.is_create_default_file in [True, 'true', 1, '1']:
+        if get.is_create_default_file in [True, 'true', 1, '1'] and not is_subdir:
             # 创建默认文档
             index = self.sitePath + '/index.html'
             if not os.path.exists(index):
@@ -812,15 +1144,19 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.ExecShell('chown -R www:www ' + doc502)
 
         # 写入配置
-        result = self.nginxAdd()
-        result = self.apacheAdd()
-        result = self.openlitespeed_add_site(get)
-
-        # 检查处理结果
+        if is_subdir:
+            result = self.sub_dir_nginx_conf()
+            result = self.sub_dir_apache_conf()
+            result = self.sub_dir_ols_conf()
+        else:
+            result = self.nginxAdd()
+            result = self.apacheAdd()
+            result = self.openlitespeed_add_site(get)
         if not result:
             return_message = public.return_msg_gettext(False, 'Failed to add, write configuraton ERROR!')
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
+
         ps = public.xssencode2(get.ps)
         # 添加放行端口
         if self.sitePort != '80':
@@ -829,28 +1165,29 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             get.ps = self.siteName
             firewalls.firewalls().AddAcceptPort(get)
 
-        if not hasattr(get, 'type_id'): get.type_id = 0
-        if not hasattr(get, 'project_type'): get.project_type = "PHP"
         public.check_domain_cloud(self.siteName)
 
-        # 统计wordpress安装次数
-        if get.project_type == 'WP':
-            public.count_wp()
-
         # 写入数据库
-        get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type', (
-            self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type))
-        data = {}
-        data['siteId'] = get.pid
+        if not is_subdir:
+            get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type', (
+                self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type
+            ))
+        else:
+            get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type,parent_id', (
+                self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type, get.main_site_id
+            ))
+
+        data = {'siteId': get.pid}
         try:
             # 添加更多域名
-            for domain in siteMenu['domainlist']:
-                get.domain = domain
-                get.webname = self.siteName
-                get.id = str(get.pid)
-                self.AddDomain(get, multiple)
+            if not is_subdir:
+                for domain in siteMenu['domainlist']:
+                    get.domain = domain
+                    get.webname = self.siteName
+                    get.id = str(get.pid)
+                    self.AddDomain(get, multiple)
 
-            sql.table('domain').add('pid,name,port,addtime', (get.pid, self.siteName, self.sitePort, public.getDate()))
+                sql.table('domain').add('pid,name,port,addtime', (get.pid, self.siteName, self.sitePort, public.getDate()))
             data['siteStatus'] = True
 
             # 添加FTP
@@ -896,30 +1233,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         datauser = get['name'].strip().lower()
                         public.M('databases').where('name=?', (datauser,)).update({"pid": get.pid})
                     data['databaseErrorMsg'] = result['msg']
-
-            data = self._set_ssl(get, data, siteMenu)
-            data = self._set_redirect(get, data['message'])
+            data["ssl"] = False
+            data = self._set_redirect(get, data)
             public.set_module_logs("sys_domain", "AddSite_Manual", 1)
             public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
-            # ================ dns domain  =======================
-            if hasattr(get, "parse_list"):
-                try:
-                    import threading
-                    from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                    # 添加申请证书, 解析,代理
-                    new_list = [main_domain] + parse_list
-                    task_obj = generate_sites_task(main_domain, get.pid)
-                    task = threading.Thread(
-                        target=init_sites_dns,
-                        args=(new_list, task_obj)
-                    )
-                    task.start()
-                    public.set_module_logs("sys_domain", "AddSite_Auto", 1)
-                except Exception as e:
-                    # 删除站点
-                    if get.pid is not None:
-                        from public import websitemgr
-                        websitemgr.remove_site(get.pid)
 
             # ================ git start ======================
             if data['status'] == 0 and get.get('deploy_type') in ['ssh', 'github']:
@@ -945,11 +1262,10 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
             # ================ git end ======================
 
-            # todo 'parse_list' 为自动化dns流程计划移除. 与默认自动ssl互斥,  ssl_auto拦截非人为自动化测试
-            if hasattr(get, "pid") and not hasattr(get, "parse_list") and getattr(get, "ssl_auto", "0") == "1":
+            if hasattr(get, "pid") and getattr(get, "ssl_auto", "0") == "1":
                 data["ssl_site_id"] = get.pid or 0
 
-            if public.get_multi_webservice_status() and get.get('type') in ['PHP','WP2']:
+            if public.get_multi_webservice_status() and get.get('type') in ['PHP','WP2'] and not is_subdir:
                 conf_list = public.get_default_site_conf()
                 if get.type == 'PHP':
                     dict_obj = public.to_dict_obj({'site_id': get.get('pid', 0), 'service_type': conf_list['php'],'is_reload': False})
@@ -957,17 +1273,16 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     dict_obj = public.to_dict_obj({'site_id': get.get('siteId', 0), 'service_type': conf_list['wp'],'is_reload': False})
 
                 self.switch_webservice(dict_obj)
-
+            public.set_module_logs("PHP", "create", 1)
             if not multiple:
                 public.serviceReload()
-
             return data
         except Exception as e:
+            public.print_log(f"AddSite Error : {e}")
             return data
 
-    # 添加站点
+    # WP添加站点
     def add_sites(self, get, app=None, multiple=None):
-        import json
         task_status = os.path.join('/tmp', 'wp_aapanel_deploy.log')
         lock_file = os.path.join('/tmp', 'wp_aapanel_deploy.lock')
 
@@ -1008,18 +1323,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             # =========wp创建==========
             if get.get('project_type', '') == 'WP2':
                 args = get
-                main_domain = {}
-                if hasattr(get, "wp_parse_list"):
-                    wp_parse_list = json.loads(args.wp_parse_list)
-                    if not len(wp_parse_list):
-                        raise ValueError("domain names not found")
-                    main_domain = wp_parse_list.pop(0)
-                    get.webname = json.dumps({
-                        "domain": main_domain.get("domain").strip(),
-                        "domainlist": [x.get("domain", "") for x in wp_parse_list],
-                        "count": len(wp_parse_list),
-                    })
-
                 from copy import deepcopy
                 get = public.to_dict_obj(deepcopy(get.get_items()))
             # ===========================================
@@ -1038,7 +1341,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 Param('codeing').String(),
                 Param('port').Integer(),
                 Param('type_id').Integer(),
-                Param('set_ssl').Integer(),
                 Param('force_ssl').Integer(),
                 Param('ftp').Bool(),
                 Param('is_create_default_file').Bool(),
@@ -1048,20 +1350,21 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.validate.trim_filter(),
             ])
 
-            if get.get('ftp', False):
-                # 校验参数
-                get.validate([
-                    Param('ftp_username').String(),
-                    Param('ftp_password').String(),
-                ], [
-                    public.validate.trim_filter(),
-                ])
-
             if not get.path:
                 raise ValueError("Please fill in the website path")
 
             if get.path == "/":
                 raise ValueError("The website path cannot be the root directory [/]")
+
+            # 子目录
+            sub_dir = get.get('sub_dir', '')
+            is_subdir = False
+
+            if sub_dir:
+                sub_dir = sub_dir.strip('/')
+                if not sub_dir:
+                    raise ValueError("Subdirectory name cannot be empty")
+                is_subdir = True
 
             rep_email = r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?"
 
@@ -1131,8 +1434,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 raise ValueError('Requested PHP version does NOT exist!')
 
             domain = None
-            # if siteMenu['count']:
-            #    domain            = get.domain.replace(' ','')
             # 表单验证
             if not self.__check_site_path(self.sitePath):
                 raise ValueError('System critical directory cannot be used as site directory')
@@ -1154,28 +1455,79 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
             # 是否重复
             sql = public.M('sites')
-            if sql.where("name=?", (self.siteName,)).count():
-                raise ValueError('The site you tried to add already exists!')
+            if not is_subdir:
+                if sql.where("name=?", (self.siteName,)).count():
+                    # 判断是否是空主站
+                    site_tmp = sql.where("name=?", (self.siteName,)).find()
+                    if site_tmp['parent_id'] in ['-1',-1]:
+                        get.id = site_tmp['id']
+                        get.name = site_tmp['name']
+                        get.path = site_tmp['path']
+                        return  self.wp_main_site_coverage(get)
 
-            opid = public.M('domain').where("name=?", (self.siteName,)).getField('pid')
+                    raise ValueError('The site you tried to add already exists!')
 
-            if opid:
-                if public.M('sites').where('id=?', (opid,)).count():
+                opid = public.M('domain').where("name=?", (self.siteName,)).getField('pid')
+
+                if opid:
+                    if public.M('sites').where('id=?', (opid,)).count():
+                        raise ValueError('The domain you tried to add already exists!')
+
+                    public.M('domain').where('pid=?', (opid,)).delete()
+
+                if public.M('binding').where('domain=?', (self.siteName,)).count():
                     raise ValueError('The domain you tried to add already exists!')
+            else:
+                # 子目录是否存在
+                if os.path.exists(self.sitePath + '/' + sub_dir):
+                    raise ValueError(f'{self.sitePath + '/' + sub_dir},The sub-site directory already exists.')
 
-                public.M('domain').where('pid=?', (opid,)).delete()
+                # 主网站不存在，先创建默认网站
+                if not sql.where("name=?", (self.siteName,)).count():
+                    res = self.AddSite(public.to_dict_obj({
+                        "webname":get.webname,
+                        "port" : "80",
+                        "type" : get.type,
+                        "ps" : os.path.basename(self.sitePath),
+                        "codeing" : 'utf8',
+                        "version" : get.version,
+                        "type_id" : 0,
+                        "is_create_default_file" : True,
+                        "ssl_auto" : get.ssl_auto,
+                        "force_ssl" : get.force_ssl,
+                        "path": get.path
+                    }), multiple=1)
+                    if res['status'] != 0:
+                        raise ValueError('Failed to add the main site.')
 
-            if public.M('binding').where('domain=?', (self.siteName,)).count():
-                raise ValueError('The domain you tried to add already exists!')
+                    get.main_site_id = res['message']['siteId']
+                    # 修改项目类型,设置为空站点
+                    public.M('sites').where("id=?",(get.main_site_id,)).update({"project_type":"WP2","parent_id":"-1"})
+                else:
+                    get.ssl_auto = 0
+                    get.is_create_default_file = 0
+                    get.enable_cache = 0
+                    site_id = sql.where("name=?", (self.siteName,)).field('id').find()
+                    if site_id:
+                        get.main_site_id = site_id['id']
+
+                if not get.get("main_site_id"):
+                    raise ValueError('The main station does not exist.')
+
+                self.parentPath = public.M('sites').where("id=?",(get.main_site_id,)).field('path').find()['path']
+                self.siteName = self.siteName + '/' + sub_dir
+                self.sitePath = self.sitePath + '/' + sub_dir
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             progress_log['parameter_verification']['ps'] = public.lang('Parameter verification failed')
             progress_log['parameter_verification']['status'] = -1
             progress_log['parameter_verification']['error'] = public.lang('Parameter verification failed: {}', e)
             progress_log['status'] = 1
             public.writeFile(task_status, json.dumps(progress_log))
             public.progress_release_lock(lock_file)
-            return
+            return str(e)
 
         with app.app_context():
             try:
@@ -1203,13 +1555,14 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     public.ExecShell('chown root:root ' + userIni)
                     public.ExecShell('chattr +i ' + userIni)
 
-                ngx_open_basedir_path = self.setupPath + '/panel/vhost/open_basedir/nginx'
-                if not os.path.exists(ngx_open_basedir_path):
-                    os.makedirs(ngx_open_basedir_path, 384)
-                ngx_open_basedir_file = ngx_open_basedir_path + '/{}.conf'.format(self.siteName)
-                ngx_open_basedir_body = '''set $bt_safe_dir "open_basedir";
-            set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
-                public.writeFile(ngx_open_basedir_file, ngx_open_basedir_body)
+                if not is_subdir:
+                    ngx_open_basedir_path = self.setupPath + '/panel/vhost/open_basedir/nginx'
+                    if not os.path.exists(ngx_open_basedir_path):
+                        os.makedirs(ngx_open_basedir_path, 384)
+                    ngx_open_basedir_file = ngx_open_basedir_path + '/{}.conf'.format(self.siteName)
+                    ngx_open_basedir_body = '''set $bt_safe_dir "open_basedir";
+                set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
+                    public.writeFile(ngx_open_basedir_file, ngx_open_basedir_body)
 
                 # 判断是否需要生成默认文件
                 if get.is_create_default_file in [True, 'true', 1, '1']:
@@ -1235,9 +1588,14 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                         public.ExecShell('chown -R www:www ' + doc502)
 
                 # 写入配置
-                result = self.nginxAdd()
-                result = self.apacheAdd()
-                result = self.openlitespeed_add_site(get)
+                if is_subdir:
+                    result = self.sub_dir_nginx_conf()
+                    result = self.sub_dir_apache_conf()
+                    result = self.sub_dir_ols_conf()
+                else:
+                    result = self.nginxAdd()
+                    result = self.apacheAdd()
+                    result = self.openlitespeed_add_site(get)
 
                 # 检查处理结果
                 if not result:
@@ -1255,38 +1613,42 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 if not hasattr(get, 'type_id'): get.type_id = 0
                 if not hasattr(get, 'project_type'): get.project_type = "PHP"
                 public.check_domain_cloud(self.siteName)
-                # 统计wordpress安装次数
-                if get.project_type == 'WP':
-                    public.count_wp()
+
                 # 写入数据库
-                get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type', (
-                    self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type))
+                if is_subdir:
+                    get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type,parent_id', (
+                        self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type,get.main_site_id))
+                else:
+                    get.pid = sql.table('sites').add('name,path,status,ps,type_id,addtime,project_type', (
+                        self.siteName, self.sitePath, '1', ps, get.type_id, public.getDate(), get.project_type))
 
                 # 添加更多域名
-                for domain in siteMenu['domainlist']:
-                    get.domain = domain
-                    get.webname = self.siteName
-                    get.id = str(get.pid)
-                    self.AddDomain(get, multiple)
+                if not is_subdir:
+                    for domain in siteMenu['domainlist']:
+                        get.domain = domain
+                        get.webname = self.siteName
+                        get.id = str(get.pid)
+                        self.AddDomain(get, multiple)
 
-                sql.table('domain').add('pid,name,port,addtime',
-                                        (get.pid, self.siteName, self.sitePort, public.getDate()))
+                    sql.table('domain').add('pid,name,port,addtime',(get.pid, self.siteName, self.sitePort, public.getDate()))
 
                 data = {}
                 data['siteStatus'] = True
                 data['siteId'] = get.pid
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 # 删除站点
-                if get.pid is not None:
+                if get.get("pid"):
                     from public import websitemgr
-                    websitemgr.remove_site(get.pid)
+                    websitemgr.wp_remove_site(get.pid)
                 progress_log['create_website']['ps'] = public.lang('Failed to create the website')
                 progress_log['create_website']['status'] = -1
                 progress_log['create_website']['error'] = public.lang('Failed to create the website: {}', e)
                 progress_log['status'] = 1
                 public.writeFile(task_status, json.dumps(progress_log))
                 public.progress_release_lock(lock_file)
-                return
+                return str(e)
 
             try:
                 progress_log['create_website']['ps'] = public.lang('The website was successfully created')
@@ -1296,16 +1658,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
                 # 添加FTP
                 data['ftpStatus'] = False
-                if 'ftp' not in get:
-                    get.ftp = False
-                if get.ftp == 'true':
-                    import ftp
-                    get.ps = self.siteName
-                    result = ftp.ftp().AddUser(get)
-                    if result['status']:
-                        data['ftpStatus'] = True
-                        data['ftpUser'] = get.ftp_username
-                        data['ftpPass'] = get.ftp_password
 
                 # 添加数据库
                 data['databaseStatus'] = False
@@ -1335,9 +1687,8 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                             datauser = get['name'].strip().lower()
                             public.M('databases').where('name=?', (datauser,)).update({"pid": get.pid})
                         data['databaseErrorMsg'] = result['msg']
-
-                data = self._set_ssl(get, data, siteMenu)
-                data = self._set_redirect(get, data['message'])
+                data['ssl'] = False
+                data = self._set_redirect(get, data)
                 public.set_module_logs("sys_domain", "AddSite_Manual", 1)
                 public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
                 if get.get('project_type', '') == 'WP2':
@@ -1350,10 +1701,12 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
                 # ====================================wp创建======================================
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 # 删除站点
-                if get.pid is not None:
+                if get.get("pid"):
                     from public import websitemgr
-                    websitemgr.remove_site(get.pid)
+                    websitemgr.wp_remove_site(get.pid)
                 progress_log['optional_configurations']['ps'] = public.lang(
                     'Failed to create an optional configuration')
                 progress_log['optional_configurations']['status'] = -1
@@ -1368,52 +1721,33 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 progress_log['optional_configurations']['status'] = 1
                 progress_log['initialize_wp_website']['status'] = 0
                 public.writeFile(task_status, json.dumps(progress_log))
-                if get.get('project_type', '') == 'WP2':
-                        result = self.deploy_wp(public.to_dict_obj({
-                            'domain': json.loads(args.webname).get('domain', ''),
-                            'weblog_title': args.weblog_title,
-                            'language': args.get('language', ''),
-                            'php_version': args.version,
-                            'user_name': args.user_name,
-                            'admin_password': args.password,
-                            'pw_weak': args.pw_weak,
-                            'admin_email': args.email,
-                            'prefix': args.prefix,
-                            'enable_cache': args.enable_cache,
-                            'd_id': data.get('d_id', 0),
-                            's_id': data.get('siteId', 0),
-                            'enable_whl': args.get('enable_whl', 0),
-                            'whl_page': args.get('whl_page', 'login'),
-                            'whl_redirect_admin': args.get('whl_redirect_admin', '404'),
-                            'package_version': args.get('package_version', None),
-                        }))
-                        if result['status'] == -1:
-                            raise ValueError(result['message']['result'])
 
-                        # ==================== domain dns ======================
-                        if hasattr(args, "wp_parse_list") and result.get("status", 0) == 0:
-                            try:
-                                import threading
-                                from ssl_domainModelV2.service import init_sites_dns, generate_sites_task
-                                site_id = data.get("siteId", 0)
-                                task_obj = generate_sites_task(main_domain, site_id)
-                                task = threading.Thread(
-                                    target=init_sites_dns,
-                                    args=([main_domain], task_obj)
-                                )
-                                task.start()
-                                public.set_module_logs("sys_domain", "AddSite_Auto", 1)
-                            except Exception as e:
-                                import traceback
-                                public.print_log(e)
-                                public.print_log(f"error, {e}")
-                # ==============================================================================
-
-                #多服务下切换默认服务
-                if public.get_multi_webservice_status():
+                #多服务下切换默认服务, 子目录不切换服务
+                if public.get_multi_webservice_status() and not is_subdir:
                     conf_list = public.get_default_site_conf()
                     dict_obj = public.to_dict_obj({'site_id' : data.get('siteId', 0),'service_type' : conf_list['wp'],'is_reload': False})
                     self.switch_webservice(dict_obj)
+
+                result = self.deploy_wp(public.to_dict_obj({
+                    'domain': json.loads(args.webname).get('domain', ''),
+                    'weblog_title': args.weblog_title,
+                    'language': args.get('language', ''),
+                    'php_version': args.version,
+                    'user_name': args.user_name,
+                    'admin_password': args.password,
+                    'pw_weak': args.pw_weak,
+                    'admin_email': args.email,
+                    'prefix': args.prefix,
+                    'enable_cache': args.enable_cache,
+                    'd_id': data['d_id'],
+                    's_id': data['siteId'],
+                    'enable_whl': args.get('enable_whl', 0),
+                    'whl_page': args.get('whl_page', 'login'),
+                    'whl_redirect_admin': args.get('whl_redirect_admin', '404'),
+                    'package_version': args.get('package_version', None),
+                }))
+                if result['status'] == -1:
+                    raise ValueError(result['message']['result'])
 
                 if not multiple:
                     public.serviceReload()
@@ -1422,21 +1756,23 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 progress_log['initialize_wp_website']['status'] = 1
                 progress_log['status'] = 1
 
-                # todo 'wp_parse_list' 为自动化dns流程计划移除. 与默认自动ssl互斥,  ssl_auto拦截非人为自动化测试
-                if hasattr(get, "pid") and not hasattr(get, "wp_parse_list") and getattr(get, "ssl_auto", "0") == "1":
+                if hasattr(get, "pid") and getattr(get, "ssl_auto", "0") == "1":
                     @public.try_to_apply_ssl
                     def _apply_ssl():
                         return {"ssl_site_id": get.pid or 0}
                     _apply_ssl()
 
                 public.writeFile(task_status, json.dumps(progress_log))
+                public.set_module_logs("WP", "create", 1)
                 public.progress_release_lock(lock_file)
                 return data
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 # 删除站点
-                if get.pid is not None:
+                if get.get("pid"):
                     from public import websitemgr
-                    websitemgr.remove_site(get.pid)
+                    websitemgr.wp_remove_site(get.pid)
                 progress_log['initialize_wp_website']['ps'] = public.lang('wordpress initialization failed')
                 progress_log['initialize_wp_website']['status'] = -1
                 progress_log['initialize_wp_website']['error'] = public.lang('Failed: {}', e)
@@ -1444,6 +1780,133 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.writeFile(task_status, json.dumps(progress_log))
                 public.progress_release_lock(lock_file)
                 return data
+
+    # wp空主站覆盖创建
+    def wp_main_site_coverage(self, get):
+        """
+        将已存在的 parent_id = '-1' 的空主站转化为正式 WordPress 站点
+        site_tmp: 数据库中查到的现有站点记录
+        """
+        task_status = os.path.join('/tmp', 'wp_aapanel_deploy.log')
+        lock_file = os.path.join('/tmp', 'wp_aapanel_deploy.lock')
+        site_id = get.id
+        site_name = get.name
+
+        data = {
+            "siteStatus": True,
+            "siteId": site_id,
+            "databaseStatus": False,
+            "d_id": 0,
+            "message": {"siteId": site_id}
+        }
+        progress_log = json.loads(public.readFile(task_status))
+        try:
+            progress_log['parameter_verification']['ps'] = public.lang('Parameter verification successful')
+            progress_log['parameter_verification']['status'] = 1
+            progress_log['create_website']['ps'] = public.lang('The website was successfully created')
+            progress_log['create_website']['status'] = 1
+            progress_log['optional_configurations']['status'] = 0
+            public.writeFile(task_status, json.dumps(progress_log))
+
+            # 创建数据库
+            if get.sql == 'true' or get.sql == 'MySQL':
+                import database
+                db_name = public.ensure_unique_db_name(get.datauser)
+                get.name = db_name
+                get.db_user = db_name
+                get.password = get.datapassword
+                get.address = '127.0.0.1'
+                get.ps = site_name
+
+                # 关联到现有站点 ID
+                get.pid = site_id
+
+                res_db = database.database().AddDatabase(get)
+                if res_db['status'] and res_db['id']:
+                    data['databaseStatus'] = True
+                    data['d_id'] = res_db['id']
+                else:
+                    if 'Database exists' in res_db['msg']:
+                        data['databaseStatus'] = True
+                        data['d_id'] = str(public.M('databases').where('name=?', (db_name,)).field('id').find()['id'])
+                        public.M('databases').where('name=?', (db_name,)).update({"pid": site_id})
+                    else:
+                        raise ValueError(public.lang("Failed to create database: {}", res_db['msg']))
+
+        except Exception as e:
+            # 出错处理
+            progress_log['status'] = 1
+            progress_log['optional_configurations']['status'] = -1
+            progress_log['optional_configurations']['error'] = str(e)
+            public.writeFile(task_status, json.dumps(progress_log))
+            public.progress_release_lock(lock_file)
+            return public.returnMsg(False, str(e))
+
+        try:
+            progress_log['optional_configurations']['status'] = 1
+            progress_log['initialize_wp_website']['status'] = 0
+            public.writeFile(task_status, json.dumps(progress_log))
+
+            # 部署wp
+            wp_res = self.deploy_wp(public.to_dict_obj({
+                'domain': site_name,
+                'weblog_title': get.weblog_title,
+                'language': get.get('language', 'en_US'),
+                'php_version': get.version,
+                'user_name': get.user_name,
+                'admin_password': get.password,
+                'pw_weak': get.pw_weak,
+                'admin_email': get.email,
+                'prefix': get.get('prefix', 'wp_'),
+                'enable_cache': get.enable_cache,
+                'd_id': data['d_id'],
+                's_id': site_id,
+                'enable_whl': get.get('enable_whl', 0),
+                'whl_page': get.get('whl_page', 'login'),
+                'whl_redirect_admin': get.get('whl_redirect_admin', '404'),
+                'package_version': get.get('package_version', None),
+                'is_not_del' : True
+            }))
+
+            if wp_res['status'] == -1:
+                raise ValueError(wp_res['message']['result'])
+
+            # 写入重写规则
+            server_list = ['nginx','apache']
+            for webserver in server_list:
+
+                swfile = '/www/server/panel/rewrite/{}/wordpress.conf'.format(webserver)
+                if os.path.exists(swfile):
+                    rewriteConf = public.readFile(swfile)
+
+                    if webserver == 'nginx':
+                        dwfile = '{}/vhost/rewrite/{}.conf'.format(public.get_panel_path(), site_name)
+
+                    else:
+                        dwfile = '{}/.htaccess'.format(get.path)
+
+                    public.writeFile(dwfile, rewriteConf)
+
+            # 将 parent_id 从 -1 改为 0，标志其成为正式主站
+            public.M('sites').where("id=?", (site_id,)).update({"parent_id": 0,"status": '1'})
+
+            progress_log['initialize_wp_website']['ps'] = public.lang('Success')
+            progress_log['initialize_wp_website']['status'] = 1
+            progress_log['status'] = 1
+            public.writeFile(task_status, json.dumps(progress_log))
+
+            # 释放锁
+            lock_file = os.path.join('/tmp', 'wp_aapanel_deploy.lock')
+            public.progress_release_lock(lock_file)
+            return data
+        except Exception as e:
+            # 出错处理
+            progress_log['status'] = 1
+            progress_log['initialize_wp_website']['status'] = -1
+            progress_log['initialize_wp_website']['error'] = str(e)
+            public.writeFile(task_status, json.dumps(progress_log))
+            public.progress_release_lock(lock_file)
+            return public.returnMsg(False, str(e))
 
     # 处理批量创建wp站点
     def batch_add_wp(self,get: public.dict_obj, app = None):
@@ -1620,6 +2083,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 public.validate.trim_filter(),
             ])
             thread.submit(self.batch_add_wp, args, app)
+            public.set_module_logs("WP", "batch_create", 1)
         else:
             thread.submit(self.add_sites, args, app)
 
@@ -1648,33 +2112,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         except:
             data['redirect'] = str(public.get_error_info())
             data['redirect'] = True
-        return public.return_message(0, 0, data)
-
-    def _set_ssl(self, get, data, siteMenu):
-        try:
-            if get.set_ssl != '1':
-                data['ssl'] = False
-                return public.return_message(0, 0, data)
-            import acme_v2
-            ssl_domain = siteMenu['domainlist']
-            ssl_domain.append(self.siteName)
-            get.id = str(get.pid)
-            get.auth_to = str(get.pid)
-            get.auth_type = 'http'
-            get.auto_wildcard = ''
-            get.domains = json.dumps(ssl_domain)
-            result = acme_v2.acme_v2().apply_cert_api(get)
-            get.type = '1'
-            get.siteName = self.siteName
-            get.key = result['private_key']
-            get.csr = result['cert'] + result['root']
-            self.SetSSL(get)
-            data['ssl'] = True
-            if hasattr(get, 'force_ssl') and get.force_ssl == '1':
-                get.siteName = self.siteName
-                self.HttpToHttps(get)
-        except:
-            data['ssl'] = str(public.get_error_info())
         return public.return_message(0, 0, data)
 
     def __get_site_format_path(self, path):
@@ -1822,6 +2259,20 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         if os.path.exists(vhost_proxy_file):
             public.ExecShell('rm -rf {}*'.format(vhost_proxy_file))
 
+        # 删除子站点配置
+        ols_file = "/www/server/panel/vhost/openlitespeed/detail/sub_dir/{}".format(siteName)
+        if os.path.exists(ols_file):
+            public.ExecShell('rm -rf {}'.format(ols_file))
+        nginx_file = "/www/server/panel/vhost/nginx/sub_dir/{}".format(siteName)
+        if os.path.exists(nginx_file):
+            public.ExecShell('rm -rf {}'.format(nginx_file))
+        nginx_rewrite = "/www/server/panel/vhost/nginx/rewrite/{}".format(siteName)
+        if os.path.exists(nginx_rewrite):
+            public.ExecShell('rm -rf {}'.format(nginx_rewrite))
+        apache_file = "/www/server/panel/vhost/apache/{}".format(siteName)
+        if os.path.exists(apache_file):
+            public.ExecShell('rm -rf {}'.format(apache_file))
+
         # 删除免费版监控报表站点配置文件
         site_total_dir = "/www/server/panel/vhost/nginx/extension/{}".format(siteName)
         if os.path.exists(site_total_dir):
@@ -1923,6 +2374,226 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         return_message = public.return_msg_gettext(True, 'Successfully deleted site!')
         del return_message['status']
         return public.return_message(0, 0, return_message['msg'])
+
+    # 子站点删除
+    def delete_sub_dir_site(self, get):
+        try:
+            get.validate([
+                Param('webname').String(),
+                Param('id').Integer(),
+                Param('ftp').Integer(),
+                Param('database').Integer(),
+                Param('path').Integer(),
+
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return False, str(ex)
+
+        site_id = get.id
+        site = public.M('sites').where('id=?',(get.id,)).find()
+        if not site or site['parent_id'] ==0:
+            return False, public.lang("The website does not exist.")
+
+        parent_list = public.get_parent_site_name(site['name'])
+        if not parent_list:
+            return False, public.lang("The parent_site website does not exist.")
+
+        parent_name = parent_list[0]
+        sub_name = parent_list[1]
+
+        # 删除根目录
+        if 'path' in get:
+            if get.path == '1':
+                import files_v2 as files
+                get.path = self.__get_site_format_path(public.M('sites').where("id=?", (site_id,)).getField('path'))
+                if self.__check_site_path(get.path):
+                    if public.M('sites').where("path=?", (get.path,)).count() < 2:
+                        files.files().DeleteDir(get)
+                get.path = '1'
+
+        try:
+            # 从数据库删除
+            public.M('sites').where("id=?", (site_id,)).delete()
+            public.M('binding').where("pid=?", (site_id,)).delete()
+            public.M('domain').where("pid=?", (site_id,)).delete()
+            public.M('wordpress_onekey').where("s_id=?", (site_id,)).delete()
+
+            # 尝试删除免费网站监控数据
+            free_monitor_path = '/www/server/site_total/data/total'
+            site_path = os.path.join(free_monitor_path, site_id)
+            if os.path.exists(site_path) and os.path.isdir(site_path):
+                shutil.rmtree(site_path)
+
+            # 尝试删除监控报表插件数据
+            conf_file = '/www/server/panel/plugin/monitor/monitor_data/config/config.json'
+            if os.path.exists(conf_file):
+                conf_str = public.readFile(conf_file)
+                conf_data = json.loads(conf_str) if conf_str else None
+
+                db_path = None
+                if isinstance(conf_data, dict):
+                    db_path = conf_data.get('data_save_path')
+
+                if db_path and os.path.exists(db_path):
+                    monitor_path = os.path.join(db_path, site_id)
+                    if os.path.exists(monitor_path) and os.path.isdir(monitor_path):
+                        shutil.rmtree(monitor_path)
+        except:
+            pass
+
+        # 是否删除关联数据库
+        if hasattr(get, 'database'):
+            if get.database == '1':
+                find = public.M('databases').where("pid=?", (site_id,)).field('id,name').find()
+                if find:
+                    import database_v2 as database
+                    get.name = find['name']
+                    get.id = find['id']
+                    database.database().DeleteDatabase(get)
+
+        # 删除ols配置
+        ols_conf = "/www/server/panel/vhost/openlitespeed/detail/sub_dir/{}/{}.conf".format(parent_name,sub_name)
+        if os.path.exists(ols_conf):
+            public.ExecShell('rm -f {}*'.format(ols_conf))
+
+        ols_parent_conf = "/www/server/panel/vhost/openlitespeed/detail/{}.conf".format(parent_name)
+        if os.path.exists(ols_parent_conf):
+            virtual_suffix = 'php_sub_{}'.format(sub_name)
+            handler_line_pattern = r'^\s*add\s+lsapi:php_proc_{sub_name}\s+{virtual_suffix}\s*\n?'.format(
+                sub_name=re.escape(sub_name),
+                virtual_suffix=re.escape(virtual_suffix)
+            )
+            main_content = public.readFile(ols_parent_conf)
+            if re.search(handler_line_pattern, main_content, flags=re.MULTILINE):
+                main_content = re.sub(handler_line_pattern, '', main_content, flags=re.MULTILINE)
+                public.writeFile(ols_parent_conf, main_content)
+
+        # 删除nginx配置
+        nginx_conf = "/www/server/panel/vhost/nginx/sub_dir/{}/{}.conf".format(parent_name,sub_name)
+        if os.path.exists(nginx_conf):
+            public.ExecShell('rm -f {}'.format(nginx_conf))
+
+        # 删除nginx伪静态
+        nginx_rewrite = "/www/server/panel/vhost/nginx/sub_dir/rewrite/{}/{}.conf".format(parent_name,sub_name)
+        if os.path.exists(nginx_rewrite):
+            public.ExecShell('rm -f {}'.format(nginx_rewrite))
+
+        # 删除apache配置
+        apache_conf = "/www/server/panel/vhost/apache/sub_dir/{}/{}.conf".format(parent_name, sub_name)
+        if os.path.exists(apache_conf):
+            public.ExecShell('rm -f {}'.format(apache_conf))
+
+        # 删除站点日志
+        log = "/www/wwwlogs/{}_{}*".format(parent_name, sub_name)
+        public.ExecShell('rm -f {}'.format(log))
+
+        return  True, public.lang("Successfully deleted site!")
+
+    # 删除WordPress站点
+    def delete_wp_site(self, get):
+        """
+        get参数要求:
+        @get.id : 站点ID
+        @get.webname : 站点域名
+        @get.del_all : 是否删除关联子站 (1: 连同子站一起删, 0: 仅处理当前主站)
+        @get.path/ftp/database : 是否删除物理文件的标记 (1或0)
+        """
+        try:
+            try:
+                get.validate([
+                    Param('webname').String(),
+                    Param('id').Integer(),
+                    Param('ftp').Integer(),
+                    Param('database').Integer(),
+                    Param('path').Integer()
+                ], [
+                    public.validate.trim_filter(),
+                ])
+                site_id = int(get.id)
+            except Exception as ex:
+                public.print_log("error info: {}".format(ex))
+                return public.return_message(-1, 0, str(ex))
+
+            # 获取当前站点信息
+            site_info = public.M('sites').where("id=?", (site_id,)).find()
+            if not site_info:
+                return public.return_message(-1, 0, "The specified site does not exist.")
+
+            # 子站点
+            if site_info['parent_id'] > 0:
+                ok, msg = self.delete_sub_dir_site(get)
+                if not ok:
+                    return public.return_message(-1, 0, msg)
+
+                # 判断是否是唯一站点
+                if not public.M('sites').where("parent_id=?", (site_info['parent_id'],)).count():
+                    # 判断主站类型，空战直接删除
+                    main_type =  public.M('sites').where("id=?", (site_info['parent_id'],)).field('parent_id').find()
+                    if main_type and main_type['parent_id'] == -1:
+                        get.id = site_info['parent_id']
+                        self.DeleteSite(get)
+
+                return public.return_message(0, 0,'Successfully deleted site!')
+            # 主站点
+            else:
+                # 判断有没有子站，没有子站直接删除
+                if not public.M('sites').where("parent_id=?", (site_id,)).count():
+                    self.DeleteSite(get,multiple=True)
+                else:
+                    # 判断是否保存文件
+                    if hasattr(get, 'path'):
+                        if get.path == '1':
+                            # 置空, 不删除子站文件
+                            sub_list = []
+                            for sub in  public.M('sites').where("parent_id=?", (site_id,)).field('path').select():
+                                sub_list.append(sub['path'])
+
+                            self.clean_main_site_keep_subs(site_info['path'], sub_list)
+
+                    # 是否删除关联数据库
+                    if hasattr(get, 'database'):
+                        if get.database == '1':
+                            find = public.M('databases').where("pid=?", (site_id,)).field('id,name').find()
+                            if find:
+                                import database_v2 as database
+                                get.name = find['name']
+                                get.id = find['id']
+                                database.database().DeleteDatabase(get)
+                    # 停止网站
+                    self.SiteStop(public.to_dict_obj({'id': site_id, 'name': get.webname}))
+                    public.M('sites').where("id=?", (site_id,)).update({"parent_id":-1})
+
+                public.serviceReload()
+                return public.return_message(0, 0, 'Successfully deleted site!')
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return public.return_message(-1, 0, "Deletion failed: " + str(e))
+
+    # 置空主站
+    def clean_main_site_keep_subs(self, main_path, keep_paths):
+        main_path = os.path.normpath(main_path)
+        keep_paths = [os.path.normpath(p) for p in keep_paths]
+
+        if not os.path.exists(main_path):
+            return
+
+        for item in os.listdir(main_path):
+            item_path = os.path.join(main_path, item)
+            if item_path in keep_paths:
+                continue
+
+            try:
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+            except:
+                pass
+        return
 
     def _del_ols_listen_conf(self, sitename):
         conf_dir = '/www/server/panel/vhost/openlitespeed/listen/'
@@ -2339,6 +3010,11 @@ listener Default%s{
 
         # 保存配置文件
         public.writeFile(file, conf)
+        # 判断是是否追加子目录配置
+        if public.M('sites').where('parent_id=?', (find['id'],)).count() > 0:
+            sub_dir = f"{self.setupPath}/panel/vhost/apache/sub_dir/{siteName}"
+            self.sub_main_apache_conf(file, sub_dir, siteName)
+
         return public.return_message(0, 0, True)
 
     def delete_domain_multiple(self, get):
@@ -2997,6 +3673,12 @@ listener SSL443 {{
                     ap_conf = ap_conf + "\n" + sslStr
                     self.apacheAddPort(ssl_prot)
                     public.writeFile(file, ap_conf)
+
+                    # 判断是是否追加子目录配置
+                    if public.M('sites').where('parent_id=?', (find['id'],)).count() > 0:
+                        sub_dir = f"{self.setupPath}/panel/vhost/apache/sub_dir/{siteName}"
+                        self.sub_main_apache_conf(file,sub_dir,siteName)
+
                     if other_project in SPECIAL_PROJECT_TYPE:
                         # 兼容 node, python, go, java, net, html, other
                         try:
@@ -3536,32 +4218,80 @@ listener SSL443 {{
 
         id = get.id
         Path = self.setupPath + '/stop'
-        sitePath = public.M('sites').where("id=?", (id,)).getField('path')
+        site_info = public.M('sites').where("id=?", (id,)).field('name,path,parent_id').find()
+        if not site_info:
+            return public.return_message(-1, 0, "The website does not exist.")
+
+        sitePath = site_info['path']
+        siteName = site_info['name']
+        real_path = public.get_site_web_cfg(id)
 
         # nginx
-        file = self.setupPath + '/panel/vhost/nginx/' + get.name + '.conf'
+        file = real_path.get('nginx')
         conf = public.readFile(file)
         if conf:
-            conf = conf.replace(Path, sitePath)
+            if "nginx/sub_dir/" in file:
+                # 子站点配置应导入主站路径
+                main_path = public.M('sites').where("id=?", (site_info['parent_id'],)).field('path').find()
+                conf = conf.replace(Path, main_path['path'])
+            else:
+                conf = conf.replace(Path, sitePath)
             conf = conf.replace("#include", "include")
             public.writeFile(file, conf)
+
         # apache
-        file = self.setupPath + '/panel/vhost/apache/' + get.name + '.conf'
+        file = real_path.get('apache')
         conf = public.readFile(file)
         if conf:
-            conf = conf.replace(Path, sitePath)
-            conf = conf.replace("#IncludeOptional", "IncludeOptional")
+            if "apache/sub_dir/" in file:
+                conf = re.sub(r'(<Directory\s+)"[^"]+"', r'\1"{}"'.format(sitePath), conf)
+
+                conf = re.sub(r'AllowOverride\s+None', 'AllowOverride All', conf, flags=re.I)
+
+                conf = re.sub(r'#\s*(<FilesMatch)', r'\1', conf)
+                conf = re.sub(r'#\s*(SetHandler)', r'\1', conf)
+                conf = re.sub(r'#\s*(</FilesMatch)', r'\1', conf)
+
+                if 'index.php' not in conf:
+                    conf = conf.replace('DirectoryIndex ', 'DirectoryIndex index.php ')
+
+                uri_match = re.search(r'Request_URI "\^([^"]+)"', conf)
+                if uri_match:
+                    sub_uri = uri_match.group(1).rstrip('/')
+                    alias_pattern = r'Alias\s+{}\s+"?[^"\n]+"?\n?'.format(re.escape(sub_uri))
+                    conf = re.sub(alias_pattern, '', conf)
+
+                conf = conf.replace('  ', ' ').strip()
+            else:
+                conf = conf.replace(Path, sitePath)
+                conf = conf.replace("#IncludeOptional", "IncludeOptional")
+
             public.writeFile(file, conf)
 
         # OLS
-        file = self.setupPath + '/panel/vhost/openlitespeed/' + get.name + '.conf'
+        file = real_path.get('ols')
         conf = public.readFile(file)
         if conf:
-            rep = r'vhRoot\s*{}'.format(Path)
-            new_content = 'vhRoot {}'.format(sitePath)
-            conf = re.sub(rep, new_content, conf)
-            public.writeFile(file, conf)
+            # 区分主站子站
+            if 'openlitespeed/detail/sub_dir/' in file:
+                name_list = public.get_parent_site_name(siteName)
+                sub_path = name_list[2] if name_list else ''
+                path = '$VH_ROOT/' + sub_path
+                conf = re.sub(r'location\s+/www/server/stop', 'location                {}/'.format(path), conf)
+                conf = re.sub(r'^\s*#\s*forceType', r'      forceType', conf, flags=re.M)
+            else:
+                rep = r'docRoot\s+/www/server/stop'
+                new_content = 'docRoot                   $VH_ROOT'
+                conf = re.sub(rep, new_content, conf)
 
+                # 兼容旧版ols启动
+                old_conf = public.readFile(os.path.join(public.get_vhost_path(), 'openlitespeed' ,siteName + '.conf'))
+                rep = r'vhRoot\s*{}'.format(Path)
+                new_content = 'vhRoot {}'.format(sitePath)
+                old_conf = re.sub(rep, new_content, old_conf)
+                public.writeFile(file, old_conf)
+
+            public.writeFile(file, conf)
         public.M('sites').where("id=?", (id,)).setField('status', '1')
         if not multiple:
             public.serviceReload()
@@ -3610,33 +4340,73 @@ listener SSL443 {{
 
         sitePath = public.M('sites').where("id=?", (id,)).getField('path')
         self._process_has_run_dir(get.name, sitePath, path)
+
+        real_path = public.get_site_web_cfg(id)
+
         # nginx
-        file = self.setupPath + '/panel/vhost/nginx/' + get.name + '.conf'
+        file = real_path.get('nginx')
         conf = public.readFile(file)
         if conf:
-            src_path = 'root ' + sitePath
-            dst_path = 'root ' + path
-            if conf.find(src_path) != -1:
-                conf = conf.replace(src_path, dst_path)
-            else:
-                conf = conf.replace(sitePath, path)
-            conf = conf.replace("include", "#include")
+            conf = re.sub(r'(root\s+)[^;]+(;)', r'\1{}\2'.format(path), conf)
+            conf = public.replace_conf_without_sub(
+                text=conf,
+                old="include",
+                new="#include",
+            )
             public.writeFile(file, conf)
 
         # apache
-        file = self.setupPath + '/panel/vhost/apache/' + get.name + '.conf'
+        file = real_path.get('apache')
         conf = public.readFile(file)
         if conf:
-            conf = conf.replace(sitePath, path)
-            conf = conf.replace("IncludeOptional", "#IncludeOptional")
+            # 区分主子站
+            if "apache/sub_dir/" in file:
+                # 停止目标路径
+                conf = re.sub(r'(<Directory\s+)"[^"]+"', r'\1"{}"'.format(path), conf)
+
+                # 禁用wp重写
+                conf = re.sub(r'AllowOverride\s+All', 'AllowOverride None', conf, flags=re.I)
+
+                # 注释 PHP 处理块
+                if '<FilesMatch' in conf and '#<FilesMatch' not in conf:
+                    conf = re.sub(r'(<FilesMatch)', r'#\1', conf)
+                    conf = re.sub(r'(SetHandler)', r'#\1', conf)
+                    conf = re.sub(r'(</FilesMatch)', r'#\1', conf)
+
+                # 清理索引文件
+                conf = re.sub(r'\bindex\.php\b', '', conf).replace('  ', ' ')
+
+                # 强化路径映射
+                uri_match = re.search(r'Request_URI "\^([^"]+)"', conf)
+                if uri_match:
+                    sub_uri = uri_match.group(1).rstrip('/')
+                    alias_pattern = r'Alias\s+{}\s+"?[^"\n]+"?'.format(re.escape(sub_uri))
+                    new_alias_line = 'Alias {} {}'.format(sub_uri, path)
+
+                    if re.search(alias_pattern, conf):
+                        conf = re.sub(alias_pattern, new_alias_line, conf)
+                    else:
+                        conf = new_alias_line + "\n" + conf
+            else:
+                conf = conf.replace(sitePath, path)
+                conf = public.replace_conf_without_sub(
+                    text=conf,
+                    old="IncludeOptional",
+                    new="#IncludeOptional",
+                )
             public.writeFile(file, conf)
         # OLS
-        file = self.setupPath + '/panel/vhost/openlitespeed/' + get.name + '.conf'
+        file = real_path.get('ols')
         conf = public.readFile(file)
         if conf:
-            rep = r'vhRoot\s*{}'.format(sitePath)
-            new_content = 'vhRoot {}'.format(path)
-            conf = re.sub(rep, new_content, conf)
+            # 区分主站子站
+            if 'openlitespeed/detail/sub_dir/' in file:
+                conf = re.sub(r'location\s+[^ \n\t]+', r'location                /www/server/stop', conf)
+                conf = re.sub(r'^\s*forceType', r'      #forceType', conf, flags=re.M)
+            else:
+                rep = r'docRoot\s*\$VH_ROOT'
+                new_content = 'docRoot                   {}'.format(path)
+                conf = re.sub(rep, new_content, conf)
             public.writeFile(file, conf)
 
         public.M('sites').where("id=?", (id,)).setField('status', '0')
@@ -4651,7 +5421,11 @@ server
             siteName = get.siteName
             data = {}
             data['phpversion'] = public.get_site_php_version(siteName)
-            conf = public.readFile(self.setupPath + '/panel/vhost/' + public.get_webserver() + '/' + siteName + '.conf')
+            conf_path = public.get_php_conf_path(siteName)
+            conf = public.readFile(conf_path.replace('//', '/'))
+
+            if not conf:
+                return public.return_message(-1, 0, public.lang("Configuration file does not exist!"))
             data['tomcat'] = conf.find('#TOMCAT-START')
             data['tomcatversion'] = public.readFile(self.setupPath + '/tomcat/version.pl')
             data['nodejsversion'] = public.readFile(self.setupPath + '/node.js/version.pl')
@@ -4736,16 +5510,23 @@ server
 
         siteName = get.siteName
         version = get.version
-        if version == 'other' and not public.get_webserver() in ['nginx', 'tengine']:
+
+        curr_web_server = public.get_webserver()
+        if version == 'other' and curr_web_server not in ['nginx', 'tengine']:
             return public.return_message(-1, 0, public.lang("Custom PHP configuration only supports Nginx"))
+
         try:
-            # nginx
-            file = self.setupPath + '/panel/vhost/nginx/' + siteName + '.conf'
-            conf = public.readFile(file)
+            conf_dict = public.get_site_web_cfg(site_name=siteName)
+            nginx_conf_file = conf_dict['nginx']
+            apache_conf_file = conf_dict['apache']
+            ols_conf_file = conf_dict['ols']
+            # 处理 Nginx 配置
+            conf = public.readFile(nginx_conf_file)
             if conf:
                 wp00 = "/www/server/nginx/conf/enable-php-00-wpfastcgi.conf"
                 if not os.path.exists(wp00):
                     public.writeFile(wp00, '')
+
                 other_path = '/www/server/panel/vhost/other_php/{}'.format(siteName)
                 if not os.path.exists(other_path): os.makedirs(other_path)
                 other_rep = "{}/enable-php-other.conf".format(other_path)
@@ -4755,16 +5536,19 @@ server
                     get.other = get.other.strip()
 
                     if not get.other:
-                        return public.return_message(-1, 0, public.lang("The PHP connection configuration cannot be empty when customizing the version!"))
+                        return public.return_message(-1, 0, public.lang(
+                            "The PHP connection configuration cannot be empty when customizing the version!"))
 
                     if not re.match(r"^(\d+\.\d+\.\d+\.\d+:\d+|unix:[\w/\.-]+)$", get.other):
-                        return public.return_message(-1, 0, public.lang("The PHP connection configuration format is incorrect, please refer to the example!"))
+                        return public.return_message(-1, 0, public.lang(
+                            "The PHP connection configuration format is incorrect, please refer to the example!"))
 
                     other_tmp = get.other.split(':')
                     if other_tmp[0] == 'unix':
                         if not os.path.exists(other_tmp[1]):
-                            return public.return_message(-1, 0, 'The specified unix socket [{}] does not exist!'.format(
-                                other_tmp[1]))
+                            return public.return_message(-1, 0,
+                                                         'The specified unix socket [{}] does not exist!'.format(
+                                                             other_tmp[1]))
                     else:
                         if not public.check_tcp(other_tmp[0], int(other_tmp[1])):
                             return public.return_message(-1, 0,
@@ -4780,10 +5564,12 @@ server
     include pathinfo.conf;
 }}'''.format(get.other)
                     public.writeFile(other_rep, other_conf)
+
                     conf = conf.replace(other_rep, dst)
                     rep = r"include\s+enable-php-(\w{2,5})\.conf"
                     tmp = re.search(rep, conf)
                     if tmp: conf = conf.replace(tmp.group(), 'include ' + dst)
+
                 elif re.search(r"enable-php-\d+-wpfastcgi.conf", conf):
                     dst = 'enable-php-{}-wpfastcgi.conf'.format(version)
                     conf = conf.replace(other_rep, dst)
@@ -4796,7 +5582,10 @@ server
                     rep = r"enable-php-(\w{2,5})\.conf"
                     tmp = re.search(rep, conf)
                     if tmp: conf = conf.replace(tmp.group(), dst)
-                public.writeFile(file, conf)
+
+                public.writeFile(nginx_conf_file, conf)
+
+                # 处理目录验证的PHP版本同步
                 try:
                     import site_dir_auth_v2 as site_dir_auth
                     site_dir_auth_module = site_dir_auth.SiteDirAuth()
@@ -4804,42 +5593,43 @@ server
                     if auth_list:
                         for i in auth_list[siteName]:
                             auth_name = i['name']
-                            auth_file = "{setup_path}/panel/vhost/nginx/dir_auth/{site_name}/{auth_name}.conf".format(
-                                setup_path=self.setupPath, site_name=siteName, auth_name=auth_name)
+                            # 目录认证的路径也需要跟随 siteName 的结构
+                            sub = 'dir_auth/sub_dir/' if '/' in siteName else 'dir_auth/'
+                            auth_file = "{setup_path}/panel/vhost/nginx/{sub}{site_name}/{auth_name}.conf".format(
+                                setup_path=self.setupPath, sub=sub, site_name=siteName, auth_name=auth_name)
                             if os.path.exists(auth_file):
                                 site_dir_auth_module.change_dir_auth_file_nginx_phpver(siteName, version, auth_name)
                 except:
                     pass
 
-            # apache
-            file = self.setupPath + '/panel/vhost/apache/' + siteName + '.conf'
-            conf = public.readFile(file)
+            # 处理 Apache 配置
+            conf = public.readFile(apache_conf_file)
             if conf and version != 'other':
                 rep = r"(unix:/tmp/php-cgi-(\w{2,5})\.sock\|fcgi://localhost|fcgi://127.0.0.1:\d+)"
-                tmp = re.search(rep, conf).group()
-                conf = conf.replace(tmp, public.get_php_proxy(version, 'apache'))
-                public.writeFile(file, conf)
-            # OLS
+                tmp = re.search(rep, conf)
+                if tmp:
+                    conf = conf.replace(tmp.group(), public.get_php_proxy(version, 'apache'))
+                    public.writeFile(apache_conf_file, conf)
+
+            # 处理 OpenLiteSpeed 配置
             if version != 'other':
-                file = self.setupPath + '/panel/vhost/openlitespeed/detail/' + siteName + '.conf'
-                conf = public.readFile(file)
+                conf = public.readFile(ols_conf_file)
                 if conf:
                     rep = r'lsphp\d+'
                     tmp = re.search(rep, conf)
                     if tmp:
                         conf = conf.replace(tmp.group(), 'lsphp' + version)
-                        public.writeFile(file, conf)
+                        public.writeFile(ols_conf_file, conf)
+
             if not multiple:
                 public.serviceReload()
-            public.write_log_gettext("Site manager",
-                                     'Successfully changed PHP Version of site [{}] to PHP-{}'.format(siteName,
-                                                                                                      version))
-            return public.return_message(0, 0,
-                                         'Successfully changed PHP Version of site [{}] to PHP-{}'.format(siteName,
-                                                                                                          version))
-        except:
-            return public.get_error_info()
-            return public.return_message(-1, 0, public.lang("Setup failed, no enable-php-xx related configuration items were found in the website configuration file!"))
+
+            log_msg = 'Successfully changed PHP Version of site [{}] to PHP-{}'.format(siteName, version)
+            public.write_log_gettext("Site manager", log_msg)
+            return public.return_message(0, 0, log_msg)
+
+        except Exception as e:
+            return public.return_message(-1, 0, public.lang("Setup failed: ") + str(e))
 
     # 是否开启目录防御
     def GetDirUserINI(self, get):
@@ -7573,39 +8363,6 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             text = text.replace(k, v)
         return public.xssencode2(text)
 
-    # # 取网站日志
-    # def GetSiteLogs(self, get):
-    #     # 校验参数
-    #     try:
-    #         get.validate([
-    #             Param('siteName').String(),
-    #         ], [
-    #             public.validate.trim_filter(),
-    #         ])
-    #         lines = get.get('lines', 1000)
-    #         lines = int(lines)
-    #     except Exception as ex:
-    #         public.print_log("error info: {}".format(ex))
-    #         return public.return_message(-1, 0, str(ex))
-    #
-    #     serverType = public.get_webserver()
-    #     if serverType == "nginx":
-    #         logPath = '/www/wwwlogs/' + get.siteName + '.log'
-    #     elif serverType == 'apache':
-    #         logPath = '/www/wwwlogs/' + get.siteName + '-access_log'
-    #     else:
-    #         logPath = '/www/wwwlogs/' + get.siteName + '_ols.access_log'
-    #     if not os.path.exists(logPath):
-    #         return_message = public.return_msg_gettext(False, 'Log is empty')
-    #         del return_message['status']
-    #         return public.return_message(-1, 0, return_message['msg'])
-    #     # return public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, 1000)))
-    #     return_message = public.return_msg_gettext(True, self.xsssec(public.GetNumLines(logPath, lines)))
-    #     del return_message['status']
-    #     return public.return_message(0, 0, return_message['msg'])
-        # if not os.path.exists(logPath): return public.return_message(-1, 0, public.lang("Log is empty"))
-        # return public.return_message(0,0, self.xsssec(public.GetNumLines(logPath, 1000)))
-
     def GetSiteLogs(self, get):
         # 1. 校验参数（保留原有逻辑，新增对 lines, search, time_search 的支持）
         try:
@@ -7623,13 +8380,16 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         # 定位日志文件路径
         serverType = public.get_webserver()
+        siteName = get.siteName
+        site_list = public.get_parent_site_name(siteName)
+        if site_list:
+            siteName = site_list[0]
         if serverType == "nginx":
-            logPath = '/www/wwwlogs/{}.log'.format(get.siteName)
+            logPath = '/www/wwwlogs/{}.log'.format(siteName)
         elif serverType == 'apache':
-            logPath = '/www/wwwlogs/{}-access_log'.format(get.siteName)
+            logPath = '/www/wwwlogs/{}-access_log'.format(siteName)
         else:
-            logPath = '/www/wwwlogs/{}_ols.access_log'.format(get.siteName)
-
+            logPath = '/www/wwwlogs/{}_ols.access_log'.format(siteName)
         if not os.path.exists(logPath):
             return public.return_message(-1, 0, public.lang('The log file does not exist.'))
 
@@ -7664,14 +8424,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                             if not (start_time <= log_timestamp <= end_time):
                                 continue
                         except:
-                            pass  # 如果解析失败，默认保留或跳过，视业务需求而定
+                            pass
 
                     s_logs.append(log)
                 logs = '\n'.join(s_logs)
         except Exception as e:
             public.print_log("Log filter error: {}".format(e))
 
-        # 6. 地理位置增强 (可选功能)
+        # 6. 地理位置增强
         if hasattr(get, 'ip_area') and int(get.ip_area):
             logs = self.add_iparea(logs)
 
@@ -7758,12 +8518,15 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
         # 2. 定位日志文件路径
         serverType = public.get_webserver()
+        siteName = get.siteName
+        if '/' in siteName:
+            siteName = siteName.replace('/', '_')
         if serverType == "nginx":
-            logPath = '/www/wwwlogs/' + get.siteName + '.error.log'
+            logPath = '/www/wwwlogs/' + siteName + '.error.log'
         elif serverType == 'apache':
-            logPath = '/www/wwwlogs/' + get.siteName + '-error_log'
+            logPath = '/www/wwwlogs/' + siteName + '-error_log'
         else:
-            logPath = '/www/wwwlogs/' + get.siteName + '_ols.error_log'
+            logPath = '/www/wwwlogs/' + siteName + '_ols.error_log'
         if not os.path.exists(logPath):
             return_message = public.return_msg_gettext(False, 'Log is empty')
             del return_message['status']
@@ -12204,6 +12967,12 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     {server_name}
 {default_document}
     root {site_path};
+    
+    #Subdirectory-configuration-start 
+    include /www/server/panel/vhost/nginx/sub_dir/{site_name}/*.conf;
+    #Subdirectory-configuration-end
+    
+    include /www/server/panel/vhost/nginx/extension/{site_name}/*.conf;
 
     #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
     {ssl}
@@ -12274,7 +13043,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 {listen}
     {server_name}
 {default_document} 
-    root {site_path};   
+    root {site_path};
+
+    #Subdirectory-configuration-start 
+    #include /www/server/panel/vhost/nginx/sub_dir/{site_name}/*.conf;
+    #Subdirectory-configuration-end
+    
+    include /www/server/panel/vhost/nginx/extension/{site_name}/*.conf;
+
     {rert_apply_check}
 
     #PHP-INFO-START\s+PHP reference configuration, allowed to be commented, deleted or modified
@@ -12490,13 +13266,16 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
             if not public.get_multi_webservice_status():
                 return public.return_message(0, 0, public.get_webserver())
 
-            service_type = public.M('sites').where('id = ?', (args.site_id,)).field('service_type').find()
+            service_type = public.M('sites').where('id = ?', (args.site_id,)).field('service_type,parent_id').find()
+            # 如果是子站，则查询其父站服务
+            if service_type['parent_id'] not in [-1,0]:
+                service_type = public.M('sites').where('id = ?', (service_type['parent_id'],)).field('service_type').find()
 
             if not service_type['service_type']:
                 return public.return_message(0, 0, 'nginx')
 
             return public.return_message(0, 0, service_type['service_type'])
-        except Exception as e:
+        except:
             return public.return_message(-1, 0, public.lang('The type of website service obtained is incorrect'))
 
     # 多服务检查与修复

@@ -195,8 +195,8 @@ class Lang:
         to_lang_dict = {}
         all_lang_dict = self.get_all_lang_dict(to_lang)
         for lang in langs:
-            print('----- lang')
-            print(lang)
+            # print('----- lang')
+            # print(lang)
             md5 = baidu.make_md5(lang)
             # if to_lang == 'zh':
             if to_lang == 'en':
@@ -266,7 +266,7 @@ class Lang:
             directory_path = os.path.join(self.panel_path, directory)
             files = self.get_files(directory_path, 'server')
             server_files.extend(files)
-            print(files)
+            # print(files)
         # return
         # server_files = self.get_files(os.path.join(self.exec_path,self.server_path))
 
@@ -309,8 +309,8 @@ if __name__ == "__main__":
     # PS: 在项目目录/BTPanel/languages/lang.py 中运行此脚本
     # 需要先安装 googletrans==4.0.0-rc1 和 requests
     # 设置代理（如果你已在本机开启了系统代理，可以注释下面两行代码，否则将其设置为你的HTTP代理地址）
-    os.environ["http_proxy"] = "http://192.168.168.162:7890"
-    os.environ["https_proxy"] = "http://192.168.168.162:7890"
+    # os.environ["http_proxy"] = "http://192.168.168.162:7890"
+    # os.environ["https_proxy"] = "http://192.168.168.162:7890"
 
     # 开始翻译
     lang = Lang()

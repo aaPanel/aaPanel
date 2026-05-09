@@ -1394,8 +1394,18 @@ WantedBy=timers.target
         data = {}
         if get['type'] == 'databases':
             data['data'] = public.M(get['type']).where("type=?", "MySQL").field('name,ps').select()
+
+        elif get['type'] == 'sites':
+            task_type = get.get('task_type', 'site')
+            if task_type == "logs":
+                data['data'] = public.M(get['type']).where(
+                    "parent_id IN (?, ?)", ("-1", "0")
+                ).field('name,ps').select()
+            else:
+                data['data'] = public.M(get['type']).field('name,ps').select()
         else:
             data['data'] = public.M(get['type']).field('name,ps').select()
+
         for i in data['data']:
             if 'ps' in i:
                 try:

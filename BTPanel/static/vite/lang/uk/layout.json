@@ -95,7 +95,8 @@
 			"account_5": "Сховище",
 			"account_6": "Налаштування",
 			"domain_1": "Домени",
-			"domain_2": "Сертифікат"
+			"domain_2": "Сертифікат",
+			"wap_12": "Exclusive Rules"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux панель ©2014-{0} aaPanel",

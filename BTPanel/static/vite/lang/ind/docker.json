@@ -88,7 +88,8 @@
 			"filterRunning": "Berlari",
 			"filterStopped": "Berhenti",
 			"searchPlaceholder": "Cari nama wadah atau nama gambar",
-			"goToApp": "Buka App Store untuk menginstal"
+			"goToApp": "Buka App Store untuk menginstal",
+			"pullCloudImage": "Tarik gambar dari cloud"
 		},
 		"Container": {
 			"index_1": "Buat wadah",
@@ -350,11 +351,12 @@
 					"index_23": "Harap isi konten sertifikat",
 					"index_24": "Nama domain",
 					"index_25": "Kedaluwarsa",
-					"index_26": "Merek"
+					"index_26": "Merek",
+					"index_27": "Sertifikat Gratis"
 				}
 			},
 			"terminal": {
-				"index_1": "Pilih shell",
+				"index_1": "cangkang",
 				"index_2": "Terminal",
 				"index_3": "Terminal terbuka",
 				"index_4": "Jalankan dengan hak istimewa root"
@@ -556,7 +558,7 @@
 			"index_47": "Nama Template",
 			"index_48": "Harap masukkan nama template",
 			"index_49": "Catatan",
-			"index_50": "Menambahkan Log - Harap bersabar dan jangan tutup jendela ini"
+			"index_50": "Membuat Docker Compose - Harap bersabar dan jangan tutup jendela ini"
 		},
 		"Compose": {
 			"index_1": "Tambahkan Proyek Kontainer",
@@ -579,7 +581,10 @@
 				"index_5": "Pilih Template Kontainer",
 				"index_6": "Harap masukkan nama template",
 				"index_7": "Tambahkan Template YAML"
-			}
+			},
+			"taskLogsTitle": "Membuat Penulisan Docker...",
+			"taskSuccess": "Proyek berhasil ditambahkan",
+			"taskFailed": "Gagal menambahkan proyek"
 		},
 		"Template": {
 			"index_4": "Nama Template",

@@ -869,5 +869,14 @@
 	"15c2d85f1fae22a3c3a0594510a1f611": "Pedido",
 	"da691085f28af8a0b41bd602dea331b6": "Tráfico en tiempo real: {0} KB/s",
 	"266ba14af58a3dfa4b9e1c90a8879dfb": "Tipo de contenido",
-	"e8a07514353163acb29b80184690cbae": "Visitas de cookies"
+	"e8a07514353163acb29b80184690cbae": "Visitas de cookies",
+	"8d64cbb52e5ca5284056924cbaf84f7f": "Reglas exclusivas",
+	"7be05c43691ae2408547ccca25f2dfaa": "Las reglas exclusivas están deshabilitadas",
+	"f3ca25a404e4c77ffc788c6e5d32f75d": ". Habilítelos para mejorar la protección de WordPress, DedeCMS y otras aplicaciones.",
+	"4d263aae337221a257777dd3e4efec32": "Habilitar ahora",
+	"2e6a0867c3394acb0c3fa025a1517ddf": "ID de regla",
+	"5ddc76d22ef4b40dae7b496cd82faef9": "Después de habilitar reglas exclusivas, se aplicarán a todos los sitios web. Si se producen falsos positivos, puede desactivar reglas individuales.",
+	"af2222c42f2da509217d2ff9cc04ee06": "Las reglas exclusivas se adaptan para los principales CMS en función de las características de cada programa. La mayoría de ellos apuntan a la ejecución remota de código.",
+	"c320d66624ca5f2f15032a72165d9bcb": "Actualizaciones de reglas: en esta etapa, la actualización del firewall también actualiza las reglas. Las actualizaciones manuales de reglas se agregarán más adelante.",
+	"8b818da889c430409d800ffab5c7067c": "Plan de actualización futuro: actualizaciones específicas basadas en varias vulnerabilidades CVE."
 }

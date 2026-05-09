@@ -149,9 +149,9 @@
 			"index_1": "More config, click to view"
 		},
 		"Confirm": {
-			"index_1": "If you confirm the operation, enter it manually \"{text_}\"",
+			"manualInputVerification": "Please enter \"{text_}\" to confirm",
 			"index_2": "Input error, please try again",
-			"index_3": "{0} has been completed, total {1} tasks, {2} successes, {3} failures",
+			"index_3": "{0} completed! Total {1} items, {2} succeeded, {3} failed.",
 			"index_4": "Result: ",
 			"index_5": "Result is incorrect, please try again"
 		},

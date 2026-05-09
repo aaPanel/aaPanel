@@ -149,7 +149,7 @@
 			"index_1": "Daha fazla yapılandırma, görüntülemek için tıklayın"
 		},
 		"Confirm": {
-			"index_1": "İşlemi onaylıyorsanız, manuel olarak \\\"{text_}\\\" girin",
+			"manualInputVerification": "İşlemi onaylıyorsanız, manuel olarak \\\"{text_}\\\" girin",
 			"index_2": "Giriş hatası, lütfen tekrar deneyin",
 			"index_3": "{0} tamamlandı, toplam {1} görev, {2} başarılı, {3} başarısız",
 			"index_4": "Sonuç: ",

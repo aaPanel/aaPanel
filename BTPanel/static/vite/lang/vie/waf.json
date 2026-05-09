@@ -582,6 +582,20 @@
 			"index_31": "Hoặc",
 			"index_32": "Phương pháp xác minh"
 		},
+		"Exclusive": {
+			"index_1": "Quy tắc độc quyền",
+			"index_2": "Quy tắc độc quyền bị vô hiệu hóa",
+			"index_3": ". Cho phép họ tăng cường bảo vệ cho WordPress, DedeCMS và các ứng dụng khác.",
+			"index_4": "Kích hoạt ngay bây giờ",
+			"index_5": "ID quy tắc",
+			"index_6": "Tên",
+			"index_7": "Sự miêu tả",
+			"index_8": "Trạng thái",
+			"index_9": "Sau khi kích hoạt các quy tắc độc quyền, chúng sẽ áp dụng cho tất cả các trang web. Nếu xảy ra kết quả dương tính giả, bạn có thể vô hiệu hóa các quy tắc riêng lẻ.",
+			"index_10": "Các quy tắc độc quyền được điều chỉnh cho các CMS chính dựa trên đặc điểm của từng chương trình. Hầu hết chúng nhắm mục tiêu thực thi mã từ xa.",
+			"index_11": "Cập nhật quy tắc: ở giai đoạn này, việc cập nhật tường lửa cũng cập nhật các quy tắc. Cập nhật quy tắc thủ công sẽ được bổ sung sau.",
+			"index_12": "Kế hoạch cập nhật trong tương lai: các bản cập nhật có mục tiêu dựa trên các lỗ hổng CVE khác nhau."
+		},
 		"Map": {
 			"index_1": "Chi tiết bản đồ tấn công (chỉ bản đồ để tham khảo)",
 			"index_2": "Kinh độ: {0}",
@@ -971,7 +985,9 @@
 			"setting_75": "Thêm các từ bị cấm, vui lòng đợi ...",
 			"setting_76": "Nhập các từ bị cấm, vui lòng đợi ...",
 			"setting_77": "Xóa các từ bị cấm, vui lòng đợi ...",
-			"setting_78": "Xóa các từ bị cấm, vui lòng đợi ..."
+			"setting_78": "Xóa các từ bị cấm, vui lòng đợi ...",
+			"exclusive_79": "Đặt trạng thái quy tắc, vui lòng đợi ...",
+			"exclusive_80": "Đặt trạng thái, vui lòng đợi ..."
 		}
 	}
 }

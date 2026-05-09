@@ -81,14 +81,15 @@
 			"networkCount": "네트워크",
 			"networksCreated": "생성된 네트워크",
 			"volumeCount": "볼륨",
-			"mirrorRepoCount": "레지스트리",
+			"mirrorRepoCount": "저장소",
 			"repositoriesConfigured": "구성된 저장소",
 			"containerList": "컨테이너 목록",
 			"filterAll": "모두",
 			"filterRunning": "달리기",
 			"filterStopped": "중지됨",
 			"searchPlaceholder": "컨테이너 이름 또는 이미지 이름 검색",
-			"goToApp": "Go to App Store to install"
+			"goToApp": "앱 스토어로 이동하여 설치",
+			"pullCloudImage": "Pull image from the cloud"
 		},
 		"Container": {
 			"index_1": "컨테이너 만들기",
@@ -350,7 +351,8 @@
 					"index_23": "인증서 내용을 작성하세요",
 					"index_24": "도메인 이름",
 					"index_25": "만료일",
-					"index_26": "상표"
+					"index_26": "상표",
+					"index_27": "Free Cert"
 				}
 			},
 			"terminal": {
@@ -418,7 +420,7 @@
 		"CloudImage": {
 			"index_1": "검색하려면 이미지 이름을 입력하세요",
 			"index_3": "Docker Hub 검색 점프",
-			"index_4": "이미지를 당기십시오",
+			"index_4": "이미지를 가져오기",
 			"index_5": "이미지 이름",
 			"index_6": "별",
 			"index_7": "원천",
@@ -433,7 +435,7 @@
 				"isOfficial": "공식 이미지:",
 				"source": "출처:",
 				"dockerHub": "도커 허브",
-				"pullsCount": "당기기:",
+				"pullsCount": "가져오기:",
 				"selectPlaceholder": "이미지를 선택하거나 검색해 주세요",
 				"pullButton": "당기다",
 				"yes": "예",
@@ -448,12 +450,12 @@
 			}
 		},
 		"LocalImage": {
-			"index_1": "저장소에서 당기십시오",
+			"index_1": "저장소에서 가져오기",
 			"index_2": "이미지 가져 오기",
 			"index_3": "이미지를 빌드하세요",
 			"index_4": "클라우드 이미지",
 			"index_5": "명확한 이미지",
-			"index_6": "이미지를 당기십시오",
+			"index_6": "이미지를 가져오기",
 			"index_7": "이미지 이름",
 			"index_8": "크기",
 			"index_9": "창조 시간",
@@ -490,18 +492,18 @@
 			"build_6": "경로를 선택하세요",
 			"build_7": "내용을 입력하세요",
 			"pull": {
-				"index_1": "정기적 인 당기기",
+				"index_1": "정기적 인 가져오기",
 				"index_2": "명령 풀",
 				"index_3": "저장소 이름",
 				"index_4": "이미지 이름",
-				"index_5": "이미지 이름을 입력하고 Enter를 눌러 당기십시오 (예 : 이미지 : v1)",
+				"index_5": "이미지 이름을 입력하고 Enter를 눌러 가져오기 (예 : 이미지 : v1)",
 				"index_6": "당기다",
 				"index_7": "풀 결과 :",
 				"index_8": "저장소 이름을 선택하세요",
 				"index_9": "이미지 이름을 선택하세요",
 				"index_10": "없음 로그",
 				"index_11": "명령, Docker Pull Redis : 최신 명령을 입력하고 Enter를 누릅니다.",
-				"index_12": "실행하다",
+				"index_12": "실행",
 				"index_13": "명령을 입력하세요",
 				"index_14": "당기 실패"
 			}
@@ -579,21 +581,24 @@
 				"index_5": "컨테이너 템플릿을 선택하세요",
 				"index_6": "템플릿 이름을 입력하세요",
 				"index_7": "Yaml 템플릿을 추가하세요"
-			}
+			},
+			"taskLogsTitle": "Creating Docker Compose...",
+			"taskSuccess": "Project added successfully",
+			"taskFailed": "Failed to add project"
 		},
 		"Template": {
 			"index_4": "템플릿 이름",
 			"index_5": "경로",
 			"index_6": "설명",
-			"index_8": "이미지를 당기십시오",
+			"index_8": "이미지를 가져오기",
 			"index_12": "항목 템플릿 삭제 [{0}], 계속 작동합니까?",
 			"index_13": "Yaml 템플릿을 추가하세요",
 			"index_14": "YAML 템플릿 편집",
 			"index_15": "YAML 템플릿 편집 [{0}]",
-			"index_16": "이미지 로그를 당기십시오",
+			"index_16": "이미지 로그불러오기",
 			"index_17": "이미지 로그 당기 [{0}]",
 			"index_18": "템플릿 삭제 [{0}]",
-			"index_19": "성공적으로 당기십시오",
+			"index_19": "성공적으로 가져오기",
 			"index_20": "당기 실패",
 			"add": {
 				"index_1": "템플릿을 만듭니다",
@@ -712,7 +717,7 @@
 			"index_5": "다시 시작하세요",
 			"index_6": "수리하다",
 			"index_7": "URL을 가속화하세요",
-			"index_8": "가속도 URL이 설정되지 않았습니다",
+			"index_8": "가속도 URL이 비활성",
 			"index_10": "*Docker Compose 경로",
 			"index_11": "구성 파일",
 			"index_12": "구성 파일 열기",
@@ -770,10 +775,10 @@
 				"disableConfirm": "live_restore를 비활성화한 후 Docker를 다시 시작해야 합니다. 계속하기 전에 Docker를 다시 시작할 수 있는지 확인하세요. 계속하시겠습니까?"
 			},
 			"registry": {
-				"label": "개인 레지스트리",
-				"placeholder": "Docker 개인 레지스트리 주소",
-				"modalTitle": "개인 레지스트리 설정",
-				"configPlaceholder": "개인 레지스트리 주소를 한 줄에 하나씩 입력하세요(예:\n192.168.1.111:8087\n192.168.1.112:8087).",
+				"label": "개인 저장소",
+				"placeholder": "Docker 개인 저장소 주소",
+				"modalTitle": "개인 저장소 설정",
+				"configPlaceholder": "개인 저장소 주소를 한 줄에 하나씩 입력하세요(예:\n192.168.1.111:8087\n192.168.1.112:8087).",
 				"restartTip": "* 설정 후 Docker가 다시 시작됩니다.",
 				"restartTitle": "도커 다시 시작",
 				"restartConfirm": "Docker가 다시 시작됩니다. 계속하시겠습니까?"

@@ -149,9 +149,9 @@
 			"index_1": "Lebih banyak konfigurasi, klik untuk dilihat"
 		},
 		"Confirm": {
-			"index_1": "Jika Anda mengonfirmasi operasi, masukkan secara manual \"{text_}\"",
+			"manualInputVerification": "Silakan masukkan \"{text}\" untuk mengonfirmasi",
 			"index_2": "Kesalahan masukan, coba lagi",
-			"index_3": "{0} telah selesai, total {1} ​​tugas, {2} sukses, {3} kegagalan",
+			"index_3": "{0} selesai! Total {1} ​​item, {2} berhasil, {3} gagal.",
 			"index_4": "Hasil: ",
 			"index_5": "Hasilnya salah, coba lagi"
 		},

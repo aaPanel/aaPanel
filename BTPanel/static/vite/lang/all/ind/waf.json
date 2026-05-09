@@ -864,5 +864,14 @@
 	"15c2d85f1fae22a3c3a0594510a1f611": "Meminta",
 	"da691085f28af8a0b41bd602dea331b6": "Lalu lintas waktu nyata: {0} KB/dtk",
 	"266ba14af58a3dfa4b9e1c90a8879dfb": "Jenis konten",
-	"e8a07514353163acb29b80184690cbae": "Kunjungan kue"
+	"e8a07514353163acb29b80184690cbae": "Kunjungan kue",
+	"8d64cbb52e5ca5284056924cbaf84f7f": "Aturan Eksklusif",
+	"7be05c43691ae2408547ccca25f2dfaa": "Aturan eksklusif dinonaktifkan",
+	"f3ca25a404e4c77ffc788c6e5d32f75d": ". Aktifkan mereka untuk meningkatkan perlindungan untuk WordPress, DedeCMS, dan aplikasi lainnya.",
+	"4d263aae337221a257777dd3e4efec32": "Aktifkan sekarang",
+	"2e6a0867c3394acb0c3fa025a1517ddf": "ID Aturan",
+	"5ddc76d22ef4b40dae7b496cd82faef9": "Setelah mengaktifkan aturan eksklusif, aturan tersebut akan berlaku untuk semua situs web. Jika positif palsu terjadi, Anda dapat menonaktifkan aturan individual.",
+	"af2222c42f2da509217d2ff9cc04ee06": "Aturan eksklusif diadaptasi untuk CMS utama berdasarkan karakteristik masing-masing program. Kebanyakan dari mereka menargetkan eksekusi kode jarak jauh.",
+	"c320d66624ca5f2f15032a72165d9bcb": "Pembaruan aturan: pada tahap ini, memperbarui firewall juga memperbarui aturan. Pembaruan aturan manual akan ditambahkan nanti.",
+	"8b818da889c430409d800ffab5c7067c": "Rencana pembaruan di masa mendatang: pembaruan yang ditargetkan berdasarkan berbagai kerentanan CVE."
 }

@@ -248,22 +248,23 @@ class one_key_wp:
         os.system(f'chown -R www:www {site_path}')
 
     def set_urlrewrite(self, site_name, site_path):
-        webserver = public.get_webserver()
+        webserver_list = ['apache', 'nginx']
 
-        if webserver == 'openlitespeed':
-            webserver = 'apache'
+        for webserver in webserver_list:
 
-        swfile = '/www/server/panel/rewrite/{}/wordpress.conf'.format(webserver)
-        if os.path.exists(swfile):
-            rewriteConf = public.readFile(swfile)
+            swfile = '/www/server/panel/rewrite/{}/wordpress.conf'.format(webserver)
+            if os.path.exists(swfile):
+                rewriteConf = public.readFile(swfile)
 
-            if webserver == 'nginx':
-                dwfile = '{}/vhost/rewrite/{}.conf'.format(self.base_path, site_name)
+                if webserver == 'nginx':
+                    dwfile = '{}/vhost/rewrite/{}.conf'.format(self.base_path, site_name)
 
-            else:
-                dwfile = '{}/.htaccess'.format(site_path)
+                else:
+                    dwfile = '{}/.htaccess'.format(site_path)
 
-            public.writeFile(dwfile, rewriteConf)
+                existing_content = public.readFile(dwfile) if os.path.exists(dwfile) else ''
+                if not existing_content or not existing_content.strip():
+                    public.writeFile(dwfile, rewriteConf)
 
     def write_db(self, s_id, d_id, prefix, user_name, admin_password):
         print("Inserting data...")
@@ -325,39 +326,6 @@ class one_key_wp:
 
         if not ok:
             raise Exception(msg)
-
-        # if self.__IS_PRO_MEMBER:
-        #     from wp_toolkit import wpmgr
-        #
-        #     # 初始化WP管理类
-        #     wpmgr_obj = wpmgr(values['s_id'])
-        #
-        #     # 初始化WP网站配置
-        #     self.write_logs("|-Start setup configurations...")
-        #     ok, msg = wpmgr_obj.setup_config(values['dbname'], values['db_user'], values['db_pwd'], 'localhost', values['prefix'])
-        #     self.write_logs('|-Setup config >>> {} {}'.format('OK' if ok else 'FAIL', msg))
-        #
-        #     if not ok:
-        #         raise Exception(msg)
-        #
-        #     # 初始化WP网站信息
-        #     self.write_logs("|-Start installations...")
-        #     ok, msg = wpmgr_obj.wp_install(values['weblog_title'], values['user_name'], values['admin_email'], values['admin_password'], values['language'])
-        #     self.write_logs('|-Installation {} {}'.format('OK' if ok else 'FAIL', msg))
-        #
-        #     if not ok:
-        #         raise Exception(msg)
-        # else:
-        #     self.request_setup_0(values)
-        #     time.sleep(1)
-        #     if not self.request_setup_2(values):
-        #         return public.return_msg_gettext(False,
-        #                                          "The database connection is abnormal. Please check whether the root user authority or database configuration parameters are correct.")
-        #     time.sleep(1)
-        #     self.request_setup_3(values)
-        #     time.sleep(1)
-        #     self.request_setup_4(values)
-        #     time.sleep(1)
 
         # 配置伪静态规则
         self.set_urlrewrite(values['site_name'], values['site_path'])
@@ -570,16 +538,20 @@ class one_key_wp:
         兼容ols，nginx
         s_id 网站id
         """
-        import data
-        site_info = public.M('sites').where('id=?', (s_id,)).field('id,name,service_type').find()
+        site_info = public.M('sites').where('id=?', (s_id,)).field('id,name,service_type,parent_id').find()
         if not isinstance(site_info, dict):
             return False
         site_name = site_info['name']
 
         # 兼容ols
         get_webserver = public.get_webserver()
+        main_site = None
         if public.get_multi_webservice_status():
+            if site_info['parent_id'] > 0:
+                main_site = public.M('sites').where('id=?', (site_info['parent_id'],)).find()
+                site_info['service_type'] = main_site['service_type'] if main_site else 'nginx'
             get_webserver = site_info['service_type'] if site_info['service_type'] else 'nginx'
+
         if get_webserver == "openlitespeed":
             from wp_toolkit import wpmgr
             wpmgr_obj = wpmgr(site_info['id'])
@@ -597,6 +569,8 @@ class one_key_wp:
 
         # 兼容apache
         elif get_webserver == "apache":
+            if main_site:
+                site_name = main_site['name']
             conf_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', f'{site_name}.conf')
             if os.path.exists(conf_path):
                 conf = public.readFile(conf_path)
@@ -794,10 +768,15 @@ class one_key_wp:
             return public.return_message(-1, 0, str(ex))
 
         webserver = public.get_webserver()
-        site = public.M('sites').where('id=?', (get.s_id,)).field('id,name,service_type').find()
+        site = public.M('sites').where('id=?', (get.s_id,)).field('id,name,service_type,parent_id').find()
         if not site:
             return public.fail_v2(public.lang("The specified site does not exist!"))
+
+        main_site = None
         if public.get_multi_webservice_status():
+            if site['parent_id'] > 0:
+                main_site = public.M('sites').where('id=?', (site['parent_id'],)).find()
+                site['service_type'] = main_site['service_type'] if main_site else 'nginx'
             webserver = site['service_type'] if site['service_type'] else 'nginx'
 
         # 新增ols缓存清理反馈
@@ -809,6 +788,8 @@ class one_key_wp:
 
         # 多服务下的清除apache缓存
         if webserver == "apache" and site['service_type'] == 'apache':
+            if main_site:
+                site['name'] = main_site['name']
             self.delete_apache_cache_conf(site['name'])
 
         # 清除nginx缓存
@@ -818,14 +799,6 @@ class one_key_wp:
                 wpmgr(get.s_id).purge_cache_with_nginx_helper()
             except Exception as ex:
                 return public.return_message(-1, 0, public.lang('Cache clearing failed. Please check if the Nginx Helper plugin is functioning properly.'))
-
-
-        # if self.__IS_PRO_MEMBER:
-        #     from wp_toolkit import wpmgr
-        #     wpmgr(get.s_id).purge_cache_with_nginx_helper()
-        # else:
-        #     cache_dir = "/dev/shm/nginx-cache/wp"
-        #     public.ExecShell("rm -rf {}/*".format(cache_dir))
 
         return public.return_message(0, 0, public.lang("Cleaned up successfully!"))
 
@@ -852,15 +825,25 @@ class one_key_wp:
             return public.return_message(-1, 0, str(ex))
 
         webserver = public.get_webserver()
-        site = public.M('sites').where('name=?', (get.sitename,)).field('id,name,path,service_type').find()
+        # 单服务下不支持apache缓存
+        if webserver == 'apache':
+            return public.return_message(-1, 0, public.lang("Apache cache is currently only supported under Multi-WebServer Hosting"))
+
+        site = public.M('sites').where('name=?', (get.sitename,)).field('id,name,path,service_type,parent_id').find()
         if not site:
             return public.fail_v2(public.lang("The specified site does not exist!"))
 
+        main_site = None
         if public.get_multi_webservice_status():
+            if site['parent_id'] > 0:
+                main_site = public.M('sites').where('id=?', (site['parent_id'],)).find()
+                site['service_type'] = main_site['service_type'] if main_site else 'nginx'
             webserver = site['service_type'] if site['service_type'] else 'nginx'
 
         # 添加apache缓存
         if site['service_type'] == 'apache':
+            if main_site:
+                site = main_site
             conf_path = os.path.join(public.get_panel_path(), 'vhost', 'nginx', f'{site['name']}.conf')
             if not os.path.exists(conf_path):
                 return public.return_message(-1,0,public.lang('The Apache cache setting failed. Please check if the website is working properly!'))
@@ -938,10 +921,6 @@ class one_key_wp:
             public.writeFile(conf_path, conf)
             public.webservice_operation('nginx')
             return public.return_message(0,0,public.lang('The Apache cache Settings were successful!'))
-
-        # 单服务下不支持apache缓存
-        if webserver == 'apache':
-            return public.return_message(-1, 0, public.lang("Apache cache is currently only supported under Multi-WebServer Hosting"))
 
         # 添加ols缓存
         if webserver == "openlitespeed" or get.get('is_cache','') == 'ols':
@@ -1464,41 +1443,8 @@ class one_key_wp:
 
             # 设置fastcgi缓存
             if int(get.enable_cache) == 1:
-                # 多服务下，开启ols缓存
-                if public.get_multi_webservice_status() or  public.get_webserver() == 'openlitespeed':
-                    self.set_fastcgi_cache(public.to_dict_obj(
-                        {"version": values['php_version'], "sitename": values['site_name'], "act": "enable","is_cache":"ols"}))
-
-                # 单服务下，支持nginx与ols缓存
-                elif public.get_webserver() == 'nginx':
-                    from wp_toolkit import wpmgr, wpfastcgi_cache
-
-                    self.write_logs('|-WP Plugin nginx-helper installing...')
-                    wpmgr(s_id).init_plugin_nginx_helper()
-                    self.write_logs('|-WP Plugin nginx-helper installation succeeded')
-
-                    # 配置Nginx-fastcgi-cache
-                    wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
-
-                    # if self.__IS_PRO_MEMBER:
-                    #     from wp_toolkit import wpmgr, wpfastcgi_cache
-                    #
-                    #     # 配置Nginx-fastcgi-cache
-                    #     wpfastcgi_cache().set_fastcgi(values['site_path'], values['site_name'], values['php_version'])
-                    #
-                    #     self.write_logs('|-WP Plugin nginx-helper installing...')
-                    #     wpmgr(s_id).init_plugin_nginx_helper()
-                    #     self.write_logs('|-WP Plugin nginx-helper installation succeeded')
-                    # else:
-                    #     # 安装nginxHelper
-                    #     #  slug nginx-helper
-                    #     values['slug'] = "nginx-helper"
-                    #     values['wp_action'] = "install-plugin"
-                    #     self.install_plugin(values)
-                    #     self.act_nginx_helper_active(values)
-                    #
-                    #     # 安装并启用nginx-helper插件
-                    #     self.set_nginx_helper(get)
+                self.set_fastcgi_cache(public.to_dict_obj(
+                    {"version": values['php_version'], "sitename": values['site_name'], "act": "enable"}))
 
             # 设置登录入口保护
             if int(get.get('enable_whl', 0)) == 1:
@@ -1519,7 +1465,8 @@ class one_key_wp:
 
             return public.return_message(0, 0, public.lang("Deployment was successful!"))
         except Exception as e:
-            self.del_site(get)
+            if not get.get('is_not_del',False):
+                self.del_site(get)
             from traceback import format_exc
             public.print_log(format_exc())
             return public.return_message(-1, 0, public.lang("Deployment failed: {}", e))

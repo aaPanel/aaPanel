@@ -659,8 +659,9 @@ class main(projectBase):
                 s.apacheAddPort(listen_port)
 
         # 写.htaccess
-        rewrite_file = "{}/.htaccess".format(project_find['path'].rsplit("/", 1)[0])  # go项目路径是运行文件，不是项目根目录
-        if not os.path.exists(rewrite_file): public.writeFile(rewrite_file, '# Please fill in the pseudo static rules or custom Apache configuration here\n')
+        rewrite_file = "{}/.htaccess".format(project_find['path'])  # go项目路径是运行文件，不是项目根目录
+        if not os.path.exists(rewrite_file): 
+            public.writeFile(rewrite_file, '# Please fill in the pseudo static rules or custom Apache configuration here\n')
         from mod.base.web_conf import ap_ext
         apache_config_body = ap_ext.set_extension_by_config(project_name, apache_config_body)
 

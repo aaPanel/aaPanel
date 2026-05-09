@@ -699,7 +699,8 @@ class DnsManager:
 
 
         elif record_type in ["CNAME", "NS"]:
-            if not DomainValid.is_valid_domain(value):
+            # CNAME/NS特殊性, 可能存在下划线, 仅做基本检查
+            if not value or len(value) > 253:
                 raise HintException(f"Invalid {record_type} record value: {value}")
             # 完全限定域名FQDN
             if not value.endswith("."):

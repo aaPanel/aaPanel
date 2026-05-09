@@ -88,7 +88,8 @@
 			"filterRunning": "Läuft",
 			"filterStopped": "Angehalten",
 			"searchPlaceholder": "Suchen Sie nach Containernamen oder Bildnamen",
-			"goToApp": "Gehen Sie zur Installation zum App Store"
+			"goToApp": "Gehen Sie zur Installation zum App Store",
+			"pullCloudImage": "Bild aus der Cloud abrufen"
 		},
 		"Container": {
 			"index_1": "Container erstellen",
@@ -350,11 +351,12 @@
 					"index_23": "Bitte füllen Sie den Zertifikatinhalt aus",
 					"index_24": "Domain -Name",
 					"index_25": "Verfallsdatum",
-					"index_26": "Marke"
+					"index_26": "Marke",
+					"index_27": "Kostenloses Zertifikat"
 				}
 			},
 			"terminal": {
-				"index_1": "Bitte wählen Sie Shell",
+				"index_1": "Muschel",
 				"index_2": "Terminal",
 				"index_3": "Offenes Terminal",
 				"index_4": "Mit Root -Privilegien ausführen"
@@ -556,7 +558,7 @@
 			"index_47": "Vorlagenname",
 			"index_48": "Bitte geben Sie den Vorlagennamen ein",
 			"index_49": "Notizen",
-			"index_50": "Fügen Sie Protokolle hinzu - Bitte seien Sie geduldig und schließen Sie dieses Fenster nicht"
+			"index_50": "Docker Compose erstellen – Bitte haben Sie etwas Geduld und schließen Sie dieses Fenster nicht"
 		},
 		"Compose": {
 			"index_1": "Containerprojekt hinzufügen",
@@ -579,7 +581,10 @@
 				"index_5": "Bitte wählen Sie Containervorlage",
 				"index_6": "Bitte geben Sie den Vorlagennamen ein",
 				"index_7": "Fügen Sie die YAML -Vorlage hinzu"
-			}
+			},
+			"taskLogsTitle": "Docker Compose wird erstellt...",
+			"taskSuccess": "Projekt erfolgreich hinzugefügt",
+			"taskFailed": "Projekt konnte nicht hinzugefügt werden"
 		},
 		"Template": {
 			"index_4": "Vorlagenname",

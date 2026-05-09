@@ -582,6 +582,20 @@
 			"index_31": "Oder",
 			"index_32": "Überprüfungsmethode"
 		},
+		"Exclusive": {
+			"index_1": "Exklusive Regeln",
+			"index_2": "Exklusive Regeln sind deaktiviert",
+			"index_3": ". Aktivieren Sie sie, um den Schutz für WordPress, DedeCMS und andere Anwendungen zu verbessern.",
+			"index_4": "Jetzt aktivieren",
+			"index_5": "Regel-ID",
+			"index_6": "Name",
+			"index_7": "Beschreibung",
+			"index_8": "Status",
+			"index_9": "Nach der Aktivierung exklusiver Regeln gelten diese für alle Websites. Sollten Fehlalarme auftreten, können Sie einzelne Regeln deaktivieren.",
+			"index_10": "Exklusive Regeln werden für die wichtigsten CMS basierend auf den Eigenschaften jedes Programms angepasst. Die meisten von ihnen zielen auf die Remotecodeausführung ab.",
+			"index_11": "Regelaktualisierungen: In dieser Phase werden durch die Aktualisierung der Firewall auch die Regeln aktualisiert. Manuelle Regelaktualisierungen werden später hinzugefügt.",
+			"index_12": "Zukünftiger Update-Plan: Gezielte Updates basierend auf verschiedenen CVE-Schwachstellen."
+		},
 		"Map": {
 			"index_1": "Details der Kartierung angreifen (nur als Referenz)",
 			"index_2": "Länge: {0}",
@@ -971,7 +985,9 @@
 			"setting_75": "Fügen Sie verbotene Wörter hinzu, bitte warten Sie ...",
 			"setting_76": "Importieren verbotene Wörter, bitte warten ...",
 			"setting_77": "Löschen verbotener Wörter, bitte warten ...",
-			"setting_78": "Löschen verbotene Worte, bitte warten ..."
+			"setting_78": "Löschen verbotene Worte, bitte warten ...",
+			"exclusive_79": "REGEL -Status einstellen, bitte warten ...",
+			"exclusive_80": "Status festlegen, bitte warten ..."
 		}
 	}
 }

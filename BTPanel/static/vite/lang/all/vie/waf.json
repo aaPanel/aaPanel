@@ -1558,5 +1558,14 @@
 	"15c2d85f1fae22a3c3a0594510a1f611": "Lời yêu cầu",
 	"da691085f28af8a0b41bd602dea331b6": "Lưu lượng truy cập thời gian thực: {0} KB/s",
 	"266ba14af58a3dfa4b9e1c90a8879dfb": "Loại nội dung",
-	"e8a07514353163acb29b80184690cbae": "Lượt truy cập cookie"
+	"e8a07514353163acb29b80184690cbae": "Lượt truy cập cookie",
+	"8d64cbb52e5ca5284056924cbaf84f7f": "Quy tắc độc quyền",
+	"7be05c43691ae2408547ccca25f2dfaa": "Quy tắc độc quyền bị vô hiệu hóa",
+	"f3ca25a404e4c77ffc788c6e5d32f75d": ". Cho phép họ tăng cường bảo vệ cho WordPress, DedeCMS và các ứng dụng khác.",
+	"4d263aae337221a257777dd3e4efec32": "Kích hoạt ngay bây giờ",
+	"2e6a0867c3394acb0c3fa025a1517ddf": "ID quy tắc",
+	"5ddc76d22ef4b40dae7b496cd82faef9": "Sau khi kích hoạt các quy tắc độc quyền, chúng sẽ áp dụng cho tất cả các trang web. Nếu xảy ra kết quả dương tính giả, bạn có thể vô hiệu hóa các quy tắc riêng lẻ.",
+	"af2222c42f2da509217d2ff9cc04ee06": "Các quy tắc độc quyền được điều chỉnh cho các CMS chính dựa trên đặc điểm của từng chương trình. Hầu hết chúng nhắm mục tiêu thực thi mã từ xa.",
+	"c320d66624ca5f2f15032a72165d9bcb": "Cập nhật quy tắc: ở giai đoạn này, việc cập nhật tường lửa cũng cập nhật các quy tắc. Cập nhật quy tắc thủ công sẽ được bổ sung sau.",
+	"8b818da889c430409d800ffab5c7067c": "Kế hoạch cập nhật trong tương lai: các bản cập nhật có mục tiêu dựa trên các lỗ hổng CVE khác nhau."
 }

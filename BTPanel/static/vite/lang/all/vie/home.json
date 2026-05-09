@@ -424,5 +424,10 @@
 	"986c7d76cb8504611a780fb644a067da": "Nâng cấp sửa các lỗi đã biết và thêm các tính năng mới nhất. Dữ liệu của bạn sẽ không bị ảnh hưởng",
 	"36b6baa91d91c9b968f047fcb9903138": "Sửa chữa bảng điều khiển giải quyết các vấn đề không mong muốn khác nhau",
 	"ec4e4184b1049bd8ce0694885ba22556": "Quy tắc quét",
-	"91e8536c9d1f2ac648398b8a8de2ba9a": "[Mặc định]"
+	"91e8536c9d1f2ac648398b8a8de2ba9a": "[Mặc định]",
+	"6e710553e743259cd47e52f15fa71051": "Quá tải",
+	"655d20c1ca69519ca647684edbb2db35": "Cao",
+	"1eb79d43dbb97d5ceb3c157fdb27fa60": "Trung bình",
+	"960b44c579bc2f6818d2daaf9e4c16f0": "Bình thường",
+	"c146a1bd71e190b848e36475d75b94dd": "Cốt lõi | lõi"
 }

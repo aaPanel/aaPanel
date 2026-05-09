@@ -88,6 +88,7 @@
 			"filterRunning": "運行中",
 			"filterStopped": "已停止",
 			"searchPlaceholder": "搜索容器名稱或鏡像名稱",
+			"pullCloudImage": "從雲端拉取鏡像",
 			"goToApp": "前往應用程式商店安裝應用"
 		},
 		"Container": {
@@ -350,7 +351,8 @@
 					"index_23": "請填寫證書內容",
 					"index_24": "域名",
 					"index_25": "到期時間",
-					"index_26": "品牌"
+					"index_26": "品牌",
+					"index_27": "免費證書"
 				}
 			},
 			"terminal": {
@@ -472,6 +474,7 @@
 			"index_23": "請輸入鏡像路徑",
 			"index_24": "您真的想刪除鏡像【{0}】？",
 			"searchPlaceholder": "搜索鏡像名稱、ID、使用的容器",
+			"pullCloudImage": "從雲端拉取鏡像",
 			"batchDelete": "批量刪除",
 			"batchDeleteTitle": "批量刪除項目",
 			"batchDeleteDesc": "批量出售項目已選案，是否繼續運營！",
@@ -556,7 +559,7 @@
 			"index_47": "模板名稱",
 			"index_48": "請輸入模板名",
 			"index_49": "備註",
-			"index_50": "添加日誌 -請耐心等待不要關閉此窗口"
+			"index_50": "正在建立 Docker Compose - 請等待不要關閉此窗口"
 		},
 		"Compose": {
 			"index_1": "添加容器編排",
@@ -579,7 +582,10 @@
 				"index_5": "請選擇容器模板",
 				"index_6": "請輸入模板名稱",
 				"index_7": "添加YAML模板"
-			}
+			},
+			"taskLogsTitle": "正在建立 Docker Compose...",
+			"taskSuccess": "專案添加成功",
+			"taskFailed": "專案新增失敗"
 		},
 		"Template": {
 			"index_4": "模板名稱",

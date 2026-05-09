@@ -95,7 +95,8 @@
 			"account_6": "Configurações",
 			"domain_1": "Domínios",
 			"domain_2": "Certificado",
-			"security_8": "Website Security"
+			"security_8": "Website Security",
+			"wap_12": "Exclusive Rules"
 		},
 		"Footer": {
 			"index_1": "Painel Linux aaPanel ©2014-{0} aaPanel",

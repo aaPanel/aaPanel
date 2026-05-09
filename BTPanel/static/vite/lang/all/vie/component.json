@@ -240,5 +240,7 @@
 	"59e724270e4dec7ef50a97995c3568ab": "Bạn có chắc bạn phải {0} dịch vụ {1} và tiếp tục?",
 	"ff9d0dd1bc68dd1d39ba7eff4c47ad39": "Ràng buộc, vui lòng đợi ...",
 	"076e135140b204e9b9df44230d0b927e": "Gửi phản hồi, vui lòng đợi ..",
-	"c0abf41ac8b667472cd6cf3a701f17d8": "Tải lên tệp, vui lòng đợi ..."
+	"c0abf41ac8b667472cd6cf3a701f17d8": "Tải lên tệp, vui lòng đợi ...",
+	"c29968f6b73ef423333b74a2215bd6c4": "Vui lòng nhập \"{text}\" để xác nhận",
+	"dbff4ee2541586010261f5cb27b2b0a4": "{0} đã hoàn tất! Tổng số {1} mục, {2} thành công, {3} thất bại."
 }

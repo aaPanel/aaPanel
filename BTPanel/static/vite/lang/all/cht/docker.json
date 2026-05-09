@@ -1148,5 +1148,11 @@
 	"71f94afffad534b24c303b1eadc32f84": "正在恢復中，請稍等...",
 	"0d33d7d048f6ab766bba48f76d019409": "正在上傳，請稍等...",
 	"1fd8d6b8febedda189abc717fcdd2b7b": "一鍵登錄",
-	"b780a310e8fb2cf34abeda81d216b08e": "前往應用程式商店安裝應用"
+	"b780a310e8fb2cf34abeda81d216b08e": "前往應用程式商店安裝應用",
+	"c78d1a27c295cd6eaf0da2758c6d565d": "從雲端拉取鏡像",
+	"2a8bb9738fb2db0244b54f26dcda868f": "免費證書",
+	"91659498c45704475cb08a3c3af873a5": "正在建立 Docker Compose - 請等待不要關閉此窗口",
+	"bf71afead0dab3607bd1e0d94e025016": "正在建立 Docker Compose...",
+	"9b34f2d3bca6306195571894e3ae3d04": "專案添加成功",
+	"443aa02fb2003f30854a513c08fc5bec": "專案新增失敗"
 }

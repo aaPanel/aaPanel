@@ -88,7 +88,8 @@
 			"filterRunning": "Запущенные",
 			"filterStopped": "Остановленные",
 			"searchPlaceholder": "Поиск по имени контейнера или образа",
-			"goToApp": "Go to App Store to install"
+			"goToApp": "Go to App Store to install",
+			"pullCloudImage": "Pull image from the cloud"
 		},
 		"Container": {
 			"index_1": "Создать контейнер",
@@ -350,7 +351,8 @@
 					"index_23": "Заполните содержимое сертификата",
 					"index_24": "Доменное имя",
 					"index_25": "Срок действия",
-					"index_26": "Производитель"
+					"index_26": "Производитель",
+					"index_27": "Free Cert"
 				}
 			},
 			"terminal": {
@@ -579,7 +581,10 @@
 				"index_5": "Выберите шаблон контейнера",
 				"index_6": "Введите название шаблона",
 				"index_7": "Добавить YAML-шаблон"
-			}
+			},
+			"taskLogsTitle": "Creating Docker Compose...",
+			"taskSuccess": "Project added successfully",
+			"taskFailed": "Failed to add project"
 		},
 		"Template": {
 			"index_4": "Название шаблона",

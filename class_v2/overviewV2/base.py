@@ -103,7 +103,7 @@ class OverViewBase:
                     {
                         "desc": public.lang("Stopped"),
                         "data": stop_num,
-                        "color": COLORS["red"]
+                        "color": COLORS["gray"]
                     },
                     {
                         "desc": public.lang("ALL"),

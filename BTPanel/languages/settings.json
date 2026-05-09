@@ -42,45 +42,49 @@
             "google": "id",
             "title": "Bahasa Indonesia",
             "cn": "印尼语"
-        }, {
+        },
+        {
             "name": "ru",
             "google": "ru",
             "title": "Русский",
             "cn": "俄语"
-        }, {
+        },
+        {
             "name": "kor",
             "google": "ko",
             "title": "한국어",
             "cn": "韩语"
-        }, {
+       },
+       {
             "name": "uk",
             "google": "uk",
             "title": "Українська",
             "cn": "乌克兰语"
-        }, {
+        },
+       {
             "name": "it",
             "google": "it",
             "title": "Italiano",
             "cn": "意大利语"
         },
-        {
+       {
             "name": "tur",
             "google": "tr",
             "title": "Türkçe",
             "cn": "土耳其语"
-        },
-        {
+       },
+       {
             "name": "zh",
             "google": "zh-cn",
             "title": "简体中文",
             "cn": "简体中文"
-        },
-        {
+       },
+       {
             "name": "cht",
             "google": "zh-tw",
             "title": "繁體中文",
             "cn": "繁體中文"
-        }
+       }
 
     ]
 }

@@ -1279,5 +1279,7 @@
 	"f440e5504f5a02a7a2721a623db858da": "Tài khoản không thể vượt quá 16 ký tự",
 	"09a1a00003bee7363f3833b6a82e6f99": "Phiên bản mẫu",
 	"dffa53dbdbc610fc606d0bc8d072a5cc": "Vui lòng chọn một phiên bản",
-	"a310dff8a1d57f337fb9c291ad22a07e": "Tất cả các phiên bản"
+	"a310dff8a1d57f337fb9c291ad22a07e": "Tất cả các phiên bản",
+	"bbd72b4d28e19599151fec7edaf6f7c5": "Rủi ro: Hiện tại chức năng Thùng rác cơ sở dữ liệu chưa được bật. Sau khi cơ sở dữ liệu bị xóa, cơ sở dữ liệu sẽ biến mất vĩnh viễn!",
+	"a29965e264f638beb59f4f241eb38bb0": "Rủi ro: Hiện tại chức năng Thùng rác của tệp bị tắt. Sau khi một thư mục trang web bị xóa, thư mục trang web đó sẽ biến mất vĩnh viễn!"
 }

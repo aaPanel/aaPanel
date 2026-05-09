@@ -88,7 +88,8 @@
 			"filterRunning": "Running",
 			"filterStopped": "Stopped",
 			"searchPlaceholder": "Search container name or image name",
-			"goToApp": "Go to App Store to install"
+			"goToApp": "Go to App Store to install",
+			"pullCloudImage": "Pull image from the cloud"
 		},
 		"Container": {
 			"index_1": "Konteyner Oluştur",
@@ -350,7 +351,8 @@
 					"index_23": "Lütfen sertifika içeriğini doldurun",
 					"index_24": "Alan Adı",
 					"index_25": "Son Kullanma Tarihi",
-					"index_26": "Marka"
+					"index_26": "Marka",
+					"index_27": "Free Cert"
 				}
 			},
 			"terminal": {
@@ -579,7 +581,10 @@
 				"index_5": "Lütfen konteyner şablonunu seçin",
 				"index_6": "Lütfen şablon adını girin",
 				"index_7": "Yaml şablonu ekle"
-			}
+			},
+			"taskLogsTitle": "Creating Docker Compose...",
+			"taskSuccess": "Project added successfully",
+			"taskFailed": "Failed to add project"
 		},
 		"Template": {
 			"index_4": "Şablon adı",

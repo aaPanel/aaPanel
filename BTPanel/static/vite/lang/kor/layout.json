@@ -94,8 +94,9 @@
 			"account_5": "저장",
 			"account_6": "설정",
 			"domain_1": "도메인",
-			"domain_2": "자격증",
-			"security_8": "웹사이트 보안"
+			"domain_2": "인증서",
+			"security_8": "웹사이트 보안",
+			"wap_12": "Exclusive Rules"
 		},
 		"Footer": {
 			"index_1": "Aapanel Linux 패널 © 2014- {0} Aapanel",

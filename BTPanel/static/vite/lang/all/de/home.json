@@ -286,5 +286,10 @@
 	"986c7d76cb8504611a780fb644a067da": "Durch das Upgrade werden bekannte Fehler behoben und die neuesten Funktionen hinzugefügt. Ihre Daten sind davon nicht betroffen",
 	"36b6baa91d91c9b968f047fcb9903138": "Durch die Reparatur des Panels werden verschiedene unerwartete Probleme behoben",
 	"ec4e4184b1049bd8ce0694885ba22556": "Scanregeln",
-	"91e8536c9d1f2ac648398b8a8de2ba9a": "[Standard]"
+	"91e8536c9d1f2ac648398b8a8de2ba9a": "[Standard]",
+	"6e710553e743259cd47e52f15fa71051": "Überlastet",
+	"655d20c1ca69519ca647684edbb2db35": "Hoch",
+	"1eb79d43dbb97d5ceb3c157fdb27fa60": "Mäßig",
+	"960b44c579bc2f6818d2daaf9e4c16f0": "Normal",
+	"c146a1bd71e190b848e36475d75b94dd": "Kern | Kerne"
 }

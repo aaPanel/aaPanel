@@ -971,7 +971,23 @@
 			"setting_75": "Додавання заборонених слів, будь ласка, зачекайте...",
 			"setting_76": "Імпортування заборонених слів, зачекайте...",
 			"setting_77": "Видалення заборонених слів, зачекайте...",
-			"setting_78": "Очищення заборонених слів, зачекайте..."
+			"setting_78": "Очищення заборонених слів, зачекайте...",
+			"exclusive_79": "Setting rule status, please wait...",
+			"exclusive_80": "Setting status, please wait..."
+		},
+		"Exclusive": {
+			"index_1": "Exclusive Rules",
+			"index_2": "Exclusive rules are disabled",
+			"index_3": ". Enable them to enhance protection for WordPress, DedeCMS, and other applications.",
+			"index_4": "Enable now",
+			"index_5": "Rule ID",
+			"index_6": "Name",
+			"index_7": "Description",
+			"index_8": "Status",
+			"index_9": "After enabling exclusive rules, they will apply to all websites. If false positives occur, you can disable individual rules.",
+			"index_10": "Exclusive rules are adapted for major CMSs based on each program's characteristics. Most of them target remote code execution.",
+			"index_11": "Rule updates: at this stage, updating the firewall also updates the rules. Manual rule updates will be added later.",
+			"index_12": "Future update plan: targeted updates based on various CVE vulnerabilities."
 		}
 	}
 }

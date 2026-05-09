@@ -259,5 +259,8 @@
 	"6aea058d3dc97cb1ddbd873fac3dcfa4": "{0} Datenbankdatei, bitte warten...",
 	"da561ddb957ee1dfa466f8e8a757b237": "{0} Datenbank: ",
 	"4308f628f9d925687737f2d4e843c47f": "{0} Größe: ",
-	"94103f11ea70a356fd537493adc58f7f": "{0} Geschwindigkeit:"
+	"94103f11ea70a356fd537493adc58f7f": "{0} Geschwindigkeit:",
+	"6e15abc210dbf27427eab795031ffa15": "Der Datenbank-Papierkorb ist nicht aktiviert, bitte gehen Sie vorsichtig vor! Gehen Sie zu „Aktivieren“ -> „Dateiverwaltung“ -> „Papierkorb“.",
+	"45ac8a67414190f6fd84f24189ac6dfd": "In den Papierkorb verschieben",
+	"3e00f0aa00b5ab654f306691ac0ce625": "Sind Sie sicher, dass Sie diese Datei [{0}] in den Papierkorb legen?"
 }
