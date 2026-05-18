@@ -62,6 +62,7 @@ class MigrateCore:
         self.backup_dir = os.path.join(backup_dir, self.task_name)
         self.local_base_dir = local_base_dir
         self._data_list = detail.get('data', {}).get(self.task_name, [])
+        self.restored_domains: set = set()
 
     # ==================== 必须实现 ====================
 
@@ -278,3 +279,11 @@ class Migrater:
             self.ssh_manager.execute(f"rm -rf '{self.remote_user_dir}'")
         except:
             pass
+
+    def get_restored_domains(self) -> set:
+        """收集成功恢复的域名."""
+        return {
+            d for t in self.task_plan
+            if hasattr(t, 'restored_domains')
+            for d in t.restored_domains
+        }

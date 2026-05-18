@@ -1,1 +1,0 @@
-import{a4 as c,r as t}from"./vue-core-uAVgR4Zq.js?v=1778212740935";const g=c("logs",()=>{const s=t(),a=e=>{s.value=e},o=t(),n=e=>{o.value=e},r=t();return{currentId:s,websiteName:o,logName:r,setLogName:e=>{r.value=e},setCurrentId:a,setWebsite:n}});export{g as u};

@@ -403,7 +403,7 @@ class RealSSLManger:
 
             res_list = res_data['data']
         except:
-            raise ValueError("链接云端失败")
+            raise ValueError("Failed to link to the cloud.")
 
         change_set = set()
         for data in res_list:
@@ -602,8 +602,8 @@ class RealSSLManger:
                     return res_data
             except:
                 if local:
-                    raise ValueError("本地以删除成功, 链接云端失败, 无法删除云端数据")
-                raise ValueError("链接云端失败, 无法删除云端数据")
+                    raise ValueError(" Failed to link to the cloud., Unable to delete cloud data")
+                raise ValueError("Failed to link to the cloud., Unable to delete cloud data")
 
             if not local:
                 ssl_db.connection().where("id = ?", (target["id"],)).update({"cloud_id": -1})
@@ -661,7 +661,7 @@ class RealSSLManger:
             else:
                 return res_data
         except:
-            raise ValueError('链接云端失败')
+            raise ValueError('Failed to link to the cloud.')
 
     # ssl_hash 证书储存记录的唯一值
     def set_site_ssl_conf(self, site_name: str, ssl_data: dict, mutil=False) -> Optional[str]:
@@ -698,7 +698,7 @@ class RealSSLManger:
     def is_nginx_http3(self):
         """判断nginx是否可以使用http3"""
         if getattr(self, "_is_nginx_http3", None) is None:
-            _is_nginx_http3 = public.ExecShell("nginx -V 2>&1| grep 'http_v3_module'")[0] != ''
+            _is_nginx_http3 = public.is_nginx_http3()
             setattr(self, "_is_nginx_http3", _is_nginx_http3)
         return self._is_nginx_http3
 
@@ -717,11 +717,14 @@ class RealSSLManger:
         file = '{}/nginx/{}{}.conf'.format(self._vhost_path, self.conf_prefix, site_name)
         ng_conf = read_file(file)
         if not ng_conf:
-            return "配置文件丢失，配置失败"
+            return "The configuration file is lost, and the configuration failed."
 
         http3_header = ""
         if self.is_nginx_http3():
             http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+            http3_header += "\n    quic_retry on;\n    quic_gso on;"
+            if public.ng_ssl_early_data_enabled():
+                http3_header += "\n    ssl_early_data on;"
 
         if ng_conf.find('ssl_certificate') == -1:
             sslStr = """#error_page 404/404.html;
@@ -743,7 +746,7 @@ class RealSSLManger:
             new_ng_conf = NginxDomainTool.nginx_add_port_by_config(new_ng_conf, "443", is_http3=self.is_nginx_http3())
             write_file(file, new_ng_conf)
             if webserver() == "nginx" and check_server_config() is not None:
-                return "配置失败"
+                return "Configuration failed"
             if webserver() == "nginx" and not mutil:
                 service_reload()
                 self.open_firewall_443()
@@ -753,11 +756,11 @@ class RealSSLManger:
         ap_file = '{}/apache/{}{}.conf'.format(self._vhost_path, self.conf_prefix, site_name)
         ap_conf = read_file(ap_file)
         if not ap_conf:
-            return "配置文件丢失，配置失败"
+            return "The configuration file is lost, and the configuration failed."
 
         tmp_template_res = re.search(r"<VirtualHost(.|\n)*?</VirtualHost>", ap_conf)
         if not tmp_template_res:
-            return "配置文件丢失，配置失败"
+            return "The configuration file is lost, and the configuration failed."
         else:
             tmp_template = tmp_template_res.group()
 
@@ -807,7 +810,7 @@ class RealSSLManger:
                 break
 
         if ssl_vhost is None:
-            return "无法定位SSL配置文件位置，配置失败"
+            return "The location of the SSL configuration file cannot be determined.Configuration failed"
 
         write_file(ap_file, ap_conf + "\n" + ssl_vhost)
         # 添加端口
@@ -816,7 +819,7 @@ class RealSSLManger:
         web_server = webserver()
         if web_server == "apache" and check_server_config() is not None:
             write_file(ap_file, ap_conf)
-            return "配置失败"
+            return "Configuration failed"
 
         if web_server == "apache" and not mutil:
             service_reload()
@@ -836,7 +839,7 @@ class RealSSLManger:
         file = '{}/nginx/{}{}.conf'.format(self._vhost_path, self.conf_prefix, site_name)
         ng_conf = read_file(file)
         if not ng_conf:
-            return "配置文件丢失，配置失败"
+            return "The configuration file is lost, and the configuration failed."
         rep_list = (
             re.compile(r"\n\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"),  # 关闭 强制https
             re.compile(r"\s*ssl_(certificate|certificate_key|protocols|"
@@ -855,7 +858,7 @@ class RealSSLManger:
         file = '{}/apache/{}{}.conf'.format(self._vhost_path, self.conf_prefix, site_name)
         ap_conf = read_file(file)
         if not ap_conf:
-            return "配置文件丢失，配置失败"
+            return "The configuration file is lost, and the configuration failed."
         rep_list = (
             re.compile(r"\n\s*#HTTP_TO_HTTPS_START(.|\n){1,300}#HTTP_TO_HTTPS_END"),
             re.compile(r"\n<VirtualHost\s+\*:443\s*>(.|\n)*</VirtualHost>"),

@@ -152,6 +152,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "文件操作",
+			"fileOperationRecord": "文件操作記錄",
 			"permissions": "權限",
 			"createOptions": {
 				"newDirectory": "新建目錄",
@@ -179,6 +180,12 @@
 				"untitledDirectory": "未命名目錄",
 				"untitledFile": "未命名文件"
 			}
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "請輸入搜尋關鍵字",
+			"operationTime": "操作時間",
+			"operationLog": "操作日誌",
+			"clearTip": "清空目前目的地可前往"
 		},
 		"api": {
 			"saving": "正在儲存中，請稍候...",
@@ -269,7 +276,6 @@
 		"deleteController": {
 			"deleteSingleFileTitle": "刪除文件【{name}】",
 			"batchDeleteTitle": "批量刪除文件",
-			"deleteFileConfirmWithName": "您真的要刪除文件【{name}】嗎？",
 			"recycleBinMessage": "刪除後，文件將遷移至文件回收站，如需徹底刪除請前往文件回收站，是否繼續操作？",
 			"permanentDeleteMessage": "風險操作，當前未開啟文件回收站，刪除後將徹底刪除，無法恢復，是否繼續操作？",
 			"deletingSingle": "正在刪除中，請稍候...",
@@ -330,8 +336,9 @@
 		"archivePreviewModal": {
 			"title": "壓縮包預覽",
 			"titleWithFile": "壓縮包預覽【{name}】",
-			"unsupported": "暫不支持預覽該壓縮格式",
-			"loadFailed": "壓縮包預覽加載失敗",
+			"titleWithTypeFile": "{type}壓縮預覽【{name}】",
+			"unsupported": "暫不支援預覽該壓縮格式",
+			"loadFailed": "壓縮包預覽載入失敗",
 			"empty": "未讀取到壓縮包內容",
 			"file": "文件",
 			"directory": "目錄",
@@ -340,21 +347,40 @@
 				"type": "類型",
 				"size": "大小",
 				"compressedSize": "壓縮後",
-				"method": "算法",
+				"method": "演算法",
 				"modifiedTime": "修改時間",
 				"operation": "操作"
 			},
-			"extractTo": "解壓至",
-			"extractTitle": "解壓文件【{name}】",
-			"addFile": "添加文件",
-			"addingFile": "正在添加文件，請稍候...",
-			"editTitle": "編輯文件【{name}】",
-			"gettingFile": "正在獲取文件，請稍候...",
-			"savingFile": "正在保存文件，請稍候...",
-			"unsupportedEdit": "暫不支持該類型文件編輯",
-			"currentArchive": "當前壓縮包",
-			"batchPlaceholder": "請選擇批量操作",
+			"extractTo": "解壓縮至",
+			"extractTitle": "解壓縮檔案【{name}】",
+			"noExtractableFile": "請選擇需要解壓縮的文件",
+			"addFile": "新增文件",
+			"addingFile": "正在新增文件，請稍候...",
+			"editTitle": "編輯檔案【{name}】",
+			"gettingFile": "正在取得文件，請稍候...",
+			"savingFile": "正在儲存文件，請稍候...",
+			"unsupportedEdit": "暫不支援該類型文件編輯",
+			"currentArchive": "目前壓縮包",
+			"batchPlaceholder": "請選擇批次操作",
 			"batchOperation": "批量操作",
+			"overwriteTitle": "重複文件處理",
+			"overwriteMessage": "目前目錄已包含以下文件，請選擇需要操作的文件，繼續操作？",
+			"overwriteTips": "選擇文件後，進行相應的操作",
+			"overwriteSelectRequired": "請選擇文件",
+			"overwriteSuccess": "執行成功",
+			"noChange": "無變化",
+			"extractFile": "解壓文件",
+			"targetFile": "目標文件",
+			"overwriteColumns": {
+				"archiveFile": "壓縮包檔案",
+				"targetFile": "目標文件",
+				"status": "狀態"
+			},
+			"overwriteActions": {
+				"skip": "跳過",
+				"overwrite": "覆蓋",
+				"rename": "重新命名解壓縮文件"
+			},
 			"actions": {
 				"edit": "編輯",
 				"extract": "解壓",
@@ -363,7 +389,26 @@
 		},
 		"tableFooter": {
 			"summary": "總共{dirNum}個目錄，{fileNum}個文件，文件大小：",
-			"calculate": "計算"
+			"calculate": "計算",
+			"diskAnalysisTip": "安裝《硬碟分析工具》可以一鍵掃描所有目錄大小"
+		},
+		"calcSize": {
+			"clickTitle": "點擊計算大小",
+			"diskAnalysisTip": "{action}硬碟分析工具可查看更多信息，",
+			"diskAnalysisAction": "立即{action}",
+			"install": "安裝",
+			"purchase": "購買",
+			"diskAnalysisTitle": "硬碟分析",
+			"directoryDetails": "目錄詳情",
+			"directoryPath": "目錄路徑：",
+			"directorySize": "目錄大小：",
+			"folderCount": "資料夾數量：",
+			"fileCount": "文件數量：",
+			"permission": "權限：",
+			"modifyPermission": "修改權限",
+			"owner": "用戶：",
+			"lastModifiedTime": "最後修改時間：",
+			"permissionChangeTime": "權限變更時間："
 		},
 		"terminalModal": {
 			"title": "Terminal",
@@ -389,13 +434,15 @@
 			"cancelSharing": "取消分享",
 			"confirmStopSharing": "確認停止分享【{filename}】，是否繼續？",
 			"deletingShare": "正在刪除分享中，請稍候...",
-			"linkAndCode": "鏈接：{link}, 邀請碼：{code}"
+			"linkAndCode": "鏈接：{link}, 邀請碼：{code}",
+			"securityTip": "注意：產生的外鏈分享連結具有一定的風險，請僅與可信任的人分享鏈接，避免敏感資訊洩露"
 		},
 		"shareListModal": {
 			"title": "分享列表",
 			"shareName": "分享名稱",
 			"shareAddress": "分享地址",
 			"expirationDate": "過期時間",
+			"searchPlaceholder": "請輸入分享名稱",
 			"cancelShareTitle": "取消分享",
 			"cancelShareMessage": "確認停止分享【{filename}】，是否繼續？",
 			"deletingShare": "刪除分享鏈接中，請稍候..."
@@ -403,8 +450,10 @@
 		"favoriteListModal": {
 			"title": "收藏列表",
 			"path": "路徑",
-			"removeFavoriteTitle": "移除收藏",
-			"removeFavoriteMessage": "確認刪除路徑【{path}】？",
+			"removeFavoriteTitle": "刪除收藏",
+			"removeFavoriteMessage": "即將刪除收藏路徑【{name}】？",
+			"cancelFavoriteTitle": "取消收藏",
+			"cancelFavoriteMessage": "取消【{name}】的收藏，是否繼續？",
 			"management": "管理"
 		},
 		"recycle": {

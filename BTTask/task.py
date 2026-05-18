@@ -1139,7 +1139,7 @@ def check_install_status(name: str):
 
 def soft_task():
     # 执行面板soft corn之类的安装执行任务, from task.py -> def startTask():
-    def ExecShell(cmdstring, cwd=None, shell=True, symbol='&>'):
+    def ExecShell(cmdstring, cwd=None, shell=True, symbol='&>>'):
         try:
             import shlex
             import subprocess

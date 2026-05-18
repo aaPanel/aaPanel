@@ -10,7 +10,7 @@
 # ------------------------------
 # 网站管理类
 # ------------------------------
-import re, public, os, sys, shutil, json, hashlib, socket, time
+import re, public, os, sys, shutil, json, hashlib, socket, time, shlex
 from datetime import datetime
 from public.hook_import import hook_import
 hook_import()
@@ -2060,7 +2060,6 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             public.progress_release_lock(lock_file)
             return progress_log
 
-
     # 添加WP站点
     def AddWPSite(self, args: public.dict_obj):
         from flask import Flask
@@ -3495,6 +3494,11 @@ listener SSL443 {{
             if ng_conf:
                 if ng_conf.find('ssl_certificate') == -1:
                     http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+
+                    http3_header += "\n    quic_retry on;\n    quic_gso on;"
+                    if self.ng_ssl_early_data_enabled():
+                        http3_header += "\n    ssl_early_data on;"
+
                     if not self.is_nginx_http3():
                         http3_header = ""
                     sslStr = """#error_page 404/404.html;
@@ -3559,6 +3563,8 @@ listener SSL443 {{
                                     listen_add_str.append("\n    listen {} quic;".format(p))
                             if use_http2_on:
                                 listen_add_str.append("\n    http2 on;")
+                            if self.is_nginx_http3():
+                                listen_add_str.append("\n    http3 on;")
 
                         else:
                             listen_add_str.append("\n    listen 443 ssl " + default_site + ";")
@@ -3947,6 +3953,13 @@ listener SSL443 {{
             conf = re.sub(rep, '', conf)
             rep = r"\s+http2\s+on;"
             conf = re.sub(rep, '', conf)
+            rep = "\s+http3\s+on;"
+            conf = re.sub(rep, '', conf)
+            rep = "\s+quic_(gso|retry)\s+.*;"
+            conf = re.sub(rep, '', conf)
+            rep = "\s+ssl_early_data\s+.*;"
+            conf = re.sub(rep, '', conf)
+
 
             # 修改多服务代理端口
             try:
@@ -7135,6 +7148,429 @@ location %s
         del return_message['status']
         return public.return_message(0, 0, return_message['msg'])
 
+    # php—wp-异步备份
+    def php_wp_backup(self, args: public.dict_obj):
+        """
+        批量异步备份PHP或wp站点
+        @param args.id: 站点ID列表 [id1, id2, ...] 或 JSON字符串
+        @param args.backup_type: PHP 备份类型 0=完整备份, 1=增量备份 WP 默认 3全量
+        """
+        from flask import Flask
+        app = Flask(__name__)
+
+        lock_file = '/tmp/php_backup.lock'
+
+        if not public.progress_acquire_lock(lock_file):
+            return public.return_message(-1, 0, public.lang(
+                'Other backup task is running. Please wait for completion!'))
+
+        # 参数校验
+        try:
+            args.validate([
+                Param('id').Require(),
+                Param('bak_type').Integer(),
+                Param('site_type').String()
+            ], [
+                public.validate.trim_filter(),
+            ])
+
+            if isinstance(args.id, str):
+                site_ids = json.loads(args.id)
+            else:
+                site_ids = args.id
+            if not isinstance(site_ids, list):
+                site_ids = [site_ids]
+            site_ids = [int(sid) for sid in site_ids]
+
+            if not site_ids:
+                public.progress_release_lock(lock_file)
+                raise ValueError(public.lang('No site IDs provided'))
+
+            site_type = args.site_type.lower()
+            if site_type not in ['php','wp']:
+                raise ValueError(public.lang('The website type does not exist.'))
+        except Exception as ex:
+            public.progress_release_lock(lock_file)
+            return public.return_message(-1, 0, str(ex))
+
+        backup_type = int(getattr(args, 'bak_type', 0))
+
+        # 异步执行
+        from concurrent.futures import ThreadPoolExecutor
+        thread = ThreadPoolExecutor(max_workers=1)
+
+        if site_type == 'php':
+            if backup_type == 0:
+                thread.submit(self._do_php_backup, site_ids, app)
+            else:
+                thread.submit(self._do_full_php_backup, site_ids, app)
+        else:
+            # WP 站点备份
+            bak_type = int(getattr(args, 'bak_type', 3))  # 默认完整备份
+            thread.submit(self._do_wp_backup, site_ids, bak_type, app)
+
+        return public.return_message(0, 0, public.lang('Successful startup!'))
+
+    # wp备份
+    def _do_wp_backup(self, site_ids: list, bak_type: int = 3, app=None):
+        """WP站点批量备份实际执行逻辑
+        @param site_ids: 站点ID列表
+        @param bak_type: 备份类型 1=文件, 2=数据库, 3=完整备份
+        """
+        lock_file = '/tmp/wp_backup.lock'
+        status_file = '/tmp/wp_backup.log'
+        import threading
+        public.writeFile(lock_file, str(threading.get_ident()))
+
+        try:
+            total, result_list = len(site_ids), []
+            self.write_backup_log(status_file, 0,  public.lang("Backing up {}/{}").format( 0, total), [])
+            from wp_toolkit import wpbackup
+
+            for idx, site_id in enumerate(site_ids, 1):
+                find = public.M('sites').where("id=?", (site_id,)).field('name,id,project_type').find()
+                if not find:
+                    result_list.append({'site_id': site_id, 'site_name': 'Unknown', 'status': -1, 'msg': public.lang('Site not found')})
+                elif find.get('project_type') not in ['WP', 'WP2']:
+                    result_list.append({'site_id': site_id, 'site_name': find.get('name', 'Unknown'), 'status': -1, 'msg': public.lang('Not a WordPress site')})
+                else:
+                    try:
+                        bak_obj = wpbackup(site_id)
+
+                        if bak_type == 1:
+                            ok, msg = bak_obj.backup_files()
+                        elif bak_type == 2:
+                            ok, msg = bak_obj.backup_database()
+                        else:
+                            ok, msg = bak_obj.backup_full()
+
+                        if ok:
+                            result_list.append({'site_id': site_id, 'site_name': find['name'], 'status': 0, 'msg': public.lang('Backup successful')})
+                        else:
+                            result_list.append({'site_id': site_id, 'site_name': find['name'], 'status': -1, 'msg': msg})
+                    except Exception as e:
+                        result_list.append({'site_id': site_id, 'site_name': find['name'], 'status': -1, 'msg': str(e)})
+
+                self.write_backup_log(status_file, 0, public.lang("Backup site: {}/{}").format(idx, total), result_list)
+                time.sleep(0.3)
+
+            success_count = sum(1 for r in result_list if r['status'] == 0)
+            failed_count = sum(1 for r in result_list if r['status'] != 0)
+            self.write_backup_log(status_file, 1, public.lang("Backup completed: {} success, {} failed").format(success_count, failed_count), result_list)
+            public.write_log_gettext('Site manager', 'WP Batch backup completed: {} success, {} failed', (success_count, failed_count))
+        except Exception as e:
+            self.write_backup_log(status_file, -1, public.lang("Backup failed"), [])
+            public.writeFile(status_file, json.dumps({"status": -1, "error": str(e)}))
+        finally:
+            public.progress_release_lock(lock_file)
+
+    # php备份
+    def _do_php_backup(self, site_ids: list, app=None):
+        """批量备份实际执行逻辑"""
+        lock_file = '/tmp/php_backup.lock'
+        status_file = '/tmp/php_backup.log'
+
+        import threading
+        public.writeFile(lock_file, str(threading.get_ident()))
+
+        try:
+            total, result_list = len(site_ids), []
+            self.write_backup_log(status_file, 0,  public.lang("Backing up {}/{}").format( 0, total), [])
+
+            for idx, site_id in enumerate(site_ids, 1):
+                find = public.M('sites').where("id=?", (site_id,)).field('name,path,id').find()
+                if not find:
+                    result_list.append({'site_id': site_id, 'site_name': 'Unknown', 'status': -1, 'msg': public.lang('Site not found')})
+                else:
+                    try:
+                        fileName = find['name'] + '_' + time.strftime('%Y%m%d_%H%M%S', time.localtime()) + '.zip'
+                        backupPath = public.M('config').where('id=?', (1,)).getField('backup_path') + '/site'
+                        zipName = backupPath + '/' + fileName
+                        if not os.path.exists(backupPath): os.makedirs(backupPath)
+                        public.ExecShell("cd '" + find['path'] + "' && zip '" + zipName + "' -r . -x .user.ini")
+                        public.M('backup').add('type,name,pid,filename,size,addtime', (0, fileName, find['id'], zipName, 0, public.getDate()))
+                        result_list.append({'site_id': site_id, 'site_name': find['name'], 'status': 0, 'msg': public.lang('Backup successful'), 'file': zipName})
+                    except Exception as e:
+                        result_list.append({'site_id': site_id, 'site_name': find['name'], 'status': -1, 'msg': str(e)})
+
+                self.write_backup_log(status_file,0, public.lang("Backup site: {}/{}").format(idx, total), result_list)
+                time.sleep(0.3)
+
+            success_count = sum(1 for r in result_list if r['status'] == 0)
+            failed_count = sum(1 for r in result_list if r['status'] != 0)
+            self.write_backup_log(status_file,1, public.lang("Backup completed: {} success, {} failed").format(success_count, failed_count), result_list)
+            public.write_log_gettext('Site manager', 'Batch backup completed: {} success, {} failed', (success_count, failed_count))
+        except Exception as e:
+            self.write_backup_log(status_file,-1, public.lang("Backup failed"),  [])
+            public.writeFile(status_file, json.dumps({"status": -1, "error": str(e)}))
+        finally:
+            public.progress_release_lock(lock_file)
+
+    # php全量备份
+    def _do_full_php_backup(self, site_ids: list, app=None):
+        """PHP站点批量全量备份: 文件 + 配置 + 数据库"""
+        import shutil
+        import threading
+        lock_file = '/tmp/php_backup.lock'
+        status_file = '/tmp/php_backup.log'
+
+        public.writeFile(lock_file, str(threading.get_ident()))
+
+        try:
+            total, result_list = len(site_ids), []
+            self.write_backup_log(status_file, 0, public.lang("Backing up {}/{}").format(0, total), [])
+
+            for idx, site_id in enumerate(site_ids, 1):
+                find = public.M('sites').where("id=?", (site_id,)).field('name,path,id,project_type').find()
+                if not find:
+                    result_list.append({'site_id': site_id, 'site_name': 'Unknown', 'status': -1, 'msg': public.lang('Site not found')})
+                    self.write_backup_log(status_file, 0, public.lang("Backup site: {}/{}").format(idx, total), result_list)
+                    time.sleep(0.3)
+                    continue
+
+                self.write_backup_log(status_file, 0, public.lang("Backing up [{}] {}/{}").format(find['name'], idx, total), result_list)
+                tmp_path = None
+                try:
+                    site_name = find['name']
+                    site_path = find['path']
+
+                    # 创建临时目录
+                    tmp_path = public.make_panel_tmp_path()
+
+                    # 1. 备份网站文件
+                    files_zip = os.path.join(tmp_path, 'files.zip')
+                    public.ExecShell("cd '{}' && zip '{}' -x .user.ini -r ./ > /dev/null 2>&1".format(site_path, files_zip))
+
+                    # 2. 备份配置文件
+                    self._backup_site_configs(site_name, os.path.join(tmp_path, 'configs'))
+
+                    # 3. 备份数据库
+                    db_find = public.M('databases').where('pid=?', (site_id,)).field('id,name').find()
+                    db_name = ''
+                    if isinstance(db_find, dict) and db_find.get('id'):
+                        from public import mysqlmgr
+                        dump_info = mysqlmgr.dumpsql_with_aap(db_find['id'], tmp_path)
+                        db_name = db_find.get('name', '')
+                        target_db_file = os.path.join(tmp_path, 'database.sql.gz')
+                        if os.path.exists(dump_info.file) and dump_info.file != target_db_file:
+                            shutil.move(dump_info.file, target_db_file)
+
+                    # 4. Domain域名
+                    domain_list = []
+                    domain = public.M('domain').where('pid=?', (site_id,)).field('name,port').select()
+                    if domain:
+                        domain_list = domain
+
+                    # 5. 写入 meta.json
+                    php_ver = ''
+                    try:
+                        php_ver = public.get_site_php_version(site_name)
+                    except Exception:
+                        pass
+                    meta = {
+                        'site_name': site_name,
+                        'site_path': site_path,
+                        'site_id': site_id,
+                        'php_version': php_ver,
+                        'backup_time': public.getDate(),
+                        'has_database': isinstance(db_find, dict) and bool(db_find.get('id')),
+                        'db_name': db_name,
+                        'domain_list': domain_list
+                    }
+                    meta_file = os.path.join(tmp_path, 'meta.json')
+                    with open(meta_file, 'w', encoding='utf-8') as fp:
+                        json.dump(meta, fp, ensure_ascii=False)
+
+                    # 6. 打包最终备份文件
+                    fileName = 'full_' + site_name + '_' + time.strftime('%Y%m%d_%H%M%S', time.localtime()) + '.zip'
+                    backupPath = public.M('config').where('id=?', (1,)).getField('backup_path') + '/site'
+                    zipName = backupPath + '/' + fileName
+                    if not os.path.exists(backupPath):
+                        os.makedirs(backupPath)
+
+                    shutil.make_archive(os.path.splitext(zipName)[0], 'zip', tmp_path)
+
+                    # 7. 记录到backup表
+                    file_size = os.path.getsize(zipName) if os.path.exists(zipName) else 0
+                    public.M('backup').add('type,name,pid,filename,size,addtime,backup_type',
+                                           (0, fileName, find['id'], zipName, file_size, public.getDate(),1))
+                    result_list.append({'site_id': site_id, 'site_name': find['name'], 'status': 0,
+                                        'msg': public.lang('Backup successful'), 'file': zipName})
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    result_list.append({'site_id': site_id, 'site_name': find.get('name', 'Unknown'),
+                                        'status': -1, 'msg': str(e)})
+                finally:
+                    if tmp_path and os.path.exists(tmp_path):
+                        shutil.rmtree(tmp_path, ignore_errors=True)
+
+                self.write_backup_log(status_file, 0, public.lang("Backup site: {}/{}").format(idx, total), result_list)
+                time.sleep(0.3)
+
+            success_count = sum(1 for r in result_list if r['status'] == 0)
+            failed_count = sum(1 for r in result_list if r['status'] != 0)
+            self.write_backup_log(status_file, 1, public.lang("Backup completed: {} success, {} failed").format(success_count, failed_count), result_list)
+            public.write_log_gettext('Site manager', 'Batch backup completed: {} success, {} failed', (success_count, failed_count))
+        except Exception as e:
+            self.write_backup_log(status_file, -1, public.lang("Backup failed"), [])
+            public.writeFile(status_file, json.dumps({"status": -1, "error": str(e)}))
+        finally:
+            public.progress_release_lock(lock_file)
+
+    # 简易版备份网站配置
+    def _backup_site_configs(self, site_name: str, conf_dir: str) -> None:
+        """备份站点配置文件到指定目录
+        包含: nginx/apache主配置, redirect/proxy/dir_auth, rewrite规则, SSL证书
+        """
+        if not os.path.exists(conf_dir):
+            os.makedirs(conf_dir, 0o755)
+
+        vhost = self.setupPath + '/panel/vhost'
+
+        # --- Nginx ---
+        nginx_main = '{}/nginx/{}.conf'.format(vhost, site_name)
+        if os.path.exists(nginx_main):
+            nginx_dir = os.path.join(conf_dir, 'nginx')
+            os.makedirs(nginx_dir, 0o755, exist_ok=True)
+            shutil.copy2(nginx_main, nginx_dir + '/')
+
+        well_known = '{}/nginx/{}/{}'.format(vhost, 'well-known', site_name)
+        if os.path.exists(well_known):
+            sub_dst = os.path.join(conf_dir, 'nginx', 'well-known')
+            os.makedirs(sub_dst, 0o755, exist_ok=True)
+            shutil.copytree(well_known, os.path.join(sub_dst, site_name), dirs_exist_ok=True)
+
+        # --- Apache ---
+        apache_main = '{}/apache/{}.conf'.format(vhost, site_name)
+        if os.path.exists(apache_main):
+            apache_dir = os.path.join(conf_dir, 'apache')
+            os.makedirs(apache_dir, 0o755, exist_ok=True)
+            shutil.copy2(apache_main, apache_dir + '/')
+
+        # --- Ols ---
+        ols_main = '{}/openlitespeed/{}.conf'.format(vhost, site_name)
+        if os.path.exists(ols_main):
+            ols_dir = os.path.join(conf_dir, 'openlitespeed')
+            os.makedirs(ols_dir, 0o755, exist_ok=True)
+            shutil.copy2(ols_main, ols_dir + '/')
+
+        ols_main = '{}/openlitespeed/detail/{}.conf'.format(vhost, site_name)
+        if os.path.exists(ols_main):
+            ols_dir = os.path.join(conf_dir, 'openlitespeed', 'detail')
+            os.makedirs(ols_dir, 0o755, exist_ok=True)
+            shutil.copy2(ols_main, ols_dir + '/')
+
+        ols_main = '{}/openlitespeed/detail/ssl/{}.conf'.format(vhost, site_name)
+        if os.path.exists(ols_main):
+            ols_dir = os.path.join(conf_dir, 'openlitespeed', 'detail', 'ssl')
+            os.makedirs(ols_dir, 0o755, exist_ok=True)
+            shutil.copy2(ols_main, ols_dir + '/')
+
+        # --- extension ---
+        webserver = ['nginx','apache']
+        for server in webserver:
+            extension = '{}/{}/{}/{}'.format(vhost, server, 'extension', site_name)
+            if os.path.exists(extension):
+                sub_dst = os.path.join(conf_dir, server, 'extension')
+                os.makedirs(sub_dst, 0o755, exist_ok=True)
+                shutil.copytree(extension, os.path.join(sub_dst, site_name), dirs_exist_ok=True)
+
+        # --- Rewrite ---
+        rewrite_main = '{}/rewrite/{}.conf'.format(vhost, site_name)
+        rewrite_dir = os.path.join(conf_dir, 'rewrite')
+        if os.path.exists(rewrite_main):
+            os.makedirs(rewrite_dir, 0o755, exist_ok=True)
+            shutil.copy2(rewrite_main, rewrite_dir + '/')
+
+        rewrite_vhost = '{}/rewrite/'.format(vhost)
+        if os.path.exists(rewrite_vhost):
+            for f in os.listdir(rewrite_vhost):
+                if f.endswith('.conf') and site_name in f:
+                    os.makedirs(rewrite_dir, 0o755, exist_ok=True)
+                    shutil.copy2(os.path.join(rewrite_vhost, f), rewrite_dir + '/')
+
+        # --- SSL/Cert ---
+        cert_src = '{}/cert/{}'.format(vhost, site_name)
+        if os.path.exists(cert_src):
+            cert_dst = os.path.join(conf_dir, 'cert')
+            shutil.copytree(cert_src, os.path.join(cert_dst, site_name), dirs_exist_ok=True)
+
+    # 获取通用进度日志
+    def get_general_progress(self, get=None):
+        """
+        通用的获取进度方法
+
+        """
+        from pathlib import Path
+        import threading
+
+        try:
+            get.validate([
+                Param('type').String()
+            ], [
+                public.validate.trim_filter(),
+            ])
+
+            site_type = get.type.lower()
+            if site_type not in ['php', 'wp']:
+                raise ValueError(public.lang('The website type does not exist.'))
+        except Exception as ex:
+            return public.return_message(-1, 0, str(ex))
+
+        if site_type == 'php':
+            status_file = Path('/tmp/php_backup.log')
+            lock_file = Path('/tmp/php_backup.lock')
+        else:
+            status_file = Path('/tmp/wp_backup.log')
+            lock_file = Path('/tmp/wp_backup.lock')
+
+        # 状态文件不存在，返回完成
+        if not status_file.exists():
+            return public.return_message(0, 0, {'status': 1})
+
+        # 检查锁文件中的线程是否活跃
+        if lock_file.exists():
+            try:
+                thread_id_str = lock_file.read_text().strip()
+                if thread_id_str:
+                    thread_id = int(thread_id_str)
+                    thread_exists = any(
+                        t.ident == thread_id for t in threading.enumerate()
+                    )
+                    if not thread_exists:
+                        # 线程已结束，清理文件
+                        lock_file.unlink(missing_ok=True)
+                        status_file.unlink(missing_ok=True)
+                        return public.return_message(0, 0, {'status': 1})
+            except (ValueError, IOError):
+                lock_file.unlink(missing_ok=True)
+                if status_file.exists():
+                    status_file.unlink()
+                return public.return_message(0, 0, {'status': 1})
+
+        # 读取并返回进度信息
+        try:
+            content = status_file.read_text()
+            if not content:
+                return public.return_message(0, 0, {'status': 1})
+
+            progress_data = json.loads(content)
+            return public.return_message(0, 0, progress_data)
+        except Exception as e:
+            return public.return_message(0, 0, {'status': -1, 'error': str(e)})
+
+    # 写入备份日志专属
+    def write_backup_log(self, status_file, status, ps, result_list):
+        data = {
+            "status": status, "error": "",
+            "backup_website": {
+                "status": status, "ps": ps, "title": public.lang("Backup_website"),
+                "result_list": result_list
+            }
+        }
+        public.writeFile(status_file, json.dumps(data))
+
     # 删除备份文件
     def DelBackup(self, get):
         # 校验参数
@@ -7908,6 +8344,12 @@ location %s
                 conf = re.sub(rep, 'listen 443 ssl' + http2 + ';', conf, 1)
                 rep = r"listen\s+\[::\]:443.+;"
                 conf = re.sub(rep, 'listen [::]:443 ssl' + http2 + ';', conf, 1)
+                if self.is_nginx_http3() and conf.find('ssl_certificate') != -1 and not re.search(r"http3\s+on;", conf):
+                    rep_listen = re.compile(r"listen\s+[\[\]:]*(\d+).*\n", re.M)
+                    res = rep_listen.search(conf)
+                    if res:
+                        conf = conf[:res.end()] + "    http3 on;\n" + conf[res.end():]
+
                 public.writeFile(path, conf)
 
             path = self.setupPath + '/apache/htdocs/.htaccess'
@@ -7943,6 +8385,12 @@ location %s
             conf = re.sub(rep, 'listen 443 ssl' + http2 + ' default_server;', conf, 1)
             rep = r"listen\s+\[::\]:443\s*ssl\s*\w*\s*;"
             conf = re.sub(rep, 'listen [::]:443 ssl' + http2 + ' default_server;', conf, 1)
+            if self.is_nginx_http3() and conf.find('ssl_certificate') != -1 and not re.search(r"http3\s+on;", conf):
+                rep_listen = re.compile(r"listen\s+[\[\]:]*(\d+).*\n", re.M)
+                res = rep_listen.search(conf)
+                if res:
+                    conf = conf[:res.end()] + "    http3 on;\n" + conf[res.end():]
+
             public.writeFile(path, conf)
 
         path = self.setupPath + '/panel/vhost/nginx/default.conf'
@@ -10898,9 +11346,17 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
 
     def is_nginx_http3(self):
         if getattr(self, "_is_nginx_http3", None) is None:
-            _is_nginx_http3 = public.ExecShell("nginx -V 2>&1| grep 'http_v3_module'")[0] != ''
+            # _is_nginx_http3 = public.ExecShell("nginx -V 2>&1| grep 'http_v3_module'")[0] != ''
+            _is_nginx_http3 = public.is_nginx_http3()
             setattr(self, "_is_nginx_http3", _is_nginx_http3)
         return self._is_nginx_http3
+
+    def ng_ssl_early_data_enabled(self):
+        """判断nginx是否可以使用http3"""
+        if getattr(self, "_ng_ssl_early_data_enabled", None) is None:
+            _ng_ssl_early_data_enabled = public.ng_ssl_early_data_enabled()
+            setattr(self, "_ng_ssl_early_data_enabled", _ng_ssl_early_data_enabled)
+        return self._ng_ssl_early_data_enabled
 
     def set_restart_task(self, get):
         """

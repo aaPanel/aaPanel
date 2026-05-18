@@ -99,6 +99,12 @@ def default_languages_config():
                     "google": "zh-tw",
                     "title": "繁體中文",
                     "cn": "繁體中文"
+                },
+               {
+                    "name": "fa",
+                    "google": "fa",
+                    "title": "فارسی",
+                    "cn": "波斯语"
                 }
             ]
         }
@@ -1682,8 +1688,26 @@ def is_change_nginx_old_http2() -> bool:
 
 
 def is_nginx_http3():
-    return ExecShell("nginx -V 2>&1| grep 'http_v3_module'")[0].strip() != ''
+    out = ExecShell("{}/nginx/sbin/nginx -V 2>&1".format(get_setup_path()))[0].strip()
+    openssl_regexp = re.compile(r"built\s+with\s+OpenSSL\s+(?P<ver>[\d.]+)")
+    search = openssl_regexp.search(out)
+    if not search:
+        return False
+    ver = search.group("ver").split(".")
+    if len(ver) < 3:
+        ver.extend(['0'] * (3 - len(ver)))
+    for i in range(3):
+        try:
+            ver[i] = int(ver[i])
+        except:
+            ver[i] = 0
+    if ver >= [3, 5, 1] and "http_v3_module" in out:
+        return True
+    else:
+        return False
 
+# 2026/1/28 调整为需要完全支持http3才返回 True (openssl >= 3.5.1)
+ng_ssl_early_data_enabled = is_nginx_http3
 
 def remove_nginx_quic():
     nginx_file_path = "/www/server/panel/vhost/nginx"
@@ -1701,11 +1725,22 @@ def remove_nginx_server_quic(nginx_file: str):
     if not isinstance(data, str):
         return
 
-    rep_listen_quic = re.compile(r"\s*listen\s+.*quic;", re.M)
-    if not rep_listen_quic.search(data):
-        return
+    # rep_listen_quic = re.compile(r"\s*listen\s+.*quic;", re.M)
+    # if not rep_listen_quic.search(data):
+    #     return
+    rep_quic_list = [
+        re.compile(r"\s*listen\s+.*quic[^\n]*", re.M),
+        re.compile(r"\s*http3\s+on[^\n]*", re.M),
+        re.compile(r"\s*quic_retry\s+on[^\n]*", re.M),
+        re.compile(r"\s*quic_gso\s+on[^\n]*", re.M),
+        re.compile(r"\s*ssl_early_data\s+on[^\n]*", re.M),
+    ]
 
-    new_conf = rep_listen_quic.sub('', data)
+    # new_conf = rep_listen_quic.sub('', data)
+    new_conf = data
+    for rep in rep_quic_list:
+        new_conf = rep.sub("", new_conf)
+
     writeFile(nginx_file, new_conf)
 
 
@@ -1863,6 +1898,10 @@ def checkWebConfig(repair_num=2, path=None):
             return checkWebConfig(repair_num)
 
     if result[1].find(searchStr) == -1:
+        # 此处忽略缓存缓解文件缺失错误，部署时会自动修复
+        if 'open()' in result[1] and 'enable-php-' in result[1]:
+            return True
+
         if result[1].find(
                 '[emerg] unknown directive "http2"') != -1 and web_s == "nginx" and is_change_nginx_old_http2():
             if repair_num > 0:
@@ -1890,9 +1929,7 @@ def checkWebConfig(repair_num=2, path=None):
                     0, result[1].split("\n")[0].strip())
         except Exception as e:
             err_collect(result[1], 0, result[1].split("\n")[0].strip())
-        # print_log('nginx----4')
         return result[1]
-    # print_log('nginx----5')
     return True
 
 
@@ -1902,9 +1939,19 @@ def err_collect(error_info, type, error_id):
         @type 错误类型
         @error_id 错误ID
     '''
+    try:
+        from flask import redirect, request, Response
+        _form = request.form.to_dict()
+        url = request.method + request.full_path
+        user_agent = xsssec(request.headers.get('User-Agent'))
+        _form = xsssec(str(_form))
+        ip = GetClientIp()
+    except:
+        ip=""
+        user_agent = ""
+        url = ""
+        _form = {}
 
-    from flask import redirect, request, Response
-    _form = request.form.to_dict()
     if 'username' in _form: _form['username'] = '******'
     if 'password' in _form: _form['password'] = '******'
     if 'phone' in _form: _form['phone'] = '******'
@@ -1914,10 +1961,10 @@ def err_collect(error_info, type, error_id):
         "REQUEST_DATE": getDate(),  # 请求时间
         "PANEL_VERSION": version(),  # 面板版本
         "OS_VERSION": get_os_version(),  # 操作系统版本
-        "REMOTE_ADDR": GetClientIp(),  # 请求IP
-        "REQUEST_URI": request.method + request.full_path,  # 请求URI
-        "REQUEST_FORM": xsssec(str(_form)),  # 请求表单
-        "USER_AGENT": xsssec(request.headers.get('User-Agent')),  # 客户端连接信息
+        "REMOTE_ADDR": ip,  # 请求IP
+        "REQUEST_URI": url,  # 请求URI
+        "REQUEST_FORM": _form,  # 请求表单
+        "USER_AGENT": user_agent,  # 客户端连接信息
         "ERROR_INFO": error_info,  # 错误信息
         "PACK_TIME": readFile("/www/server/panel/config/update_time.pl") if os.path.exists(
             "/www/server/panel/config/update_time.pl") else getDate(),  # 打包时间
@@ -9233,6 +9280,8 @@ def get_setup_path():
     '''
     return '/www/server'
 
+def get_soft_path():
+    return get_setup_path()
 
 # 获取面板根目录
 def get_panel_path():

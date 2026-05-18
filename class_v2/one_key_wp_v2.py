@@ -1429,10 +1429,12 @@ class one_key_wp:
 
             self.unzip_package(site_info['path'])
 
-            # 优化PHP
-            res = optimize_php().optimize_php(get)
-            if not res['status']:
-                return public.return_message(-1, 0, res)
+            # 优化PHP, 仅首次PHP优化
+            record_file = public.GetConfigValue('setup_path') + "/php/" + get.php_version + "/etc/php-fpm.conf_record"
+            if not os.path.exists(record_file):
+                res = optimize_php().optimize_php(get)
+                if not res['status']:
+                    return public.return_message(-1, 0, res)
 
             # 初始化wp
             self.init_wp(values)
@@ -1780,12 +1782,13 @@ class optimize_php:
 
 
  """.format(get.max_children, get.start_servers, get.min_spare_servers, get.max_spare_servers, get.pm, get.listen))
-        # self.backup_conf('/www/server/php/{}/etc/php-fpm.conf'.format(self.version))
         result = config.config().setFpmConfig(get)
         if not result['status']:
             one_key_wp().write_logs("|-PHP FPM Optimization failed: {}".format(result))
             return public.return_msg_gettext(False, "PHP FPM Optimization failed: {}", (result,))
         one_key_wp().write_logs("|-PHP FPM optimization succeeded")
+        record_file = public.GetConfigValue('setup_path')+"/php/"+get.version+"/etc/php-fpm.conf_record"
+        public.writeFile(record_file,' ')
         return public.return_msg_gettext(True, public.lang("PHP FPM optimization succeeded"))
 
 

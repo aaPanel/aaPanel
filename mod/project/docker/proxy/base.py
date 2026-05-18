@@ -406,7 +406,7 @@ server {{
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"status":True/False,"msg":"提示信息"}
         '''
-        return public.ExecShell("nginx -V 2>&1| grep 'http_v3_module' -o")[0]
+        return public.is_nginx_http3()
 
     # 2024/7/29 下午3:00 添加反代前置配置检测
     def check_before_create(self, get):
@@ -1706,6 +1706,11 @@ server {{
                 site_name=get.site_name,
                 force_conf=get.proxy_json_conf["ssl_info"]["force_ssl_conf"],
             )
+        if public.is_nginx_http3():
+            http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+            ssl_conf += http3_header + "\n    quic_retry on;\n    quic_gso on;"
+            if public.ng_ssl_early_data_enabled():
+                ssl_conf += "\n    ssl_early_data on;"
 
         if "如果反代网站访问异常且这里已经配置了内容，请优先排查此处的配置是否正确" in get.proxy_json_conf["http_block"]:
             http_block = get.proxy_json_conf["http_block"]
@@ -1947,7 +1952,7 @@ server {{
                 listen_port=p,
             ) + "\n    "
         if get.proxy_json_conf["ssl_info"]["ssl_status"]:
-            if public.ExecShell("nginx -V 2>&1| grep 'http_v3_module' -o")[0] != "":
+            if public.is_nginx_http3():
                 ipv4_http3_ssl_port_conf = get.proxy_json_conf["ipv4_http3_ssl_port_conf"].format(
                     ipv4_port_conf=ipv4_port_conf,
                     https_port=get.proxy_json_conf["https_port"],
@@ -1956,7 +1961,7 @@ server {{
                     ipv6_port_conf=ipv6_port_conf,
                     https_port=get.proxy_json_conf["https_port"],
                 ) + "\n    "
-                port_conf = ipv4_http3_ssl_port_conf + ipv6_http3_ssl_port_conf + "\n    http2 on;"
+                port_conf = ipv4_http3_ssl_port_conf + ipv6_http3_ssl_port_conf + "\n    http2 on;\n    http3 on;"
             else:
                 ipv4_ssl_port_conf = get.proxy_json_conf["ipv4_ssl_port_conf"].format(
                     ipv4_port_conf=ipv4_port_conf,
@@ -1973,6 +1978,12 @@ server {{
                     site_name=get.site_name,
                     force_conf=get.proxy_json_conf["ssl_info"]["force_conf"]
                 )
+            if public.is_nginx_http3():
+                http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+                ssl_conf += http3_header + "\n    quic_retry on;\n    quic_gso on;"
+                if public.ng_ssl_early_data_enabled():
+                    ssl_conf += "\n    ssl_early_data on;"
+
         else:
             port_conf = ipv4_port_conf + "\n" + ipv6_port_conf
 

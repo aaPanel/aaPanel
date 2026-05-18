@@ -27,6 +27,7 @@ import uuid
 import psutil
 import zipfile
 import types
+import urllib.parse
 
 panel_path = '/www/server/panel'
 if not os.name in ['nt']:
@@ -78,6 +79,47 @@ def get_apsess_url_token_from_session():
     return build_apsess_url_token(session.get('apsess_token', ''))
 
 
+def _decode_url_path(path):
+    return urllib.parse.unquote(path or '')
+
+
+def _is_safe_url_path(path):
+    decoded_path = _decode_url_path(path)
+    if not decoded_path.startswith('/'):
+        return False
+    if '%' in decoded_path or '\x00' in decoded_path or '\\' in decoded_path:
+        return False
+    if any(ord(char) < 32 for char in decoded_path):
+        return False
+    for part in decoded_path.split('/'):
+        if part in ('.', '..'):
+            return False
+    return True
+
+
+def _safe_join_under(base_dir, relative_path):
+    if not relative_path:
+        return None
+    if not _is_safe_url_path('/' + relative_path.lstrip('/')):
+        return None
+
+    base_dir = os.path.realpath(base_dir)
+    target_path = os.path.realpath(os.path.join(base_dir, relative_path.lstrip('/')))
+    try:
+        if os.path.commonpath([base_dir, target_path]) != base_dir:
+            return None
+    except ValueError:
+        return None
+    return target_path
+
+
+def _send_file_if_safe(base_dir, relative_path, **kwargs):
+    target_path = _safe_join_under(base_dir, relative_path)
+    if not target_path or not os.path.isfile(target_path):
+        return None
+    return send_file(target_path, **kwargs)
+
+
 class ApsessPathMiddleware:
     def __init__(self, app):
         self.app = app
@@ -100,9 +142,11 @@ class ApsessPathMiddleware:
         real_path = match.group(2) or '/'
         if not real_path.startswith('/'):
             real_path = '/' + real_path
+        if not _is_safe_url_path(real_path):
+            return Response('Not Found', status=404)(environ, start_response)
 
         environ['bt.apsess_token'] = apsess_token
-        environ['PATH_INFO'] = real_path
+        environ['PATH_INFO'] = _decode_url_path(real_path)
 
         return self.app(environ, start_response)
 
@@ -311,7 +355,9 @@ from flask import current_app
 
 @app.before_request
 def request_check():
-    check_apsess_path()
+    apsess_response = check_apsess_path()
+    if apsess_response is not True and apsess_response is not None:
+        return apsess_response
     is_static_asset = is_static_asset_request()
     # 获取客户端真实IP，判断是否启动CDN代理
     CDN_PROXY = current_app.config.get('CDN_PROXY', False)
@@ -452,16 +498,8 @@ def request_check():
             if reslut:
                 return redirect('/modify_password', 302)
 
-    # 新增   适配docker时增加 未测试
     # 处理登录页面相对路径的静态文件
-    if request.path.startswith('/static/'):
-        static_file = public.get_panel_path() + '/BTPanel' + request.path
-        plugin_static_file = public.get_panel_path() + '/plugin' + request.path
-        if os.path.exists(static_file):
-            return send_file(static_file, conditional=True, etag=True)
-        if os.path.exists(plugin_static_file):
-            return send_file(plugin_static_file, conditional=True, etag=True)
-
+    if request.path.find('/static/') > 0:
         new_auth_path = _auth_path = public.get_admin_path()
 
         # 2024/1/3 下午 8:35 检测_auth_path是否有包含2个以上/符号,如果有则取最后一个/符号前的字符串然后替换成_auth_path
@@ -498,7 +536,7 @@ def request_check():
             # 如果是面板静态文件
             return send_file(static_file, conditional=True, etag=True)
 
-    if request.method == 'GET' and request.path.startswith('/static/img/soft_ico/'):
+    if request.path.find('/static/img/soft_ico/ico') >= 0:
         # 路径安全检查
         if public.path_safe_check(request.path) is False:
             return abort(404)
@@ -2695,14 +2733,18 @@ def panel_other(name=None, fun=None, stype=None):
 
     # 是否响插件应静态文件
     if fun == 'static':
-        if stype.find('./') != -1 or not os.path.exists(p_path + '/static'):
+        if not stype or not _is_safe_url_path('/' + stype):
             return abort(404)
-        s_file = p_path + '/static/' + stype
-        if s_file.find('..') != -1: return abort(404)
-        if not re.match(r"^[\w\./-]+$", s_file): return abort(404)
-        if not public.path_safe_check(s_file): return abort(404)
-        if not os.path.exists(s_file): return abort(404)
-        return send_file(s_file, conditional=True, etag=True)
+        if not re.match(r"^[\w\./-]+$", stype): return abort(404)
+        if not public.path_safe_check(stype): return abort(404)
+        response = _send_file_if_safe(
+            os.path.join(p_path, 'static'),
+            stype,
+            conditional=True,
+            etag=True
+        )
+        if not response: return abort(404)
+        return response
 
     # 准备参数
     if not args: args = get_input()
@@ -3962,6 +4004,8 @@ def site_v2(pdata=None):
         'SetPHPVersion',
         'DeleteSite',
         'delete_wp_site',
+        'php_wp_backup',
+        'get_general_progress',
         'AddDomain',
         'DelDomain',
         'GetDirBinding',
@@ -4694,7 +4738,7 @@ def files_v2(pdata=None):
             'Close_Recycle_bin', 'Recycle_bin', 'file_webshell_check',
             'dir_webshell_check', 'files_search', 'files_replace',
             'get_replace_logs', 'get_sql_backup', 'test_path', 'upload_files_exists',
-            'file_history', 'file_history_list', 'del_file_history', 'del_history')
+            'file_history', 'file_history_list', 'del_file_history', 'del_history', 'GetFileHistory')
 
     return publicObject(filesObject, defs, None, pdata)
 
@@ -4972,7 +5016,7 @@ def ajax_v2(pdata=None):
             'GetDiskIo', 'GetCpuIo', 'CheckInstalled',
             'GetInstalled', 'GetPHPConfig', 'SetPHPConfig', 'log_analysis',
             'speed_log', 'get_result', 'get_detailed', 'ignore_version',
-            'UpdatePanel', 'RepPanel',  # 更新面板, 修复面板
+            'UpdatePanel', 'RepPanel', 'ScheduleUpdate',  # 更新面板, 修复面板, 预约延迟更新
             )
 
     return publicObject(ajaxObject, defs, None, pdata)
@@ -6126,14 +6170,18 @@ def panel_other_v2(name=None, fun=None, stype=None):
 
     # 是否响插件应静态文件
     if fun == 'static':
-        if stype.find('./') != -1 or not os.path.exists(p_path + '/static'):
+        if not stype or not _is_safe_url_path('/' + stype):
             return abort(404)
-        s_file = p_path + '/static/' + stype
-        if s_file.find('..') != -1: return abort(404)
-        if not re.match(r"^[\w\./-]+$", s_file): return abort(404)
-        if not public.path_safe_check(s_file): return abort(404)
-        if not os.path.exists(s_file): return abort(404)
-        return send_file(s_file, conditional=True, etag=True)
+        if not re.match(r"^[\w\./-]+$", stype): return abort(404)
+        if not public.path_safe_check(stype): return abort(404)
+        response = _send_file_if_safe(
+            os.path.join(p_path, 'static'),
+            stype,
+            conditional=True,
+            etag=True
+        )
+        if not response: return abort(404)
+        return response
 
     # 准备参数
     if not args: args = get_input()
@@ -7150,6 +7198,19 @@ def require_apsess():
     return session.get('login', False)
 
 
+def handle_invalid_apsess():
+    if not require_apsess():
+        return True
+
+    expected_token = get_apsess_url_token_from_session()
+    if not expected_token:
+        session['apsess_token'] = build_apsess_session_token()
+        expected_token = get_apsess_url_token_from_session()
+    if request.method == 'GET' and not request.args and expected_token and not is_static_asset_request():
+        return redirect('/' + expected_token + request.path, 302)
+    return abort(403)
+
+
 # 2. 定义：核心 apsess 校验逻辑
 def check_apsess_path():
     # 从 environ 中获取中间件提取的令牌
@@ -7159,12 +7220,12 @@ def check_apsess_path():
 
     # 无令牌：若无需强制校验则放行，否则拒绝
     if not apsess_token:
-        return True
+        return handle_invalid_apsess()
 
     # 对比 session 中的令牌（登录时生成）
     expected_token = get_apsess_url_token_from_session()
     if not expected_token or apsess_token != expected_token:
-        return True  # 令牌不匹配时仅标记，不在这里阻断
+        return handle_invalid_apsess()
 
     # 校验通过：标记上下文
     g.apsess_verified = True

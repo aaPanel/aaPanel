@@ -157,7 +157,20 @@
 			"index_34": "Tiếp tục nâng cấp",
 			"index_35": "Tiếp tục sửa",
 			"index_36": "Sửa bảng điều khiển",
-			"index_37": "Sửa chữa bảng điều khiển giải quyết các vấn đề không mong muốn khác nhau"
+			"index_37": "Sửa chữa bảng điều khiển giải quyết các vấn đề không mong muốn khác nhau",
+			"index_38": "Trì hoãn cập nhật",
+			"index_39": "Notice",
+			"index_40": "Scheduled updates run in the background. In rare cases, network failures or stuck processes may prevent the panel from opening normally after the update.",
+			"index_41": "If the panel cannot open after updating, run the update command {cmd} manually in the terminal and check again.",
+			"index_42": "If it still does not work, please email {email}",
+			"index_43": "Please set the scheduled update time:",
+			"index_44": "Update time:",
+			"index_45": "Calculation result:",
+			"index_46": "Please select the scheduled update time",
+			"index_47": "Please enter the calculation result",
+			"index_48": "Incorrect calculation result",
+			"index_49": "Set delayed update",
+			"index_50": "Delayed panel update"
 		},
 		"Restart": {
 			"index_1": "Khởi động lại máy chủ",

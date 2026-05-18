@@ -343,6 +343,7 @@ class main:
         public.ExecShell(
             f"nohup {public.get_python_bin()} -u {script} '{task_id}' > /dev/null 2>&1 &"
         )
+        public.set_module_logs("migrate_cpanel", "start", 1)
         return public.success_v2(public.lang("Migrate Task has been started!"))
 
     def get_migrate_status(self, get):

@@ -1,0 +1,3 @@
+import{_ as e}from"./index.vue_vue_type_style_index_0_lang-BZzyaceo.js?v=1778752098997";import{k as r,$ as a,Z as m,a0 as s,t as c}from"./vue-core-27PG2C1f.js?v=1778752098997";import"./xterm-BF60FeoN.js?v=1778752098997";import"./xterm-addon-canvas-bMLyAuqy.js?v=1778752098997";import"./useSocket-Urcqx9df.js?v=1778752098997";import"./index-DV9DrNIN.js?v=1778752098997";import"./prismjs-CP0O0FCs.js?v=1778752098997";import"./naive-ui-D6uRvKd0.js?v=1778752098997";const n={class:"w-full h-full"},v=r({__name:"index",props:{command:{default:""}},setup(o){const t=[`cd /www/wwwroot\r
+`,`clear && ${c(o,"command").value}\r
+`];return(d,l)=>(a(),m("div",n,[s(e,{id:"dockerTerminal",url:"/webssh",data:t})]))}});export{v as default};

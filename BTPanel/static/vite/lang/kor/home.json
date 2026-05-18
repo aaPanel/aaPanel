@@ -157,7 +157,20 @@
 			"index_34": "업그레이드 계속",
 			"index_35": "복구 계속",
 			"index_36": "패널 복구",
-			"index_37": "새 버전을 사용할 수 있습니다. 패널을 복구하면 예기치 않은 다양한 문제를 해결할 수 있습니다."
+			"index_37": "새 버전을 사용할 수 있습니다. 패널을 복구하면 예기치 않은 다양한 문제를 해결할 수 있습니다.",
+			"index_38": "업데이트 연기",
+			"index_39": "Notice",
+			"index_40": "Scheduled updates run in the background. In rare cases, network failures or stuck processes may prevent the panel from opening normally after the update.",
+			"index_41": "If the panel cannot open after updating, run the update command {cmd} manually in the terminal and check again.",
+			"index_42": "If it still does not work, please email {email}",
+			"index_43": "Please set the scheduled update time:",
+			"index_44": "Update time:",
+			"index_45": "Calculation result:",
+			"index_46": "Please select the scheduled update time",
+			"index_47": "Please enter the calculation result",
+			"index_48": "Incorrect calculation result",
+			"index_49": "Set delayed update",
+			"index_50": "Delayed panel update"
 		},
 		"Restart": {
 			"index_1": "서버 다시시작",

@@ -472,7 +472,6 @@
 	"Adding virtual environment requires specifying the virtual environment directory": "Додання віртуального середовища вимагає вказання каталогу віртуального середовища",
 	"All version": "Всі версії",
 	"Command": "Команда",
-	"Command line version": "Версія командного рядка",
 	"Common version": "Загальна версія",
 	"Create virtual environment": "Створення віртуального середовища",
 	"Custom parameters": "Користувацькі параметри",
@@ -618,5 +617,6 @@
 	"Migration complete": "Міграція завершена",
 	"Username can only contain letters, numbers, and underscores": "Ім'я користувача може містити лише букви, цифри та підкреслення",
 	"Other Panel Migrate": "Міграція інших панелей",
-	"Currently only Cpanel is supported": "Зараз підтримується лише Cpanel."
+	"Currently only Cpanel is supported": "Зараз підтримується лише Cpanel.",
+	"Current Task Progress": "Прогрес поточного завдання"
 }

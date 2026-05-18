@@ -1,0 +1,1 @@
+import{a4 as p,r as s}from"./vue-core-27PG2C1f.js?v=1778752098997";const m=p("docker-app",()=>{const t=s("all"),o=s(!1),r=s(0),a=s(0);return{type:t,refresh:o,maxCpu:r,maxMemory:a,setType:e=>{t.value=e},setRefresh:e=>{o.value=e},setMaxCpu:e=>{r.value=e},setMaxMemory:e=>{a.value=e}}},{persist:{pick:["type"]}});export{m as u};

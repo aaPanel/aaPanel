@@ -149,6 +149,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "Opérations de fichiers",
+			"fileOperationRecord": "Journal des opérations de fichier",
 			"permissions": "Autorisation",
 			"createOptions": {
 				"newDirectory": "Nouveau répertoire",
@@ -351,11 +352,50 @@
 				"edit": "Edit",
 				"extract": "Extract",
 				"delete": "Delete"
+			},
+			"titleWithTypeFile": "{type} preview [{name}]",
+			"noExtractableFile": "Please select files to extract",
+			"overwriteTitle": "Duplicate file handling",
+			"overwriteMessage": "The current directory already contains the following files. Select the files to process and continue.",
+			"overwriteTips": "Select files, then choose the action to apply",
+			"overwriteSelectRequired": "Please select files",
+			"overwriteSuccess": "Succeeded",
+			"noChange": "No changes",
+			"extractFile": "Extracted file",
+			"targetFile": "Target file",
+			"overwriteColumns": {
+				"archiveFile": "Archive file",
+				"targetFile": "Target file",
+				"status": "Status"
+			},
+			"overwriteActions": {
+				"skip": "Skip",
+				"overwrite": "Overwrite",
+				"rename": "Rename extracted file"
 			}
 		},
 		"tableFooter": {
 			"summary": "Répertoires totaux {dirnum}, {fichiers filenum}, taille du fichier: ",
-			"calculate": "Calculer"
+			"calculate": "Calculer",
+			"diskAnalysisTip": "Install BT Disk Analysis Tool to scan all directory sizes with one click"
+		},
+		"calcSize": {
+			"clickTitle": "Click to calculate size",
+			"diskAnalysisTip": "{action} the disk analysis tool to view more information,",
+			"diskAnalysisAction": "{action} now",
+			"install": "Install",
+			"purchase": "Buy",
+			"diskAnalysisTitle": "Disk analysis",
+			"directoryDetails": "Directory details",
+			"directoryPath": "Directory path:",
+			"directorySize": "Directory size:",
+			"folderCount": "Folders:",
+			"fileCount": "Files:",
+			"permission": "Permission:",
+			"modifyPermission": "Modify permission",
+			"owner": "Owner:",
+			"lastModifiedTime": "Last modified:",
+			"permissionChangeTime": "Permission changed:"
 		},
 		"terminalModal": {
 			"title": "Terminal",
@@ -381,7 +421,8 @@
 			"cancelSharing": "Annuler le partage",
 			"confirmStopSharing": "Confirmer pour arrêter de partager [{nom de fichier}], continuer?",
 			"deletingShare": "Suppression de partage, veuillez attendre ...",
-			"linkAndCode": "Lien: {lien}, code d'invitation: {code}"
+			"linkAndCode": "Lien: {lien}, code d'invitation: {code}",
+			"securityTip": "Note: External share links may carry risks. Only share links with trusted people to avoid exposing sensitive information."
 		},
 		"shareListModal": {
 			"title": "Liste de partage",
@@ -390,14 +431,17 @@
 			"expirationDate": "Date d'expiration",
 			"cancelShareTitle": "Annuler le partage",
 			"cancelShareMessage": "Confirmer pour arrêter le partage 【{nom de fichier}】, continuer?",
-			"deletingShare": "Suppression du lien de partage, veuillez patienter ..."
+			"deletingShare": "Suppression du lien de partage, veuillez patienter ...",
+			"searchPlaceholder": "Enter share name"
 		},
 		"favoriteListModal": {
 			"title": "Liste préférée",
 			"path": "Chemin",
 			"removeFavoriteTitle": "Supprimer le favori",
 			"removeFavoriteMessage": "Confirmer delete Path [{path}]?",
-			"management": "Gestion"
+			"management": "Gestion",
+			"cancelFavoriteTitle": "Cancel favorite",
+			"cancelFavoriteMessage": "Cancel the favorite for [{name}], continue?"
 		},
 		"recycle": {
 			"title": "Bac de recyclage",
@@ -534,6 +578,12 @@
 		},
 		"videoPlayerModal": {
 			"title": "Lecteur vidéo"
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "Enter search keywords",
+			"operationTime": "Operation Time",
+			"operationLog": "Operation Log",
+			"clearTip": "To clear these logs, go to"
 		},
 		"api": {
 			"saving": "Saving, please wait...",

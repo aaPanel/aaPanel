@@ -149,6 +149,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "Файловые операции",
+			"fileOperationRecord": "Журналы операций с файлами",
 			"permissions": "Права доступа",
 			"createOptions": {
 				"newDirectory": "Новый каталог",
@@ -340,11 +341,50 @@
 				"edit": "Edit",
 				"extract": "Extract",
 				"delete": "Delete"
+			},
+			"titleWithTypeFile": "{type} preview [{name}]",
+			"noExtractableFile": "Please select files to extract",
+			"overwriteTitle": "Duplicate file handling",
+			"overwriteMessage": "The current directory already contains the following files. Select the files to process and continue.",
+			"overwriteTips": "Select files, then choose the action to apply",
+			"overwriteSelectRequired": "Please select files",
+			"overwriteSuccess": "Succeeded",
+			"noChange": "No changes",
+			"extractFile": "Extracted file",
+			"targetFile": "Target file",
+			"overwriteColumns": {
+				"archiveFile": "Archive file",
+				"targetFile": "Target file",
+				"status": "Status"
+			},
+			"overwriteActions": {
+				"skip": "Skip",
+				"overwrite": "Overwrite",
+				"rename": "Rename extracted file"
 			}
 		},
 		"tableFooter": {
 			"summary": "Всего: {dirNum} каталогов, {fileNum} файлов. Размер: ",
-			"calculate": "Вычислить"
+			"calculate": "Вычислить",
+			"diskAnalysisTip": "Install BT Disk Analysis Tool to scan all directory sizes with one click"
+		},
+		"calcSize": {
+			"clickTitle": "Click to calculate size",
+			"diskAnalysisTip": "{action} the disk analysis tool to view more information,",
+			"diskAnalysisAction": "{action} now",
+			"install": "Install",
+			"purchase": "Buy",
+			"diskAnalysisTitle": "Disk analysis",
+			"directoryDetails": "Directory details",
+			"directoryPath": "Directory path:",
+			"directorySize": "Directory size:",
+			"folderCount": "Folders:",
+			"fileCount": "Files:",
+			"permission": "Permission:",
+			"modifyPermission": "Modify permission",
+			"owner": "Owner:",
+			"lastModifiedTime": "Last modified:",
+			"permissionChangeTime": "Permission changed:"
 		},
 		"terminalModal": {
 			"title": "Терминал",
@@ -370,7 +410,8 @@
 			"cancelSharing": "Отменить доступ",
 			"confirmStopSharing": "Прекратить доступ к [{filename}]?",
 			"deletingShare": "Удаление ссылки, ожидайте...",
-			"linkAndCode": "Ссылка: {link}, Код: {code}"
+			"linkAndCode": "Ссылка: {link}, Код: {code}",
+			"securityTip": "Note: External share links may carry risks. Only share links with trusted people to avoid exposing sensitive information."
 		},
 		"shareListModal": {
 			"title": "Список общих ресурсов",
@@ -379,14 +420,17 @@
 			"expirationDate": "Срок действия",
 			"cancelShareTitle": "Отменить доступ",
 			"cancelShareMessage": "Прекратить доступ к [{filename}]?",
-			"deletingShare": "Удаление ссылки, ожидайте..."
+			"deletingShare": "Удаление ссылки, ожидайте...",
+			"searchPlaceholder": "Enter share name"
 		},
 		"favoriteListModal": {
 			"title": "Избранное",
 			"path": "Путь",
 			"removeFavoriteTitle": "Удалить из избранного",
 			"removeFavoriteMessage": "Удалить путь [{path}] из избранного?",
-			"management": "Управление"
+			"management": "Управление",
+			"cancelFavoriteTitle": "Cancel favorite",
+			"cancelFavoriteMessage": "Cancel the favorite for [{name}], continue?"
 		},
 		"recycle": {
 			"title": "Корзина",
@@ -534,6 +578,12 @@
 		},
 		"videoPlayerModal": {
 			"title": "Видеоплеер"
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "Enter search keywords",
+			"operationTime": "Operation Time",
+			"operationLog": "Operation Log",
+			"clearTip": "To clear these logs, go to"
 		},
 		"api": {
 			"saving": "Сохранение, ожидайте...",

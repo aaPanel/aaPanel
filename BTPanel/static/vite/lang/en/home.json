@@ -157,7 +157,20 @@
 			"index_34": "Continue upgrade",
 			"index_35": "Continue fix",
 			"index_36": "Fix panel",
-			"index_37": "Repairing the panel resolves various unexpected issues"
+			"index_37": "Repairing the panel resolves various unexpected issues",
+			"index_38": "Delay update",
+			"index_39": "Notice",
+			"index_40": "Automatic updates are executed in the background. In rare cases (such as network issues or stalled processes), the panel service may become inaccessible after an update.",
+			"index_41": "If the panel cannot be accessed after updating, please run the command {cmd} manually in the server terminal and check whether the panel returns to normal.",
+			"index_42": "If the issue persists, Email us anytime: {email}",
+			"index_43": "Please set the scheduled update time:",
+			"index_44": "Update time:",
+			"index_45": "Calculation result:",
+			"index_46": "Please select the scheduled update time",
+			"index_47": "Please enter the calculation result",
+			"index_48": "Incorrect calculation result",
+			"index_49": "Set delayed update",
+			"index_50": "Delayed panel update"
 		},
 		"Restart": {
 			"index_1": "Restart server",

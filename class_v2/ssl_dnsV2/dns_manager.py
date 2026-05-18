@@ -302,9 +302,10 @@ class MailManager:
 
 
 class DnsManager:
-    def __init__(self):
-        self.parser = DnsParser()
-        self.config = self.parser.config
+    def __init__(self, init: bool = True):
+        if init:
+            self.parser = DnsParser()
+            self.config = self.parser.config
 
     @property
     def aapanel_dns_obj(self) -> Optional[DnsDomainProvider]:

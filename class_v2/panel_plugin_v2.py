@@ -529,7 +529,7 @@ class panelPlugin:
         str3 = public.lang("2. If Yunsuo is installed, please turn off [System Hardening] feature")
         str4 = public.lang("3. If Safedog is installed, please turn off [System Protection] feature")
         str5 = public.lang("4. If other security software is used, please uninstall it")
-        if not self.check_sys_write():
+        if not public.check_sys_write():
             return public.return_message(-1, 0, '<a style=color:red;>ERROR:{}</a><br>{}<br><br>{}<br>{}<br><br>'.format(str1, str2, str3, str4))
         if not 'sName' in get: return public.return_message(-1, 0, public.lang("Please specify the software name!"))
         #处理ols还不支持php81的情况

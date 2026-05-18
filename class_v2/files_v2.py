@@ -2243,14 +2243,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         if not self.CheckDir(filename):
             return public.return_message(-1, 0, public.lang('Sensitive directory detected'))
 
-        status, total_size, total_num = self.is_max_size(filename, 1024 * 1024 * 500, 20000, 0, 0)
-        if status:
-            import panel_task_v2 as panelTask
-            task_obj = panelTask.bt_task()
-            public.run_thread(task_obj.create_task,
-                              ('Empty Recycle Bin', 10, "", json.dumps(
-                                  {"filenames": [filename]})))
-            return public.return_message(0, 0, public.lang('The task of deleting files has been added to the message queue.'))
+        # status, total_size, total_num = self.is_max_size(filename, 1024 * 1024 * 500, 20000, 0, 0)
+        # if status:
+        #     import panel_task_v2 as panelTask
+        #     task_obj = panelTask.bt_task()
+        #     public.run_thread(task_obj.create_task,
+        #                       ('Empty Recycle Bin', 10, "", json.dumps(
+        #                           {"filenames": [filename]})))
+        #     return public.return_message(0, 0, public.lang('The task of deleting files has been added to the message queue.'))
 
         if dFile.startswith('BTDB_'):
             return database.DeleteTo(filename)
@@ -3113,13 +3113,14 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
         for file_name in get.sfile.split(','):
             path = os.path.join(get.path, file_name)
             status, total_size, total_num = self.is_max_size(path, 1024 * 1024 * 500, 20000, 0, 0)
+            # public.print_log(f" status-->{status}  total_size-->{total_size}   total_num-->{total_num}")
             # status, total_size, total_num = self.is_max_size(path, 1024 * 1, 20000, 0, 0)
             if not status: break
         if status:
             task_id = task_obj.create_task('Compress files', 3, get.path, json.dumps(
                 {"sfile": get.sfile, "dfile": get.dfile, "z_type": get.z_type, "volume_size": volume_size,
                  "save_path": save_path}))
-            public.WriteLog("File manager", 'ZIP SUCCESS', (get.sfile, get.dfile))
+            public.WriteLog("File manager", 'ZIP Success', (get.sfile, get.dfile))
             data = {
                 "msg":public.lang("File too large. Queued for compression."),
                 "task_id": task_id
@@ -3320,13 +3321,12 @@ session.save_handler = files'''.format(path, sess_path, sess_path)
             public.ExecShell('chmod -R 755 ' + filename)
 
     # 取目录大小
-
     def GetDirSize(self, get):
         if not hasattr(get, "path"):
             return public.return_message(-1, 0, public.lang("Parameters are missing! path"))
         if sys.version_info[0] == 2:
             get.path = get.path.encode('utf-8')
-        return public.to_size(public.get_path_size(get.path))
+        return public.return_message(0, 0, public.to_size(public.get_path_size(get.path)))
 
     # 取目录大小2
     def get_path_size(self, get):
@@ -5237,3 +5237,30 @@ CREATE TABLE index_tb(
         info = {'count': count, 'row': rows, 'p': p, 'return_js': callback, 'uri': uri}
         data = {'page': page.GetPage(info, result), 'shift': str(page.SHIFT), 'row': str(page.ROW)}
         return data
+
+
+    # 获取文件操作历史记录
+    def GetFileHistory(self, get):
+        filter_sql = ""
+        params = ()
+        if "content" in get:
+            filter_sql = "and(addtime like ? or log like ?)"
+            params=('%'+get.content+'%', '%'+get.content+'%')
+        count = public.M("logs").where("type='File manager' {}".format(filter_sql), params).count()
+        if not 'p' in get:
+            get.p = 1
+        if not 'limit' in get:
+            get.limit = 20
+        if not 'collback' in get:
+            get.collback = ''
+        data = public.get_page(count, int(get.p), get.limit, get.collback)
+        data['data'] = public.M("logs").where("type='File manager' {}".format(filter_sql), params).order("id desc").limit(data['shift']+','+data['row']).select()
+
+        # data.update({
+        #     "data": file_log,
+        #     "status": True,
+        #     "msg": "ok",
+        # })
+
+        public.set_module_logs("file", "GetFileHistory", 1)
+        return public.return_message(0, 0, data)

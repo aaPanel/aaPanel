@@ -935,6 +935,148 @@ class ajax:
             public.ExecShell(shell)
             return public.success_v2(public.lang("Panel repair task has been started, please check"))
 
+    def is_cron_hardened(self, safe_status):
+        """
+        判断系统是否启用了对 cron 的加固功能。
+
+        参数:
+        safe_status (dict): 安全状态信息，来自 get_safe_status() 函数的返回结果
+
+        返回:
+        bool: 如果 cron 加固开启，返回 True，否则返回 False
+        """
+
+        if not safe_status.get('open', False):
+            return False  # 如果整体的加固功能关闭，直接返回 False
+        # 遍历返回的加固项目列表
+        for item in safe_status.get('list', []):
+            if item.get('key') == 'cron':
+                return item.get('open', False)  # 如果找到了 cron 相关的加固项，返回其状态
+
+        return False  # 如果没有找到 cron 相关的加固项，默认返回 False
+
+    # 预约延迟更新面板
+    def ScheduleUpdate(self, get):
+        try:
+            get.validate([
+                Param('execute_time').String(),
+                Param('version').String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            return public.return_message(-1, 0, str(ex))
+
+        # 系统加固检测
+        import PluginLoader
+        if os.path.exists("/etc/init.d/bt_syssafe"):
+            safe_status = PluginLoader.plugin_run("syssafe", "get_safe_status", "")
+            # 检查 cron 是否加固
+            if self.is_cron_hardened(safe_status):
+                return public.fail_v2(public.lang('File write operation failed. If the System Hardening plugin is enabled, please temporarily disable it first.'))
+
+
+        execute_time = get.execute_time.strip()
+        version = get.version.strip()
+
+        if not version or len(version) > 20:
+            return public.fail_v2(public.lang("Invalid version number"))
+
+        # 校验时间格式
+        from datetime import datetime
+        try:
+            execute_dt = datetime.strptime(execute_time, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return public.fail_v2(public.lang(f'Execute time format error: {execute_time}, required: YYYY-MM-DD HH:MM:SS'))
+
+        if execute_dt <= datetime.now():
+            return public.fail_v2(public.lang('Execute time must be in the future'))
+
+
+        script_content = f"""#!/bin/bash
+# Delay the update of the panel script and trigger it by the systemd timer at the specified time.
+VERSION="{version}"
+
+echo "====================================="
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Scheduled update script started"
+echo "Target version: ${{VERSION}}"
+echo "====================================="
+
+# Check if Python is available.
+if [ ! -f /www/server/panel/pyenv/bin/python3 ]; then
+    echo "[ERROR] python3 binary not found at /www/server/panel/pyenv/bin/python3"
+    exit 1
+fi
+
+# Check if the upgrade script exists
+if [ ! -f /www/server/panel/script/upgrade_panel_optimized.py ]; then
+    echo "[ERROR] upgrade_panel_optimized.py not found"
+    exit 1
+fi
+
+# Determine whether it is the pro version
+IS_PRO=""
+if [ -f /www/server/panel/data/panel_pro.pl ]; then
+    IS_PRO="is_pro"
+fi
+
+PY_BIN=/www/server/panel/pyenv/bin/python3
+SCRIPT_PATH=/www/server/panel/script/upgrade_panel_optimized.py
+
+echo "[INFO] Starting upgrade..."
+$PY_BIN -u $SCRIPT_PATH upgrade_panel ${{VERSION}} ${{IS_PRO}} 2>&1
+echo "[INFO] Upgrade script exited with code: $?"
+
+# Make sure that the panel service has been started.
+echo "[INFO] Checking panel service status..."
+sleep 3
+if [ -f /etc/init.d/bt ]; then
+    /etc/init.d/bt start 2>&1
+    sleep 2
+    bt status 2>&1
+    echo "[INFO] Panel service restart completed"
+fi
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Scheduled update script finished"
+echo "=====================================" """
+
+        # 调用 add_once_crontab 创建一次性定时任务
+        import crontab_v2
+        crontab_obj = crontab_v2.crontab()
+
+        # 清理旧的延迟更新任务，避免堆积
+        old_tasks = public.M('crontab').where("type=? AND sType=? AND name LIKE ?", ('once', 'toShell', 'Delay the update of the panel to version%')).field('id,name').select()
+        for task in old_tasks:
+            try:
+                del_get = public.dict_obj()
+                del_get.id = task['id']
+                crontab_obj.DelCrontab(del_get)
+            except:
+                pass
+
+        cron_get = public.dict_obj()
+        cron_get.name = f'Delay the update of the panel to version {version}'
+        cron_get.sType = 'toShell'
+        cron_get.sBody = script_content
+        cron_get.where1 = execute_time
+        cron_get.type = 'once'
+        cron_get.save = '0'
+        cron_get.backupTo = ''
+        cron_get.version = version
+
+        result = crontab_obj.add_once_crontab(cron_get)
+
+        # 将版本加入忽略列表 页面不再弹出更新提示
+        no_path = '{}/data/no_update.pl'.format(public.get_panel_path())
+        try:
+            data = json.loads(public.readFile(no_path)) if os.path.exists(no_path) else []
+        except:
+            data = []
+        if version not in data:
+            data.append(version)
+            public.writeFile(no_path, json.dumps(data))
+
+        return public.return_message(0, 0, public.lang("Setup successful. The panel will be updated to version {} after {}", version,execute_time))
 
     # 更新面板
     def UpdatePanel(self,get):

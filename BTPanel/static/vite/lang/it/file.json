@@ -149,6 +149,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "Operazioni di file",
+			"fileOperationRecord": "Registri operazioni file",
 			"permissions": "Autorizzazione",
 			"createOptions": {
 				"newDirectory": "Nuova directory",
@@ -340,11 +341,50 @@
 				"edit": "Edit",
 				"extract": "Extract",
 				"delete": "Delete"
+			},
+			"titleWithTypeFile": "{type} preview [{name}]",
+			"noExtractableFile": "Please select files to extract",
+			"overwriteTitle": "Duplicate file handling",
+			"overwriteMessage": "The current directory already contains the following files. Select the files to process and continue.",
+			"overwriteTips": "Select files, then choose the action to apply",
+			"overwriteSelectRequired": "Please select files",
+			"overwriteSuccess": "Succeeded",
+			"noChange": "No changes",
+			"extractFile": "Extracted file",
+			"targetFile": "Target file",
+			"overwriteColumns": {
+				"archiveFile": "Archive file",
+				"targetFile": "Target file",
+				"status": "Status"
+			},
+			"overwriteActions": {
+				"skip": "Skip",
+				"overwrite": "Overwrite",
+				"rename": "Rename extracted file"
 			}
 		},
 		"tableFooter": {
 			"summary": "Directory totali {dirnum}, {filenum} file, dimensione del file: ",
-			"calculate": "Calcolare"
+			"calculate": "Calcolare",
+			"diskAnalysisTip": "Install BT Disk Analysis Tool to scan all directory sizes with one click"
+		},
+		"calcSize": {
+			"clickTitle": "Click to calculate size",
+			"diskAnalysisTip": "{action} the disk analysis tool to view more information,",
+			"diskAnalysisAction": "{action} now",
+			"install": "Install",
+			"purchase": "Buy",
+			"diskAnalysisTitle": "Disk analysis",
+			"directoryDetails": "Directory details",
+			"directoryPath": "Directory path:",
+			"directorySize": "Directory size:",
+			"folderCount": "Folders:",
+			"fileCount": "Files:",
+			"permission": "Permission:",
+			"modifyPermission": "Modify permission",
+			"owner": "Owner:",
+			"lastModifiedTime": "Last modified:",
+			"permissionChangeTime": "Permission changed:"
 		},
 		"terminalModal": {
 			"title": "terminale",
@@ -370,7 +410,8 @@
 			"cancelSharing": "Annulla la condivisione",
 			"confirmStopSharing": "Conferma di smettere di condividere [{fileName}], continuare?",
 			"deletingShare": "Eliminazione della condivisione, per favore aspetta ...",
-			"linkAndCode": "Link: {link}, code di invito: {codice}"
+			"linkAndCode": "Link: {link}, code di invito: {codice}",
+			"securityTip": "Note: External share links may carry risks. Only share links with trusted people to avoid exposing sensitive information."
 		},
 		"shareListModal": {
 			"title": "Elenco delle azioni",
@@ -379,14 +420,17 @@
 			"expirationDate": "Data di scadenza",
 			"cancelShareTitle": "Annulla la condivisione",
 			"cancelShareMessage": "Conferma di smettere di condividere 【{fileName}】, continuare?",
-			"deletingShare": "Eliminazione del link a condivisione, per favore aspetta ..."
+			"deletingShare": "Eliminazione del link a condivisione, per favore aspetta ...",
+			"searchPlaceholder": "Enter share name"
 		},
 		"favoriteListModal": {
 			"title": "Elenco preferito",
 			"path": "Sentiero",
 			"removeFavoriteTitle": "Rimuovi il preferito",
 			"removeFavoriteMessage": "Conferma eliminare il percorso [{path}]?",
-			"management": "Gestione"
+			"management": "Gestione",
+			"cancelFavoriteTitle": "Cancel favorite",
+			"cancelFavoriteMessage": "Cancel the favorite for [{name}], continue?"
 		},
 		"recycle": {
 			"title": "Riciclare il cestino",
@@ -534,6 +578,12 @@
 			"lastModified": "Last Modified",
 			"overwriteTitle": "Overwrite File",
 			"overwriteMessage": "Duplicate file detected. Are you sure you want to overwrite the current [{0}] file?"
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "Enter search keywords",
+			"operationTime": "Operation Time",
+			"operationLog": "Operation Log",
+			"clearTip": "To clear these logs, go to"
 		},
 		"api": {
 			"saving": "Saving, please wait...",

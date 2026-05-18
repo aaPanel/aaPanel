@@ -149,6 +149,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "Dosya İşlemleri",
+			"fileOperationRecord": "Dosya işlem günlükleri",
 			"permissions": "İzin",
 			"createOptions": {
 				"newDirectory": "Yeni Dizin",
@@ -340,11 +341,50 @@
 				"edit": "Edit",
 				"extract": "Extract",
 				"delete": "Delete"
+			},
+			"titleWithTypeFile": "{type} preview [{name}]",
+			"noExtractableFile": "Please select files to extract",
+			"overwriteTitle": "Duplicate file handling",
+			"overwriteMessage": "The current directory already contains the following files. Select the files to process and continue.",
+			"overwriteTips": "Select files, then choose the action to apply",
+			"overwriteSelectRequired": "Please select files",
+			"overwriteSuccess": "Succeeded",
+			"noChange": "No changes",
+			"extractFile": "Extracted file",
+			"targetFile": "Target file",
+			"overwriteColumns": {
+				"archiveFile": "Archive file",
+				"targetFile": "Target file",
+				"status": "Status"
+			},
+			"overwriteActions": {
+				"skip": "Skip",
+				"overwrite": "Overwrite",
+				"rename": "Rename extracted file"
 			}
 		},
 		"tableFooter": {
 			"summary": "Toplam {dirNum} dizin, {fileNum} dosya, Dosya boyutu: ",
-			"calculate": "Hesapla"
+			"calculate": "Hesapla",
+			"diskAnalysisTip": "Install BT Disk Analysis Tool to scan all directory sizes with one click"
+		},
+		"calcSize": {
+			"clickTitle": "Click to calculate size",
+			"diskAnalysisTip": "{action} the disk analysis tool to view more information,",
+			"diskAnalysisAction": "{action} now",
+			"install": "Install",
+			"purchase": "Buy",
+			"diskAnalysisTitle": "Disk analysis",
+			"directoryDetails": "Directory details",
+			"directoryPath": "Directory path:",
+			"directorySize": "Directory size:",
+			"folderCount": "Folders:",
+			"fileCount": "Files:",
+			"permission": "Permission:",
+			"modifyPermission": "Modify permission",
+			"owner": "Owner:",
+			"lastModifiedTime": "Last modified:",
+			"permissionChangeTime": "Permission changed:"
 		},
 		"terminalModal": {
 			"title": "Terminal",
@@ -370,7 +410,8 @@
 			"cancelSharing": "Paylaşımı iptal et",
 			"confirmStopSharing": "[{filename}] paylaşımını durdurmayı onaylayın, devam edilsin mi?",
 			"deletingShare": "Paylaşım siliniyor, lütfen bekleyin...",
-			"linkAndCode": "Bağlantı: {link}, Davet kodu: {code}"
+			"linkAndCode": "Bağlantı: {link}, Davet kodu: {code}",
+			"securityTip": "Note: External share links may carry risks. Only share links with trusted people to avoid exposing sensitive information."
 		},
 		"shareListModal": {
 			"title": "Paylaşım Listesi",
@@ -379,14 +420,17 @@
 			"expirationDate": "Son kullanma tarihi",
 			"cancelShareTitle": "Paylaşımı iptal et",
 			"cancelShareMessage": "【{filename}】 paylaşımını durdurmayı onaylayın, devam edilsin mi?",
-			"deletingShare": "Paylaşım bağlantısı siliniyor, lütfen bekleyin..."
+			"deletingShare": "Paylaşım bağlantısı siliniyor, lütfen bekleyin...",
+			"searchPlaceholder": "Enter share name"
 		},
 		"favoriteListModal": {
 			"title": "Favori Listesi",
 			"path": "Yol",
 			"removeFavoriteTitle": "Favoriyi kaldır",
 			"removeFavoriteMessage": "[{path}] yolunu silmeyi onaylıyor musunuz?",
-			"management": "Yönetim"
+			"management": "Yönetim",
+			"cancelFavoriteTitle": "Cancel favorite",
+			"cancelFavoriteMessage": "Cancel the favorite for [{name}], continue?"
 		},
 		"recycle": {
 			"title": "Geri Dönüşüm Kutusu",
@@ -534,6 +578,12 @@
 			"lastModified": "Last Modified",
 			"overwriteTitle": "Overwrite File",
 			"overwriteMessage": "Duplicate file detected. Are you sure you want to overwrite the current [{0}] file?"
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "Enter search keywords",
+			"operationTime": "Operation Time",
+			"operationLog": "Operation Log",
+			"clearTip": "To clear these logs, go to"
 		},
 		"api": {
 			"saving": "Saving, please wait...",

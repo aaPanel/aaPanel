@@ -618,5 +618,8 @@
 	"8a521223e53701e77f81e4e2d16e7db1": "Contraseña de usuario",
 	"0149ff06f6ee6467cd142dabe619d0fc": "Transcurrido",
 	"8f37af07e001a9dba63e9f916751ee83": "Migración completa",
-	"071f09bfa79e0f87b8a838fe8b879ceb": "El nombre de usuario solo puede contener letras, números y guiones bajos."
+	"071f09bfa79e0f87b8a838fe8b879ceb": "El nombre de usuario solo puede contener letras, números y guiones bajos.",
+	"465580a4e1b0f67cb4ca0ade4180f90b": "Otro Panel Migrar",
+	"2b26a4ecb55e8977f503432d04e07a54": "Actualmente solo se admite Cpanel",
+	"baec210cf37d53e67d35003ef2b3a44e": "Progreso de la tarea actual"
 }

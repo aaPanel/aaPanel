@@ -24,9 +24,6 @@ import public
 
 from dataclasses import dataclass
 from mod.project.migrate.helper import *
-from mod.project.migrate.helper.migrater import *
-from mod.project.migrate.helper.logger import TOP, END
-from mod.project.migrate.helper.progress import MigrateProgress
 
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 WORK_FLAG = os.path.join(ABS_PATH, "running.pl")
@@ -132,6 +129,8 @@ def main():
         print("Usage: btpython comMod.py task_id")
         sys.exit(1)
     logger = MigrateLogger(clear_log=False)
+
+    task_id = None
     try:
         task_id = sys.argv[1]
         migrate_path = os.path.join(ABS_PATH, f"migrate_{task_id}.json")
@@ -139,7 +138,6 @@ def main():
         migrate_info = json.loads(migrate_str)
         migrate_info["task_id"] = task_id
     except Exception as e:
-        import traceback
         logger.error(f"Failed to load migration info: {e}")
         sys.exit(1)
 
@@ -191,6 +189,7 @@ def main():
 
             # ========== 步骤 2: 逐用户处理 ==========
             logger.hide_progress = False  # 隐藏用户进度前缀 '[1/3]'
+            all_restored_domains: set = set()
             for user_idx, detail in enumerate(migrate.detail, 1):
                 logger.set_current_user(user_idx)
                 username = detail.get('user', 'unknown')
@@ -205,26 +204,25 @@ def main():
                     task_classes=SUPPORTED_TASKS,
                 )
                 success = migrater.execute()
-                if not success:
+                if success:
+                    domains = migrater.get_restored_domains()
+                    if domains:
+                        all_restored_domains.update(domains)
+                else:
                     logger.error(f"User [{username}] migration failed", prefix=END)
 
+            # 记录验证
+            verify_dns_a_records(all_restored_domains, logger)
             logger.info("All users migration completed!", prefix="")
             progress.done()
-            # 清理远端临时根目录
-            ssh_manager.execute(f"rm -rf '{remote_backup_base}'", timeout=30)
     except Exception as e:
         logger.error(f"Migration Error: {e}")
         sys.exit(1)
     finally:
-        # ========== 步骤 4: 最终清理本端 local_backup_base ==========
-        if os.path.exists(local_backup_base):
-            public.ExecShell(f"rm -rf '{local_backup_base}'")
-        if os.path.exists(WORK_FLAG):
-            public.ExecShell(f"rm -f {WORK_FLAG}")
-        if migrate:
-            migrate.delete()
-
         logger.info("Migration Finished!", prefix="")
+        time.sleep(2)
+        if task_id:
+            cleanup_migrate(task_id)
 
 
 if __name__ == '__main__':

@@ -184,6 +184,7 @@ class WpMigrate(MigrateCore):
                             break
                         success_msg = f"Successfully Restored [{full_name}]"
                         self.logger.info(success_msg)
+                        self.restored_domains.add(site.get('domain', '').lower().rstrip('/').strip())
                         # 处理ssl
                         self._restore_ssl_cert(site)
                         break

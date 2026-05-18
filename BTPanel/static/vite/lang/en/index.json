@@ -472,7 +472,6 @@
 	"Adding virtual environment requires specifying the virtual environment directory": "Adding virtual environment requires specifying the virtual environment directory",
 	"All version": "All version",
 	"Command": "Command",
-	"Command line version": "Command line version",
 	"Common version": "Common version",
 	"Create virtual environment": "Create virtual environment",
 	"Custom parameters": "Custom parameters",
@@ -618,5 +617,6 @@
 	"Migration complete": "Migration complete",
 	"Username can only contain letters, numbers, and underscores": "Username can only contain letters, numbers, and underscores",
 	"Other Panel Migrate": "Other Panel Migrate",
-	"Currently only Cpanel is supported": "Currently only Cpanel is supported"
+	"Currently only Cpanel is supported": "Currently only Cpanel is supported",
+	"Current Task Progress": "Current Task Progress"
 }

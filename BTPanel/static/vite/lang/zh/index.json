@@ -472,7 +472,6 @@
     "Adding virtual environment requires specifying the virtual environment directory": "添加虚拟环境需要指定虚拟环境目录",
     "All version": "所有版本",
     "Command": "命令",
-    "Command line version": "命令行版本",
     "Common version": "通用版本",
     "Create virtual environment": "创建虚拟环境",
     "Custom parameters": "自定义参数",
@@ -618,5 +617,6 @@
     "Migration complete": "迁移完成",
     "Username can only contain letters, numbers, and underscores": "用户名只能包含字母、数字和下划线",
     "Other Panel Migrate": "其他面板迁移",
-    "Currently only Cpanel is supported": "目前仅支持Cpanel"
+    "Currently only Cpanel is supported": "目前仅支持Cpanel",
+    "Current Task Progress": "当前任务进度"
 }

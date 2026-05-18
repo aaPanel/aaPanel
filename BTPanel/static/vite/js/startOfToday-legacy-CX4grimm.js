@@ -1,0 +1,1 @@
+System.register(["./index-legacy-6o9d0Mmi.js?v=1778752098997"],function(t,e){"use strict";var n,r;return{setters:[t=>{n=t.bm,r=t.cP}],execute:function(){t({i:function(t,e){const r=n(t),c=n(e);return+r<+c},s:function(){return r(Date.now())}})}}});

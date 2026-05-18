@@ -157,7 +157,20 @@
 			"index_34": "Continue upgrade",
 			"index_35": "Continue fix",
 			"index_36": "Fix panel",
-			"index_37": "Repairing the panel resolves various unexpected issues"
+			"index_37": "Repairing the panel resolves various unexpected issues",
+			"index_38": "Відкласти оновлення",
+			"index_39": "Notice",
+			"index_40": "Scheduled updates run in the background. In rare cases, network failures or stuck processes may prevent the panel from opening normally after the update.",
+			"index_41": "If the panel cannot open after updating, run the update command {cmd} manually in the terminal and check again.",
+			"index_42": "If it still does not work, please email {email}",
+			"index_43": "Please set the scheduled update time:",
+			"index_44": "Update time:",
+			"index_45": "Calculation result:",
+			"index_46": "Please select the scheduled update time",
+			"index_47": "Please enter the calculation result",
+			"index_48": "Incorrect calculation result",
+			"index_49": "Set delayed update",
+			"index_50": "Delayed panel update"
 		},
 		"Restart": {
 			"index_1": "сервер",

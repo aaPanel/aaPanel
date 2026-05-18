@@ -17,7 +17,7 @@ from .ssh import CpanelSSHManager
 from .progress import MigrateProgress
 from .migrater.wp_migrate import WpMigrate
 from .migrater.ssl_migrate import SslMigrate
-from .tools import inject_item_ids
+from .tools import inject_item_ids, verify_dns_a_records
 from .clean import cleanup_migrate
 from ..service import WORK_FLAG
 
@@ -30,7 +30,7 @@ __all__ = [
     "WpMigrate",
     "SslMigrate",
     "cleanup_migrate",
-
+    "verify_dns_a_records",
     "TOP",
     "MIDDLE",
     "END",

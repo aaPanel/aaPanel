@@ -828,7 +828,7 @@ def ajax_v2(pdata=None):
             'UninstallLib', 'InstallLib', 'SetQiniuAS', 'GetQiniuAS',
             'GetLibList', 'GetProcessList', 'GetNetWorkList', 'GetNginxStatus',
             'GetPHPStatus', 'GetTaskCount', 'GetSoftList', 'GetNetWorkIo',
-            'GetDiskIo', 'GetCpuIo', 'CheckInstalled', 'UpdatePanel',
+            'GetDiskIo', 'GetCpuIo', 'CheckInstalled', 'UpdatePanel', 'ScheduleUpdate',
             'GetInstalled', 'GetPHPConfig', 'SetPHPConfig', 'log_analysis',
             'speed_log', 'get_result', 'get_detailed', 'ignore_version')
 

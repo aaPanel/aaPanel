@@ -678,6 +678,9 @@ export PATH
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
+        public.set_module_logs('node_site_nodejs', 'create_app', 1)
+        public.set_module_logs('node_site', 'create_app', 1)
+
         if not isinstance(get,public.dict_obj): 
             return_message=public.return_error(public.lang('The parameter type is wrong, need dict obj object'))
             del return_message['status']
@@ -1313,6 +1316,13 @@ export PATH
         is_ssl,is_force_ssl = self.exists_nginx_ssl(project_name)
         ssl_config = ''
         if is_ssl:
+            http3_header = ""
+            if self.is_nginx_http3():
+                http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+                http3_header += "\n    quic_retry on;\n    quic_gso on;"
+                if self.ng_ssl_early_data_enabled():
+                    http3_header += "\n    ssl_early_data on;"
+
             listen_ports += "\n    listen 443 ssl;"
             if listen_ipv6: listen_ports += "\n    listen [::]:443 ssl;"
         
@@ -1323,8 +1333,8 @@ export PATH
     ssl_prefer_server_ciphers on;
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
-    add_header Strict-Transport-Security "max-age=31536000";
-    error_page 497  https://$host$request_uri;'''.format(vhost_path = self._vhost_path,priject_name = project_name)
+    add_header Strict-Transport-Security "max-age=31536000";{http3_header}
+    error_page 497  https://$host$request_uri;'''.format(vhost_path = self._vhost_path,priject_name = project_name, http3_header=http3_header)
 
             if is_force_ssl:
                 ssl_config += '''

@@ -1273,8 +1273,11 @@ WantedBy=timers.target
             """
 
             # 写入 systemd 配置文件
-            public.writeFile(service_path, service_content)
-            public.writeFile(timer_path, timer_content)
+            res1 = public.writeFile(service_path, service_content)
+            res2 = public.writeFile(timer_path, timer_content)
+
+            if not res1 or not res2:
+                raise ValueError(public.lang(f"Unable to write to file, please check if system hardening is enabled!"))
 
             # 设置 systemd 配置文件权限（符合系统要求：644）
             os.chmod(service_path, 0o644)

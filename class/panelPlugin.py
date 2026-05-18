@@ -235,7 +235,7 @@ class panelPlugin:
         str3 = public.lang("2. If Yunsuo is installed, please turn off [System Hardening] feature")
         str4 = public.lang("3. If Safedog is installed, please turn off [System Protection] feature")
         str5 = public.lang("4. If other security software is used, please uninstall it")
-        if not self.check_sys_write():
+        if not public.check_sys_write():
             return public.return_msg_gettext(False,
                                              '<a style=color:red;>ERROR:{}</a><br>{}<br><br>{}<br>{}<br><br>'.format(
                                                  str1, str2, str3, str4))

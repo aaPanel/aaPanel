@@ -149,6 +149,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "Операції з файлами",
+			"fileOperationRecord": "Журнали операцій з файлами",
 			"permissions": "Дозволи",
 			"createOptions": {
 				"newDirectory": "Новий каталог",
@@ -176,6 +177,12 @@
 				"untitledDirectory": "новий каталог",
 				"untitledFile": "новий файл"
 			}
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "Enter search keywords",
+			"operationTime": "Operation Time",
+			"operationLog": "Operation Log",
+			"clearTip": "To clear these logs, go to"
 		},
 		"api": {
 			"saving": "Збереження, будь ласка, зачекайте...",
@@ -356,11 +363,50 @@
 				"edit": "Edit",
 				"extract": "Extract",
 				"delete": "Delete"
+			},
+			"titleWithTypeFile": "{type} preview [{name}]",
+			"noExtractableFile": "Please select files to extract",
+			"overwriteTitle": "Duplicate file handling",
+			"overwriteMessage": "The current directory already contains the following files. Select the files to process and continue.",
+			"overwriteTips": "Select files, then choose the action to apply",
+			"overwriteSelectRequired": "Please select files",
+			"overwriteSuccess": "Succeeded",
+			"noChange": "No changes",
+			"extractFile": "Extracted file",
+			"targetFile": "Target file",
+			"overwriteColumns": {
+				"archiveFile": "Archive file",
+				"targetFile": "Target file",
+				"status": "Status"
+			},
+			"overwriteActions": {
+				"skip": "Skip",
+				"overwrite": "Overwrite",
+				"rename": "Rename extracted file"
 			}
 		},
 		"tableFooter": {
 			"summary": "Всього {dirNum} каталогів, {fileNum} файлів, Розмір: ",
-			"calculate": "Обчислити"
+			"calculate": "Обчислити",
+			"diskAnalysisTip": "Install BT Disk Analysis Tool to scan all directory sizes with one click"
+		},
+		"calcSize": {
+			"clickTitle": "Click to calculate size",
+			"diskAnalysisTip": "{action} the disk analysis tool to view more information,",
+			"diskAnalysisAction": "{action} now",
+			"install": "Install",
+			"purchase": "Buy",
+			"diskAnalysisTitle": "Disk analysis",
+			"directoryDetails": "Directory details",
+			"directoryPath": "Directory path:",
+			"directorySize": "Directory size:",
+			"folderCount": "Folders:",
+			"fileCount": "Files:",
+			"permission": "Permission:",
+			"modifyPermission": "Modify permission",
+			"owner": "Owner:",
+			"lastModifiedTime": "Last modified:",
+			"permissionChangeTime": "Permission changed:"
 		},
 		"terminalModal": {
 			"title": "Термінал",
@@ -386,7 +432,8 @@
 			"cancelSharing": "Скасувати доступ",
 			"confirmStopSharing": "Скасувати доступ до [{filename}]?",
 			"deletingShare": "Видалення доступу...",
-			"linkAndCode": "Посилання: {link}, Код: {code}"
+			"linkAndCode": "Посилання: {link}, Код: {code}",
+			"securityTip": "Note: External share links may carry risks. Only share links with trusted people to avoid exposing sensitive information."
 		},
 		"shareListModal": {
 			"title": "Список спільного доступу",
@@ -395,14 +442,17 @@
 			"expirationDate": "Термін дії",
 			"cancelShareTitle": "Скасувати доступ",
 			"cancelShareMessage": "Скасувати доступ до【{filename}】?",
-			"deletingShare": "Видалення доступу..."
+			"deletingShare": "Видалення доступу...",
+			"searchPlaceholder": "Enter share name"
 		},
 		"favoriteListModal": {
 			"title": "Список обраного",
 			"path": "Шлях",
 			"removeFavoriteTitle": "Видалити з обраного",
 			"removeFavoriteMessage": "Видалити шлях [{path}]?",
-			"management": "Керування"
+			"management": "Керування",
+			"cancelFavoriteTitle": "Cancel favorite",
+			"cancelFavoriteMessage": "Cancel the favorite for [{name}], continue?"
 		},
 		"recycle": {
 			"title": "Кошик",

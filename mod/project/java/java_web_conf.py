@@ -25,10 +25,11 @@ class JavaNginxTool:
         if use_ssl:
             use_http2_on = public.is_change_nginx_http2()
             use_http3 = public.is_nginx_http3()
+            ssl_early_data_enabled = public.ng_ssl_early_data_enabled()
         else:
             use_http2_on = False
             use_http3 = False
-
+            ssl_early_data_enabled = False
         project_config = project_data["project_config"]
         if project_config['java_type'] == "springboot":
             project_path = project_data["project_config"]["jar_path"]
@@ -67,6 +68,7 @@ class JavaNginxTool:
                 listen_ports_list.append("    listen 443 quic;")
                 if use_ipv6:
                     listen_ports_list.append("    listen [::]:443 quic;")
+                listen_ports_list.append("http3 on;")
 
         listen_ports = "\n".join(listen_ports_list).strip()
 
@@ -74,7 +76,8 @@ class JavaNginxTool:
         proxy_conf = self._build_proxy_conf(project_config)
         ssl_conf = "#error_page 404/404.html;"
         if use_ssl:
-            ssl_conf += "\n" + self._build_ssl_conf(project_config, use_http3=use_http3, force_ssl=force_ssl)
+            ssl_conf += "\n" + self._build_ssl_conf(project_config, use_http3=use_http3, force_ssl=force_ssl,
+                                                    ssl_early_data_enabled=ssl_early_data_enabled)
 
         nginx_template_file = "{}/template/nginx/java_mod_http.conf".format(self._vhost_path)
         nginx_conf_file = "{}/nginx/java_{}.conf".format(self._vhost_path, project_data["name"])
@@ -196,7 +199,7 @@ class JavaNginxTool:
             return static_conf
         return ""
 
-    def _build_ssl_conf(self, project_config: dict, use_http3=False, force_ssl=False) -> str:
+    def _build_ssl_conf(self, project_config: dict, use_http3=False, force_ssl=False, ssl_early_data_enabled=False) -> str:
         force_ssl_str = ""
         if force_ssl:
             force_ssl_str = '''
@@ -208,6 +211,9 @@ class JavaNginxTool:
         http3_header = ""
         if use_http3:
             http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-27=":443";h3-29=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+            http3_header += "\n    quic_retry on;\n    quic_gso on;"
+            if ssl_early_data_enabled:
+                http3_header += "\n    ssl_early_data on;"
 
         return '''    ssl_certificate    {vhost_path}/cert/{project_name}/fullchain.pem;
     ssl_certificate_key    {vhost_path}/cert/{project_name}/privkey.pem;

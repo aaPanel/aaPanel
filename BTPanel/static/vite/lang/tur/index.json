@@ -472,7 +472,6 @@
 	"Adding virtual environment requires specifying the virtual environment directory": "Sanal ortam eklemek için sanal ortam dizini belirtmek gerekir",
 	"All version": "Tüm sürümler",
 	"Command": "Komut",
-	"Command line version": "Komut Satırı Sürümü",
 	"Common version": "Genel Sürüm",
 	"Create virtual environment": "Sanal bir ortam oluşturmak",
 	"Custom parameters": "Özel parametreler",
@@ -618,5 +617,6 @@
 	"Migration complete": "Taşıma tamamlandı",
 	"Username can only contain letters, numbers, and underscores": "Kullanıcı adları sadece harfler, sayılar ve alt çizgiler içerebilir",
 	"Other Panel Migrate": "Diğer panel göçümü",
-	"Currently only Cpanel is supported": "Şu anda yalnızca cpanel"
+	"Currently only Cpanel is supported": "Şu anda yalnızca cpanel",
+	"Current Task Progress": "Mevcut Görev İlerlemesi"
 }

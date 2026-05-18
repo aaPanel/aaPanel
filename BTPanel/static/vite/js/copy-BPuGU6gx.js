@@ -1,0 +1,1 @@
+import{b7 as l,m as s,ah as e}from"./index-DV9DrNIN.js?v=1778752098997";const i=async o=>{const{copy:a,isSupported:t}=l({legacy:!0});t.value?(a(o),s.success(e.global.t("Utils.Copy.index_1"))):s.error(e.global.t("Utils.Copy.index_2"))};export{i as c};

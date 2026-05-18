@@ -656,9 +656,15 @@ class NodeJs():
     def is_nginx_http3(self):
         """判断nginx是否可以使用http3"""
         if getattr(self, "_is_nginx_http3", None) is None:
-            _is_nginx_http3 = public.ExecShell("nginx -V 2>&1| grep 'http_v3_module'")[0] != ''
+            _is_nginx_http3 = public.is_nginx_http3()
             setattr(self, "_is_nginx_http3", _is_nginx_http3)
         return self._is_nginx_http3
+    def ng_ssl_early_data_enabled(self):
+        """判断nginx是否可以使用http3"""
+        if getattr(self, "_ng_ssl_early_data_enabled", None) is None:
+            _ng_ssl_early_data_enabled = public.ng_ssl_early_data_enabled()
+            setattr(self, "_ng_ssl_early_data_enabled", _ng_ssl_early_data_enabled)
+        return self._ng_ssl_early_data_enabled
 
     @staticmethod
     def _replace_nginx_conf(config_file, mut_config: dict) -> bool:
@@ -717,6 +723,9 @@ class NodeJs():
             http3_header = ""
             if self.is_nginx_http3():
                 http3_header = '''\n    add_header Alt-Svc 'quic=":443"; h3=":443"; h3-29=":443"; h3-27=":443";h3-25=":443"; h3-T050=":443"; h3-Q050=":443";h3-Q049=":443";h3-Q048=":443"; h3-Q046=":443"; h3-Q043=":443"';'''
+                http3_header += "\n    quic_retry on;\n    quic_gso on;"
+                if self.ng_ssl_early_data_enabled():
+                    http3_header += "\n    ssl_early_data on;"
 
             nginx_ver = public.nginx_version()
             if nginx_ver:
@@ -739,6 +748,8 @@ class NodeJs():
                         listen_ports_list.append("    listen {} quic;".format(p))
                 if use_http2_on:
                     listen_ports_list.append("    http2 on;")
+                if self.is_nginx_http3():
+                    listen_ports_list.append("    http3 on;")
 
             else:
                 listen_ports_list.append("    listen 443 ssl;")

@@ -462,7 +462,7 @@ class bt_task:
 
         self.set_file_accept(dfile)
         #public.WriteLog("TYPE_FILE", 'ZIP_SUCCESS', (sfiles, dfile),not_web = self.not_web)
-        public.WriteLog("File manager", 'Compressed file [ {} ] to [ {} ] success', (sfiles, dfile))
+        public.WriteLog("File manager", 'Compressed file [ {} ] to [ {} ] success'.format(sfiles, dfile))
         return public.return_message(0, 0, public.lang("Compression succeeded!"))
 
     def compress_and_split_zip(self, path, dfile, sfiles, volume_size, log_file):
@@ -675,7 +675,7 @@ class bt_task:
                 except KeyError:
                     return public.ReturnMsg(False, 'SET_FILE_ACCEPT_ERROR')
 
-        public.WriteLog("File manager", 'unzip file [ {} ] -> [ {} ] success', (sfile, dfile))
+        public.WriteLog("File manager", 'unzip file [ {} ] to [ {} ] success'.format(sfile, dfile))
         return public.return_message(0, 0,  public.lang("Uncompression succeeded!"))
     def get_unzip_files(self, log_file, split_log):
         '''

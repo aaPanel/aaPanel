@@ -149,6 +149,7 @@
 		},
 		"buttonGroup": {
 			"fileOperations": "파일 작업",
+			"fileOperationRecord": "파일 작업 로그",
 			"permissions": "권한",
 			"createOptions": {
 				"newDirectory": "디렉토리 만들기",
@@ -351,11 +352,50 @@
 				"edit": "Edit",
 				"extract": "Extract",
 				"delete": "Delete"
+			},
+			"titleWithTypeFile": "{type} preview [{name}]",
+			"noExtractableFile": "Please select files to extract",
+			"overwriteTitle": "Duplicate file handling",
+			"overwriteMessage": "The current directory already contains the following files. Select the files to process and continue.",
+			"overwriteTips": "Select files, then choose the action to apply",
+			"overwriteSelectRequired": "Please select files",
+			"overwriteSuccess": "Succeeded",
+			"noChange": "No changes",
+			"extractFile": "Extracted file",
+			"targetFile": "Target file",
+			"overwriteColumns": {
+				"archiveFile": "Archive file",
+				"targetFile": "Target file",
+				"status": "Status"
+			},
+			"overwriteActions": {
+				"skip": "Skip",
+				"overwrite": "Overwrite",
+				"rename": "Rename extracted file"
 			}
 		},
 		"tableFooter": {
 			"summary": "총 {dirnum} 디렉토리, {filenum} 파일, 파일 크기 : ",
-			"calculate": "보기"
+			"calculate": "보기",
+			"diskAnalysisTip": "Install BT Disk Analysis Tool to scan all directory sizes with one click"
+		},
+		"calcSize": {
+			"clickTitle": "Click to calculate size",
+			"diskAnalysisTip": "{action} the disk analysis tool to view more information,",
+			"diskAnalysisAction": "{action} now",
+			"install": "Install",
+			"purchase": "Buy",
+			"diskAnalysisTitle": "Disk analysis",
+			"directoryDetails": "Directory details",
+			"directoryPath": "Directory path:",
+			"directorySize": "Directory size:",
+			"folderCount": "Folders:",
+			"fileCount": "Files:",
+			"permission": "Permission:",
+			"modifyPermission": "Modify permission",
+			"owner": "Owner:",
+			"lastModifiedTime": "Last modified:",
+			"permissionChangeTime": "Permission changed:"
 		},
 		"terminalModal": {
 			"title": "터미널",
@@ -381,7 +421,8 @@
 			"cancelSharing": "공유를 취소하세요",
 			"confirmStopSharing": "[{filename}] 공유를 중지하고 계속?",
 			"deletingShare": "공유 삭제, 기다려주세요 ...",
-			"linkAndCode": "링크 : {link}, 초대 코드 : {code}"
+			"linkAndCode": "링크 : {link}, 초대 코드 : {code}",
+			"securityTip": "Note: External share links may carry risks. Only share links with trusted people to avoid exposing sensitive information."
 		},
 		"shareListModal": {
 			"title": "목록을 공유하세요",
@@ -390,14 +431,17 @@
 			"expirationDate": "만료일",
 			"cancelShareTitle": "공유를 취소하세요",
 			"cancelShareMessage": "공유를 중지하여 ing {filename}】를 계속하세요.",
-			"deletingShare": "공유 링크 삭제, 기다려주세요 ..."
+			"deletingShare": "공유 링크 삭제, 기다려주세요 ...",
+			"searchPlaceholder": "Enter share name"
 		},
 		"favoriteListModal": {
 			"title": "좋아하는 목록",
 			"path": "경로",
 			"removeFavoriteTitle": "좋아하는 것을 제거하세요",
 			"removeFavoriteMessage": "삭제 경로 확인 [{path}]?",
-			"management": "관리"
+			"management": "관리",
+			"cancelFavoriteTitle": "Cancel favorite",
+			"cancelFavoriteMessage": "Cancel the favorite for [{name}], continue?"
 		},
 		"recycle": {
 			"title": "휴지통",
@@ -534,6 +578,12 @@
 		},
 		"videoPlayerModal": {
 			"title": "비디오 플레이어"
+		},
+		"operationRecordModal": {
+			"searchPlaceholder": "Enter search keywords",
+			"operationTime": "Operation Time",
+			"operationLog": "Operation Log",
+			"clearTip": "To clear these logs, go to"
 		},
 		"api": {
 			"saving": "저장 중입니다. 잠시만 기다려 주세요...",
