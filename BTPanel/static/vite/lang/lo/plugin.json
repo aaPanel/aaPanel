@@ -1,0 +1,99 @@
+{
+	"Plugin": {
+		"Mysql": {
+			"index_1": "This is the main configuration file of {0}, if you don't understand the configuration rules, please don't modify it. | ນີ້ແມ່ນໄຟລ໌ກຳນົດຄ່າຫຼັກຂອງ {0}, ຖ້າທ່ານບໍ່ເຂົ້າໃຈກົດການກຳນົດຄ່າ, ກະລຸນາຢ່າແກ້ໄຂມັນ.",
+			"index_2": "Alert me when status stops | ແຈ້ງເຕືອນຂ້ອຍເມື່ອສະຖານະຢຸດເຮັດວຽກ",
+			"index_3": "State Stop Alarm Setting | ການຕັ້ງຄ່າການແຈ້ງເຕືອນເມື່ອສະຖານະຢຸດ",
+			"index_4": "Auto-restart | ເລີ່ມລະບົບໃໝ່ອັດຕະໂນມັດ",
+			"index_5": "Are you sure to {0} {1} service? | ທ່ານແນ່ໃຈບໍ່ວ່າຈະ {0} ການບໍລິການ {1}?",
+			"index_6": "Binary log | ບັນທຶກ Binary (Binary log)",
+			"index_7": "Warm tips: Mysql binary log is to record the current operation log, can be used for data recovery, data backup. | ຄຳແນະນຳ: Mysql binary log ແມ່ນການບັນທຶກການເຮັດວຽກໃນປະຈຸບັນ, ສາມາດໃຊ້ເພື່ອການກູ້ຄືນຂໍ້ມູນ ແລະ ການສຳຮອງຂໍ້ມູນ.",
+			"index_8": "Last modified time | ເວລາແກ້ໄຂຫຼ້າສຸດ",
+			"index_9": "Delete log | ລຶບບັນທຶກ (Log)",
+			"index_10": "Do you really want to delete the [{0}] log? | ທ່ານຕ້ອງການລຶບບັນທຶກ [{0}] ແທ້ຫຼືບໍ່?",
+			"index_11": "Turning on binary logging can protect Mysql data security, but at the same time will consume a certain amount of disk storage, whether to continue? | ການເປີດການບັນທຶກ binary ສາມາດປົກປ້ອງຄວາມປອດໄພຂອງຂໍ້ມູນ Mysql, ແຕ່ໃນເວລາດຽວກັນກໍ່ຈະໃຊ້ພື້ນທີ່ຈັດເກັບຂໍ້ມູນຈຳນວນໜຶ່ງ, ຕ້ອງການດຳເນີນການຕໍ່ຫຼືບໍ່?",
+			"index_12": "Turning off the binary log will no longer record all modification operations to the database binary log? | ການປິດ binary log ຈະບໍ່ບັນທຶກການແກ້ໄຂທັງໝົດລົງໃນຖານຂໍ້ມູນ binary log ອີກຕໍ່ໄປ?",
+			"index_13": "Move | ຍ້າຍ",
+			"index_14": "Risk Warning: Mysql will stop running during the migration process, please be careful | ຄຳເຕືອນຄວາມສ່ຽງ: Mysql ຈະຢຸດເຮັດວຽກໃນລະຫວ່າງຂະບວນການຍ້າຍຂໍ້ມູນ, ກະລຸນາລະມັດລະວັງ",
+			"index_15": "Risk Warning: Please wait until the migration is complete before performing any other operations during the migration process | ຄຳເຕືອນຄວາມສ່ຽງ: ກະລຸນາລໍຖ້າຈົນກວ່າການຍ້າຍຂໍ້ມູນຈະສຳເລັດ ກ່ອນທີ່ຈະດຳເນີນການອື່ນໆໃນລະຫວ່າງຂະບວນການຍ້າຍຂໍ້ມູນ",
+			"index_16": "Database migration | ການຍ້າຍຖານຂໍ້ມູນ",
+			"index_17": "Sure you want to migrate the database to [{0}]? | ແນ່ໃຈບໍ່ວ່າທ່ານຕ້ອງການຍ້າຍຖານຂໍ້ມູນໄປທີ່ [{0}]?",
+			"index_18": "Memory protection | ການປ້ອງກັນໜ່ວຍຄວາມຈຳ",
+			"index_19": "Note: After it is enabled, the MySQL memory priority will be adjusted, and MySQL will never be killed by the system, which can ensure the stable operation of MySQL. However, it may cause other processes to be killed abnormally, which may seriously affect the operation of the system. It is recommended to enable it when MySQL needs to run stably. | ໝາຍເຫດ: ຫຼັງຈາກເປີດໃຊ້ງານ, ລະດັບຄວາມສຳຄັນຂອງໜ່ວຍຄວາມຈຳ MySQL ຈະຖືກປັບປ່ຽນ, ແລະ MySQL ຈະບໍ່ຖືກປິດໂດຍລະບົບ, ເຊິ່ງຊ່ວຍໃຫ້ MySQL ເຮັດວຽກໄດ້ຢ່າງສະຖຽນ. ເຖິງຢ່າງໃດກໍ່ຕາມ, ມັນອາດຈະເຮັດໃຫ້ໂປຣເຊສອື່ນໆຖືກປິດຢ່າງຜິດປົກກະຕິ, ເຊິ່ງອາດສົ່ງຜົນກະທົບຮ້າຍແຮງຕໍ່ການເຮັດວຽກຂອງລະບົບ. ແນະນຳໃຫ້ເປີດໃຊ້ງານເມື່ອ MySQL ຕ້ອງການການເຮັດວຽກທີ່ສະຖຽນ.",
+			"index_20": "Optimization plan | ແຜນການເພີ່ມປະສິດທິພາບ",
+			"index_21": "Max RAM usage | ການນຳໃຊ້ RAM ສູງສຸດ",
+			"index_22": "Restart {0} Service | ເລີ່ມການບໍລິການ {0} ໃໝ່",
+			"index_23": "Restart database for the configuration to take effect | ເລີ່ມຖານຂໍ້ມູນໃໝ່ເພື່ອໃຫ້ການກຳນົດຄ່າມີຜົນສັກສິດ",
+			"index_24": "Did you restart the {0} service? | ທ່ານໄດ້ເລີ່ມການບໍລິການ {0} ໃໝ່ແລ້ວຫຼືບໍ່?",
+			"index_25": "If you need to change the MySQL version, please backup your data, uninstall MySQL and reinstall it. | ຖ້າທ່ານຕ້ອງການປ່ຽນເວີຊັນ MySQL, ກະລຸນາສຳຮອງຂໍ້ມູນຂອງທ່ານ, ຖອນການຕິດຕັ້ງ MySQL ແລະ ຕິດຕັ້ງໃໝ່.",
+			"index_26": "Storage location | ສະຖານທີ່ຈັດເກັບ",
+			"index_27": "Optimization | ການເພີ່ມປະສິດທິພາບ",
+			"index_28": "Slow log | ບັນທຶກການເຮັດວຽກທີ່ຊ້າ (Slow log)",
+			"index_29": "Interval time | ໄລຍະຫ່າງເວລາ",
+			"index_30": "Support | ສະໜັບສະໜູນ"
+		},
+		"Ftp": {
+			"index_1": "This feature is exclusive to the Professional version, {a} | ຄຸນສົມບັດນີ້ມີສະເພາະໃນເວີຊັນ Professional ເທົ່ານັ້ນ, {a}",
+			"index_2": "Log management switch | ສະວິດຈັດການບັນທຶກ (Log)",
+			"index_3": "After it is turned on, all FTP users' login and operation records will be recorded. | ຫຼັງຈາກເປີດແລ້ວ, ບັນທຶກການເຂົ້າສູ່ລະບົບ ແລະ ການເຮັດວຽກຂອງຜູ້ໃຊ້ FTP ທັງໝົດຈະຖືກບັນທຶກໄວ້.",
+			"index_4": "Log management | ການຈັດການບັນທຶກ (Log)",
+			"index_5": "After turning on pure-ftpd log management, it will record the login and operation records of all FTP users, whether to continue the operation? | ຫຼັງຈາກເປີດການຈັດການບັນທຶກ pure-ftpd ແລ້ວ, ມັນຈະບັນທຶກການເຂົ້າສູ່ລະບົບ ແລະ ການເຮັດວຽກຂອງຜູ້ໃຊ້ FTP ທັງໝົດ, ຕ້ອງການດຳເນີນການຕໍ່ຫຼືບໍ່?",
+			"index_6": "After turning off the pure-ftpd log management, it will not be able to record the login and operation records of all FTP users, whether to continue the operation? | ຫຼັງຈາກປິດການຈັດການບັນທຶກ pure-ftpd ແລ້ວ, ຈະບໍ່ສາມາດບັນທຶກການເຂົ້າສູ່ລະບົບ ແລະ ການເຮັດວຽກຂອງຜູ້ໃຊ້ FTP ທັງໝົດໄດ້, ຕ້ອງການດຳເນີນການຕໍ່ຫຼືບໍ່?",
+			"index_7": "Current FTP address is | ທີ່ຢູ່ FTP ປະຈຸບັນແມ່ນ",
+			"index_8": "Download FTP connection tool (FileZilla, free open source) | ດາວໂຫຼດເຄື່ອງມືເຊື່ອມຕໍ່ FTP (FileZilla, open source ຟຣີ)",
+			"index_9": "Switch version | ປ່ຽນເວີຊັນ",
+			"index_10": "User management | ການຈັດການຜູ້ໃຊ້",
+			"index_11": "Current version is the same as the selected version! | ເວີຊັນປະຈຸບັນແມ່ນເວີຊັນດຽວກັບເວີຊັນທີ່ເລືອກ!",
+			"index_12": "Are you sure to install {0}-{1} | ທ່ານແນ່ໃຈບໍ່ທີ່ຈະຕິດຕັ້ງ {0}-{1}"
+		},
+		"Redis": {
+			"index_1": "After modifying the configuration, you need to restart redis to take effect, if your data needs to be persisted, please execute the save operation first. | ຫຼັງຈາກແກ້ໄຂການກຳນົດຄ່າ, ທ່ານຈຳເປັນຕ້ອງເລີ່ມ redis ໃໝ່ເພື່ອໃຫ້ມີຜົນສັກສິດ, ຖ້າຂໍ້ມູນຂອງທ່ານຕ້ອງການການຈັດເກັບແບບຖາວອນ, ກະລຸນາດຳເນີນການ save ກ່ອນ.",
+			"index_2": "Warning: Do not turn on Redis extranet access, as unrestricted access to the IP is highly likely to lead to server intrusion. | ຄຳເຕືອນ: ຢ່າເປີດການເຂົ້າເຖິງ Redis ຈາກພາຍນອກ, ເພາະການເຂົ້າເຖິງ IP ທີ່ບໍ່ຈຳກັດມີຄວາມສ່ຽງສູງທີ່ຈະນຳໄປສູ່ການຖືກບຸກລຸກເຊີບເວີ.",
+			"index_3": "After setting, the new redis_cache directory will be created in the selected directory and given redis permissions | ຫຼັງຈາກຕັ້ງຄ່າແລ້ວ, ໂຟນເດີ redis_cache ໃໝ່ຈະຖືກສ້າງຂຶ້ນໃນໂຟນເດີທີ່ເລືອກ ແລະ ໃຫ້ສິດອະນຸຍາດ redis",
+			"index_4": "Persistent file storage path | ເສັ້ນທາງການຈັດເກັບໄຟລ໌ແບບຖາວອນ",
+			"index_5": "AOF Persistence | ການຈັດເກັບແບບ AOF",
+			"index_6": "RDB Persistence | ການຈັດເກັບແບບ RDB",
+			"index_7": "Set Persistence | ຕັ້ງຄ່າການຈັດເກັບຂໍ້ມູນແບບຖາວອນ"
+		},
+		"Apache": {
+			"index_1": "Restart time | ເວລາເລີ່ມໃໝ່",
+			"index_2": "Startup time | ເວລາເລີ່ມຕົ້ນ",
+			"index_3": "Total connections | ການເຊື່ອມຕໍ່ທັງໝົດ",
+			"index_4": "Total bytes transferred | ຈຳນວນໄບຕ໌ (Bytes) ທັງໝົດທີ່ຖືກໂອນ",
+			"index_5": "Requests per second | ຈຳນວນການຮ້ອງຂໍຕໍ່ວິນາທີ",
+			"index_6": "Busy process | ໂປຣເຊສທີ່ກຳລັງເຮັດວຽກ",
+			"index_7": "Idle process | ໂປຣເຊສທີ່ວ່າງ",
+			"index_8": "Apache uses CPU | Apache ທີ່ໃຊ້ CPU",
+			"index_9": "Apache uses memory | Apache ທີ່ໃຊ້ໜ່ວຍຄວາມຈຳ",
+			"index_10": "Daemon | ດາມອນ (Daemon)",
+			"index_11": "The daemon can be started automatically after the {0} service is stopped to ensure that the {0} service is always running. | ດາມອນສາມາດເລີ່ມຕົ້ນໄດ້ໂດຍອັດຕະໂນມັດຫຼັງຈາກການບໍລິການ {0} ຢຸດລົງ ເພື່ອໃຫ້ແນ່ໃຈວ່າການບໍລິການ {0} ເຮັດວຽກຢູ່ສະເໝີ.",
+			"index_12": "Fields | ຟີວ (Fields)",
+			"index_13": "Current value | ຄ່າປະຈຸບັນ",
+			"index_14": "Default check every 1 minute, can be changed in Cron | ການກວດສອບມາດຕະຖານທຸກໆ 1 ນາທີ, ສາມາດປ່ຽນແປງໄດ້ໃນ Cron"
+		},
+		"Mencached": {
+			"index_1": "Listening IP, please do not modify it freely | IP ທີ່ລໍຖ້າການເຊື່ອມຕໍ່ (Listening IP), ກະລຸນາຢ່າແກ້ໄຂຕາມໃຈຊອບ",
+			"index_2": "Listening port, generally no need to modify | ພອດ (Port) ທີ່ລໍຖ້າການເຊື່ອມຕໍ່, ໂດຍທົ່ວໄປບໍ່ຈຳເປັນຕ້ອງແກ້ໄຂ",
+			"index_3": "MB, cache size, it is recommended not to exceed 512M | MB, ຂະໜາດແຄສ (Cache), ແນະນຳບໍ່ໃຫ້ເກີນ 512M",
+			"index_4": "Maximum number of connections, recommended not to exceed 40960 | ຈຳນວນການເຊື່ອມຕໍ່ສູງສຸດ, ແນະນຳບໍ່ໃຫ້ເກີນ 40960"
+		},
+		"MongoDB": {
+			"index_1": "After setting, create a new bt_mongodb directory in the selected directory and give mongo permission | ຫຼັງຈາກຕັ້ງຄ່າແລ້ວ, ສ້າງໂຟນເດີ bt_mongodb ໃໝ່ໃນໂຟນເດີທີ່ເລືອກ ແລະ ໃຫ້ສິດອະນຸຍາດ mongo",
+			"index_2": "Do not modify the monitoring IP at will | ຢ່າແກ້ໄຂ IP ທີ່ກວດສອບ (Monitoring IP) ຕາມໃຈຊອບ",
+			"index_3": "Data storage location | ສະຖານທີ່ຈັດເກັບຂໍ້ມູນ",
+			"index_4": "Log file location | ສະຖານທີ່ໄຟລ໌ບັນທຶກ (Log file)",
+			"index_5": "PID save path | ເສັ້ນທາງການບັນທຶກ PID",
+			"index_6": "Listening port, generally no need to modify | ພອດ (Port) ທີ່ລໍຖ້າການເຊື່ອມຕໍ່, ໂດຍທົ່ວໄປບໍ່ຈຳເປັນຕ້ອງແກ້ໄຂ",
+			"index_7": "Please start the mongodb service first! | ກະລຸນາເລີ່ມການບໍລິການ mongodb ກ່ອນ!",
+			"index_8": "Do you really want to delete the database [{0}]? | ທ່ານຕ້ອງການລຶບຖານຂໍ້ມູນ [{0}] ແທ້ຫຼືບໍ່?"
+		},
+		"Openlitespeed": {
+			"index_1": "Specifies the maximum connection idle time (seconds) allowed during processing one request | ກຳນົດເວລາຫວ່າງສູງສຸດຂອງການເຊື່ອມຕໍ່ (ວິນາທີ) ທີ່ອະນຸຍາດໃນລະຫວ່າງການປະມວນຜົນການຮ້ອງຂໍໜຶ່ງຄັ້ງ",
+			"index_2": "Enables GZIP/Brotli compression for both static and dynamic responses | ເປີດໃຊ້ການບີບອັດ GZIP/Brotli ສໍາລັບທັງການຕອບສະໜອງແບບ static ແລະ dynamic",
+			"index_3": "Specifies the level of GZIP compression applied to dynamic content. Ranges from 1 (lowest) to 9 (highest) | ກຳນົດລະດັບການບີບອັດ GZIP ທີ່ໃຊ້ກັບເນື້ອຫາແບບ dynamic. ຕັ້ງແຕ່ 1 ຫາ 9",
+			"index_4": "Specifies the maximum number of concurrent connections that the server can accept. This includes both plain TCP connections and SSL connections | ກຳນົດຈຳນວນການເຊື່ອມຕໍ່ພ້ອມກັນສູງສຸດທີ່ເຊີບເວີສາມາດຮັບໄດ້",
+			"index_5": "Specifies the maximum number of requests that can be served through a keep-alive (persistent) session | ກຳນົດຈຳນວນການຮ້ອງຂໍສູງສຸດທີ່ສາມາດໃຫ້ບໍລິການຜ່ານເຊດຊັນ keep-alive",
+			"index_6": "Specifies the maximum number of concurrent SSL connections the server will accept Since total concurrent SSL and non-SSL connections cannot exceed the limit specified by “Max Connections”, the actual number of concurrent SSL connections allowed must be lower than this limit | ກຳນົດຈຳນວນການເຊື່ອມຕໍ່ SSL ພ້ອມກັນສູງສຸດທີ່ເຊີບເວີຈະຍອມຮັບ"
+		}
+	}
+}

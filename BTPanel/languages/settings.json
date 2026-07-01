@@ -90,6 +90,12 @@
             "google": "fa",
             "title": "فارسی",
             "cn": "波斯语"
+        },
+       {
+            "name": "lo",
+            "google": "lo",
+            "title": "lao",
+            "cn": "老挝语"
         }
 
     ]
