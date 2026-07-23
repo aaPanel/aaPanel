@@ -1112,7 +1112,7 @@ class DataManager(SoftModule):
                             "task_type": my_type,
                             "task_status": 1,
                             "data_type": process['type'],
-                            "name": item.get("name", f"unknow {process['display_name']}"),
+                            "name": item.get("name", f"unknown {process['display_name']}"),
                             "data_backup_status": item.get("status", 0),
                             "progress": current_process if current_process > 5 else 5,
                             "msg": item.get("msg"),

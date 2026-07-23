@@ -160,7 +160,7 @@ def generate_restart_fields(template: dict) -> dict:
     from script.restart_services import SERVICES_MAP, ServicesHelper
     f = {
         "attr": "after_hook",
-        "name": "After the alarm excutes",
+        "name": "After the alarm executes",
         "suffix": "select after alarm action (Optional)",
         "type": "multiple-select",
         "items": [

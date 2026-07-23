@@ -119,7 +119,7 @@ class config:
     def add_mail_address(self, get):
         if not hasattr(get, 'email'): return public.return_msg_gettext(False, 'Please input your email')
         emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
-        if not emailformat.search(get.email): return public.return_msg_gettext(False, 'Please enter your vaild email')
+        if not emailformat.search(get.email): return public.return_msg_gettext(False, 'Please enter your valid email')
         # 测试发送邮件
         if get.email.strip() in self.__mail_list: return public.return_msg_gettext(True, 'Email already exists')
         self.__mail_list.append(get.email.strip())
@@ -168,7 +168,7 @@ class config:
     def user_stmp_mail_send(self, get):
         if not (hasattr(get, 'email')): return public.return_msg_gettext(False, 'Please input your email')
         emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
-        if not emailformat.search(get.email): return public.return_msg_gettext(False, 'Please enter your vaild email')
+        if not emailformat.search(get.email): return public.return_msg_gettext(False, 'Please enter your valid email')
         # 测试发送邮件
         if not get.email.strip() in self.__mail_list: return public.return_msg_gettext(True, 'The mailbox does not exist, please add it to the mailbox list')
         if not (hasattr(get, 'title')): return public.return_msg_gettext(False, 'Please fill in the email title')
@@ -264,7 +264,7 @@ class config:
     def clean_sess_files(self,sess_path):
         '''
             @name 清理过期的sess_file
-            @auther hwliang<2020-07-25>
+            @author hwliang<2020-07-25>
             @param sess_path(string) sess_files目录
             @return void
         '''
@@ -286,7 +286,7 @@ class config:
     def get_password_safe_file(self):
         '''
             @name 获取密码复杂度配置文件
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @return string
         '''
         return public.get_panel_path() + '/data/check_password_safe.pl'
@@ -294,7 +294,7 @@ class config:
     def check_password_safe(self,password):
         '''
             @name 密码复杂度验证
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @param password(string) 密码
             @return bool
         '''
@@ -321,7 +321,7 @@ class config:
     def set_password_safe(self,get):
         '''
             @name 设置密码复杂度
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @param get(string) 参数
             @return dict
         '''
@@ -338,7 +338,7 @@ class config:
     def get_password_safe(self,get):
         '''
             @name 获取密码复杂度
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @param get(string) 参数
             @return bool
         '''
@@ -349,7 +349,7 @@ class config:
     def get_password_expire_file(self):
         '''
             @name 获取密码过期配置文件
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @return string
         '''
         return public.get_panel_path() + '/data/password_expire.pl'
@@ -358,7 +358,7 @@ class config:
     def set_password_expire(self,get):
         '''
             @name 设置密码过期时间
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @param get<dict_obj>{
                 expire: int<密码过期时间> 单位:天,
             }
@@ -399,7 +399,7 @@ class config:
     def get_password_config(self,get=None):
         '''
             @name 获取密码配置
-            @auther hwliang<2021-10-18>
+            @author hwliang<2021-10-18>
             @param get<dict_obj> 参数
             @return dict{expire:int,expire_time:int,password_safe:bool}
         '''
@@ -2842,7 +2842,7 @@ class config:
     def get_msg_fun(self,get):
         """
         @获取消息模块指定方法
-        @auther: cjxin
+        @author: cjxin
         @date: 2022-08-16
         @param: get.module_name 消息模块名称(如：sms,weixin,dingding)
         @param: get.fun_name 消息模块方法名称(如：send_sms,push_msg)
@@ -2859,7 +2859,7 @@ class config:
     def get_msg_configs_by(self,get):
         """
         @name 获取单独消息通道配置
-        @auther: cjxin
+        @author: cjxin
         @date: 2022-08-16
         @param: get.name 消息模块名称(如：sms,weixin,dingding)
         """
@@ -2882,7 +2882,7 @@ class config:
     def get_msg_push_list(self,get):
         """
         @name 获取消息通道配置列表
-        @auther: cjxin
+        @author: cjxin
         @date: 2022-08-16
         """
         cpath = 'data/msg.json'

@@ -100,7 +100,7 @@ class ftplog:
         conf_path = '/etc/rsyslog.conf'
         conf = public.readFile(conf_path)
         if not os.path.exists(conf_path):
-            return public.return_message(-1, 0, public.lang("The rsyslog configuration file does not exist!\nPlease check if rsyslog is installed or if /ect/rsyslog.cn exists!\nIf the debain system is not installed, please execute：apt-get install rsyslog\nPlease execute the Centos system：yum install rsyslog"))
+            return public.return_message(-1, 0, public.lang("The rsyslog configuration file does not exist!\nPlease check if rsyslog is installed or if /ect/rsyslog.cn exists!\nIf the debian system is not installed, please execute：apt-get install rsyslog\nPlease execute the Centos system：yum install rsyslog"))
         conf = public.readFile(conf_path)
         import re
         search_str = r"ftp\.\*.*\t*.*\t*.*-/var/log/pure-ftpd.log"
@@ -502,7 +502,7 @@ $IncludeConfig /etc/rsyslog.d/*.conf
     def del_crontab(self):
         """
         @name 删除项目定时清理任务
-        @auther hezhihong<2022-10-31>
+        @author hezhihong<2022-10-31>
         @return 
         """
         cron_name = '[Do not delete] FTP audit log cutting task'

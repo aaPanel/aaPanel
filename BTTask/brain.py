@@ -296,7 +296,7 @@ class SimpleBrain:
             )
             core_thread.start()
             logger.debug(
-                f"registe core task [{task_id}], interval [{kwargs['interval']}]"
+                f"register core task [{task_id}], interval [{kwargs['interval']}]"
             )
             with self.core_status_lock:
                 self.core_tasks[task_id] = (core_thread, args)

@@ -871,12 +871,12 @@
 # def daemon_service():
 #     from script.restart_services import RestartServices, DaemonManager
 #     try:
-#         # remove old deamons
+#         # remove old daemons
 #         from BTPanel import app
 #         from crontab_v2 import crontab
 #         with app.app_context():
-#             old_deamons = public.M('crontab').where("name Like ?", "[Do not delete]%Daemon").select()
-#             for i in old_deamons:
+#             old_daemons = public.M('crontab').where("name Like ?", "[Do not delete]%Daemon").select()
+#             for i in old_daemons:
 #                 try:
 #                     cron_name = i.get("name")
 #                     s_name = cron_name.replace("[Do not delete] ", "").replace(" Daemon", "")
@@ -1064,7 +1064,7 @@
 # def process_task_thread():
 #     '''
 #         @name 进程监控
-#         @auther hwliang
+#         @author hwliang
 #     '''
 #
 #

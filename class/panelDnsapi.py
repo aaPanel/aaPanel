@@ -1243,7 +1243,7 @@ class NameSiloDns(BaseDns):
                 domains.extend(temp_domains)
                 page += 1
             except Exception as e:
-                raise HintException(f"get domains errro {e}")
+                raise HintException(f"get domains error {e}")
         try:
             domains = sorted(domains, key=lambda x: x["domain"]["domain"])
         except:

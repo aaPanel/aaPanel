@@ -91,7 +91,7 @@ class userlogin:
                 import pyotp
                 secret_key = public.readFile(_key_file)
                 if not secret_key:
-                    return public.returnJson(False, "Did not find the key, please close Google verification on the command line and trun on again"),json_header
+                    return public.returnJson(False, "Did not find the key, please close Google verification on the command line and turn on again"),json_header
                 t = pyotp.TOTP(secret_key)
                 result = t.verify(post.vcode)
                 if not result:

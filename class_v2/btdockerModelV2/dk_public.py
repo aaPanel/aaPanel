@@ -198,7 +198,7 @@ def log_docker(generator, task_name):
 def docker_conf():
     """
     解析docker配置文件
-    KEY=VAULE
+    KEY=VALUE
     KEY1=VALUE1
     :return:
     """

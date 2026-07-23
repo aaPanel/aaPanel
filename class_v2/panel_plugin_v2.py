@@ -700,7 +700,7 @@ class panelPlugin:
         public.M('tasks').add('id,name,type,status,addtime,execstr',(None, mmsg + '['+get.sName+'-'+get.version+']','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
         cache.delete('install_task')
         public.writeFile('/tmp/panelTask.pl','True')
-        public.write_log_gettext('Installer','Successfully added intallation task [{}-{}]',(get.sName,get.version))
+        public.write_log_gettext('Installer','Successfully added installation task [{}-{}]',(get.sName,get.version))
         return public.return_msg_gettext(True, public.lang("Installation task added to queue"))
 
     #卸载插件
@@ -759,7 +759,7 @@ class panelPlugin:
                 get.sName = get.sName.split('-')[0]
             execstr = "cd /www/server/panel/install && /bin/bash install_soft.sh "+get.type+" uninstall " + get.sName.lower() + " "+ get.version.replace('.','')
             public.ExecShell(execstr)
-            public.write_log_gettext('Installer','Successfully unintalled [{}-{}]',(get.sName,get.version))
+            public.write_log_gettext('Installer','Successfully uninstalled [{}-{}]',(get.sName,get.version))
             return public.return_message(0, 0, public.lang("Uninstallation succeeded"))
 
     #从云端取列表
@@ -1978,7 +1978,7 @@ class panelPlugin:
                 id = None
             sql.table('tasks').add('id,name,type,status,addtime,execstr',(None, mmsg + '['+get.name+'-'+get.version+']','execshell','0',time.strftime('%Y-%m-%d %H:%M:%S'),execstr))
             public.writeFile(isTask,'True')
-            public.write_log_gettext('Installer','Successfully added intallation task [{}-{}]',(get.name,get.version))
+            public.write_log_gettext('Installer','Successfully added installation task [{}-{}]',(get.name,get.version))
             return public.return_message(0, 0, public.lang("Installation task added to queue"))
 
 

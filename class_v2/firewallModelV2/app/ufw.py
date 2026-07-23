@@ -495,12 +495,12 @@ class Ufw(Base):
                     return self._result(True, public.lang("The output rule is set successfully"))
                 if "setlocale" in stderr:
                     return self._result(True, public.lang("The rule is set successfully"))
-                return self._result(False, public.lang("outpuThe rule setup failed:{}", stderr))
+                return self._result(False, public.lang("The rule setup failed:{}", stderr))
             return self._result(True, public.lang("The output rule is set successfully"))
         except Exception as e:
             if "setlocale" in str(e):
                 return self._result(True, public.lang("The output rule is set successfully"))
-            return self._result(False, public.lang("outpuThe rule setup failed:{}", e))
+            return self._result(False, public.lang("The rule setup failed:{}", e))
 
     # 2024/3/19 下午 5:01 解析防火墙规则信息，返回字典格式数据，用于添加或删除防火墙规则
     def _load_info(self, line, fire_type):

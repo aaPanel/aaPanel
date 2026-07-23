@@ -399,7 +399,7 @@ class ftplog:
     def del_crontab(self):
         """
         @name 删除项目定时清理任务
-        @auther hezhihong<2022-10-31>
+        @author hezhihong<2022-10-31>
         @return 
         """
         cron_name = '[Do not delete] FTP audit log cutting task'

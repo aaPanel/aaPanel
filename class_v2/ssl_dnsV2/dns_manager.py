@@ -858,7 +858,7 @@ class DnsManager:
         zone_file = os.path.join(ZONES_DIR, f"{domain}.zone")
         try:
             if domain not in self.parser.get_zones():
-                raise HintException("Domian Not Found!")
+                raise HintException("Domain Not Found!")
             if not self._modify_record(domain, action, **kwargs):
                 return
             self.reload_service()

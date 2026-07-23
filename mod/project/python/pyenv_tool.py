@@ -81,7 +81,7 @@ def _run_command_with_call_log(
 
         # 检查返回码
         if process.returncode != 0:
-            error_msg = "excute error: {}".format(process.returncode)
+            error_msg = "execute error: {}".format(process.returncode)
             call_log(error_msg)
             return error_msg
 

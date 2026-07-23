@@ -7427,7 +7427,7 @@ def write_push_log(module, msg, res):
     except:
         pass
 
-    log = 'Title：[{}],method to informe:[{}]，recipient:{}'.format(xsssec(msg), module, user)
+    log = 'Title：[{}],method to inform:[{}]，recipient:{}'.format(xsssec(msg), module, user)
     WriteLog('Alarm notification', log)
     return True
 
@@ -7887,7 +7887,7 @@ def is_mongodb_process_exists():
 def check_auth_ip():
     """
     @name 检测api和www的服务器ip是否一致
-    @auther cjxin 2022-09-13
+    @author cjxin 2022-09-13
     @return bool
     """
     import http_requests

@@ -1542,7 +1542,7 @@ class main():
             @author wzz <2024/5/9 下午6:33>
             @param "data":{"参数名":""} <数据类型> 参数描述
             @return dict{"sbt 2
-            tatus":True/False,"msg":"提示信息"}
+            status":True/False,"msg":"提示信息"}
         '''
         get.app_name = get.get("app_name/s", "")
         if get.app_name == "":

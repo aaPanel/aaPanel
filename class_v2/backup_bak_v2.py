@@ -300,7 +300,7 @@ class backup_bak:
             self.set_site_data(ret)
             return public.returnMsg(False, public.lang("The database does not exist"))
         id=int(id)
-        # 添加到chekc_database 中
+        # 添加到check_database 中
         ret={}
         ret['id']=id
         ret['name']=public.M('databases').where("id=?", (id,)).getField('name')
@@ -327,7 +327,7 @@ class backup_bak:
             ret['chekc']=False
             self.set_path_data(ret)
             return public.returnMsg(False, public.lang("Directory does not exist"))
-        # 添加到chekc_database 中
+        # 添加到check_database 中
         ret={}
         ret['id']=id
         ret['name']=path
@@ -352,7 +352,7 @@ class backup_bak:
             self.set_site_data(ret)
             return public.returnMsg(False, public.lang("Site does not exist"))
         id=int(id)
-        # 添加到chekc_database 中
+        # 添加到check_database 中
         ret={}
         ret['id']=id
         ret['name']=public.M('sites').where("id=?", (id,)).getField('name')

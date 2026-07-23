@@ -54,7 +54,7 @@ class wordpress_scan:
     def check_dir(self):
         '''
             @name 检查需要的目录是否存在
-            @auther lkq
+            @author lkq
             @time 2024-10-08
             @msg 检查需要的目录是否存在
         '''
@@ -99,7 +99,7 @@ class wordpress_scan:
             @name 获取插件信息
             @param plugin_file 插件文件
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-08
         '''
         # 读取文件内容
@@ -188,7 +188,7 @@ class wordpress_scan:
             @name 获取WordPress插件信息
             @param path 插件路径
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-08
         '''
         plugin_path = path + "/wp-content/plugins"
@@ -235,7 +235,7 @@ class wordpress_scan:
             @name 获取WordPress主题信息
             @param path 主题路径
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-08
         '''
         themes_path = path + "/wp-content/themes"
@@ -264,7 +264,7 @@ class wordpress_scan:
         '''
             @name 获取插件更新
             @param path WordPress路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 获取插件更新
         '''
@@ -285,7 +285,7 @@ class wordpress_scan:
         '''
             @name 获取主题更新
             @param path WordPress路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 获取主题更新
         '''
@@ -306,7 +306,7 @@ class wordpress_scan:
         '''
             @name 获取WordPress更新
             @param path WordPress路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 获取WordPress更新
         '''
@@ -376,7 +376,7 @@ class wordpress_scan:
             @name 扫描WordPress
             @param path WordPress路径
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 通过扫描WordPress的版本、插件、主题来判断是否存在漏洞
         '''
@@ -538,7 +538,7 @@ class wordpress_scan:
             @name 增加忽略漏洞
             @param slug 插件slug
             @param path 插件路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 增加忽略漏洞
         '''
@@ -591,7 +591,7 @@ class wordpress_scan:
         '''
             @name 获取忽略的漏洞
             @param path 插件路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 获取忽略的漏洞
         '''
@@ -674,7 +674,7 @@ class wordpress_scan:
             @name 通过ZIP文件获取插件信息
             @param plugin_file 插件文件
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-08
         '''
         file_data = file_data.replace('\r', '\n')
@@ -710,7 +710,7 @@ class wordpress_scan:
             @param path WordPress路径
             @param plugin_info 插件信息
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-10
         '''
         self.check_dir()
@@ -786,7 +786,7 @@ class wordpress_scan:
             @name 检查单个插件是否被修改过、或者新增了文件
             @param path WordPress路径
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-10
         '''
         plugin_file_path = path + "/wp-content/plugins/" + slug
@@ -857,7 +857,7 @@ class wordpress_scan:
         '''
             @name 停止扫描
             @param path WordPress路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 停止扫描
         '''
@@ -889,7 +889,7 @@ class wordpress_scan:
         '''
             @name 获取扫描状态
             @param path WordPress路径
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 获取扫描状态
         '''

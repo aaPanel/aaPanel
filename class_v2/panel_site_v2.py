@@ -1282,7 +1282,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             result = self.apacheAdd()
             result = self.openlitespeed_add_site(get)
         if not result:
-            return_message = public.return_msg_gettext(False, 'Failed to add, write configuraton ERROR!')
+            return_message = public.return_msg_gettext(False, 'Failed to add, write configuration ERROR!')
             del return_message['status']
             return public.return_message(-1, 0, return_message['msg'])
 
@@ -1728,7 +1728,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
 
                 # 检查处理结果
                 if not result:
-                    raise ValueError('Failed to add, write configuraton ERROR!')
+                    raise ValueError('Failed to add, write configuration ERROR!')
 
                 ps = public.xssencode2(get.ps)
 
@@ -3592,7 +3592,7 @@ listener SSL443 {{
     def SetSSLConf(self, get):
         """
         @name 兼容批量设置
-        @auther hezhihong
+        @author hezhihong
         """
         siteName = get.siteName
         if not 'first_domain' in get: get.first_domain = siteName
@@ -4163,7 +4163,7 @@ listener SSL443 {{
         public.write_log_gettext('Site manager', 'Site [{}] turned off SSL successfully!', (siteName,))
         if hasattr(get, "reload") and int(get.reload) == 1:
             public.serviceReload()
-        # ================== domian ssl v2 part =========================
+        # ================== domain ssl v2 part =========================
         try:
             from ssl_domainModelV2.model import DnsDomainSSL
             for ssl in DnsDomainSSL.objects.all():
@@ -4246,7 +4246,7 @@ listener SSL443 {{
         email = public.M('users').where('id=?', (1,)).getField('email')
         if email == '287962566@qq.com': email = ''
 
-        # ================== domian ssl v2 part =========================
+        # ================== domain ssl v2 part =========================
         from ssl_domainModelV2.service import CertHandler
         from ssl_domainModelV2.model import DnsDomainSSL
         ssl = DnsDomainSSL.objects.filter(hash=CertHandler.get_hash(csr)).first()
@@ -5421,7 +5421,7 @@ server
             public.writeFile(file, conf)
 
         public.serviceReload()
-        public.write_log_gettext('Site manager', 'Defualt document of site [{}] is [{}]', (Name, Index_L))
+        public.write_log_gettext('Site manager', 'Default document of site [{}] is [{}]', (Name, Index_L))
         return public.return_message(0, 0, public.lang("Setup successfully!"))
 
     # 修改物理路径
@@ -13970,7 +13970,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         res['referenced_redirect'] = ''
         if "#referenced redirect rule" in content:
             res['referenced_redirect']= f"""
-    #referenced redirect rule, if comented, the configured redirect rule will be invalid
+    #referenced redirect rule, if commented, the configured redirect rule will be invalid
     include /www/server/panel/vhost/nginx/redirect/{site_name}/*.conf;
 """
 

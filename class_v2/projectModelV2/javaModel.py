@@ -4219,7 +4219,7 @@ make
             #             return public.returnMsg(False, '当前JDK不可用')
             #         # 验证JDK是否存在
             #         ret2 = self.replace_jdk_version(get)
-            #         falg = True
+            #         flag = True
             #         if not ret2['status']:
             #             # 恢复到之前的JDK
             #             get.jdk_path = ret['jdk_path']
@@ -5032,7 +5032,7 @@ echo $! > {pid_file}
     def del_crontab(self, name):
         """
         @name 删除项目日志切割任务
-        @auther hezhihong<2022-10-31>
+        @author hezhihong<2022-10-31>
         @return
         """
         cron_name = f'[Do not delete] Java project [{name}] log rotation'

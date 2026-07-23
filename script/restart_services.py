@@ -751,7 +751,7 @@ class RestartServices:
             running_state = obj.is_running
             if not running_state:
                 if int(manual_info.get(obj.nick_name, 0)) == 1:
-                    # service closed maually, skip
+                    # service closed manually, skip
                     continue
                 # if obj.nick_name != "panel":
                 #     write_logs(f"Service [ {obj.nick_name} ] is Not Running, Try to start it...")

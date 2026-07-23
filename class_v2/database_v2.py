@@ -1454,7 +1454,7 @@ SetLink
                     backup_ps += "- Merge and Export"
                     table_shell = "'" + "' '".join(table_list) + "'"
                 elif len(ignore_list) != 0:
-                    backup_ps += "- Exculde and Export"
+                    backup_ps += "- Exclude and Export"
                     table_shell = " ".join([f"--ignore-table={db_name}.{table}" for table in ignore_list])
                 shell += " {table_shell} > '{backup_path}' ".format(table_shell=table_shell, backup_path=export_dir)
 
@@ -1508,7 +1508,7 @@ SetLink
 
             db_backup_size = public.ExecShell("du {}".format(db_backup_dir))[0].split("\t")
 
-            public.ExecShell("echo '|-falg info: {}' >> /tmp/backup_sql_{}.log".format(db_backup_size[0], db_id))
+            public.ExecShell("echo '|-flag info: {}' >> /tmp/backup_sql_{}.log".format(db_backup_size[0], db_id))
             public.ExecShell("echo '|-Start compressing SQL file: {} ' >> /tmp/backup_sql_{}.log".format(backup_path, db_id))
 
             if zip_password:
@@ -1558,7 +1558,7 @@ SetLink
         log_path = "/tmp/backup_sql_{}.log".format(db_id)
         if os.path.exists(log_path):
             log_data = public.ReadFile(log_path)
-            if not re.search(r"Database Bakcup (successful|error)", log_data):
+            if not re.search(r"Database Backup (successful|error)", log_data):
                 match = re.search(r'\|-Start exporting SQL file: ([^ ]+)', log_data)
                 if match:
                     result = match.group(0)
@@ -1595,7 +1595,7 @@ SetLink
                 result = path_match.group(0)
                 backup_path = result.split(":")[-1].strip()
 
-                get_path_size = public.ExecShell("grep 'falg info' /tmp/backup_sql_{}.log |grep -oE '[0-9]+'".format(db_id))
+                get_path_size = public.ExecShell("grep 'flag info' /tmp/backup_sql_{}.log |grep -oE '[0-9]+'".format(db_id))
                 path_size = get_path_size[0].replace("\n", "")
             elif export_match:
                 run_type = "export"
@@ -1852,7 +1852,7 @@ SetLink
             db_user = conn_config["db_user"]
             db_password = public.shell_quote(str(conn_config["db_password"]))
         else:
-            return public.return_message(-1, 0, "unknow databse type!")
+            return public.return_message(-1, 0, "unknown database type!")
         db_charset = public.get_database_character(db_name)
         shell = "'{mysql_bin}' --force --default-character-set='{db_charset}' --host='{db_host}' --port={db_port} --user='{db_user}' --password='{password}' '{db_name}'".format(
             mysql_bin=self._MYSQL_BIN,
@@ -3223,7 +3223,7 @@ SetLink
             conn_config["db_name"] = None
             conn_config["db_port"] = int(conn_config["db_port"])
         else:
-            return False, "{} unknow database type".format(db_find["name"])
+            return False, "{} unknown database type".format(db_find["name"])
         return True, conn_config
 
 

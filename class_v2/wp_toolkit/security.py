@@ -177,7 +177,7 @@ class wp_security:
         }))
         if not result['status']:
             return public.return_message(-1, 0, public.lang("Failed to close firewall"))
-        return public.return_message(0, 0, public.lang("Successfully closeed firewall"))
+        return public.return_message(0, 0, public.lang("Successfully closed firewall"))
         
     # 获取防火墙防护配置
     def get_firewall_info(self, get):

@@ -136,7 +136,7 @@ class RestoreManager(SiteModule, DatabaseModule, FtpModule, SSLModel, CrontabMod
                     try:  # 补全关系
                         self.fix_wp_onekey(timestamp)
                     except Exception as e:
-                        public.print_log("fix forign key error: {}".format(str(e)))
+                        public.print_log("fix foreign key error: {}".format(str(e)))
 
             # ============================= ssl ======================================
             try:

@@ -614,7 +614,7 @@ class ServicesTask(BaseTask):
         if self.restart is None:
             msg.msg = "{}service has been discontinued".format(service_name)
         elif self.restart is True:
-            msg.msg = "{}ervice restarted successfully".format(service_name)
+            msg.msg = "{}service restarted successfully".format(service_name)
         else:
             msg.msg = "{}service restart failed".format(service_name)
         return msg

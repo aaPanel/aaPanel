@@ -850,7 +850,7 @@ create index if not exists `deferredMails_postfixMessageId_logTime` on `deferred
 -- 邮件打开记录
 create table if not exists `opened` (
 	`id` integer primary key autoincrement,
-    `campaign_id` iteger not null default 0,
+    `campaign_id` integer not null default 0,
     `log_time` integer not null default (strftime('%s')),
     `recipient` text not null default '',
     `postfix_message_id` text not null default '',
@@ -867,7 +867,7 @@ create index if not exists `opened_campaignId_logTime` on `opened` (`campaign_id
 -- 邮件点击记录
 create table if not exists `clicked` (
 	`id` integer primary key autoincrement,
-    `campaign_id` iteger not null default 0,
+    `campaign_id` integer not null default 0,
     `log_time` integer not null default (strftime('%s')),
     `recipient` text not null default '',
     `url` text not null default '',
@@ -1073,7 +1073,7 @@ def init_maillog_databases():
 
             logging.debug('cost time: {}ms'.format(int((time.time() - start_time_n) * 1000)))
         except Exception as e:
-            logging.debug('scan falied: {}'.format(str(e)))
+            logging.debug('scan failed: {}'.format(str(e)))
 
     logging.debug('cost time: {}ms'.format(int((time.time() - start_time) * 1000)))
 

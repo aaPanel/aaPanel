@@ -27,7 +27,7 @@ class Plugin:
             @name 实例化插件对像
             @author hwliang<2021-06-15>
             @param init_plugin_name<string> 插件名称
-            @return Plguin<object>
+            @return Plugin<object>
         '''
         if not init_plugin_name is False:
             if not init_plugin_name:

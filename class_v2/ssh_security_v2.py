@@ -609,7 +609,7 @@ class ssh_security:
     def get_msg_push_list(self, get):
         """
         @name 获取消息通道配置列表
-        @auther: cjxin
+        @author: cjxin
         @date: 2022-08-16
         @
         """
@@ -642,7 +642,7 @@ class ssh_security:
     def _get_msg_push_list(self, get):
         """
         @name 获取消息通道配置列表
-        @auther: cjxin
+        @author: cjxin
         @date: 2022-08-16
         @
         """
