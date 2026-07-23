@@ -407,7 +407,7 @@ def bt_cli():
     print("(03) %s           (10) %s" % (public.lang("Restart panel"),public.lang("Clear login limit")))
     print("(04) %s           (11) %s" % (public.lang("Reload panel"),public.lang("Cancel entrance limit")))
     print("(05) %s           (12) %s" % (public.lang("Change panel password"),public.lang("Cancel domain binding limit")))
-    print("(06) %s         (13) %s" % (public.lang("Change panel username"),public.lang("Cacel IP access limit")))
+    print("(06) %s         (13) %s" % (public.lang("Change panel username"),public.lang("Cancel IP access limit")))
     print("(07) %s      (14) %s" % (public.lang("Forcibly change MySQL root password"),public.lang("View panel default info")))
     print("(00) %s                   (15) %s" % (public.lang("Task cancelled!"),public.lang("Clear system rubbish")))
     print(raw_tip)

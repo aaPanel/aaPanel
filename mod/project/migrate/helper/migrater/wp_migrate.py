@@ -109,7 +109,7 @@ class WpMigrate(MigrateCore):
 
                 backup_files.extend([tar_file, sql_file])
             except Exception as e:
-                self.logger.error(f"Failed to backup {domain or 'unknow'}: {e}")
+                self.logger.error(f"Failed to backup {domain or 'unknown'}: {e}")
                 continue
 
         return backup_files

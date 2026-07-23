@@ -2947,7 +2947,7 @@ class main(safeBase):
     def export_rules(self, get):
         get.rule_name = get.get("rule_name", None)
         if get.rule_name is None:
-            return public.return_message(-1, 0, 'parmas rule_name not found')
+            return public.return_message(-1, 0, 'params rule_name not found')
 
         if get.rule_name == "port_rule":
             filename = self._rule_path + "port.json"
@@ -2962,7 +2962,7 @@ class main(safeBase):
             filename = self._rule_path + "country.json"
             data_list = public.M('firewall_country').order("id desc").select()
         else:
-            return public.return_message(-1, 0, 'unknow type: {}'.format(get.rule_name))
+            return public.return_message(-1, 0, 'unknown type: {}'.format(get.rule_name))
 
         write_string = ""
         if data_list:

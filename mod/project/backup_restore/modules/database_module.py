@@ -1033,7 +1033,7 @@ class DatabaseModule(DataManager):
                         'd_id': int(d_id),
                     })
             except Exception as e:
-                public.print_log("fix forign key error: {}".format(str(e)))
+                public.print_log("fix foreign key error: {}".format(str(e)))
                 continue
 
 

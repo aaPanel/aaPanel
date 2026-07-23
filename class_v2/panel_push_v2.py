@@ -607,7 +607,7 @@ class panelPush:
     def __get_login_panel_info(self):
         """
         @name 获取面板登录列表
-        @auther cjxin
+        @author cjxin
         @date 2022-09-29
         """
         import config
@@ -621,7 +621,7 @@ class panelPush:
     def __get_ssh_login_info(self):
         """
         @name 获取SSH登录列表
-        @auther cjxin
+        @author cjxin
         @date 2022-09-29
         """
         import ssh_security

@@ -2750,7 +2750,7 @@ class main(JvavWebConfig, Proxy, Redirect, GitMager):
     def del_crontab(project_name: str):
         """
         @name 删除项目日志切割任务
-        @auther hezhihong<2022-10-31>
+        @author hezhihong<2022-10-31>
         @return
         """
         cron_name = '[勿删]Java项目[{}]运行日志切割'.format(project_name)

@@ -848,7 +848,7 @@ class main(sslBase):
     def SetBatchCertToSite(self, get):
         """
         @name 批量部署证书
-        @auther hezhihong
+        @author hezhihong
         """
 
         if not hasattr(get, 'BatchInfo') or not get.BatchInfo:

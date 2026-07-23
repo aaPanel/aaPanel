@@ -1241,7 +1241,7 @@ class DbConnection:
     # 执行vacuum整理数据库空间
     def vacuum(self):
         '''
-            @name 执行vaccum整理数据库空间
+            @name 执行vacuum整理数据库空间
             @author Zhj<2022-12-22>
             @return int
         '''

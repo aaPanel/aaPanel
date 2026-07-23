@@ -485,7 +485,7 @@ class OverViewBase:
             renew_fail = len(self._base_ssl("renew_fail")) or 0
             return [
                 {
-                    "desc": public.lang("Expirin Soon"),
+                    "desc": public.lang("Expiring Soon"),
                     "data": expirin_soon,
                     "color": COLORS["orange"] if expirin_soon > 0 else COLORS["gray"]
                 },

@@ -684,12 +684,12 @@ class DomainObject:
         """
         一键全量续签
         """
-        from .service import make_suer_renew_task
-        make_suer_renew_task()  # 确保任务存在
+        from .service import make_suer_renew_task as make_sure_renew_task
+        make_sure_renew_task()  # 确保任务存在
         echo = public.md5(public.md5("domain_ssl_renew_lets_ssl_bt"))
         task = public.S("crontab").where("echo=?", echo).find()
         if not task:
-            raise HintException("Cron Domian Renew task not found, please try again later!")
+            raise HintException("Cron Domain Renew task not found, please try again later!")
         execstr = f"{public.GetConfigValue("setup_path")}/cron/{echo}"
         public.ExecShell(f"chmod +x {execstr}")
         public.ExecShell(f"nohup {execstr} start >> {execstr}.log 2>&1 &")
@@ -808,9 +808,9 @@ class DomainObject:
                 public.writeFile(self.manual_apply, json.dumps(manual_apply))
             return public.success_v2(public.lang("Apply Successfully!"))
         try:
-            return public.fail_v2((str(vaild.get("msg", "Vaild failed! please try again"))))
+            return public.fail_v2((str(vaild.get("msg", "Valid failed! please try again"))))
         except:
-            return public.fail_v2("Vaild failed! please try again")
+            return public.fail_v2("Valid failed! please try again")
 
     def manual_apply_check(self, get):
         """
@@ -901,7 +901,7 @@ class DomainObject:
                 ).first()
                 if not provider:
                     return public.fail_v2(public.lang(
-                        f"Dns01 Verify Errot, DNS Provider Not Found! for {temp_root}"
+                        f"Dns01 Verify Error, DNS Provider Not Found! for {temp_root}"
                     ))
             dns_task = generate_sites_task({}, get.site_id)
             threading.Thread(target=provider.model_apply_cert,
@@ -1057,7 +1057,7 @@ class DomainObject:
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
             return public.fail_v2(public.lang("SSL Not Found!"))
-        # make_suer_renew_task()  # make suer corn task
+        # make_sure_renew_task()  # make sure cron task
         open_map = {0: 1, 1: 0}
         ssl_obj.auto_renew = open_map.get(ssl_obj.auto_renew, 1)
         ssl_obj.save()
@@ -1083,8 +1083,8 @@ class DomainObject:
 
         alarm = int(get.alarm)
         if alarm == 1:  # open
-            from .service import make_suer_alarm_task
-            make_suer_alarm_task()  # make suer alarm task
+            from .service import make_suer_alarm_task as make_sure_alarm_task
+            make_sure_alarm_task()  # make sure alarm task
             ssl_obj.alarm = alarm
             ssl_obj.save()
         else:  # close

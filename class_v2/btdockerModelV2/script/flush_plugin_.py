@@ -85,7 +85,7 @@ def flush_docker_project_info():
         @author wzz
         @return void
     '''
-    msg = "docker_projcet version information"
+    msg = "docker_project version information"
     try:
         # start_time = time.time()
         res = PluginLoader.get_plugin_list(1)

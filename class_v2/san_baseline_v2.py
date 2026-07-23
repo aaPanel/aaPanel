@@ -1087,7 +1087,7 @@ class san_baseline:
                     "harm": "低",
                     "file": '/www/server/nginx/conf/nginx.conf',
                     "Suggestions": "加固建议, 升级至最新版的Nginx 软件",
-                    "repair": "例如：Nignx1.17 或者Nginx1.16",
+                    "repair": "例如：Nginx1.17 或者Nginx1.16",
                 }
                 ret.append(Nginx_Get_version)
 

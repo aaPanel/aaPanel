@@ -372,7 +372,7 @@ class panelPHP:
 #                 if not os.path.exists(dst_path + '/index.php'):
 #                     return Resp("The AdMiner file is missing. Please try again after the [Fix] panel on the first page!")
 #
-#                 ikey = 'aer_php_version'
+#                 ikey = 'are_php_version'
 #                 self.php_version = cache.get(ikey)
 #                 if not self.php_version:
 #                     self.php_version = self.get_php_version(None)

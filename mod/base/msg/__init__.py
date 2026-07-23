@@ -36,7 +36,7 @@ def update_mod_push_msg():
     # sms 取消自动添加
     # if not sms_status:
     #     sc.config.append({
-    #         "id": sc.nwe_id(),
+    #         "id": sc.new_id(),
     #         "used": True,
     #         "sender_type": "sms",
     #         "data": {},

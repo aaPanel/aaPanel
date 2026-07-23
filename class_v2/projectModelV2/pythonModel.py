@@ -550,7 +550,7 @@ class main(projectBase):
 
         try:
             # 安装服务器依赖
-            call_log("\n|- Start Intall Requirement.\n")
+            call_log("\n|- Start Install Requirement.\n")
             py_env.init_site_server_pkg(call_log=call_log)
             py_env.use2project(values['pjname'])
             # 安装第三方依赖
@@ -559,7 +559,7 @@ class main(projectBase):
             call_log("\n|- Config file Generate Success.\n")
             initialize = values.get("initialize", '')
             if initialize:
-                call_log("\n|- Start excute initialize command.......\n")
+                call_log("\n|- Start execute initialize command.......\n")
                 if values.get("env_list", None) or values.get("env_file", None):
                     env_file = f"{self._env_path}/{values["pjname"]}.env"
                     initialize = f"source {env_file} \n{initialize}"
@@ -1844,7 +1844,7 @@ echo $! > {pid_file}'''.format(
         @return
         """
         if not hasattr(get, "name") or not hasattr(get, "data"):
-            return public.fail_v2(public.lang("Invalid Parmas"))
+            return public.fail_v2(public.lang("Invalid Params"))
         conf = self._get_project_conf(get.name.strip())
         if not conf:
             return public.fail_v2(public.lang("Project Not Found"))
@@ -3050,7 +3050,7 @@ echo $! > {pid_file}'''.format(
         public.M('sites').where('id=?', (project_id,)).save(
             'project_config', json.dumps(project_find['project_config'])
         )
-        public.WriteLog(self._log_name, 'Python Project: [{}]，Mulit Delete Domian:'.format(project_name, del_domains))
+        public.WriteLog(self._log_name, 'Python Project: [{}]，Multi Delete Domain:'.format(project_name, del_domains))
         self.set_config(project_name)
 
         if isinstance(not_del, dict):
@@ -3123,7 +3123,7 @@ echo $! > {pid_file}'''.format(
                 )
                 if not domain in project_find['project_config']['domains']:
                     project_find['project_config']['domains'].append(domain)
-                public.WriteLog(self._log_name, 'Add Domian "{}" to [{}]'.format(domain, project_name))
+                public.WriteLog(self._log_name, 'Add Domain "{}" to [{}]'.format(domain, project_name))
                 res_domains.append({"name": domain_arr[0], "status": True, "msg": 'success'})
                 if not check_cloud:
                     public.check_domain_cloud(domain_arr[0])
@@ -3135,12 +3135,12 @@ echo $! > {pid_file}'''.format(
                 }))
                 flag = True
             else:
-                public.WriteLog(self._log_name, 'Add Domian Failed，domain [{}] is exist'.format(domain))
+                public.WriteLog(self._log_name, 'Add Domain Failed，domain [{}] is exist'.format(domain))
                 res_domains.append(
                     {
                         "name": domain_arr[0],
                         "status": False,
-                        "msg": 'Add Domian Failed，domain [{}] is exist'.format(domain)
+                        "msg": 'Add Domain Failed，domain [{}] is exist'.format(domain)
                     }
                 )
         if flag:
@@ -3217,7 +3217,7 @@ echo $! > {pid_file}'''.format(
     def del_crontab(self, name):
         """
         @name 删除项目日志切割任务
-        @auther hezhihong<2022-10-31>
+        @author hezhihong<2022-10-31>
         @return
         """
         cron_name = self._split_cron_name_temp.format(name)

@@ -1765,7 +1765,7 @@ echo $! > {pid_file}'''.format(
     def del_crontab(self, name):
         """
         @name 删除项目日志切割任务
-        @auther hezhihong<2022-10-31>
+        @author hezhihong<2022-10-31>
         @return
         """
         cron_name = f'[Do not delete] GO project [{name}] run log cutting'

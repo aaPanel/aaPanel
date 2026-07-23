@@ -58,7 +58,7 @@ class wordpress_scan:
             @name 获取插件信息
             @param plugin_file 插件文件
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-08
         '''
         # 读取文件内容
@@ -146,7 +146,7 @@ class wordpress_scan:
             @name 获取WordPress插件信息
             @param path 插件路径
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-08
         '''
         plugin_path = path + "/wp-content/plugins"
@@ -243,7 +243,7 @@ class wordpress_scan:
             @name 扫描WordPress
             @param path WordPress路径
             @return dict
-            @auther lkq
+            @author lkq
             @time 2024-10-10
             @msg 通过扫描WordPress的版本、插件、主题来判断是否存在漏洞
         '''

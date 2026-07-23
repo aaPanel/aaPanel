@@ -504,7 +504,7 @@ class AppManage(App):
         @param file_path compose完整路径
         @param service_name 要修改env的services
         @new_env env环境 {'NEW_VAR': 'new_value', 'ANOTHER_VAR': 'another_value'}
-        @reutrn true false
+        @return true false
         """
         if len(new_env.keys()) == 0:
             return public.return_message(0, 0, "")

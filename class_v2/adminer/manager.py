@@ -209,7 +209,7 @@ class AdminerManager:
                 tmp_sha256 = hashlib.sha256(f.read()).hexdigest()
                 public.print_log(f"tmp_sha256= {tmp_sha256}")
             if ver_sha256 != tmp_sha256:
-                raise Exception("Downlaod File sha256 check failed, please try again!")
+                raise Exception("Download File sha256 check failed, please try again!")
 
             if not os.path.exists(dst):
                 os.makedirs(dst, 0o755, exist_ok=True)

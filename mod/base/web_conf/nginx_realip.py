@@ -16,7 +16,7 @@ class NginxRealIP:
             return "only nginx web server is supported"
         res = check_server_config()
         if res:
-            return "conifg error, please fix it first. ERROR: %s".format(res)
+            return "config error, please fix it first. ERROR: %s".format(res)
         self._set_ext_real_ip_file(site_name, status=True, ip_header=ip_header, allow_ip=allow_ip, recursive=recursive)
         res = check_server_config()
         if res:

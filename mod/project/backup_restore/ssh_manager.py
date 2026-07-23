@@ -1660,7 +1660,7 @@ def parse_arguments():
 
     parser.add_argument('-H', '--host', required=False, help='ip')
     parser.add_argument('-P', '--port', type=int, default=22, help='ssh port，default 22')
-    parser.add_argument('-u', '--username', default='root', help='ssh user，defualt root')
+    parser.add_argument('-u', '--username', default='root', help='ssh user，default root')
     parser.add_argument('-p', '--password', help='pwd, (or use key)')
     parser.add_argument('-k', '--key-file', help='sshkey')
     parser.add_argument('-b', '--backup-file', help='Local backup file path')
@@ -1671,7 +1671,7 @@ def parse_arguments():
     parser.add_argument(
         '--action', choices=['verify', 'install', 'upload', 'restore', 'migrate', 'all', 'status'],
         default='all',
-        help='verify=Verifying SSH Connections, install=intall panel, upload=upload, restore=restore, migrate=migrate, status=task status, all=all'
+        help='verify=Verifying SSH Connections, install=install panel, upload=upload, restore=restore, migrate=migrate, status=task status, all=all'
     )
     parser.add_argument('--task-name', default='Migration Tasks', help='task name')
 

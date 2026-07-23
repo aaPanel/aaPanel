@@ -578,7 +578,7 @@ class CloudStoraUpload:
 
     def cloud_download_file(self, clould_path, loacl_path, *args, **kwargs):
         try:
-            # print(clould_path, loacl_path)
+            # print(clould_path, local_path)
             if not self.obj:
                 return False
             if self.obj.get_list(clould_path)['list']:  # 调用目录下载
@@ -588,7 +588,7 @@ class CloudStoraUpload:
                 return public.returnMsg(False, '云存储下载文件失败')
             # import panelTask
             # task_obj = panelTask.bt_task()
-            # task_obj.create_task('下载文件', 1, url['msg'], loacl_path)
+            # task_obj.create_task('下载文件', 1, url['msg'], local_path)
             exec = 'wget --no-check-certificate -T 30 -t 5 -d -O {} {} '.format(loacl_path, url['msg'])
             public.ExecShell(exec)
             time.sleep(1)

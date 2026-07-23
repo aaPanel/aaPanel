@@ -4505,7 +4505,7 @@ cd %s
                 "path": "", 图片路径
                 "files": xx.png,aaa.jpg, 文件名称(不包含目录路径),如果files=*，则返回该目录下的所有图片
                 "width": 50, 宽
-                "heigth:50, 高
+                "height:50, 高
                 "return_type": "base64" // base64,file
             }
             @return base64编码的图片 or file

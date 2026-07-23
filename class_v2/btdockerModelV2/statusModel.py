@@ -104,14 +104,14 @@ class main(dockerBase):
                 mem['stats']['cache'] = 0
             self.__stats_tmp['usage'] = mem['usage'] - mem['stats']['cache']
             self.__stats_tmp['cache'] = mem['stats']['cache']
-            # data['mem_useage'] = round(mem['usage'] * 100 / data['limit'],2)
+            # data['mem_usage'] = round(mem['usage'] * 100 / data['limit'],2)
         except:
             # return public.get_error_info()
             self.__stats_tmp['limit'] = 0
             self.__stats_tmp['usage'] = 0
             self.__stats_tmp['cache'] = 0
             self.__stats_tmp['usage_total'] = 0
-            # data['mem_useage'] = 0
+            # data['mem_usage'] = 0
         if write:
             self.__stats_tmp['container_id'] = stats['id']
             self.write_mem(self.__stats_tmp)

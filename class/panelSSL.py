@@ -1044,7 +1044,7 @@ class panelSSL:
         """
         @name 获取网站域名对应的站点名
         @param cert_list 证书域名列表
-        @auther hezhihong
+        @author hezhihong
         return 证书域名对应的站点名字典，如证书域名未绑定则为空
         """
         all_site = []  # 所有站点名列表
@@ -1094,7 +1094,7 @@ class panelSSL:
     def SetBatchCertToSite(self, get):
         """
         @name 批量部署证书
-        @auther hezhihong
+        @author hezhihong
         """
         ssl_list = []
         if not hasattr(get, 'BatchInfo') or not get.BatchInfo:
@@ -1149,7 +1149,7 @@ class panelSSL:
     def SetCertToSite(self, get):
         """
         @name 兼容批量部署
-        @auther hezhihong
+        @author hezhihong
         """
 
         try:

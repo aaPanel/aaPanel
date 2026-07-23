@@ -3282,7 +3282,7 @@ fullchain.pem       Paste into certificate input box
 
                 site_name = site_info.get("name") if site_info else ""
                 if self._check_site(site_path, site_info, ssl):
-                    # try http verfication
+                    # try http verification
                     is_rep = False
                     try:
                         is_rep = self.close_httptohttps(site_name)
@@ -3314,7 +3314,7 @@ fullchain.pem       Paste into certificate input box
                         if is_rep:
                             self.rep_httptohttps(site_name)
 
-            # try dns verfication
+            # try dns verification
             provider = DnsDomainProvider.objects.find_one(id=ssl.provider_id)
             if not provider or ssl.provider_id == 0:
                 auth_to = ssl.auth_info.get("auth_to", "") if ssl.auth_info else ""
@@ -3497,7 +3497,7 @@ fullchain.pem       Paste into certificate input box
                         self._config["orders"][index]["error_msg"] = (
                             "A conflict in DNS resolution records has been detected. "
                             "Please verify the following domain names separately.")
-                    # maually add dns record, return order info
+                    # manually add dns record, return order info
                     return self._config["orders"][index]
             # dns api | http
             self.logger(public.lang("|-Verifying domain name.."))

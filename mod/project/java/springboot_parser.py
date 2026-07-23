@@ -613,7 +613,7 @@ class SpringConfigParser:
             形式1:   使用:分割
                 # Kafka
                 spring.kafka.bootstrap-servers = localhost:9092
-                # 该字段见 Kafka 安装包中的 consumer.proerties，可自行修改, 修改完毕后需要重启 Kafka
+                # 该字段见 Kafka 安装包中的 consumer.properties，可自行修改, 修改完毕后需要重启 Kafka
                 spring.kafka.consumer.group-id = test-consumer-group
                 spring.kafka.consumer.enable-auto-commit = true
                 spring.kafka.consumer.auto-commit-interval = 3000

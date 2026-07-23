@@ -558,7 +558,7 @@ class BackupManager(SiteModule, DatabaseModule, FtpModule, SSLModel):
                         "task_type": "backup",
                         "task_status": 1,
                         "data_type": backup_type['type'],
-                        "name": item.get("name", f"unknow {backup_type['display_name']}"),
+                        "name": item.get("name", f"unknown {backup_type['display_name']}"),
                         "data_backup_status": item.get("status", 0),
                         "progress": backup_type['progress'],
                         "msg": item.get("msg"),

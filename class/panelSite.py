@@ -645,7 +645,7 @@ set $bt_safe_open "{}/:/tmp/";'''.format(self.sitePath)
         result = self.openlitespeed_add_site(get)
 
         # 检查处理结果
-        if not result: return public.return_msg_gettext(False, public.lang("Failed to add, write configuraton ERROR!"))
+        if not result: return public.return_msg_gettext(False, public.lang("Failed to add, write configuration ERROR!"))
 
         ps = public.xssencode2(get.ps)
         # 添加放行端口
@@ -1911,7 +1911,7 @@ listener SSL443 {
     def SetSSLConf(self, get):
         """
         @name 兼容批量设置
-        @auther hezhihong
+        @author hezhihong
         """
         siteName = get.siteName
         if not 'first_domain' in get: get.first_domain = siteName
@@ -3294,7 +3294,7 @@ server
             public.writeFile(file, conf)
 
         public.serviceReload()
-        public.write_log_gettext('Site manager', 'Defualt document of site [{}] is [{}]', (Name, Index_L))
+        public.write_log_gettext('Site manager', 'Default document of site [{}] is [{}]', (Name, Index_L))
         return public.return_msg_gettext(True, public.lang("Setup successfully!"))
 
     # 修改物理路径

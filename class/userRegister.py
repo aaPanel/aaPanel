@@ -33,7 +33,7 @@ class userRegister:
             # 检测 email
             emailformat = re.compile(r'[a-zA-Z0-9.-_+%]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+')
             if not emailformat.search(post.email):
-                return public.return_msg_gettext(False, public.lang("Please enter your vaild email"))
+                return public.return_msg_gettext(False, public.lang("Please enter your valid email"))
 
             post.email = self.en_code_rsa(post.email)
             post.password = self.en_code_rsa(post.password)

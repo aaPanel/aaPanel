@@ -649,7 +649,7 @@ class QuerySet(Generic[M]):
         if not args:
             return self
         field_set = set(args)
-        # make suer pk
+        # make sure pk
         pk = self._model_class.__primary_key__
         if pk not in field_set:
             field_set.add(pk)
