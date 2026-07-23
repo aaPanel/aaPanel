@@ -1006,7 +1006,7 @@ def auto_scan_abnormal_mail():
 # 每6小时aa默认ssl检查
 def domain_ssl_service():
     # check 6h, inside
-    task_ExecShell("make_suer_ssl_task")
+    task_ExecShell("make_sure_ssl_task")
 
 
 # 每隔20分钟更新一次网站报表数据

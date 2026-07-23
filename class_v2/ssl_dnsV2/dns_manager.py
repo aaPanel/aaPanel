@@ -324,7 +324,7 @@ class DnsManager:
         random.shuffle(shuffled_servers)
         return shuffled_servers
 
-    def makesuer_port(self) -> None:
+    def make_sure_port(self) -> None:
         try:
             if not public.S("firewall_new").where(
                     "ports = ? AND protocol = ?", ("53", "tcp/udp")
@@ -967,7 +967,7 @@ class DnsManager:
 
         if status != "stop":
             status = "restart"
-            self.makesuer_port()
+            self.make_sure_port()
             if service_name == "pdns":  # bind 互斥
                 stop_name = self.config.bind_paths['service_name']
             else:  # pdns 互斥

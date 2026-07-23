@@ -1920,10 +1920,10 @@
 #     while 1:
 #         try:
 #             # check 6h, inside
-#             from ssl_domainModelV2.service import make_suer_ssl_task
-#             make_suer_ssl_task()
+#             from ssl_domainModelV2.service import make_sure_ssl_task
+#             make_sure_ssl_task()
 #         except Exception as e:
-#             public.print_log("domain_ssl_service make_suer_ssl_task error , %s" % e)
+#             public.print_log("domain_ssl_service make_sure_ssl_task error , %s" % e)
 #         time.sleep(3600)
 #         # 1h
 #         try:

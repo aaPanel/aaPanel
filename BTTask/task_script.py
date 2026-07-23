@@ -77,9 +77,9 @@ def auto_dream():
 
 # ssl服务
 @task()
-def make_suer_ssl_task():
-    from ssl_domainModelV2.service import make_suer_ssl_task
-    make_suer_ssl_task()
+def make_sure_ssl_task():
+    from ssl_domainModelV2.service import make_sure_ssl_task
+    make_sure_ssl_task()
 
 
 # push msg 服务

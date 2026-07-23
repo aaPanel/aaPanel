@@ -684,8 +684,8 @@ class DomainObject:
         """
         一键全量续签
         """
-        from .service import make_suer_renew_task
-        make_suer_renew_task()  # 确保任务存在
+        from .service import make_sure_renew_task
+        make_sure_renew_task()  # 确保任务存在
         echo = public.md5(public.md5("domain_ssl_renew_lets_ssl_bt"))
         task = public.S("crontab").where("echo=?", echo).find()
         if not task:
@@ -1057,7 +1057,7 @@ class DomainObject:
         ssl_obj = DnsDomainSSL.objects.find_one(hash=get.hash)
         if not ssl_obj:
             return public.fail_v2(public.lang("SSL Not Found!"))
-        # make_suer_renew_task()  # make suer corn task
+        # make_sure_renew_task()  # make sure cron task
         open_map = {0: 1, 1: 0}
         ssl_obj.auto_renew = open_map.get(ssl_obj.auto_renew, 1)
         ssl_obj.save()
@@ -1083,8 +1083,8 @@ class DomainObject:
 
         alarm = int(get.alarm)
         if alarm == 1:  # open
-            from .service import make_suer_alarm_task
-            make_suer_alarm_task()  # make suer alarm task
+            from .service import make_sure_alarm_task
+            make_sure_alarm_task()  # make sure alarm task
             ssl_obj.alarm = alarm
             ssl_obj.save()
         else:  # close
