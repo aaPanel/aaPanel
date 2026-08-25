@@ -2,7 +2,7 @@
 	"Public": {
 		"Name": "aaPanel",
 		"All": "모두",
-		"SelectAll": "모두선택",
+		"SelectAll": "모두 선택",
 		"Punctuation": {
 			"Colon": ": ",
 			"Comma": ", ",
@@ -85,8 +85,8 @@
 		},
 		"Confirm": {
 			"Title": "팁",
-			"Enable": "허용",
-			"Disable": "비허용"
+			"Enable": "활성화",
+			"Disable": "비활성화"
 		},
 		"AlarmTask": {
 			"ConfigurationTask": "경고 작업 구성"
@@ -102,15 +102,15 @@
 			"Action": "작업",
 			"Operation": "작업",
 			"Page": {
-				"index_1": "집",
+				"index_1": "처음",
 				"index_2": "이전",
 				"index_3": "다음",
 				"index_4": "총 {0}"
 			}
 		},
 		"Status": {
-			"Enable": "허용",
-			"Disable": "비허용",
+			"Enable": "활성화",
+			"Disable": "비활성화",
 			"Running": "실행중",
 			"Stopped": "중지됨",
 			"NotConfigured": "구성되지 않음",
@@ -125,22 +125,22 @@
 			"Unpause": "재개",
 			"Restart": "다시 시작",
 			"Kill": "강제종료",
-			"Reload": "새로 고침",
-			"Wait": "잠시만 기다려주세요 ...",
-			"Abnormal": "없음"
+			"Reload": "새로고침",
+			"Wait": "잠시만 기다려 주세요...",
+			"Abnormal": "비정상"
 		},
 		"Search": {
 			"StartTime": "시작 시간",
 			"EndTime": "종료 시간",
 			"Today": "오늘",
 			"Yesterday": "어제",
-			"Last7": "지난 7 일",
-			"Last30": "지난 30 일",
+			"Last7": "지난 7일",
+			"Last30": "지난 30일",
 			"Custom": "커스텀",
 			"CustomTime": "사용자 정의 시간"
 		},
 		"Api": {
-			"Load": "{0}, 잠깐만 ..."
+			"Load": "{0} 중입니다, 잠시만 기다려 주세요..."
 		}
 	}
 }

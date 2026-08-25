@@ -86,7 +86,7 @@
 			"config_8": "페이지",
 			"logout_1": "로그아웃",
 			"logout_2": "로그아웃",
-			"logout_3": "로그아웃 하시겠습니까?",
+			"logout_3": "로그아웃하시겠습니까?",
 			"collapse": "사이드바 접기",
 			"expand": "사이드바 펼치기",
 			"menuSettings": "메뉴 설정",
@@ -104,13 +104,13 @@
 			"wap_12": "독점 규칙"
 		},
 		"Footer": {
-			"index_1": "Aapanel Linux 패널 © 2014- {0} Aapanel",
-			"index_2": "지원 제안은 Aapanel 포럼을 방문하세요",
+			"index_1": "aaPanel Linux 패널 © 2014- {0} aaPanel",
+			"index_2": "지원 및 제안 사항은 aaPanel 포럼을 방문해 주세요",
 			"index_3": "문서"
 		},
 		"MessageBox": {
 			"index_1": "현재 작업이 없습니다!",
-			"index_2": "팁 : 작업이 중단되면 [다시 시작 패널]을 클릭하여 대기열을 재설정합니다.",
+			"index_2": "팁: 작업이 멈췄다면 [패널 재시작]을 클릭해 대기열을 초기화하세요.",
 			"index_3": "작업 목록",
 			"index_4": "메시지 목록",
 			"index_5": "실행 로그",
