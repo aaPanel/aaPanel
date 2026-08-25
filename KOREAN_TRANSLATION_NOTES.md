@@ -15,17 +15,45 @@ aaPanel의 `license.txt` 2.2조에 따라 "개인적으로 사용할 경우 저�
 소스코드를 자유롭게 수정할 수 있다"고 명시되어 있으며, 이 작업은 그 범위 안에서 이루어졌습니다.
 최종적으로는 공개 배포가 아니라 원 저장소에 기여(PR)하는 것이 목표입니다.
 
-## 지금까지 고친 파일 (2026-08-25 기준)
+## 작업 완료 (2026-08-25 기준)
 
-| 파일 | 화면 | 변경 라인 수 |
-|---|---|---|
-| `login.json` | 로그인 화면 | 40줄 |
-| `layout.json` | 좌측 메뉴 / 하단 정보 | 8줄 |
-| `account.json` | 계정 관리 | 14줄 |
-| `home.json` | 대시보드 | 124줄 |
-| `site.json` | 웹사이트 관리 | 566줄 |
+`BTPanel/static/vite/lang/kor/` 아래의 **모든 언어팩 파일(총 28개)**을 검수하고 수정했습니다.
+(`utils.json`은 검수 결과 수정할 내용이 없어 원본 그대로 유지)
 
-**총 376개 문구 수정.**
+| 파일 | 화면 |
+|---|---|
+| `login.json` | 로그인 화면 |
+| `layout.json` | 좌측 메뉴 / 하단 정보 |
+| `account.json` | 계정 관리 |
+| `home.json` | 대시보드 |
+| `site.json` | 웹사이트 관리 |
+| `utils.json` | (공통, 수정 없음) |
+| `public.json` | 공통 UI 요소 |
+| `password.json` | 비밀번호 관련 |
+| `term.json` | 이용약관 |
+| `monitor.json` | 모니터링 |
+| `ftp.json` | FTP 관리 |
+| `plugin.json` | 플러그인 관리 |
+| `soft.json` | 소프트웨어 관리 |
+| `site-node.json` | Node.js 사이트 |
+| `component.json` | 컴포넌트 |
+| `ssl.json` | SSL 인증서 |
+| `crontab.json` | 예약 작업(크론) |
+| `security.json` | 보안 개요 / 네트워크 스캔 |
+| `database.json` | 데이터베이스 관리 |
+| `wp.json` | WordPress 관리 |
+| `mail.json` | 메일 서버 관리 |
+| `config.json` | 패널 설정 |
+| `docker.json` | Docker 관리 |
+| `file.json` | 파일 관리 |
+| `index.json` | 메인 화면 및 부가 기능(Node/Python/Go 프로젝트, AI 어시스턴트, 노드 관리 등) |
+| `logs.json` | 로그 화면 |
+| `waf.json` | WAF 방화벽 (가장 문제가 많았던 파일) |
+
+**총 900개 이상 문구 수정.** (모든 커밋은 `git log`로 확인 가능)
+
+참고로 `BTPanel/static/vite/lang/all/kor/` 아래에 있는 별도의 구형(레거시) 번역 시스템은
+현재 실제로 서비스되지 않는 것으로 확인되어 이번 작업 범위에서 제외했습니다.
 
 ## 어떤 문제들이 있었나요?
 
@@ -88,6 +116,8 @@ rewrite ^/blog/(.*)$ /$1 break;
 
 ## 다음 단계
 
-1. 이어서 `docker.json`, `config.json`, `mail.json`, `database.json` 등 남은 언어팩 파일 수정
-2. 전체 작업 완료 후 [aaPanel/aaPanel](https://github.com/aaPanel/aaPanel)에 Pull Request 제출
+1. ~~남은 언어팩 파일 수정~~ (완료, 2026-08-25)
+2. [aaPanel/aaPanel](https://github.com/aaPanel/aaPanel)에 Pull Request 제출
    (선례: [독일어 번역 PR #1](https://github.com/aaPanel/aaPanel/pull/1))
+   - GitHub 계정 준비 필요 (PR 작성자 본인 계정으로)
+   - aaPanel/aaPanel을 GitHub에서 fork → 이 저장소의 변경 내용을 fork에 반영 → PR 생성
