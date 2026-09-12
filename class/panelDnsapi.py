@@ -13,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 from typing import Optional
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 import requests
 
@@ -33,6 +33,7 @@ __all__ = [
     "GodaddyDns",
     "ClouDns",
     "SpaceShipDNS",
+    "ScalewayDns",
     "AmazonRoute53Dns",
 ]
 
@@ -2259,6 +2260,382 @@ class SpaceShipDNS(BaseDns):
             self.get_domains(verify=True)
         except Exception as e:
             raise HintException(f"Verify fail, please check your Api Key and Secret: {e}")
+        return True
+
+
+class ScalewayDns(BaseDns):
+    """Scaleway Domains and DNS API provider."""
+
+    dns_provider_name = "scaleway"
+    api_base_url = "https://api.scaleway.com/domain/v2beta1"
+
+    def __init__(self, api_user, api_key, *args, **kwargs):  # noqa
+        super().__init__()
+        # Scaleway REST calls use only the Secret Key/API token. api_user is
+        # retained because aaPanel's provider model always exposes two fields.
+        self.api_user = str(api_user or "").strip()
+        self.api_key = str(api_key or "").strip()
+        if not self.api_key:
+            raise HintException("Scaleway Secret Key / API token is required")
+        self.timeout = 30
+        self._zone_cache = None
+
+    def _get_auth_headers(self) -> dict:
+        return {
+            "X-Auth-Token": self.api_key,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+    def _make_request(self, method: str, endpoint: str, payload=None, params=None) -> dict:
+        url = "{}/{}".format(self.api_base_url.rstrip("/"), endpoint.lstrip("/"))
+        try:
+            response = requests.request(
+                method,
+                url,
+                headers=self._get_auth_headers(),
+                json=payload,
+                params=params,
+                timeout=self.timeout,
+            )
+        except requests.RequestException as err:
+            raise HintException("Scaleway DNS request failed: {}".format(err))
+
+        if response.status_code == 204 or not response.content:
+            data = {}
+        else:
+            try:
+                data = response.json()
+            except ValueError:
+                data = response.text[:2000]
+
+        if response.status_code < 200 or response.status_code >= 300:
+            if response.status_code in (401, 403):
+                raise HintException(
+                    "Scaleway authentication/authorization failed (HTTP {}); "
+                    "check the Secret Key and DomainsDNSFullAccess permission".format(
+                        response.status_code
+                    )
+                )
+            raise HintException(
+                "Scaleway DNS API error (HTTP {}): {}".format(response.status_code, data)
+            )
+        if not isinstance(data, dict):
+            raise HintException("Scaleway DNS API returned invalid JSON: {}".format(data))
+        return data
+
+    @staticmethod
+    def _zone_name(zone: dict) -> str:
+        labels = [zone.get("subdomain"), zone.get("domain")]
+        return ".".join(str(value).strip(".") for value in labels if value).lower()
+
+    def _get_zones(self, refresh: bool = False) -> list:
+        if self._zone_cache is not None and not refresh:
+            return self._zone_cache
+
+        zones = []
+        page = 1
+        page_size = 100
+        seen = 0
+        while True:
+            data = self._make_request(
+                "GET", "dns-zones", params={"page": page, "page_size": page_size}
+            )
+            batch = data.get("dns_zones") or []
+            seen += len(batch)
+            for item in batch:
+                if not isinstance(item, dict):
+                    continue
+                status = str(item.get("status") or "").lower()
+                name = self._zone_name(item)
+                if name and status in ("", "active"):
+                    zones.append(name)
+
+            total = int(data.get("total_count", seen))
+            if not batch or seen >= total or len(batch) < page_size:
+                break
+            page += 1
+
+        self._zone_cache = sorted(set(zones), key=lambda value: (-len(value), value))
+        return self._zone_cache
+
+    @staticmethod
+    def _normalize_fqdn(value: str) -> str:
+        value = str(value or "").strip().rstrip(".").lower()
+        if value.startswith("*."):
+            value = value[2:]
+        if not value:
+            raise HintException("Missing domain name")
+        return value
+
+    def _find_zone(self, fqdn: str) -> str:
+        fqdn = self._normalize_fqdn(fqdn)
+        for refresh in (False, True):
+            matches = [
+                zone for zone in self._get_zones(refresh=refresh)
+                if fqdn == zone or fqdn.endswith("." + zone)
+            ]
+            if matches:
+                return max(matches, key=len)
+        raise HintException("No active Scaleway DNS zone owns {}".format(fqdn))
+
+    @staticmethod
+    def _short_record_name(zone: str, record: str) -> str:
+        record = str(record or "").strip().rstrip(".")
+        if not record or record == "@" or record.lower() == zone.lower():
+            return ""
+        suffix = "." + zone.lower()
+        if record.lower().endswith(suffix):
+            return record[:-len(suffix)]
+        return record
+
+    @staticmethod
+    def _display_record_name(name: str) -> str:
+        return str(name or "").strip().rstrip(".") or "@"
+
+    @staticmethod
+    def _normalize_record_value(record_type: str, value) -> str:
+        value = str(value or "")
+        if str(record_type or "").upper() == "TXT":
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] == '"':
+                value = value[1:-1]
+        return value
+
+    @staticmethod
+    def _record_priority(item: dict) -> int:
+        if str(item.get("type") or "").upper() not in ("MX", "SRV"):
+            return -1
+        try:
+            return int(item.get("priority", -1))
+        except (TypeError, ValueError):
+            return -1
+
+    def _zone_records(self, zone: str, name=None, record_type=None) -> list:
+        records = []
+        page = 1
+        page_size = 100
+        seen = 0
+        while True:
+            params = {"page": page, "page_size": page_size}
+            if name is not None:
+                params["name"] = name
+            if record_type:
+                params["type"] = str(record_type).upper()
+            data = self._make_request(
+                "GET",
+                "dns-zones/{}/records".format(quote(zone, safe=".")),
+                params=params,
+            )
+            batch = data.get("records") or []
+            records.extend(item for item in batch if isinstance(item, dict))
+            seen += len(batch)
+            total = int(data.get("total_count", seen))
+            if not batch or seen >= total or len(batch) < page_size:
+                break
+            page += 1
+        return records
+
+    @staticmethod
+    def _challenge_fqdn(domain_name: str) -> str:
+        domain = ScalewayDns._normalize_fqdn(domain_name)
+        return "_acme-challenge." + domain
+
+    def _record_body(
+            self, zone: str, record: str, record_value: str,
+            record_type: str, ttl: int, extra: dict
+    ) -> dict:
+        try:
+            ttl_value = int(ttl)
+        except (TypeError, ValueError):
+            ttl_value = 600
+        if ttl_value <= 1:
+            ttl_value = 600
+
+        record_type = str(record_type or "").upper()
+        body = {
+            "name": self._short_record_name(zone, record),
+            "data": str(record_value),
+            "type": record_type,
+            "ttl": ttl_value,
+        }
+        priority = extra.get("priority", -1)
+        if record_type in ("MX", "SRV") and str(priority) not in ("", "-1", "None"):
+            body["priority"] = int(priority)
+        return body
+
+    def _patch_records(self, zone: str, changes: list) -> dict:
+        data = self._make_request(
+            "PATCH",
+            "dns-zones/{}/records".format(quote(zone, safe=".")),
+            payload={
+                "return_all_records": False,
+                # A typo must never create a Scaleway sub-zone.
+                "disallow_new_zone_creation": True,
+                "changes": changes,
+            },
+        )
+        if "records" not in data:
+            raise HintException("Scaleway DNS API did not confirm the record change")
+        return data
+
+    def _matching_records(
+            self, zone: str, name: str, record_type: str,
+            record_value=None, priority=None
+    ) -> list:
+        record_type = str(record_type or "").upper()
+        matches = self._zone_records(zone, name=name, record_type=record_type)
+        matches = [
+            item for item in matches
+            if str(item.get("name") or "") == name
+            and str(item.get("type") or "").upper() == record_type
+        ]
+        if record_value is not None:
+            wanted = self._normalize_record_value(record_type, record_value)
+            matches = [
+                item for item in matches
+                if self._normalize_record_value(record_type, item.get("data")) == wanted
+            ]
+        if priority is not None and str(priority) not in ("", "-1", "None"):
+            matches = [item for item in matches if self._record_priority(item) == int(priority)]
+        return matches
+
+    @staticmethod
+    def _delete_change(item: dict, name: str, record_type: str) -> dict:
+        if item.get("id"):
+            return {"delete": {"id": item["id"]}}
+        fields = {
+            "name": name,
+            "data": item.get("data", ""),
+            "type": str(record_type).upper(),
+        }
+        if item.get("ttl") is not None:
+            fields["ttl"] = item["ttl"]
+        return {"delete": {"id_fields": fields}}
+
+    # =============== acme ======================
+    def create_dns_record(self, domain_name: str, domain_dns_value: str) -> bool:
+        fqdn = self._challenge_fqdn(domain_name)
+        zone = self._find_zone(fqdn)
+        name = self._short_record_name(zone, fqdn)
+        value = str(domain_dns_value)
+
+        if self._matching_records(zone, name, "TXT", record_value=value):
+            return True
+
+        self._patch_records(zone, [{
+            "add": {"records": [{
+                "name": name,
+                "data": value,
+                "type": "TXT",
+                "ttl": 60,
+            }]}
+        }])
+        return True
+
+    def delete_dns_record(self, domain_name: str, domain_dns_value: str) -> bool:
+        fqdn = self._challenge_fqdn(domain_name)
+        zone = self._find_zone(fqdn)
+        name = self._short_record_name(zone, fqdn)
+        matches = self._matching_records(
+            zone, name, "TXT", record_value=str(domain_dns_value)
+        )
+        if not matches:
+            return True
+        self._patch_records(
+            zone, [self._delete_change(item, name, "TXT") for item in matches]
+        )
+        return True
+
+    # =============== domain management =====================
+    def get_domains(self, verify: bool = False) -> list:  # noqa
+        return self._get_zones(refresh=True)
+
+    def get_dns_record(self, domain_name: str) -> list:
+        zone = self._find_zone(domain_name)
+        result = []
+        for item in self._zone_records(zone):
+            record_type = str(item.get("type") or "").upper()
+            if not record_type or record_type == "SOA":
+                continue
+            result.append({
+                "record": self._display_record_name(item.get("name")),
+                "record_value": self._normalize_record_value(record_type, item.get("data")),
+                "record_type": record_type,
+                "ttl": int(item.get("ttl") or 1),
+                "priority": self._record_priority(item),
+                "proxy": -1,
+            })
+        return result
+
+    def create_org_record(
+            self, domain_name, record, record_value, record_type, ttl=1, **kwargs
+    ) -> dict:
+        try:
+            zone = self._find_zone(domain_name)
+            body = self._record_body(zone, record, record_value, record_type, ttl, kwargs)
+            data = self._patch_records(zone, [{"add": {"records": [body]}}])
+            return {"status": True, "msg": data}
+        except Exception as err:
+            return {"status": False, "msg": str(err)}
+
+    def remove_record(self, domain_name, record, record_type="TXT", **kwargs) -> dict:
+        try:
+            zone = self._find_zone(domain_name)
+            name = self._short_record_name(zone, record)
+            matches = self._matching_records(
+                zone,
+                name,
+                record_type,
+                record_value=kwargs.get("record_value"),
+                priority=kwargs.get("priority"),
+            )
+            if not matches:
+                return {"status": True, "msg": "DNS record is already absent"}
+            # The Domains UI selects one record. ACME cleanup, which may need to
+            # remove duplicate values, uses delete_dns_record above.
+            change = self._delete_change(matches[0], name, record_type)
+            data = self._patch_records(zone, [change])
+            return {"status": True, "msg": data}
+        except Exception as err:
+            return {"status": False, "msg": str(err)}
+
+    def update_record(self, domain_name, record: dict, new_record: dict, **kwargs) -> dict:
+        try:
+            zone = self._find_zone(domain_name)
+            old_name = self._short_record_name(zone, record.get("record", ""))
+            old_type = str(record.get("record_type") or "").upper()
+            matches = self._matching_records(
+                zone,
+                old_name,
+                old_type,
+                record_value=record.get("record_value"),
+                priority=record.get("priority"),
+            )
+            if not matches:
+                return {"status": False, "msg": "DNS record not found"}
+
+            old_item = matches[0]
+            new_body = self._record_body(
+                zone,
+                new_record.get("record", ""),
+                new_record.get("record_value", ""),
+                new_record.get("record_type", old_type),
+                new_record.get("ttl", 600),
+                new_record,
+            )
+            if old_item.get("id"):
+                selector = {"id": old_item["id"]}
+            else:
+                selector = self._delete_change(old_item, old_name, old_type)["delete"]
+            selector["records"] = [new_body]
+            data = self._patch_records(zone, [{"set": selector}])
+            return {"status": True, "msg": data}
+        except Exception as err:
+            return {"status": False, "msg": str(err)}
+
+    def verify(self) -> Optional[bool]:
+        self._get_zones(refresh=True)
         return True
 
 
