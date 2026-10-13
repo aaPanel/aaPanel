@@ -108,7 +108,9 @@
 			"iconAuto": "Auto-fetch favicon",
 			"iconAutoDesc": "Attempts to fetch favicon every 12 hours when enabled",
 			"homeAnnounce": "Home Bulletin",
-			"homeAnnounceDesc": "Show panel announcements and update notices on the home page"
+			"homeAnnounceDesc": "Show panel announcements and update notices on the home page",
+			"serverTimezoneLabel": "Server Timezone",
+			"serverTimezoneDesc": "Set the correct timezone to ensure accurate timestamps"
 		},
 		"Safe": {
 			"index_1": "Sicurezza",

@@ -17,9 +17,10 @@ from datetime import datetime
 
 import public
 from git_auth import decrypt_git_token, encrypt_git_token
+from git_github import resolve_github_credentials
 
 
-AUTH_TYPES = ("public", "ssh_key", "token")
+AUTH_TYPES = ("public", "ssh_key", "token", "github")
 GIT_CACHE_ROOT = "/www/server/panel/data/git_cache"
 DEFAULT_IGNORE_PATHS = ["/.env", "/storage", "/bootstrap/cache"]
 
@@ -117,7 +118,7 @@ def _normalize(data, stored=None, token_required=True):
             config["key_path"] = _validate_key(
                 data.get("key_path", stored.get("key_path", ""))
             )
-    else:
+    elif auth_type == "token":
         if transport != "https":
             raise ValueError("Token authentication requires an HTTPS repository URL")
         username = str(data.get("username", stored.get("username", ""))).strip()
@@ -132,6 +133,19 @@ def _normalize(data, stored=None, token_required=True):
         if token_required and not token:
             raise ValueError("Git personal access token is required")
         config.update({"username": username, "token": token})
+    elif auth_type == "github":
+        if transport != "https" or "github.com" not in repository.lower():
+            raise ValueError(
+                "GitHub account authentication requires a github.com HTTPS repository URL"
+            )
+        login, token = resolve_github_credentials()
+        # 复用 token 鉴权环境；标记来源为 github，_save_binding 据此存回 auth_type=github
+        config.update({
+            "_github_auth": True,
+            "auth_type": "token",
+            "username": login,
+            "token": token,
+        })
     return config
 
 
@@ -229,7 +243,7 @@ def _redact(text, config):
     return result
 
 
-def _run(args, config, cwd=None, timeout=180, check=True):
+def _run(args, config, cwd=None, timeout=180, check=True, progress_log=None):
     command = ["git"]
     # 网站目录 git 仓库可能属于 www 用户，面板进程执行 git 会触发 dubious ownership
     command.extend(["-c", "safe.directory=*"])
@@ -237,6 +251,10 @@ def _run(args, config, cwd=None, timeout=180, check=True):
         command.extend(["-c", "http.version=HTTP/1.1"])
     command.extend([str(item) for item in args])
     with _environment(config) as environment:
+        if progress_log:
+            return _run_with_progress(
+                command, args, config, environment, cwd, timeout, check, progress_log,
+            )
         try:
             process = subprocess.run(
                 command, cwd=cwd, env=environment,
@@ -256,6 +274,48 @@ def _run(args, config, cwd=None, timeout=180, check=True):
         error_text = stderr.strip() or stdout.strip() or "Git command failed"
         raise ValueError(error_text[-4000:])
     return process.returncode, stdout, stderr
+
+
+def _run_with_progress(command, args, config, environment, cwd, timeout, check, progress_log):
+    """边执行 git 边把 stderr（--progress 输出）追加到 progress_log，供 get_clone_progress 轮询。
+
+    clone 的 --progress 全在 stderr，故 stderr 直接重定向到日志文件（内核级追加、
+    无缓冲），stdout 仍捕获到内存；stderr 已落盘、不再返回（返回空串）。
+    """
+    log_fp = open(progress_log, "a", encoding="utf-8", errors="replace")
+    try:
+        process = subprocess.Popen(
+            command, cwd=cwd, env=environment,
+            stdout=subprocess.PIPE, stderr=log_fp, text=True,
+        )
+        log_fp.close()  # 子进程持有写端，父进程关闭自己的副本
+    except Exception:
+        try:
+            log_fp.close()
+        except Exception:
+            pass
+        raise
+    try:
+        stdout, _ = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.communicate()
+        raise ValueError(
+            "Git command timed out after {} seconds: {}".format(
+                timeout, " ".join(str(item) for item in args)[-2000:]
+            )
+        )
+    stdout = _redact(stdout or "", config)
+    if check and process.returncode != 0:
+        # stderr 已写入日志文件，从末尾取错误摘要（可能已含 --progress，截断到 4000）
+        error_text = ""
+        try:
+            error_text = str(public.readFile(progress_log) or "")
+        except Exception:
+            pass
+        error_text = (error_text or stdout or "Git command failed").strip()
+        raise ValueError(error_text[-4000:])
+    return process.returncode, stdout, ""
 
 
 def _remote_refs(config):
@@ -1225,21 +1285,26 @@ def deploy_git_code(self, get):
 
 
 def _save_binding(site_id, config):
+    is_github = bool(config.get("_github_auth"))
+    db_auth = "github" if is_github else _auth_db(config["auth_type"])
+    store_token = config["auth_type"] == "token" and not is_github
     public.M("git_sites_auth").add(
         "site_id,repo,branch,auth_type,key_path,username,"
         "oauth_access_token,oauth_token_type",
         (
             site_id, config["repo"], config.get("branch", ""),
-            _auth_db(config["auth_type"]), config.get("key_path", ""),
+            db_auth, config.get("key_path", ""),
             config.get("username", ""),
-            encrypt_git_token(config.get("token", ""))
-            if config["auth_type"] == "token" else "",
-            "aes" if config["auth_type"] == "token" else "",
+            encrypt_git_token(config.get("token", "")) if store_token else "",
+            "aes" if store_token else "",
         ),
     )
 
 
 def connect_repository(self, get):
+    """
+    连接仓库并首次部署  有网站 无.git
+    """
     site_id = 0
     binding_created = False
     try:
@@ -1430,7 +1495,7 @@ def get_site_git_conf(self, get):
             public.M("git_sites_auth").where(
                 "site_id=?", (site_id,)
             ).setField("branch", actual_branch)
-        # public.set_module_logs("Git-Tools", "get_site_git_conf")
+
         return public.return_message(0, 0, {
             "site_id": site_id, "deploy_id": site_git.get("id"),
             "repo": site_git.get("repo", ""),
@@ -1621,7 +1686,7 @@ def get_deploy_records(self, get):
         script_id = public.M("site_deploy_script").where(
             "site_id=? and is_webhook=1", (site_id,)
         ).getField("id") or ""
-        # public.set_module_logs("Git-Tools", "get_deploy_records")
+
         return public.return_message(0, 0, {
             "auto_deploy": bool(script_id),
             "webhook_enabled": bool(script_id),
@@ -1751,4 +1816,13 @@ def install(cls):
         manual_deploy_site, import_existing_repository,
     )
     for method in methods:
+        setattr(cls, method.__name__, method)
+    from git_github import (
+        get_github_oauth_url, get_github_account,
+        get_github_repos, disconnect_github, renew_github_token,
+    )
+    for method in (
+        get_github_oauth_url, get_github_account,
+        get_github_repos, disconnect_github, renew_github_token,
+    ):
         setattr(cls, method.__name__, method)

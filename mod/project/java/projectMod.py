@@ -22,7 +22,7 @@ if "/www/server/panel/class" not in sys.path:
 
 import public
 
-from projectModel.watchModel import use_project_watch, add_project_watch, del_project_watch
+from projectModelV2.watchModel import use_project_watch, add_project_watch, del_project_watch
 from mod.base.web_conf import normalize_domain, is_domain, Redirect, remove_sites_service_config, RealSSLManger
 from mod.base.web_conf import RealRedirect, RealLogMgr, Proxy, RealProxy
 from mod.base.process.server import RealServer

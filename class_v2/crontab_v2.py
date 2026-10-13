@@ -46,16 +46,16 @@ CLOUD_STORAGE = [
         ]
     },
     {
-        "name": "AWS S3",
+        "name": "S3 Storage",
         "type": "Cron job",
-        "ps": "Back up your data to AWS S3",
+        "ps": "Back up your data to S3 Storage",
         "status": 'false',
         "opt": "aws_s3",
         "module": "boto3",
         "script": "aws_s3",
         "help": "https://www.bt.cn/bbs/thread-50145-1-1.html",
-        "SecretId": "SecretId| please enter SecretId|AWS S3的SecretId",
-        "SecretKey": "SecretKey| please enter SecretKey|AWS S3 的SecretKey",
+        "SecretId": "SecretId| please enter SecretId|S3 Storage SecretId",
+        "SecretKey": "SecretKey| please enter SecretKey|S3 Storage SecretKey",
         "region": "region, like ap-chengdu",
         "Bucket": "bucket name",
         "check": ["/usr/lib/python2.6/site-packages/boto3/__init__.py",
@@ -93,6 +93,18 @@ CLOUD_STORAGE = [
         "domain": "",
         "check": ["/www/server/panel/plugin/gcloud_storage/gcloud_storage_main.py",
                   "/www/server/panel/script/backup_gcloud.py"]
+    },
+    {
+        "name": "Microsoft OneDrive",
+        "type": "Cron job",
+        "ps": "Back up your website or database to Microsoft OneDrive.",
+        "status": False,
+        "opt": "msonedrive",
+        "module": "os",
+        "script": "msonedrive",
+        "help": "http://forum.aapanel.com",
+        "check": ["/www/server/panel/plugin/msonedrive/msonedrive_main.py",
+                  "/www/server/panel/plugin/msonedrive/config.conf"]
     }
 ]
 
@@ -321,7 +333,7 @@ class crontab:
                 "ftp": "FTP Storage",
                 "bos": "Baidu Cloud BOS",
                 "obs": "Huawei Cloud OBS",
-                "aws_s3": "AWS S3",
+                "aws_s3": "S3 Storage",
                 "gdrive": "Google Drive",
                 "msonedrive": "Microsoft OneDrive",
                 "gcloud_storage": "Google Cloud Storage",
@@ -1650,6 +1662,11 @@ WantedBy=timers.target
             if shop_name == 'gcloud_storage':
                 bucket_cfg = os.path.join(filename, 'bucket_name.conf')
                 if all(has_config(target) for target in [cfg, bucket_cfg]):
+                    tmp['config'] = True
+            elif shop_name == 'msonedrive':
+                # 微软云盘配置成功 = 已授权(user.conf) 或 已设置备份路径(config.conf)
+                user_cfg = os.path.join(filename, 'user.conf')
+                if has_config(cfg) or has_config(user_cfg):
                     tmp['config'] = True
             elif lib.get('name', '') != 'FTP Storage':
                 if has_config(cfg):

@@ -236,6 +236,9 @@ def sql_pacth():
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%project_config%')).count():
         public.M('sites').execute("alter TABLE sites add project_config STRING DEFAULT '{}'",())
 
+    if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'sites','%rname%')).count():
+        public.M('sites').execute("alter TABLE sites add rname TEXT DEFAULT ''", ())
+
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'backup','%ps%')).count():
         public.M('backup').execute("alter TABLE backup add ps STRING DEFAULT 'No'",())
 
@@ -274,6 +277,48 @@ def sql_pacth():
         public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'notice_channel' TEXT DEFAULT ''",())
 
     sql = db.Sql()
+    # 发布前临时禁用磁盘统计表及索引初始化，后续上线时恢复
+    # # 创建磁盘分类统计结果、dirty 事件和文件缓存表，保证 v2 初始化路径也能准备运行环境
+    # csql = '''CREATE TABLE IF NOT EXISTS `disk_category_stats` (
+    # `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    # `category` TEXT NOT NULL,
+    # `unit_path` TEXT NOT NULL,
+    # `size` INTEGER DEFAULT 0,
+    # `initialized` INTEGER DEFAULT 0,
+    # `updated_at` INTEGER DEFAULT 0,
+    # UNIQUE (`category`, `unit_path`)
+    # )'''
+    # # 保存每个分类 unit 的当前大小和是否已建立 baseline
+    # sql.execute(csql, ())
+    # csql = '''CREATE TABLE IF NOT EXISTS `disk_category_dirty` (
+    # `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    # `category` TEXT NOT NULL,
+    # `unit_path` TEXT NOT NULL,
+    # `path` TEXT NOT NULL,
+    # `old_path` TEXT DEFAULT '',
+    # `event_type` TEXT DEFAULT '',
+    # `is_dir` INTEGER DEFAULT 0,
+    # `created_at` INTEGER DEFAULT 0,
+    # `updated_at` INTEGER DEFAULT 0,
+    # UNIQUE (`category`, `unit_path`, `path`)
+    # )'''
+    # # 保存 watcher 产生的待处理事件及 rename 相关字段
+    # sql.execute(csql, ())
+    # sql.execute('CREATE INDEX IF NOT EXISTS `disk_category_dirty_unit` ON `disk_category_dirty` (`category`, `unit_path`, `updated_at`)', ())
+    # csql = '''CREATE TABLE IF NOT EXISTS `disk_category_file_cache` (
+    # `path` TEXT PRIMARY KEY,
+    # `category` TEXT NOT NULL,
+    # `unit_path` TEXT NOT NULL,
+    # `size` INTEGER DEFAULT 0,
+    # `dev` INTEGER DEFAULT 0,
+    # `inode` INTEGER DEFAULT 0,
+    # `mtime_ns` INTEGER DEFAULT 0,
+    # `updated_at` INTEGER DEFAULT 0
+    # )'''
+    # # 保存文件级增量计算所需的稀疏元数据
+    # sql.execute(csql, ())
+    # sql.execute('CREATE INDEX IF NOT EXISTS `disk_category_file_unit` ON `disk_category_file_cache` (`category`, `unit_path`)', ())
+
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `site_types` (
 `id` INTEGER PRIMARY KEY AUTOINCREMENT,

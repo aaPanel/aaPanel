@@ -429,7 +429,7 @@
     "6ca3d3b27428d22e047e13a552f1600e": "Ajouter avec succès",
     "868903fa7bc939d9ff39df264589c0fd": "Supprimer avec succès",
     "c614196ffa00bf43880f547acfab993b": "Le panneau ne trouve pas le fichier de sauvegarde: {}",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Actuellement ne prend en charge la restauration des sauvegardes locales, Google Storage et AWS S3",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Actuellement ne prend en charge la restauration des sauvegardes locales, Google Storage et S3 Storage",
     "6f3446d8579a066540c5d7e68ff05f0b": "Restaurer le succès",
     "260ca9dd8a4577fc00b7bd5810298076": "succès",
     "1cbb155db1ca49d77f886c41b7850b48": "Téléchargez l'erreur!",

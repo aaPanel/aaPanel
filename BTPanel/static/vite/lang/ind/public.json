@@ -33,6 +33,7 @@
 			"Daily": "Sehari-hari"
 		},
 		"Btn": {
+			"Close": "Tutup",
 			"Add": "Menambahkan",
 			"Save": "Menyimpan",
 			"Config": "Konfigurasi",

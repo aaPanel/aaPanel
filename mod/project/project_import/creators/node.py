@@ -209,6 +209,17 @@ def prepare_node_runtime(config, progress=None):
             "yarn": project_model.get_yarn_bin,
         }[package_manager]
         if not getter(version):
+            #  系统/NVM 版本：缺失的包管理器无法经面板插件下载，回退 npm
+            if package_manager != "npm" and "-" in version:
+                _report_runtime(
+                    progress,
+                    0.75,
+                    "{} is not available for Node.js {} (system Node), fallback to npm".format(
+                        package_manager, version),
+                )
+                package_manager = "npm"
+                getter = project_model.get_npm_bin
+                config["package_manager"] = "npm"
             if package_manager == "npm":
                 raise ProjectImportError(
                     "npm is not available for Node.js {}".format(version),

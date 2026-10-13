@@ -1,7 +1,7 @@
 ;(() => {
 	const stylesheetSelector = "link[rel=stylesheet]"
 	const loaded = new Set(Array.from(document.querySelectorAll(stylesheetSelector)).map(link => link.href))
-	const version = "1787646744133"
+	const version = "1791538283700"
 	const findLoadedLink = href => Array.from(document.querySelectorAll(stylesheetSelector)).find(link => link.href === href)
 	const removeAfterLoad = (freshLink, staleLink) => {
 		const remove = () => staleLink.remove()
@@ -28,4 +28,4 @@
 		removeAfterLoad(freshLink, link)
 	}
 })();
-import{r as e}from"./rolldown-runtime.js?v=1787646744133";import{Cn as t,Dn as n,Jn as r,Or as i,bn as a,ei as o,kn as s,nn as c}from"./vendor-utils.js?v=1787646744133";import{c as l,l as u,s as d,t as f,u as p}from"./view-mail.js?v=1787646744133";c();var m={class:`p-40px`},h=s({__name:`index`,setup(e){return(e,s)=>(r(),t(`div`,m,[a(`div`,null,` columns_source:`+o(i(u)),1),a(`div`,null,` column_map:`+o(i(l)),1),a(`div`,null,` cell_map:`+o(i(d)),1),a(`div`,null,` comp_map:`+o(i(p)),1),n(f)]))}}),g=e({default:()=>_}),_=h;export{g as t};
+import{r as e}from"./rolldown-runtime.js?v=1791538283700";import{An as t,On as n,Yn as r,kr as i,rn as a,ti as o,wn as s,xn as c}from"./vendor-utils.js?v=1791538283700";import{c as l,l as u,s as d,t as f,u as p}from"./view-mail.js?v=1791538283700";a();var m={class:`p-40px`},h=t({__name:`index`,setup(e){return(e,t)=>(r(),s(`div`,m,[c(`div`,null,` columns_source:`+o(i(u)),1),c(`div`,null,` column_map:`+o(i(l)),1),c(`div`,null,` cell_map:`+o(i(d)),1),c(`div`,null,` comp_map:`+o(i(p)),1),n(f)]))}}),g=e({default:()=>_}),_=h;export{g as t};

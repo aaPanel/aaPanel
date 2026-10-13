@@ -238,15 +238,49 @@
 			"messages": {
 				"addedToFavorites": "成功添加到收藏夾",
 				"copySuccess": "複製成功，請點擊[粘貼]或按Ctrl+V粘貼",
-				"cutSuccess": "剪切成功，請點擊[粘貼]或按Ctrl+V粘貼"
+				"cutSuccess": "剪切成功，請點擊[粘貼]或按Ctrl+V粘貼",
+				"cloudUploadNotConnected": "Upload to cloud storage is not connected yet."
 			},
 			"defaultNames": {
 				"untitledFile": "未命名文件",
 				"untitledDirectory": "未命名目錄"
+			},
+			"uploadToCloud": "Upload to Cloud Storage",
+			"cloudStorage": {
+				"ftp": "FTP Storage",
+				"awsS3": "S3 Storage",
+				"gdrive": "Google Drive",
+				"gcloudStorage": "Google Cloud Storage"
 			}
 		},
 		"cloudStorageTransfer": {
-			"overwriteRiskConfirm": "傳送 [{0}] 文件，如果文件存在將會被覆蓋，是否繼續？"
+			"overwriteRiskConfirm": "傳送 [{0}] 文件，如果文件存在將會被覆蓋，是否繼續？",
+			"allFilesSkipped": "All files are skipped",
+			"createFolder": "Create folder",
+			"deleteConfirm": "Are you sure to delete {0} [{1}]?",
+			"deleteFile": "Delete file",
+			"downloadConfirm": "Are you sure to send [{0}] to the left?",
+			"file": "File",
+			"folderName": "Folder name",
+			"folderNamePlaceholder": "Enter folder name",
+			"folder": "Folder",
+			"localFiles": "Local files",
+			"rootDirectoryCannotUpload": "Root directory cannot upload files",
+			"searchPlaceholder": "Enter file name",
+			"sendToLeft": "Send to left",
+			"sendToRight": "Send to right",
+			"taskPreparing": "Preparing task...",
+			"taskStep": "Step {0}",
+			"transferComplete": "Transfer complete",
+			"transferFailed": "Transfer failed",
+			"transferInProgress": "Transferring, please wait...",
+			"transferProgress": "Transfer progress",
+			"uploadCanceled": "Upload canceled: {0}",
+			"uploadFailed": "Upload failed",
+			"uploadFilesTo": "Upload files to [{0}]",
+			"uploadFolder": "Upload folder",
+			"uploadFolderConfirm": "Folder [{0}] will be compressed into an archive before upload. Continue?",
+			"fileUploadFailed": "{0} upload failed"
 		},
 		"pasteConfirm": {
 			"title": "重要文件提示",
@@ -600,7 +634,9 @@
 		},
 		"videoPlayerModal": {
 			"title": "視頻播放"
-		}
+		},
+		"fileProtection": "File Protection",
+		"permission": "Permission"
 	},
 	"fileEditor": {
 		"common": {

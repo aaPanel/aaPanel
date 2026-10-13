@@ -521,7 +521,7 @@ class data:
                             data['data'][i]['status'] = '1'
                         data['data'][i]['quota'] = self.get_site_quota(data['data'][i]['path'])
                         site1 = SQL.table('sites').where('id=?', (data['data'][i]['id'])).find()
-                        if hasattr(site1, 'rname'):
+                        if isinstance(site1, dict) and 'rname' in site1:
                             data['data'][i]['rname'] = \
                             SQL.table('sites').where('id=?', (data['data'][i]['id'])).field('rname').find()['rname']
                         if not data['data'][i].get('rname', ''):
@@ -981,7 +981,7 @@ class data:
             search = cs
             conditions = " escape '/'"
         wheres = {
-            'sites': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
+            'sites': ("name LIKE ?{} OR rname LIKE ?{} OR ps LIKE ?{}".format(conditions, conditions, conditions), ('%' + search + '%', '%' + search + '%', '%' + search + '%')),
             'ftps': ("name LIKE ? OR ps LIKE ?{}".format(conditions), ('%' + search + '%', '%' + search + '%')),
             'databases': (
                 "(name LIKE ? {} OR ps LIKE ?{})".format(conditions, conditions),
@@ -1589,7 +1589,7 @@ class data:
 
             # 处理搜索条件
             if search:
-                query = query.where('s.name LIKE ? or s.ps LIKE ?', (f'%{search}%', f'%{search}%'))
+                query = query.where('s.name LIKE ? or s.rname LIKE ? or s.ps LIKE ?', (f'%{search}%', f'%{search}%', f'%{search}%'))
 
             # 获取网站类型过滤
             if site_type:
@@ -1804,7 +1804,7 @@ class data:
 
             query = public.S('sites').prefix('').where('parent_id = ? AND project_type = ?', (parent_id, 'WP2'))
             if search:
-                query = query.where('(name LIKE ? OR ps LIKE ?)', (f'%{search}%', f'%{search}%'))
+                query = query.where('(name LIKE ? OR rname LIKE ? OR ps LIKE ?)', (f'%{search}%', f'%{search}%', f'%{search}%'))
             data = query.select()
 
             if not data:

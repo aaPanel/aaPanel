@@ -759,6 +759,15 @@ class panelPlugin:
                 get.sName = get.sName.split('-')[0]
             execstr = "cd /www/server/panel/install && /bin/bash install_soft.sh "+get.type+" uninstall " + get.sName.lower() + " "+ get.version.replace('.','')
             public.ExecShell(execstr)
+            # 卸载 mysql/mariadb 后清理静默探测日志的降噪标记, 避免重装后旧标记残留干扰
+            if get.sName == 'mysql':
+                try:
+                    from script.restart_services import QUIET_MYSQL_LOG_MARKER, QUIET_MYSQL_LOCK
+                    for _f in (QUIET_MYSQL_LOG_MARKER, QUIET_MYSQL_LOCK):
+                        if os.path.exists(_f):
+                            os.remove(_f)
+                except Exception:
+                    pass
             public.write_log_gettext('Installer','Successfully unintalled [{}-{}]',(get.sName,get.version))
             return public.return_message(0, 0, public.lang("Uninstallation succeeded"))
 

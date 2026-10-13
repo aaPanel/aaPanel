@@ -33,6 +33,7 @@
 			"Daily": "Täglich"
 		},
 		"Btn": {
+			"Close": "SchlieBen",
 			"Add": "Hinzufügen",
 			"Save": "Speichern",
 			"Config": "Konfiguration",

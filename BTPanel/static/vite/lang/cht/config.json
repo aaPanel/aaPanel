@@ -132,7 +132,9 @@
 			"iconAuto": "自動獲取網站圖標",
 			"iconAutoDesc": "開啟後每12小時會嘗試獲取網站圖標",
 			"homeAnnounce": "首頁公告",
-			"homeAnnounceDesc": "在首頁顯示面板公告、更新提醒等通知資訊"
+			"homeAnnounceDesc": "在首頁顯示面板公告、更新提醒等通知資訊",
+			"serverTimezoneLabel": "Server Timezone",
+			"serverTimezoneDesc": "Set the correct timezone to ensure accurate timestamps"
 		},
 		"Safe": {
 			"index_1": "安全設置",
@@ -488,7 +490,10 @@
 			"alarm_8": "正在設置告警狀態，請稍候...",
 			"alarm_9": "正在設置默認告警，請稍候...",
 			"alarm_10": "正在測試中，請稍候...",
-			"alarm_11": "正在解綁中，請稍候..."
+			"alarm_11": "正在解綁中，請稍候...",
+			"global_34": "Setting automatic backup, please wait...",
+			"global_35": "Clearing automatic backup, please wait...",
+			"global_36": "Settings, please wait..."
 		},
 		"Backup": {
 			"index_1": "創建備份",

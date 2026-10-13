@@ -38,6 +38,7 @@ class TaskInfo:
     interval: int | float
     is_core: bool
     loop: bool = True
+    timeout: int | float = field(default=0, compare=False)
 
     @classmethod
     def from_dict(cls: Type[T], data: dict, next_run: float) -> T:
@@ -255,9 +256,13 @@ class SimpleBrain:
             start_time = time.time()
             # 超时值: 自身任务间隔 * 超时倍率, 最大限制
             if not task.loop:
-                timeout_sec = min(
-                    self.TASK_MAX_TIMEOUT, (max(1.0, float(task.interval) * self.TIMEOUT_FACTOR))
-                )
+                configured_timeout = max(0.0, float(task.timeout or 0))
+                if configured_timeout:
+                    timeout_sec = min(self.TASK_MAX_TIMEOUT, configured_timeout)
+                else:
+                    timeout_sec = min(
+                        self.TASK_MAX_TIMEOUT, max(1.0, float(task.interval) * self.TIMEOUT_FACTOR)
+                    )
                 deadline_ts = start_time + timeout_sec
             else:
                 deadline_ts = -1  # 无限期

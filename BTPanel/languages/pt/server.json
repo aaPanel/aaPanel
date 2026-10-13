@@ -429,7 +429,7 @@
     "6ca3d3b27428d22e047e13a552f1600e": "Adicionar com Sucesso",
     "868903fa7bc939d9ff39df264589c0fd": "Excluir com Sucesso",
     "c614196ffa00bf43880f547acfab993b": "Painel não encontrou o arquivo de backup: {}",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Atualmente suporta apenas restauração de backups locais, Google storage e AWS S3",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Atualmente suporta apenas restauração de backups locais, Google storage e S3 Storage",
     "6f3446d8579a066540c5d7e68ff05f0b": "Restauração Bem-Sucedida",
     "260ca9dd8a4577fc00b7bd5810298076": "sucesso",
     "1cbb155db1ca49d77f886c41b7850b48": "Erro de download!",

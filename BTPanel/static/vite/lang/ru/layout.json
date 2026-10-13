@@ -101,7 +101,8 @@
 			"config_8": "Страница",
 			"security_8": "Безопасность сайтов",
 			"security_9": "Scan Detection",
-			"wap_12": "Exclusive Rules"
+			"wap_12": "Exclusive Rules",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux panel ©2014-{0} aaPanel",
@@ -117,5 +118,25 @@
 			"index_6": "Окно сообщений",
 			"index_7": "Время выполнения"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Глобальный поиск",
+		"sider": "Поиск (Ctrl+K)",
+		"placeholder": "Введите ключевое слово и нажмите Enter для поиска",
+		"group_menu": "Меню",
+		"group_tab": "Вкладки страницы",
+		"group_action": "Действия",
+		"history": "Недавние поиски",
+		"clear": "Очистить",
+		"searching": "Поиск…",
+		"done": "Готово · {n} результатов",
+		"empty": "Ничего не найдено",
+		"empty_tip": "Попробуйте более короткое ключевое слово или измените тип поиска",
+		"press_enter_search": "Нажмите Enter или щёлкните по значку поиска, чтобы найти больше",
+		"no_local": "Соответствующая функция не найдена",
+		"footer": "↑↓ Навигация · Enter Открыть или Поиск · Esc Закрыть",
+		"welcome": "Поиск меню, сайтов, баз данных, FTP, cron, программ и действий",
+		"type_all": "Все",
+		"scope_label": "Тип поиска"
 	}
 }

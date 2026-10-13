@@ -23,7 +23,7 @@ class main():
     supported_providers = ("aws_s3", "ftp", "gcloud_storage", "gdrive")
 
     provider_titles = {
-        "aws_s3": "AWS S3",
+        "aws_s3": "S3 Storage",
         "ftp": "FTP Storage",
         "gcloud_storage": "Google Cloud Storage",
         "gdrive": "Google Drive",
@@ -1177,7 +1177,7 @@ class main():
             self.__raise_if_plugin_failed(result)
             url = result.get("msg") if isinstance(result, dict) else ""
             if not url:
-                raise RuntimeError("AWS S3 did not return a download URL")
+                raise RuntimeError("S3 Storage did not return a download URL")
             return self.__download_url(url, destination)
         if provider == "gcloud_storage":
             result = self.__run_plugin(provider, "download_blob", {

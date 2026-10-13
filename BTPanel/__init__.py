@@ -97,7 +97,8 @@ def restore_panel_ssl_switch_session():
         switch_data = {}
 
     switch_token = request.cookies.get('panel_ssl_switch', '')
-    if switch_token and not re.match(r"^\w{48}$", switch_token):
+    # 修复 未提供token直接拒绝
+    if not switch_token or not re.match(r"^\w{48}$", switch_token):
         return False
 
     def remove_switch_file():
@@ -109,14 +110,17 @@ def restore_panel_ssl_switch_session():
 
     if not switch_data:
         return False
-    if switch_token and switch_data.get('token') != switch_token:
+    if switch_data.get('token') != switch_token:
+        remove_switch_file()
         return False
     if int(switch_data.get('expires', 0)) < int(time.time()):
         remove_switch_file()
         return False
     if switch_data.get('client_ip') and switch_data.get('client_ip') != public.GetClientIp():
+        remove_switch_file()
         return False
     if switch_data.get('user_agent') and switch_data.get('user_agent') != request.headers.get('User-Agent', ''):
+        remove_switch_file()
         return False
 
     session_data = switch_data.get('session', {})
@@ -671,7 +675,7 @@ def request_check():
     g.return_message = False
 
     # URI过滤 1
-    if request.path not in ('/google/redirect', '/google/callback') and not request.path.startswith('/v2/pmta/'):
+    if request.path not in ('/google/redirect', '/google/callback', '/github/oauth_callback') and not request.path.startswith('/v2/pmta/'):
         # 路由和URI长度过滤
         if len(request.path) > 256: return abort(403)
         if len(request.url) > 1024: return abort(403)
@@ -4685,6 +4689,13 @@ def site_v2(pdata=None):
         'get_cdn_ip',
         'set_site_global',
         'get_site_global',
+        'get_global_rule',
+        'set_global_rule',
+        'test_global_rule',
+        'delete_global_rule',
+        'get_global_rule_templates',
+        'save_global_rule_template',
+        'delete_global_rule_template',
         'site_performance_test',
         'batch_add_wp',
         'to_php_backup_create',
@@ -4747,7 +4758,12 @@ def git_tools(pdata=None):
         'import_existing_repository',
         'get_git_directory',
         'pull_project_git',
-        'get_clone_progress'
+        'get_clone_progress',
+        'get_github_oauth_url',
+        'get_github_account',
+        'get_github_repos',
+        'disconnect_github',
+        'renew_github_token'
     )
     return publicObject(gitObject, defs, None, pdata)
 
@@ -5577,6 +5593,8 @@ def ajax_v2(pdata=None):
             'speed_log', 'get_result', 'get_detailed', 'ignore_version',
             'UpdatePanel', 'RepPanel', 'ScheduleUpdate',  # 更新面板, 修复面板, 预约延迟更新
             'getPanelAnnounce', 'markPanelAnnounceRead',
+            'markPanelAnnounceDismissed',
+            'getPanelHomeInfo',
             )
 
     return publicObject(ajaxObject, defs, None, pdata)
@@ -7749,6 +7767,37 @@ def google_callback():
 
 
 # ==========================================================  Google OAuth2.0  end ===========================================================#
+
+
+# ==========================================================  GitHub OAuth start ===========================================================#
+
+
+@app.route('/github/oauth_callback', methods=method_all)
+def github_oauth_callback():
+    """官网 GitHub API 流回调：官网用 code 换 token 后,POST 表单自动提交到此地址
+
+    字段：access_token / token_type / scope / grant_id / grant_secret / nonce
+    （可选 expires_in；失败时 error / error_description / nonce）
+
+    注意：此处不校验登录（不调 comm.local()） 官网 POST 是跨站提交，SameSite=Lax
+    下浏览器不带面板 cookie，session 无登录态；改用 nonce 防 CSRF
+    """
+
+    get = get_input()
+    from git_github import handle_github_callback
+    try:
+        handle_github_callback(get)
+        return redirect('/')
+    except Exception as e:
+        return Response(
+            '<html><head><meta charset="utf-8"></head><body>'
+            '<h3>GitHub authorization failed</h3>'
+            '<pre>{}</pre></body></html>'.format(public.xssencode(str(e))),
+            content_type='text/html; charset=utf-8',
+        )
+
+
+# ==========================================================  GitHub OAuth end ===========================================================#
 
 
 # -----------------------------------------  无登录校验路由 end----------------------------------------

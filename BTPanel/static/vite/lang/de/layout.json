@@ -101,7 +101,8 @@
 			"account_5": "Lagerung",
 			"account_6": "Einstellungen",
 			"domain_1": "Domänen",
-			"domain_2": "Zertifikat"
+			"domain_2": "Zertifikat",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "Aapanel Linux Panel © 2014- {0} Aapanel",
@@ -117,5 +118,25 @@
 			"index_6": "Nachrichtenbox",
 			"index_7": "Zeitkonsum"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Globale Suche",
+		"sider": "Suchen (Ctrl+K)",
+		"placeholder": "Geben Sie ein Stichwort ein und drücken Sie Enter zum Suchen",
+		"group_menu": "Menüs",
+		"group_tab": "Seiten-Tabs",
+		"group_action": "Aktionen",
+		"history": "Letzte Suchen",
+		"clear": "Löschen",
+		"searching": "Suche läuft…",
+		"done": "Fertig · {n} Ergebnisse",
+		"empty": "Keine Ergebnisse gefunden",
+		"empty_tip": "Versuchen Sie ein kürzeres Stichwort oder wechseln Sie den Suchtyp",
+		"press_enter_search": "Drücken Sie die Eingabetaste oder klicken Sie auf das Suchsymbol, um mehr zu suchen",
+		"no_local": "Keine passende Funktion gefunden",
+		"footer": "↑↓ Navigieren · Enter Öffnen oder Suchen · Esc Schließen",
+		"welcome": "Menüs, Websites, Datenbanken, FTP, Cron, Software und Aktionen durchsuchen",
+		"type_all": "Alle",
+		"scope_label": "Suchart"
 	}
 }

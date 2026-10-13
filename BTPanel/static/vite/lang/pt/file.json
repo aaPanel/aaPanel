@@ -219,15 +219,49 @@
 			"messages": {
 				"addedToFavorites": "Adicionado aos favoritos com sucesso.",
 				"copySuccess": "Cópia bem-sucedida, clique em [Colar] ou Ctrl + V para colar",
-				"cutSuccess": "Corte bem-sucedido, clique em [Colar] ou Ctrl + V para colar"
+				"cutSuccess": "Corte bem-sucedido, clique em [Colar] ou Ctrl + V para colar",
+				"cloudUploadNotConnected": "Upload to cloud storage is not connected yet."
 			},
 			"defaultNames": {
 				"untitledFile": "arquivo sem título",
 				"untitledDirectory": "diretório sem título"
+			},
+			"uploadToCloud": "Upload to Cloud Storage",
+			"cloudStorage": {
+				"ftp": "FTP Storage",
+				"awsS3": "S3 Storage",
+				"gdrive": "Google Drive",
+				"gcloudStorage": "Google Cloud Storage"
 			}
 		},
 		"cloudStorageTransfer": {
-			"overwriteRiskConfirm": "Transferindo o arquivo [{0}], se o arquivo existir, ele será sobrescrito. Continuar?"
+			"overwriteRiskConfirm": "Transferindo o arquivo [{0}], se o arquivo existir, ele será sobrescrito. Continuar?",
+			"allFilesSkipped": "All files are skipped",
+			"createFolder": "Create folder",
+			"deleteConfirm": "Are you sure to delete {0} [{1}]?",
+			"deleteFile": "Delete file",
+			"downloadConfirm": "Are you sure to send [{0}] to the left?",
+			"file": "File",
+			"folderName": "Folder name",
+			"folderNamePlaceholder": "Enter folder name",
+			"folder": "Folder",
+			"localFiles": "Local files",
+			"rootDirectoryCannotUpload": "Root directory cannot upload files",
+			"searchPlaceholder": "Enter file name",
+			"sendToLeft": "Send to left",
+			"sendToRight": "Send to right",
+			"taskPreparing": "Preparing task...",
+			"taskStep": "Step {0}",
+			"transferComplete": "Transfer complete",
+			"transferFailed": "Transfer failed",
+			"transferInProgress": "Transferring, please wait...",
+			"transferProgress": "Transfer progress",
+			"uploadCanceled": "Upload canceled: {0}",
+			"uploadFailed": "Upload failed",
+			"uploadFilesTo": "Upload files to [{0}]",
+			"uploadFolder": "Upload folder",
+			"uploadFolderConfirm": "Folder [{0}] will be compressed into an archive before upload. Continue?",
+			"fileUploadFailed": "{0} upload failed"
 		},
 		"pasteConfirm": {
 			"title": "Aviso de Arquivo Importante",

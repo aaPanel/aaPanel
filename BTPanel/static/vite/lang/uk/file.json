@@ -256,7 +256,7 @@
 			"uploadToCloud": "Завантажити до хмарного сховища",
 			"cloudStorage": {
 				"ftp": "FTP сховище",
-				"awsS3": "Сховище AWS S3",
+				"awsS3": "Сховище S3",
 				"gdrive": "Google Drive",
 				"gcloudStorage": "Google Cloud Storage"
 			},

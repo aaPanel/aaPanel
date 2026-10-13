@@ -53,6 +53,33 @@ class BillionMailProxy:
         self.proxy_prefix = "/" + proxy_prefix.strip("/")
 
     @staticmethod
+    def _trace_api_feature(path_full):
+        try:
+            method = (request.method or "").upper()
+            if method not in ("POST", "PUT", "PATCH", "DELETE"):
+                return
+            path = "/" + (path_full or "").strip("/")
+            if not path.startswith("/api/"):
+                return
+            segs = [s.strip().lower() for s in path[len("/api/"):].split("/") if s]
+            if not segs:
+                return
+            body = list(segs)
+            if body[-1].isdigit() or len(body[-1]) > 32 or "-" in body[-1]:
+                action = method.lower()
+            else:
+                action = body.pop()
+            parts = [s for s in body if not (s.isdigit() or len(s) > 32 or "-" in s)]
+            resource = "_".join(parts)
+            if resource:
+                fun_name = "api_{}-{}".format(resource, action)
+            else:
+                fun_name = "api_{}".format(action)
+            public.set_module_logs("BillionMail", fun_name)
+        except Exception:
+            pass
+
+    @staticmethod
     def _error(message, status=500):
         return Response(message, status=status)
 
@@ -544,6 +571,74 @@ class BillionMailProxy:
             return re.sub(r"</body\s*>", lambda match: script + "\n" + match.group(0), text, count=1, flags=re.I)
         return script + "\n" + text
 
+    @staticmethod
+    def _path_rewrite_script():
+        return """<script>
+(function () {
+  if (window.__AAPANEL_BILLIONMAIL_PATH_PATCHED__ === true) return;
+  window.__AAPANEL_BILLIONMAIL_PATH_PATCHED__ = true;
+
+  function getBase() {
+    var pathname = window.location.pathname.replace(/\\/+$/, "");
+    var marker = "/billionmail";
+    var idx = pathname.indexOf(marker);
+    if (idx === -1) return "";
+    return pathname.substring(0, idx + marker.length);
+  }
+
+  function rewritePath(url) {
+    if (typeof url !== "string") return url;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) return url;
+    var base = getBase();
+    if (!base) return url;
+    if (url === base || url.indexOf(base + "/") === 0 || url.indexOf(base + "?") === 0 || url.indexOf(base + "#") === 0) return url;
+    if (url.indexOf("/billionmail") === 0) return base + url.slice("/billionmail".length);
+    if (url === "/") return base + "/";
+    if (url.charAt(0) === "/") return base + url;
+    return url;
+  }
+
+  document.addEventListener("click", function (event) {
+    var el = event.target;
+    var anchor = el && el.closest ? el.closest("a[href]") : null;
+    if (!anchor) return;
+    var href = anchor.getAttribute("href");
+    if (href === null || href === "" || href === "#") return;
+    var rewritten = rewritePath(href);
+    if (rewritten !== href) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (anchor.getAttribute("target") === "_blank") {
+        window.open(rewritten, "_blank");
+      } else {
+        window.location.href = rewritten;
+      }
+    }
+  }, true);
+
+  var pushState = history.pushState;
+  history.pushState = function (state, title, url) {
+    if (typeof url === "string") arguments[2] = rewritePath(url);
+    return pushState.apply(this, arguments);
+  };
+  var replaceState = history.replaceState;
+  history.replaceState = function (state, title, url) {
+    if (typeof url === "string") arguments[2] = rewritePath(url);
+    return replaceState.apply(this, arguments);
+  };
+})();
+</script>"""
+
+    def _inject_path_rewrite_script(self, text):
+        if "__AAPANEL_BILLIONMAIL_PATH_PATCHED__" in text:
+            return text
+        script = self._path_rewrite_script()
+        if re.search(r"</head\s*>", text, re.I):
+            return re.sub(r"</head\s*>", lambda match: script + "\n" + match.group(0), text, count=1, flags=re.I)
+        if re.search(r"</body\s*>", text, re.I):
+            return re.sub(r"</body\s*>", lambda match: script + "\n" + match.group(0), text, count=1, flags=re.I)
+        return script + "\n" + text
+
     def _rewrite_text_content(self, text, path_full, config=None):
         proxy = self.proxy_prefix
         path = (path_full or "").split("?", 1)[0].lower()
@@ -594,6 +689,7 @@ class BillionMailProxy:
             text = self._rewrite_csp_for_panel_scheme(text)
             text = self._rewrite_webmail_url(text, webmail_url)
             text = self._inject_webmail_rewrite_script(text, webmail_url)
+            text = self._inject_path_rewrite_script(text)
         return self._rewrite_panel_absolute_urls(text)
 
     def _response_content(self, upstream_response, path_full, config=None):
@@ -617,6 +713,7 @@ class BillionMailProxy:
 
     def proxy(self, path_full=""):
         try:
+            BillionMailProxy._trace_api_feature(path_full)
             if (path_full or "").strip("/") == "__aapanel_sso__":
                 return self._sso_bridge()
 

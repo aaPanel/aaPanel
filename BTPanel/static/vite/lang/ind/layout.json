@@ -101,7 +101,8 @@
 			"account_5": "Penyimpanan",
 			"account_6": "Pengaturan",
 			"domain_1": "Domain",
-			"domain_2": "Sertifikat"
+			"domain_2": "Sertifikat",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "Panel Linux Aapanel © 2014- {0} Aapanel",
@@ -117,5 +118,25 @@
 			"index_6": "Kotak pesan",
 			"index_7": "Konsumsi waktu"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Pencarian Global",
+		"sider": "Cari (Ctrl+K)",
+		"placeholder": "Masukkan kata kunci lalu tekan Enter untuk mencari",
+		"group_menu": "Menu",
+		"group_tab": "Tab Halaman",
+		"group_action": "Aksi",
+		"history": "Pencarian Terakhir",
+		"clear": "Bersihkan",
+		"searching": "Mencari…",
+		"done": "Selesai · {n} hasil",
+		"empty": "Tidak ada hasil ditemukan",
+		"empty_tip": "Coba kata kunci yang lebih pendek atau ganti jenis pencarian",
+		"press_enter_search": "Tekan Enter atau klik ikon pencarian untuk mencari lebih banyak",
+		"no_local": "Fitur yang cocok tidak ditemukan",
+		"footer": "↑↓ Navigasi · Enter Buka atau Cari · Esc Tutup",
+		"welcome": "Cari menu, situs, database, FTP, cron, perangkat lunak, dan aksi",
+		"type_all": "Semua",
+		"scope_label": "Jenis pencarian"
 	}
 }

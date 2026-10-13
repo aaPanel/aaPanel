@@ -53,7 +53,7 @@ class main(panelBase):
         """
         @name 获取公共配置
         """
-        public.print_log("error 3366666  原始方法: ")
+      
         _config_obj = config.config()
         data = _config_obj.get_config(args)
 

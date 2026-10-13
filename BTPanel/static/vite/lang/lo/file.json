@@ -246,7 +246,7 @@
 			"uploadToCloud": "ອັບໂຫຼດໃສ່ Cloud Storage",
 			"cloudStorage": {
 				"ftp": "ການເກັບຮັກສາ FTP",
-				"awsS3": "ບ່ອນຈັດເກັບຂໍ້ມູນ AWS S3",
+				"awsS3": "ບ່ອນຈັດເກັບຂໍ້ມູນ S3",
 				"gdrive": "Google Drive",
 				"gcloudStorage": "Google Cloud Storage"
 			}

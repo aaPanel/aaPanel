@@ -311,13 +311,15 @@ class system:
         c_tmp = public.readFile('/proc/cpuinfo')
         d_tmp = re.findall("physical id.+",c_tmp)
         cpuW = len(set(d_tmp))
-        import threading
-        p = threading.Thread(target=self.get_cpu_percent_thead,args=(interval,))
-        # p.setDaemon(True)
-        p.start()
-
         used = cache.get('cpu_used_all')
-        if not used: used = self.get_cpu_percent_thead(interval)
+        if used is None:
+            used = self.get_cpu_percent_thead(interval)
+        else:
+            # Refresh an existing cache asynchronously; sample only once on a cache miss.
+            import threading
+            p = threading.Thread(target=self.get_cpu_percent_thead,args=(interval,))
+            p.daemon = True
+            p.start()
 
         used_all = psutil.cpu_percent(percpu=True)
         cpu_name = public.getCpuType() + " * {}".format(cpuW)
@@ -633,6 +635,99 @@ class system:
         networkInfo['iostat'] = self.get_disk_iostat()
 
         return networkInfo
+
+    def GetNodeMonitorData(self, interval=0.1):
+        """ 仅返回节点监控所需的系统数据 """
+        now = time.time()
+        network_info = {}
+        previous = cache.get('node_monitor_network_io') or {}
+        if not isinstance(previous, dict):
+            previous = {}
+        if not isinstance(previous.get('nics'), dict):
+            previous['nics'] = {}
+        previous_time = float(previous.get('time', 0) or 0)
+        elapsed = max(now - previous_time, 0.001) if previous_time else 0
+        current = {'time': now, 'nics': {}}
+
+        try:
+            for name, io_data in psutil.net_io_counters(pernic=True).items():
+                current['nics'][name] = {
+                    'up': int(io_data.bytes_sent),
+                    'down': int(io_data.bytes_recv),
+                    'up_packets': int(io_data.packets_sent),
+                    'down_packets': int(io_data.packets_recv),
+                }
+                old = previous.get('nics', {}).get(name, {})
+                network_info[name] = {
+                    'upTotal': int(io_data.bytes_sent),
+                    'downTotal': int(io_data.bytes_recv),
+                    'up': round(max(0, int(io_data.bytes_sent) - int(old.get('up', io_data.bytes_sent))) / 1024 / elapsed, 2) if elapsed else 0,
+                    'down': round(max(0, int(io_data.bytes_recv) - int(old.get('down', io_data.bytes_recv))) / 1024 / elapsed, 2) if elapsed else 0,
+                    'upPackets': int(io_data.packets_sent),
+                    'downPackets': int(io_data.packets_recv),
+                }
+            cache.set('node_monitor_network_io', current, 86400)
+        except Exception:
+            network_info = {}
+
+        cpu_count = psutil.cpu_count() or 1
+        cpu_usage = psutil.cpu_percent(interval=max(float(interval), 0))
+        memory = psutil.virtual_memory()
+        mem_total = int(memory.total / 1024 / 1024)
+        mem_real_used = int((memory.total - memory.available) / 1024 / 1024)
+
+        load = {'one': 0, 'five': 0, 'fifteen': 0}
+        try:
+            load_values = os.getloadavg()
+            load = {'one': load_values[0], 'five': load_values[1], 'fifteen': load_values[2]}
+        except Exception:
+            pass
+
+        disks = []
+        excluded_mounts = {'/mnt/cdrom', '/boot', '/boot/efi', '/dev', '/dev/shm', '/run/lock', '/run', '/run/shm'}
+        seen_mounts = set()
+        try:
+            for partition in psutil.disk_partitions(all=False):
+                if partition.fstype in ('tmpfs', 'devtmpfs', 'squashfs'):
+                    continue
+                mountpoint = partition.mountpoint
+                if mountpoint in seen_mounts or mountpoint in excluded_mounts:
+                    continue
+                if mountpoint.startswith(('/run/user/', '/snap/')) or 'docker' in mountpoint:
+                    continue
+                seen_mounts.add(mountpoint)
+                try:
+                    usage = psutil.disk_usage(mountpoint)
+                except (OSError, PermissionError):
+                    continue
+                display_mountpoint = mountpoint.replace('/usr/local/lighthouse/softwares/btpanel', '/www')
+                disks.append({
+                    'filesystem': partition.device,
+                    'type': partition.fstype,
+                    'path': display_mountpoint,
+                    'byte_size': [int(usage.total), int(usage.used), int(usage.free)],
+                    'usage': float(usage.percent),
+                })
+        except Exception:
+            pass
+
+        try:
+            version = session.get('version', '')
+        except Exception:
+            version = public.version()
+
+        return {
+            'network': network_info,
+            'cpu': [cpu_usage, cpu_count],
+            'load': load,
+            'mem': {
+                'memTotal': mem_total,
+                'memRealUsed': mem_real_used,
+                'memNewTotal': public.to_size(memory.total),
+            },
+            'disk': disks,
+            'version': version,
+        }
 
 
     def get_cpu_times(self):

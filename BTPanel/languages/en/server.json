@@ -429,7 +429,7 @@
     "6ca3d3b27428d22e047e13a552f1600e": "Add Successfully",
     "868903fa7bc939d9ff39df264589c0fd": "Delete Successfully",
     "c614196ffa00bf43880f547acfab993b": "Panel does not find the backup file: {}",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Currently only supports restoring local, Google storage and AWS S3 backups",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Currently only supports restoring local, Google storage and S3 Storage backups",
     "6f3446d8579a066540c5d7e68ff05f0b": "Restore Successful",
     "260ca9dd8a4577fc00b7bd5810298076": "success",
     "1cbb155db1ca49d77f886c41b7850b48": "Download error!",

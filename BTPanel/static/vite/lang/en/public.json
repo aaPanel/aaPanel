@@ -33,6 +33,7 @@
 			"Daily": "Daily"
 		},
 		"Btn": {
+			"Close": "Close",
 			"Add": "Add",
 			"Save": "Save",
 			"Config": "Config",

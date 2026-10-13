@@ -234,6 +234,11 @@ class NodeBackup(NodeJs):
             installed_versions = self.get_nodejs_version(None)
             version_installed = any(v == backup_nodejs_version for v in installed_versions)
             if not version_installed:
+                #  系统/NVM 后缀版本：无法经面板插件安装，需目标服务器先扫描系统 Node
+                if "-" in backup_nodejs_version:
+                    return public.return_message(-1, 0,
+                        public.lang("Node.js version [{}] is a system/NVM managed version and is not installed on this server. Please scan the system Node first and then restore.").format(
+                            backup_nodejs_version))
                 pkg_manager = meta.get('pkg_manager', 'npm')
                 node_res = self._install_nodejs_with_modules(backup_nodejs_version, pkg_manager)
                 if not node_res.get('status'):

@@ -980,7 +980,7 @@
     "d07fa2f572b6d22996d25439da3f5d88": "Tải xuống thành công tệp",
     "db1cbd9059a4f043534a00142cdfffde": "Tải xuống không thành công",
     "c614196ffa00bf43880f547acfab993b": "Bảng điều khiển không tìm thấy tệp sao lưu: {}",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Hiện tại chỉ hỗ trợ khôi phục bản sao lưu địa phương, Google Storage và AWS S3",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Hiện tại chỉ hỗ trợ khôi phục bản sao lưu địa phương, Google Storage và S3 Storage",
     "6f3446d8579a066540c5d7e68ff05f0b": "Khôi phục thành công",
     "260ca9dd8a4577fc00b7bd5810298076": "thành công",
     "1cbb155db1ca49d77f886c41b7850b48": "Tải xuống lỗi!",

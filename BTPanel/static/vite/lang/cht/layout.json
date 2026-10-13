@@ -118,5 +118,25 @@
 			"index_6": "消息盒子",
 			"index_7": "時間消耗"
 		}
+	},
+	"GlobalSearch": {
+		"title": "全局搜尋",
+		"sider": "搜尋 (Ctrl+K)",
+		"placeholder": "請輸入關鍵詞，按 Enter 搜尋",
+		"group_menu": "功能選單",
+		"group_tab": "頁面標籤",
+		"group_action": "操作",
+		"history": "最近搜尋",
+		"clear": "清除",
+		"searching": "搜尋中…",
+		"done": "已完成 · {n} 條結果",
+		"empty": "找不到相關內容",
+		"empty_tip": "試試更短的關鍵詞或切換搜索類型",
+		"press_enter_search": "按 Enter 或點擊搜尋圖示搜尋更多資訊",
+		"no_local": "找不到相關功能",
+		"footer": "↑↓ 選擇 · Enter 開啟 或 搜尋 · Esc 關閉",
+		"welcome": "搜尋選單、網站、資料庫、FTP、計劃任務、軟體與操作",
+		"type_all": "全部",
+		"scope_label": "搜尋類型"
 	}
 }

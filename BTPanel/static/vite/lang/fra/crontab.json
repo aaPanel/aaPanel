@@ -98,7 +98,20 @@
 			"index_95": "Exécuté toutes les {0} secondes",
 			"index_96": "Select script",
 			"index_97": "Please select a script (search supported)",
-			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks"
+			"index_98": "To maintain service stability and ensure smooth performance, please refrain from frequently running high-load scripts and avoid adding too many such tasks",
+			"index_99": "No data available to export",
+			"index_100": "Exporting cron jobs, please wait...",
+			"index_102": "Import cron jobs",
+			"index_103": "Cron job import result",
+			"index_104": "Continue importing the file data into the existing cron jobs?",
+			"index_105": "Skip duplicate cron jobs",
+			"index_106": "Import successful",
+			"index_107": "Import failed",
+			"index_108": "Duplicate task skipped",
+			"index_109": "Cron job name",
+			"index_110": "Operation result",
+			"index_111": "Importing duplicate tasks may cause system service issues. Please proceed carefully.",
+			"index_112": "Please select a valid JSON file"
 		},
 		"arrange": {
 			"index_1": "Exécutez la tâche de script dans [{0}] Immédiatement, le processus d'exécution peut attendre longtemps, veuillez être patient. Voulez-vous continuer?",

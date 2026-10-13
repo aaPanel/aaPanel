@@ -258,6 +258,24 @@ class ServerNodeDB:
 
         return ""
 
+    def update_monitor_state(self, node_id: int, error_num: int, error: dict, status: Optional[int] = None) -> str:
+        """Update only fields owned by node monitoring."""
+        if self.is_local_node(node_id):
+            return "Cannot modify local nodes"
+        data = {
+            "error_num": int(error_num),
+            "error": json.dumps(error if isinstance(error, dict) else {}),
+        }
+        if status is not None:
+            data["status"] = int(status)
+        try:
+            result = self.db.table('node').where('id=?', (int(node_id),)).update(data)
+            if isinstance(result, str):
+                return result
+        except Exception as e:
+            return str(e)
+        return ""
+
     def set_node_ssh_conf(self, node_id: int, ssh_conf: dict, ssh_test: int=0):
         pdata = {"ssh_conf": json.dumps(ssh_conf)}
         if ssh_test:
@@ -432,7 +450,7 @@ class ServerMonitorRepo:
         from system import system
         sys_obj = system()
         try:
-            return sys_obj.GetNetWork(None)
+            return sys_obj.GetNodeMonitorData()
         except Exception:
             return ServerMonitorRepo.get_local_server_status_without_request(sys_obj)
 

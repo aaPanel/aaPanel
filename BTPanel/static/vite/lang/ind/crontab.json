@@ -98,7 +98,20 @@
 			"index_95": "Dieksekusi setiap {0} detik",
 			"index_96": "Pilih skrip",
 			"index_97": "Silakan pilih skrip (pencarian didukung)",
-			"index_98": "Untuk menjaga stabilitas layanan dan memastikan kelancaran kinerja, harap jangan sering menjalankan skrip dengan beban tinggi dan hindari menambahkan terlalu banyak tugas seperti itu"
+			"index_98": "Untuk menjaga stabilitas layanan dan memastikan kelancaran kinerja, harap jangan sering menjalankan skrip dengan beban tinggi dan hindari menambahkan terlalu banyak tugas seperti itu",
+			"index_99": "No data available to export",
+			"index_100": "Exporting cron jobs, please wait...",
+			"index_102": "Import cron jobs",
+			"index_103": "Cron job import result",
+			"index_104": "Continue importing the file data into the existing cron jobs?",
+			"index_105": "Skip duplicate cron jobs",
+			"index_106": "Import successful",
+			"index_107": "Import failed",
+			"index_108": "Duplicate task skipped",
+			"index_109": "Cron job name",
+			"index_110": "Operation result",
+			"index_111": "Importing duplicate tasks may cause system service issues. Please proceed carefully.",
+			"index_112": "Please select a valid JSON file"
 		},
 		"arrange": {
 			"index_1": "Jalankan tugas skrip di [{0}] segera, proses eksekusi mungkin menunggu lama, harap bersabar. Apakah Anda ingin melanjutkan?",

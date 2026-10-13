@@ -229,7 +229,7 @@
             "uploadToCloud": "Cloud Storage에 업로드",
             "cloudStorage": {
                 "ftp": "FTP 스토리지",
-                "awsS3": "AWS S3 스토리지",
+                "awsS3": "S3 스토리지",
                 "gdrive": "Google Drive",
                 "gcloudStorage": "Google Cloud Storage"
             }

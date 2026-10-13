@@ -98,7 +98,20 @@
 			"index_95": "هر {0} ثانیه اجرا می شود",
 			"index_96": "اسکریپت را انتخاب کنید",
 			"index_97": "لطفاً یک اسکریپت انتخاب کنید (جستجو پشتیبانی می شود)",
-			"index_98": "برای حفظ پایداری سرویس و اطمینان از عملکرد روان، لطفاً از اجرای مکرر اسکریپت‌های با بار بالا خودداری کنید و از اضافه کردن بیش از حد این کارها خودداری کنید."
+			"index_98": "برای حفظ پایداری سرویس و اطمینان از عملکرد روان، لطفاً از اجرای مکرر اسکریپت‌های با بار بالا خودداری کنید و از اضافه کردن بیش از حد این کارها خودداری کنید.",
+			"index_99": "No data available to export",
+			"index_100": "Exporting cron jobs, please wait...",
+			"index_102": "Import cron jobs",
+			"index_103": "Cron job import result",
+			"index_104": "Continue importing the file data into the existing cron jobs?",
+			"index_105": "Skip duplicate cron jobs",
+			"index_106": "Import successful",
+			"index_107": "Import failed",
+			"index_108": "Duplicate task skipped",
+			"index_109": "Cron job name",
+			"index_110": "Operation result",
+			"index_111": "Importing duplicate tasks may cause system service issues. Please proceed carefully.",
+			"index_112": "Please select a valid JSON file"
 		},
 		"arrange": {
 			"index_1": "کار اسکریپت را فوراً در [{0}] اجرا کنید، فرآیند اجرا ممکن است مدت زیادی منتظر بماند، لطفا صبور باشید. آیا می خواهید ادامه دهید؟",

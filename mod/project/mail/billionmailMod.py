@@ -1588,6 +1588,7 @@ class main:
             })
 
         data = body.get("data", {})
+        public.set_module_logs("BillionMail", "sso_login", 1)
         iframe_url = self._sso_bridge_url(app.get("service_name"), get.get("redirect", ""))
         return self._ok({
             "mode": mode,

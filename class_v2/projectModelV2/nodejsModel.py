@@ -34,6 +34,8 @@ class main(projectBase):
     _node_logs_path = '{}/vhost/logs'.format(_nodejs_path)
     _node_run_scripts = '{}/vhost/scripts'.format(_nodejs_path)
     _pids = None
+    _mount_cache = None          # 系统/NVM node 挂载结果缓存（类级，跨请求生效）
+    _mount_cache_time = 0        # 缓存时间戳
     _vhost_path = '{}/vhost'.format(_panel_path)
     _www_home = '/home/www'
     _node_logs = '{}/vhost/logs'.format(_nodejs_path)
@@ -186,7 +188,167 @@ class main(projectBase):
                     public.ExecShell('rm -rf {}'.format(node_path))
                 continue
             nodejs_list.append(v)
+        # 排序:面板版本在前，系统/NVM后缀版本在后（顺带稳定默认版本选取）
+        nodejs_list.sort(key=lambda v: (1 if '-' in v else 0,
+                                        tuple(map(int, re.findall(r'\d+', v)))))
         return public.return_message(0, 0, nodejs_list)
+
+    # 版本运行时管理（系统/NVM node 扫描与汇总）
+    # 插件 nodejs 只管理面板安装版本 系统/NVM 版本由面板侧统一管理
+    def scan_system_nodes(self, get):
+        '''
+            @name 扫描系统与NVM安装的node版本并入面板管理
+            @param get<dict_obj>
+            @return dict {data, created, skipped}
+        '''
+        from mod.project.nodejs.base import NodeJs
+        res = NodeJs().scan_system_nodes(get)
+        # 主动扫描 = 最新结果，刷新挂载缓存
+        main._mount_cache = res
+        main._mount_cache_time = time.time()
+        public.set_module_logs("node_site_nvm", "scan_system_nodes")
+        return res
+
+    def _ensure_node_runtime_mounted(self):
+        '''
+            @name 确保系统/NVM node 已挂载 60s缓存
+            node -v / which / npm root -g 等慢操作
+        '''
+        if main._mount_cache_time and time.time() - main._mount_cache_time < 60:
+            return main._mount_cache
+        try:
+            from mod.project.nodejs.base import NodeJs
+            res = NodeJs().scan_system_nodes(public.to_dict_obj({}))
+        except:
+            res = None
+        main._mount_cache = res
+        main._mount_cache_time = time.time()
+        return res
+
+    def get_node_runtime_list(self, get):
+        '''
+            @name 汇总已管理版本（面板安装 + 系统/NVM）
+            @param get<dict_obj>
+            @return dict {data: [{version, source, path}]}
+        '''
+        from mod.project.nodejs.base import NodeJs
+        return NodeJs().get_node_runtime_list(get)
+
+    def set_default_node_version(self, get):
+        '''
+            @name 切换命令行默认 node（which node）到指定版本
+            @param get<dict_obj> {version: 'v24.15.0' | 'v22.14.0-nvm-root'}
+            @return dict
+        '''
+        from mod.project.nodejs.base import NodeJs
+        public.set_module_logs("node_site", "set_default_node_version")
+        return NodeJs().set_default_node_version(get)
+
+    def remove_extra_node(self, get):
+        '''
+            @name 卸载系统/NVM版本（仅删软链目录，不影响真实node）
+            @param get<dict_obj> {version: 'v24.19.0-system'}
+            @return dict
+        '''
+        from mod.project.nodejs.base import NodeJs
+        return NodeJs().remove_extra_node(get)
+
+    def get_nvm_env_info(self, get):
+        '''
+            @name 获取 System NVM 环境信息
+            @param get<dict_obj>
+            @return dict {nvm_dir, current_version, installed, source, source_url}
+        '''
+        from mod.project.nodejs.base import NodeJs
+        public.set_module_logs("node_site_nvm", "get_nvm_env_info")
+        return NodeJs().get_nvm_env_info(get)
+
+    def switch_nvm_default_version(self, get):
+        '''
+            @name 切换 NVM 环境默认版本
+            @param get<dict_obj> {version: 'v22.14.0'}
+            @return dict
+        '''
+        from mod.project.nodejs.base import NodeJs
+        public.set_module_logs("node_site_nvm", "switch_nvm_default_version")
+        return NodeJs().switch_nvm_default_version(get)
+
+    def set_nvm_config(self, get):
+        '''
+            @name 设置 NVM 下载源（可选 version 同时切换环境默认版本）
+            @param get<dict_obj> {source: 'npmmirror', custom_url: '', version?: 'v22.18.0'}
+            @return dict
+        '''
+        from mod.project.nodejs.base import NodeJs
+        public.set_module_logs("node_site_nvm", "set_nvm_config")
+        return NodeJs().set_nvm_config(get)
+
+    def install_nvm_node(self, get):
+        '''
+            @name 异步通过 root NVM 安装新版本 node
+            @param get<dict_obj> {version: 'v22.18.0', source?: '', custom_url?: '', switch_nvm?: '1'}
+            switch_nvm=1 安装成功同时切换 NVM 环境默认版本
+            @return dict
+        '''
+        from mod.project.nodejs.base import NodeJs
+        public.set_module_logs("node_site_nvm", "install_nvm_node")
+        return NodeJs().install_nvm_node(get)
+
+    def get_nvm_online_versions(self, get):
+        '''
+            @name 获取 NVM 可安装版本列表（来自下载源 index.json，每个大版本只留最新稳定版）
+            @param get<dict_obj> {force?: '1'}
+            @return list [{version, lts, npm}]
+        '''
+        from mod.project.nodejs.base import NodeJs
+        return NodeJs().get_nvm_online_versions(get)
+
+    def get_nvm_install_status(self, get):
+        '''
+            @name 查询 NVM 异步安装任务状态（安装完成后自动触发扫描）
+            @param get<dict_obj>
+            @return dict {status: idle|running|success|failed, version, message, scan?, started_at, finished_at}
+        '''
+        from mod.project.nodejs.base import NodeJs
+        return NodeJs().get_nvm_install_status(get)
+
+    def get_package_manager_info(self, get):
+        '''
+            @name 获取指定 node 版本下各包管理器的实际版本与存在状态
+            @param get<dict_obj> {nodejs_version: 'v22.14.0-nvm-root'}
+            @return dict {data: [{name, version, detected, path}]}
+            detected 表示该版本 bin 下是否存在此包管理器（软链也算，跟随真实路径）
+            面板版本直接探测 bin 下命令；系统/NVM 版本探测其 bin 软链（指向真实 npm/pnpm/yarn）
+        '''
+        nodejs_version = get.get('nodejs_version', '')
+        if not nodejs_version:
+            return public.return_message(-1, 0, public.lang(
+                'The "nodejs_version" parameter cannot be left blank.'))
+        node_dir = '{}/{}'.format(self._nodejs_path, nodejs_version)
+        if not os.path.exists(node_dir):
+            return public.return_message(-1, 0, public.lang(
+                'This version does not exist: {}'.format(nodejs_version)))
+        bin_dir = os.path.join(node_dir, 'bin')
+        result = []
+        for name in ('pnpm', 'yarn','npm'):
+            pkg_bin = os.path.join(bin_dir, name)
+            version = ''
+            if os.path.exists(pkg_bin):
+                # PATH 前缀让 npm/pnpm/yarn 由其所属 node 解释（系统 npm 依赖该系统 node）
+                try:
+                    ver_out = public.ExecShell(
+                        'PATH="{}:$PATH" "{}" -v 2>/dev/null'.format(bin_dir, pkg_bin))[0].strip()
+                    if ver_out:
+                        version = ver_out
+                except:
+                    pass
+            result.append({
+                'name': name,
+                'version': version,
+                'detected': bool(version),
+                'path': pkg_bin if os.path.exists(pkg_bin) else '',
+            })
+        return public.return_message(0, 0, result)
 
     def get_run_list(self, get):
         '''
@@ -723,6 +885,26 @@ export PATH
             format_domains.append(domain)
         return format_domains, ''
 
+    def _get_node_version_owner(self, nodejs_version):
+        '''
+            @name 读取 node 版本目录的属主（用于 run_user 权限校验）
+            优先读标记文件 owner；读不到时从目录名 {version}-{source}-{owner} 解析
+            @param nodejs_version<string> 版本目录名，如 v22.14.0-nvm-root
+            @return string 属主用户，未知时返回 ''
+        '''
+        try:
+            flag_file = os.path.join(self._nodejs_path, nodejs_version, '.aapanel-node-extra')
+            if os.path.exists(flag_file):
+                flag = json.loads(public.readFile(flag_file))
+                if flag.get('owner'):
+                    return str(flag['owner'])
+            # 目录名尾段即 owner：v22.14.0-nvm-root -> root
+            if '-' in nodejs_version:
+                return str(nodejs_version.rsplit('-', 1)[-1])
+        except:
+            pass
+        return ''
+
     def _normalize_package_manager(self, pkg_manager):
         pkg_manager = str(pkg_manager or 'npm').strip().lower()
         if pkg_manager not in ('npm', 'pnpm', 'yarn'): return 'npm'
@@ -1030,8 +1212,65 @@ export PATH
 
     def _extract_nodejs_version_from_path(self, path):
         path = str(path or '').replace('\\', '/')
-        match = re.search(r'/nodejs/(v\d+(?:\.\d+){1,3})(?:/|$)', path)
-        return match.group(1) if match else ''
+        # 面板目录（含来源后缀软链目录）：/www/server/nodejs/v22.14.0-nvm-root/bin/node
+        match = re.search(r'/nodejs/(v\d+(?:\.\d+){1,3}[\w-]*)(?:/|$)', path)
+        if match:
+            return match.group(1)
+        # NVM 真实目录：/root/.nvm/versions/node/v22.14.0/bin/node
+        # 识别出版本后映射回面板软链目录名（v22.14.0-nvm-root），保证 get_node_bin 命中
+        match = re.search(r'/([^/]*\.nvm[^/]*)/versions/node/(v\d+(?:\.\d+){1,3})(?:/|$)', path)
+        if match:
+            return self._resolve_nvm_version(match.group(2), match.group(1))
+        # 真实 node 可执行文件（系统自装如 /usr/local/node-v24.20.0/bin/node） 正则匹配不到
+        # 用 realpath 与已挂载版本目录 bin/node 比对，命中返回挂载目录名（如 v24.20.0-system-root），
+        # 保证进程真实解释器能映射到 get_node_bin 可用的目录
+        try:
+            if not os.path.exists(path): return ''
+            real = os.path.realpath(path)
+            if not real or os.path.basename(real) not in ('node', 'nodejs'): return ''
+            if os.path.isdir(self._nodejs_path):
+                for v in os.listdir(self._nodejs_path):
+                    if not v.startswith('v') or '-' not in v: continue
+                    try:
+                        if os.path.realpath('{}/{}/bin/node'.format(self._nodejs_path, v)) == real:
+                            return v
+                    except:
+                        continue
+        except:
+            pass
+        return ''
+
+    def _resolve_nvm_version(self, nvm_version, nvm_dir=''):
+        '''
+            @name 将 NVM 真实版本号映射为面板侧软链目录名
+            /root/.nvm/versions/node/v22.14.0/bin/node
+                -> v22.14.0-nvm-root（当 /www/server/nodejs/ 下已扫描生成软链目录时）
+            找不到唯一目录（未扫描 / 多用户歧义）时返回原版本号
+        '''
+        try:
+            if not hasattr(self, '_nvm_resolve_cache'):
+                self._nvm_resolve_cache = {}
+            if nvm_version in self._nvm_resolve_cache:
+                return self._nvm_resolve_cache[nvm_version]
+            matched = []
+            if os.path.isdir(self._nodejs_path):
+                for v in os.listdir(self._nodejs_path):
+                    if not v.startswith(nvm_version + '-'):
+                        continue
+                    flag_file = os.path.join(self._nodejs_path, v, '.aapanel-node-extra')
+                    if not os.path.exists(flag_file):
+                        continue
+                    try:
+                        flag = json.loads(public.readFile(flag_file))
+                    except:
+                        flag = {}
+                    if flag.get('source') == 'nvm':
+                        matched.append(v)
+            resolved = matched[0] if len(matched) == 1 else nvm_version
+            self._nvm_resolve_cache[nvm_version] = resolved
+            return resolved
+        except:
+            return nvm_version
 
     def _append_nodejs_version_candidate(self, candidates, source, path, pid=0):
         version = self._extract_nodejs_version_from_path(path)
@@ -1227,6 +1466,10 @@ export PATH
             @name 扫描可导入的Node项目
             @return dict
         '''
+        # 先挂载系统/NVM node（幂等，60s 内重复扫描直接取缓存）：
+        # 保证用真实 NVM 路径启动的项目 nodejs_version 能映射出软链目录名
+        # （如 v22.14.0-nvm-root），否则只识别出纯版本号导致无法导入
+        self._ensure_node_runtime_mounted()
         existing_paths, existing_names = self._get_existing_node_scan_targets()
         skipped = {
             'unsupported': 0,
@@ -1291,8 +1534,6 @@ export PATH
         '''
         if not isinstance(get, public.dict_obj):
             get = public.to_dict_obj(get)
-        if not self._is_install_nodejs(get):
-            return self._nodejs_error(public.lang('Please install nodejs version manager first'))
         try:
             pid = int(get.get('pid', 0))
         except:
@@ -1342,6 +1583,9 @@ export PATH
             nodejs_version = self._get_default_nodejs_version()
         if not nodejs_version:
             return self._nodejs_error('Please install or select a Node.js version first.')
+        # # 无后缀版本需要检查插件安装
+        # if '-' not in nodejs_version and not self._is_install_nodejs(get):
+        #     return self._nodejs_error(public.lang('Please install nodejs version manager first'))
         if not self.get_node_bin(nodejs_version):
             return self._nodejs_error(public.lang('The specified nodejs version does not exist!'))
         try:
@@ -1444,18 +1688,13 @@ export PATH
             public.print_log("error info: {}".format(ex))
             return public.return_message(-1, 0, str(ex))
 
-        public.set_module_logs('node_site_nodejs', 'create_app', 1)
+        # public.set_module_logs('node_site_nodejs', 'create_app', 1)
         public.set_module_logs('node_site', 'create_app', 1)
 
         if not isinstance(get, public.dict_obj):
             return_message = public.return_error(public.lang('The parameter type is wrong, need dict obj object'))
             del return_message['status']
             return public.return_message(-1, 0, return_message)
-        if not self._is_install_nodejs(get):
-            return_message = public.return_error(public.lang('Please install nodejs version manager first'))
-            del return_message['status']
-            return public.return_message(-1, 0, return_message)
-
         project_name = get.project_name.strip()
         if not re.match(r"^\w+$", project_name):
             return_message = public.return_error(public.lang(
@@ -1488,6 +1727,22 @@ export PATH
         format_domains, error_msg = self._format_and_validate_domains(get.bind_extranet, get.get('domains', []),
                                                                       get.port)
         if error_msg: return self._nodejs_error(error_msg)
+
+        # 系统/NVM 版本与运行用户权限校验：
+        # NVM 版本属于某个 Linux 用户（/root/.nvm -> root、/home/xxx/.nvm -> xxx），
+        # 项目运行用户必须与版本属主一致，否则启动时无权访问该用户 home 下 nvm
+        nodejs_version = get.nodejs_version.strip()
+        # # 无后缀版本需要检查插件安装
+        # if '-' not in nodejs_version and not self._is_install_nodejs(get):
+        #     return self._nodejs_error(public.lang('Please install nodejs version manager first'))
+        if '-nvm-' in nodejs_version:
+            version_owner = self._get_node_version_owner(nodejs_version)
+            run_user = get.run_user.strip()
+            if version_owner and version_owner != run_user:
+                return self._nodejs_error(
+                    'The NVM Node.js version "{}" belongs to user "{}", but the project runs as user "{}". '
+                    'Please switch the runtime or the run user.'.format(
+                        nodejs_version, version_owner, run_user))
 
         pdata = {
             'name': get.project_name,
@@ -1527,22 +1782,35 @@ export PATH
 
         # ================ git start ======================
         try:
-            if get.get('deploy_type') in ['ssh', 'github']:
-                if get.get('deploy_type') == 'ssh':
-                    from git_tools import GitTools
-                    git_obj = GitTools()
+            _deploy_type = get.get('deploy_type', '')
+            _auth_type = get.get('auth_type', '')
+            _has_git = bool(_auth_type) or _deploy_type in ['ssh', 'github']
+            if _has_git:
+                if not _auth_type:
+                    _auth_type = {'ssh': 'ssh_key', 'github': 'github'}.get(_deploy_type, _deploy_type)
+                from git_tools import GitTools
+                git_obj = GitTools()
 
-                    # 已clone项目，使用.git导入
-                    res = git_obj.get_git_directory(public.to_dict_obj({"site_id": project_id}))
-                    if res['status'] != 0:
-                        return public.return_message(-1, 0, res['message'])
-                    res = res['message']
-                    res = git_obj.import_existing_repository(
-                        public.to_dict_obj({"site_id": project_id, "repo": res['repo'],
-                                            "branch": res['branch'], "key_path": res['key_path'],
-                                            "project_type": 'node'}))
-                    if res['status'] != 0:
-                        return public.return_message(-1, 0, res['message'])
+                # 已clone项目，使用.git导入
+                res = git_obj.get_git_directory(public.to_dict_obj({"site_id": project_id}))
+                if res['status'] != 0:
+                    return public.return_message(-1, 0, res['message'])
+                git_info = res['message'] or {}
+                if not git_info.get('repo'):
+                    return public.return_message(-1, 0, "Failed to read Git information from the cloned repository")
+                res = git_obj.import_existing_repository(
+                    public.to_dict_obj({
+                        "site_id": project_id,
+                        "repo": git_info['repo'],
+                        "branch": git_info['branch'],
+                        "key_path": git_info.get('key_path', ''),
+                        "auth_type": _auth_type,
+                        "username": get.get('username', ''),
+                        "token": get.get('token', ''),
+                        "project_type": 'node',
+                    }))
+                if res['status'] != 0:
+                    return public.return_message(-1, 0, res['message'])
         except Exception as e:
             print(e)
             # 失败不删除项目

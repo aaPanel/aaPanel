@@ -617,7 +617,7 @@
     "4cc4ddc196a295ee4ab82daec08f91a6": "El sitio no existe",
     "9d1ee7d092060a4d3418a979fba5e46b": "Respaldo_error",
     "f8320b26d30ab433c5a54546d21f414c": "FALSO",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Actualmente solo admite la restauración de copias de seguridad locales, almacenamiento de Google y AWS S3",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Actualmente solo admite la restauración de copias de seguridad locales, almacenamiento de Google y S3 Storage",
     "260ca9dd8a4577fc00b7bd5810298076": "éxito",
     "1cbb155db1ca49d77f886c41b7850b48": "¡Descargar error!",
     "f41a4952dfc4caafbed0a6afdd243bff": "Error de certificado, por favor verifique!",

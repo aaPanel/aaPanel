@@ -130,6 +130,9 @@ class main(projectBase):
                     public.ExecShell('rm -rf {}'.format(node_path))
                 continue
             nodejs_list.append(v)
+        # 排序: 面板版本在前，系统/NVM后缀版本在后（顺带稳定默认版本选取）
+        nodejs_list.sort(key=lambda v: (1 if '-' in v else 0,
+                                        tuple(map(int, re.findall(r'\d+', v)))))
         return nodejs_list
 
 
@@ -460,8 +463,10 @@ export PATH
             @return dict
         '''
         if not isinstance(get,public.dict_obj): return public.return_error('The parameter type is wrong, need dict obj object')
-        if not self.is_install_nodejs(get):
-            return public.return_error('Please install nodejs version manager first')
+        # 无后缀版本需要检查插件安装
+        # nodejs_version = get.nodejs_version.strip()
+        # if '-' not in nodejs_version and not self._is_install_nodejs(get):
+        #     return public.return_error('Please install nodejs version manager first')
 
         project_name = get.project_name.strip()
         if not re.match(r"^\w+$",project_name): 

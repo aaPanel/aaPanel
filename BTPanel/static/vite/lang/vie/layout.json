@@ -101,7 +101,8 @@
 			"account_5": "Kho",
 			"account_6": "Cài đặt",
 			"domain_1": "Miền",
-			"domain_2": "Giấy chứng nhận"
+			"domain_2": "Giấy chứng nhận",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "Bảng điều khiển Aapanel Linux © 2014- {0} Aapanel",
@@ -117,5 +118,25 @@
 			"index_6": "Hộp tin nhắn",
 			"index_7": "Tiêu thụ thời gian"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Tìm kiếm toàn cục",
+		"sider": "Tìm kiếm (Ctrl+K)",
+		"placeholder": "Nhập từ khóa rồi nhấn Enter để tìm kiếm",
+		"group_menu": "Trình đơn",
+		"group_tab": "Tab trang",
+		"group_action": "Hành động",
+		"history": "Tìm kiếm gần đây",
+		"clear": "Xóa",
+		"searching": "Đang tìm kiếm…",
+		"done": "Xong · {n} kết quả",
+		"empty": "Không tìm thấy kết quả",
+		"empty_tip": "Hãy thử từ khóa ngắn hơn hoặc đổi loại tìm kiếm",
+		"press_enter_search": "Nhấn Enter hoặc nhấp vào biểu tượng tìm kiếm để tìm thêm",
+		"no_local": "Không tìm thấy tính năng phù hợp",
+		"footer": "↑↓ Điều hướng · Enter Mở hoặc Tìm kiếm · Esc Đóng",
+		"welcome": "Tìm kiếm trình đơn, trang web, cơ sở dữ liệu, FTP, cron, phần mềm và hành động",
+		"type_all": "Tất cả",
+		"scope_label": "Loại tìm kiếm"
 	}
 }

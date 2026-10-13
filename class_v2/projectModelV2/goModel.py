@@ -201,14 +201,17 @@ class main(projectBase):
         project_cmd = project_config['project_cmd']
         cmd_list = self.split_command(project_cmd)
         pids = []
-        for i in psutil.process_iter(['pid', 'exe', 'cmdline']):
+        # 用 psutil.pids() 先取 PID 列表，再逐个 Process()。避免 process_iter()
+        for pid in psutil.pids():
             try:
-                if i.status() == "zombie":
+                p = psutil.Process(pid)
+                if p.status() == "zombie":
                     continue
-                if project_exe == i.exe() and cmd_list[1:] == i.cmdline()[1:]:
-                    pids.append(i.pid)
-            except:
-                pass
+                if project_exe == p.exe() and cmd_list[1:] == p.cmdline()[1:]:
+                    pids.append(pid)
+            except (psutil.NoSuchProcess, psutil.AccessDenied,
+                    FileNotFoundError, ProcessLookupError):
+                continue
 
         running_pid = []
         for pid in pids:
@@ -222,7 +225,11 @@ class main(projectBase):
 
         main_pid = []
         for pid in running_pid:
-            p = psutil.Process(pid)
+            try:
+                p = psutil.Process(pid)
+            except (psutil.NoSuchProcess, psutil.AccessDenied,
+                    FileNotFoundError, ProcessLookupError):
+                continue
             if p.ppid() not in running_pid:
                 main_pid.append(pid)
 
@@ -1519,6 +1526,43 @@ echo $! > {pid_file}'''.format(
         self.set_config(get.project_name)
         public.WriteLog(self._log_name, 'Add Go project [{}]'.format(get.project_name))
         self.start_project(get)
+
+        # ================ git start ======================
+        try:
+            _deploy_type = get.get('deploy_type', '')
+            _auth_type = get.get('auth_type', '')
+            _has_git = bool(_auth_type) or _deploy_type in ['ssh', 'github']
+            if _has_git:
+                if not _auth_type:
+                    _auth_type = {'ssh': 'ssh_key', 'github': 'github'}.get(_deploy_type, _deploy_type)
+                from git_tools import GitTools
+                git_obj = GitTools()
+
+                # 已clone项目，使用.git导入
+                res_info = git_obj.get_git_directory(public.to_dict_obj({"site_id": project_id}))
+                if res_info['status'] != 0:
+                    return self.return_result(get, -1, res_info['message'])
+                git_info = res_info['message'] or {}
+                if not git_info.get('repo'):
+                    return self.return_result(get, -1, "Failed to read Git information from the cloned repository")
+                import_res = git_obj.import_existing_repository(
+                    public.to_dict_obj({
+                        "site_id": project_id,
+                        "repo": git_info['repo'],
+                        "branch": git_info['branch'],
+                        "key_path": git_info.get('key_path', ''),
+                        "auth_type": _auth_type,
+                        "username": get.get('username', ''),
+                        "token": get.get('token', ''),
+                        "project_type": 'go',
+                    }))
+                if import_res['status'] != 0:
+                    return self.return_result(get, -1, import_res['message'])
+        except Exception as e:
+            print(e)
+            return self.return_result(get, -1, "There was an error while configuring Git tools!")
+        # ================ git end ======================
+
         flag, tip = self._release_firewall(get)
         msg = 'Project added successfully' + ("" if flag else "<br>" + tip)
         return self.return_result(get,0,{"data":msg,"project_id":project_id})

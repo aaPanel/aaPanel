@@ -970,7 +970,7 @@
     "d07fa2f572b6d22996d25439da3f5d88": "Dosya başarıyla indirildi",
     "db1cbd9059a4f043534a00142cdfffde": "indirme başarısız oldu",
     "c614196ffa00bf43880f547acfab993b": "Panel yedekleme dosyasını bulamıyor: {}",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Şu anda yalnızca yerel, Google depolama ve AWS S3 yedeklemelerini geri yüklemeyi destekliyor",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Şu anda yalnızca yerel, Google depolama ve S3 Storage yedeklemelerini geri yüklemeyi destekliyor",
     "6f3446d8579a066540c5d7e68ff05f0b": "Geri Yükleme Başarılı",
     "260ca9dd8a4577fc00b7bd5810298076": "başarılı",
     "1cbb155db1ca49d77f886c41b7850b48": "İndirme hatası!",

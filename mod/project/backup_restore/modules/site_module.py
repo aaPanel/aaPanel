@@ -208,6 +208,11 @@ class SiteModule(DataManager):
         if not os.path.exists(site_zip):
             return False, public.lang("Site archive was not generated")
 
+        try:
+            shutil.rmtree(site_path)
+        except Exception as e:
+            return False, public.lang("Failed to clean temporary site backup directory: {}").format(str(e))
+
         return True, ""
 
     def get_site_backup_conf(self, timestamp=None):

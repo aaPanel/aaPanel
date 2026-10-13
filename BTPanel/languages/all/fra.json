@@ -635,7 +635,7 @@
     "f8320b26d30ab433c5a54546d21f414c": "FAUX",
     "6f3446d8579a066540c5d7e68ff05f0b": "Restaurer le succès",
     "260ca9dd8a4577fc00b7bd5810298076": "succès",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Actuellement ne prend en charge la restauration des sauvegardes locales, Google Storage et AWS S3",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Actuellement ne prend en charge la restauration des sauvegardes locales, Google Storage et S3 Storage",
     "1cbb155db1ca49d77f886c41b7850b48": "Téléchargez l'erreur!",
     "f41a4952dfc4caafbed0a6afdd243bff": "Erreur de certificat, veuillez vérifier!",
     "2dfadbc8b23727991de7eb9457f56252": "Le certificat a été enregistré!",

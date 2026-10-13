@@ -118,5 +118,25 @@
 			"index_6": "Messages Box",
 			"index_7": "Time Consumption"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Global Search",
+		"sider": "Search (Ctrl+K)",
+		"placeholder": "Enter a keyword and press Enter to search",
+		"group_menu": "Menus",
+		"group_tab": "Page Tabs",
+		"group_action": "Actions",
+		"history": "Recent Searches",
+		"clear": "Clear",
+		"searching": "Searching...",
+		"done": "Done · {n} results",
+		"empty": "No results found",
+		"empty_tip": "Try a shorter keyword or switch the search type",
+		"press_enter_search": "Press Enter or click the search icon to search for more",
+		"no_local": "No matching feature found",
+		"footer": "↑↓ Navigate · Enter Open or Search · Esc Close",
+		"welcome": "Search menus, sites, databases, FTP, cron, software and actions",
+		"type_all": "All",
+		"scope_label": "Search Type"
 	}
 }

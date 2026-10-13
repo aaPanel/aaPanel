@@ -98,7 +98,20 @@
 			"index_95": "Выполнять каждые {0} секунд",
 			"index_96": "Выберите скрипт",
 			"index_97": "Выберите скрипт (поддерживается поиск)",
-			"index_98": "Для стабильной работы не запускайте ресурсоёмкие скрипты слишком часто и не добавляйте много таких задач"
+			"index_98": "Для стабильной работы не запускайте ресурсоёмкие скрипты слишком часто и не добавляйте много таких задач",
+			"index_99": "No data available to export",
+			"index_100": "Exporting cron jobs, please wait...",
+			"index_102": "Import cron jobs",
+			"index_103": "Cron job import result",
+			"index_104": "Continue importing the file data into the existing cron jobs?",
+			"index_105": "Skip duplicate cron jobs",
+			"index_106": "Import successful",
+			"index_107": "Import failed",
+			"index_108": "Duplicate task skipped",
+			"index_109": "Cron job name",
+			"index_110": "Operation result",
+			"index_111": "Importing duplicate tasks may cause system service issues. Please proceed carefully.",
+			"index_112": "Please select a valid JSON file"
 		},
 		"arrange": {
 			"index_1": "Немедленно выполнить задачу скрипта в [{0}]? Процесс может занять значительное время.",

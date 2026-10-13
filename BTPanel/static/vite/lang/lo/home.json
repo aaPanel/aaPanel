@@ -1,5 +1,20 @@
 {
 	"Home": {
+		"Header": {
+			"Account": {
+				"bindAccount": "Bind account",
+				"promoTitle": "Anniversary Sale",
+				"promoCopy": "Pro features are 25% off for a limited time.",
+				"promoBadge": "25% OFF",
+				"boundServers": "Bound servers",
+				"proServers": "Pro servers",
+				"accountSettings": "Account settings",
+				"orderCenter": "Order Center",
+				"modifyAccount": "Modify account",
+				"unbindAccount": "Unbind account",
+				"loading": "Loading account information..."
+			}
+		},
 		"index_1": "ຊຸດຊອບແວທີ່ແນະນຳ",
 		"index_2": "ບັນຊີ",
 		"index_3": "ລະບົບ: ",

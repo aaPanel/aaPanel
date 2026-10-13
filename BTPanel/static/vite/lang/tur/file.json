@@ -219,15 +219,49 @@
 			"messages": {
 				"addedToFavorites": "Başarıyla favorilere eklendi.",
 				"copySuccess": "Başarıyla kopyalandı. Yapıştırmak için [Yapıştır] düğmesine tıklayın veya Ctrl + V tuşlarına basın.",
-				"cutSuccess": "Başarıyla kesildi. Yapıştırmak için [Yapıştır] düğmesine tıklayın veya Ctrl + V tuşlarına basın."
+				"cutSuccess": "Başarıyla kesildi. Yapıştırmak için [Yapıştır] düğmesine tıklayın veya Ctrl + V tuşlarına basın.",
+				"cloudUploadNotConnected": "Upload to cloud storage is not connected yet."
 			},
 			"defaultNames": {
 				"untitledFile": "isimsiz dosya",
 				"untitledDirectory": "isimsiz dizin"
+			},
+			"uploadToCloud": "Upload to Cloud Storage",
+			"cloudStorage": {
+				"ftp": "FTP Storage",
+				"awsS3": "S3 Storage",
+				"gdrive": "Google Drive",
+				"gcloudStorage": "Google Cloud Storage"
 			}
 		},
 		"cloudStorageTransfer": {
-			"overwriteRiskConfirm": "[{0}] dosyası aktarılıyor, dosya varsa üzerine yazılacak. Devam edilsin mi?"
+			"overwriteRiskConfirm": "[{0}] dosyası aktarılıyor, dosya varsa üzerine yazılacak. Devam edilsin mi?",
+			"allFilesSkipped": "All files are skipped",
+			"createFolder": "Create folder",
+			"deleteConfirm": "Are you sure to delete {0} [{1}]?",
+			"deleteFile": "Delete file",
+			"downloadConfirm": "Are you sure to send [{0}] to the left?",
+			"file": "File",
+			"folderName": "Folder name",
+			"folderNamePlaceholder": "Enter folder name",
+			"folder": "Folder",
+			"localFiles": "Local files",
+			"rootDirectoryCannotUpload": "Root directory cannot upload files",
+			"searchPlaceholder": "Enter file name",
+			"sendToLeft": "Send to left",
+			"sendToRight": "Send to right",
+			"taskPreparing": "Preparing task...",
+			"taskStep": "Step {0}",
+			"transferComplete": "Transfer complete",
+			"transferFailed": "Transfer failed",
+			"transferInProgress": "Transferring, please wait...",
+			"transferProgress": "Transfer progress",
+			"uploadCanceled": "Upload canceled: {0}",
+			"uploadFailed": "Upload failed",
+			"uploadFilesTo": "Upload files to [{0}]",
+			"uploadFolder": "Upload folder",
+			"uploadFolderConfirm": "Folder [{0}] will be compressed into an archive before upload. Continue?",
+			"fileUploadFailed": "{0} upload failed"
 		},
 		"tableController": {
 			"calculationFailed": "Hesaplama Başarısız",

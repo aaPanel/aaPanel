@@ -98,7 +98,20 @@
 			"index_95": "每{0}秒執行一次",
 			"index_96": "選擇腳本",
 			"index_97": "請選擇腳本，支援搜尋",
-			"index_98": "為了維護服務穩定並確保運行潤滑，請避免頻繁地執行高負載腳本，並避免添加過多此類任務"
+			"index_98": "為了維護服務穩定並確保運行潤滑，請避免頻繁地執行高負載腳本，並避免添加過多此類任務",
+			"index_99": "No data available to export",
+			"index_100": "Exporting cron jobs, please wait...",
+			"index_102": "Import cron jobs",
+			"index_103": "Cron job import result",
+			"index_104": "Continue importing the file data into the existing cron jobs?",
+			"index_105": "Skip duplicate cron jobs",
+			"index_106": "Import successful",
+			"index_107": "Import failed",
+			"index_108": "Duplicate task skipped",
+			"index_109": "Cron job name",
+			"index_110": "Operation result",
+			"index_111": "Importing duplicate tasks may cause system service issues. Please proceed carefully.",
+			"index_112": "Please select a valid JSON file"
 		},
 		"arrange": {
 			"index_1": "立即在[{0}]中執行腳本任務，執行過程可能會等待很長時間，請耐心等待。你想繼續嗎？",

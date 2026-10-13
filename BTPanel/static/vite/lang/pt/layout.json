@@ -101,7 +101,8 @@
 			"domain_2": "Certificado",
 			"security_8": "Website Security",
 			"security_9": "Scan Detection",
-			"wap_12": "Exclusive Rules"
+			"wap_12": "Exclusive Rules",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "Painel Linux aaPanel ©2014-{0} aaPanel",
@@ -117,5 +118,25 @@
 			"index_6": "Caixa de Mensagens",
 			"index_7": "Consumo de Tempo"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Pesquisa Global",
+		"sider": "Pesquisar (Ctrl+K)",
+		"placeholder": "Digite uma palavra-chave e pressione Enter para pesquisar",
+		"group_menu": "Menus",
+		"group_tab": "Abas da página",
+		"group_action": "Ações",
+		"history": "Pesquisas recentes",
+		"clear": "Limpar",
+		"searching": "Pesquisando…",
+		"done": "Concluído · {n} resultados",
+		"empty": "Nenhum resultado encontrado",
+		"empty_tip": "Tente uma palavra-chave mais curta ou mude o tipo de pesquisa",
+		"press_enter_search": "Pressione Enter ou clique no ícone de pesquisa para pesquisar mais",
+		"no_local": "Nenhum recurso correspondente encontrado",
+		"footer": "↑↓ Navegar · Enter Abrir ou Pesquisar · Esc Fechar",
+		"welcome": "Pesquisar menus, sites, bancos de dados, FTP, cron, software e ações",
+		"type_all": "Todos",
+		"scope_label": "Tipo de pesquisa"
 	}
 }

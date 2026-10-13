@@ -158,7 +158,7 @@ class panel_restore:
             self._download_google_drive_file(args)
             result = self._restore_backup(self._local_file, site_info, args)
         else:
-            return public.return_msg_gettext(False, public.lang("Currently only supports restoring local, Google storage and AWS S3 backups"))
+            return public.return_msg_gettext(False, public.lang("Currently only supports restoring local, Google storage and S3 Storage backups"))
         if os.path.exists(self._local_file):
             os.remove(self._local_file)
         if result:
@@ -204,7 +204,7 @@ class panel_restore:
             elif backup_method == 'Google Drive':
                 self._download_google_drive_file(args)
             else:
-                return public.returnMsg(False, public.lang("Currently only supports restoring local, Google storage and AWS S3 backups"))
+                return public.returnMsg(False, public.lang("Currently only supports restoring local, Google storage and S3 Storage backups"))
             public.ExecShell('mv {} {}/database'.format(self._local_file, self._get_local_backup_path()))
             return public.returnMsg(True, public.lang("success"))
         except:

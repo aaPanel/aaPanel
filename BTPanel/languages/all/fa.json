@@ -976,7 +976,7 @@
     "Download the file successfully": "فایل را با موفقیت دانلود کنید",
     "download failed": "دانلود انجام نشد",
     "Panel does not find the backup file: {}": "پانل فایل پشتیبان را پیدا نمی کند: {}",
-    "Currently only supports restoring local, Google storage and AWS S3 backups": "در حال حاضر فقط از بازیابی نسخه پشتیبان محلی، ذخیره سازی Google و AWS S3 پشتیبانی می کند",
+    "Currently only supports restoring local, Google storage and S3 Storage backups": "در حال حاضر فقط از بازیابی نسخه پشتیبان محلی، ذخیره سازی Google و S3 Storage پشتیبانی می کند",
     "Restore Successful": "بازیابی با موفقیت انجام شد",
     "success": "موفقیت",
     "Download error!": "خطای دانلود!",

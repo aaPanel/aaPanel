@@ -118,5 +118,25 @@
 			"index_6": "صندوق الرسائل",
 			"index_7": "الوقت المستغرق"
 		}
+	},
+	"GlobalSearch": {
+		"title": "البحث الشامل",
+		"sider": "Search (Ctrl+K)",
+		"placeholder": "أدخل كلمة مفتاحية ثم اضغط Enter للبحث",
+		"group_menu": "Menus",
+		"group_tab": "Page Tabs",
+		"group_action": "Actions",
+		"history": "Recent Searches",
+		"clear": "Clear",
+		"searching": "Searching...",
+		"done": "تم · {n} من النتائج",
+		"empty": "No results found",
+		"empty_tip": "جرّب كلمة مفتاحية أقصر أو بدّل نوع البحث",
+		"press_enter_search": "اضغط Enter أو انقر على أيقونة البحث للبحث عن المزيد",
+		"no_local": "لم يتم العثور على وظيفة مطابقة",
+		"footer": "↑↓ للتنقل · Enter للفتح أو البحث · Esc للإغلاق",
+		"welcome": "Search menus, sites, databases, FTP, cron, software and actions",
+		"type_all": "الكل",
+		"scope_label": "نوع البحث"
 	}
 }

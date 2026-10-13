@@ -101,7 +101,8 @@
 			"account_5": "Almacenamiento",
 			"account_6": "Ajustes",
 			"domain_1": "Dominio",
-			"domain_2": "Certificado"
+			"domain_2": "Certificado",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "AAPANEL PANEL LINUX © 2014- {0} aapanel",
@@ -117,5 +118,25 @@
 			"index_6": "Mensajes de caja",
 			"index_7": "Consumo de tiempo"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Búsqueda Global",
+		"sider": "Buscar (Ctrl+K)",
+		"placeholder": "Escriba una palabra clave y pulse Enter para buscar",
+		"group_menu": "Menús",
+		"group_tab": "Pestañas de página",
+		"group_action": "Acciones",
+		"history": "Búsquedas recientes",
+		"clear": "Limpiar",
+		"searching": "Buscando…",
+		"done": "Listo · {n} resultados",
+		"empty": "No se encontraron resultados",
+		"empty_tip": "Pruebe una palabra clave más corta o cambie el tipo de búsqueda",
+		"press_enter_search": "Pulse Enter o haga clic en el icono de búsqueda para buscar más",
+		"no_local": "No se encontró ninguna función coincidente",
+		"footer": "↑↓ Navegar · Enter Abrir o Buscar · Esc Cerrar",
+		"welcome": "Buscar menús, sitios, bases de datos, FTP, cron, software y acciones",
+		"type_all": "Todos",
+		"scope_label": "Tipo de búsqueda"
 	}
 }

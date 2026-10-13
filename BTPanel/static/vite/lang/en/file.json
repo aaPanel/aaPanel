@@ -256,7 +256,7 @@
 			"uploadToCloud": "Upload to Cloud Storage",
 			"cloudStorage": {
 				"ftp": "FTP Storage",
-				"awsS3": "AWS S3 Storage",
+				"awsS3": "S3 Storage",
 				"gdrive": "Google Drive",
 				"gcloudStorage": "Google Cloud Storage"
 			},

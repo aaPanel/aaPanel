@@ -66,7 +66,7 @@ class backup:
         "ftp": "FTP Storage",
         "bos": "Baidu Cloud BOS",
         "obs": "Huawei Cloud OBS",
-        "aws_s3": "AWS S3",
+        "aws_s3": "S3 Storage",
         "gdrive": "Google Drive",
         "msonedrive": "Microsoft OneDrive",
         "gcloud_storage": "Google Cloud Storage",
@@ -311,7 +311,7 @@ class backup:
                 return False
         else:  # 正常上传
             error_msg = ""
-            if self._cloud._title != "AWS S3":
+            if self._cloud._title != "S3 Storage":
                 #  Google Drive , Ftp, other
                 if hasattr(self._cloud_new, "cloud_upload_file"):
                     # 统一使用新函数上传, 使用upload_path作为绝对路径
@@ -321,7 +321,7 @@ class backup:
                 else:  # 兜底, 由云函数路径规则生成路径
                     res = self._cloud.upload_file(abs_file, data_type)
 
-            else:  # AWS S3 & Minio, minio使用S3_Endpoit兼容, 使用upload_path作为绝对路径
+            else:  # S3 Storage & Minio, minio使用S3_Endpoit兼容, 使用upload_path作为绝对路径
                 res = self._cloud.upload_file1(
                     local_file_name=abs_file, object_name=upload_path
                 )

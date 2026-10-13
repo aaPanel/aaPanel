@@ -1,5 +1,20 @@
 {
 	"Home": {
+		"Header": {
+			"Account": {
+				"bindAccount": "绑定账号",
+				"promoTitle": "周年庆特惠",
+				"promoCopy": "专业版功能限时享 25% 优惠。",
+				"promoBadge": "立减 25%",
+				"boundServers": "已绑定服务器",
+				"proServers": "专业版服务器",
+				"accountSettings": "账号设置",
+				"orderCenter": "订单中心",
+				"modifyAccount": "修改账号",
+				"unbindAccount": "解绑账号",
+				"loading": "正在加载账号信息..."
+			}
+		},
 		"index_1": "推荐软件套件",
 		"index_2": "账户",
 		"index_3": "系统：",

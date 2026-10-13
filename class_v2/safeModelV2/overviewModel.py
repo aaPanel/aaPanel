@@ -150,6 +150,9 @@ class main(safeBase):
             keyword = str(self._get_arg(get, "keyword", "") or "").lower()
 
             events = self._get_events_data(limit=500)
+            events.extend(self._events_net_threat())
+            events.sort(key=lambda x: x.get("time", 0), reverse=True)
+            self._decorate_events(events)
             if days > 0:
                 start_time = int(time.time()) - days * 86400
                 events = [event for event in events if event["time"] >= start_time]
@@ -1171,11 +1174,7 @@ class main(safeBase):
         events.extend(self._events_ssh())
         events.extend(self._events_panel_logs())
         events.sort(key=lambda x: x.get("time", 0), reverse=True)
-        for index, event in enumerate(events):
-            event["id"] = "evt_{}".format(index + 1)
-            event["time_text"] = self._format_time(event.get("time", 0))
-            event["relative_time"] = self._relative_time(event.get("time", 0))
-            event["level_label"] = self.SEVERITY_LABELS.get(event.get("level", "info"), "Info")
+        self._decorate_events(events)
         return events[:limit]
 
     def _events_bt_hids(self):
@@ -1358,6 +1357,58 @@ class main(safeBase):
             ))
         return events
 
+    def _events_net_threat(self):
+        """聚合 net_threat（Maltrail）插件当天威胁事件。
+        """
+        plugin_dir = self._plugin_path("net_threat")
+        if not os.path.exists(plugin_dir) or not os.path.exists(os.path.join(plugin_dir, "net_threat_main.py")):
+            return []
+
+        try:
+            result = public.run_plugin(
+                "net_threat",
+                "get_events",
+                public.to_dict_obj({"page": 1, "page_size": 200}),
+            )
+        except Exception as ex:
+            public.print_log("security overview get net_threat events error: {}".format(ex))
+            return []
+        data = result.get("data", {}) if isinstance(result, dict) else {}
+        rows = data.get("list", []) if isinstance(data, dict) else []
+        if not isinstance(rows, list):
+            return []
+
+        events = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            level = str(row.get("severity", "") or "").strip().lower()
+            threat = row.get("threat", "") or "Network threat"
+            source = row.get("source", "") or row.get("source_ip", "") or "-"
+            destination = row.get("destination", "") or row.get("destination_ip", "") or "-"
+            protocol = row.get("protocol", "") or "-"
+            direction = row.get("direction", "")
+            trail = row.get("trail", "")
+            trail_type = row.get("trail_type", "")
+
+            direction_prefix = ""
+            if direction in ("inbound", "outbound"):
+                direction_prefix = "{}: ".format(direction.capitalize())
+            message = "{}{} -> {} {}".format(direction_prefix, source, destination, protocol)
+            meta = " ".join(part for part in (trail_type, trail) if part)
+
+            events.append(self._event(
+                "net_threat",
+                "network_threat",
+                "Network threat: {}".format(threat),
+                message,
+                level,
+                self._to_timestamp(str(row.get("time", "") or "")[:19]),
+                meta,
+                "unhandled",
+            ))
+        return events
+
     def _event(self, source, event_type, title, message, level, ts, meta, status):
         level = self._normalize_level(level)[0] or "info"
         return {
@@ -1374,6 +1425,15 @@ class main(safeBase):
             "meta": meta or "",
             "status": status or "",
         }
+
+    def _decorate_events(self, events):
+        """为聚合事件统一补齐展示字段（id 按最终排序序号编，跨来源全局唯一）。"""
+        for index, event in enumerate(events):
+            event["id"] = "evt_{}".format(index + 1)
+            event["time_text"] = self._format_time(event.get("time", 0))
+            event["relative_time"] = self._relative_time(event.get("time", 0))
+            event["level_label"] = self.SEVERITY_LABELS.get(event.get("level", "info"), "Info")
+        return events
 
     # ------------------------------
     # Sources and helpers

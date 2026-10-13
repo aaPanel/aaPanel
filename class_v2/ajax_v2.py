@@ -2543,7 +2543,8 @@ echo "=====================================" """
     def __get_panel_announce_config(self):
         config = {
             'home_announce': True,
-            'read_md5': ''
+            'read_md5': '',
+            'dismissed_md5': ''
         }
         path = self.__get_panel_announce_path()
         if not os.path.exists(path):
@@ -2553,6 +2554,7 @@ echo "=====================================" """
             if isinstance(data, dict):
                 config['home_announce'] = self.__to_bool(data.get('home_announce', config['home_announce']))
                 config['read_md5'] = str(data.get('read_md5', '') or '').lower()
+                config['dismissed_md5'] = str(data.get('dismissed_md5', '') or '').lower()
         except:
             pass
         return config
@@ -2562,6 +2564,7 @@ echo "=====================================" """
         data.update(config)
         data['home_announce'] = self.__to_bool(data.get('home_announce', True))
         data['read_md5'] = str(data.get('read_md5', '') or '').lower()
+        data['dismissed_md5'] = str(data.get('dismissed_md5', '') or '').lower()
         return public.writeFile(self.__get_panel_announce_path(), json.dumps(data))
 
     def __read_panel_announce_cache(self):
@@ -2584,7 +2587,9 @@ echo "=====================================" """
         return public.writeFile(self.__get_panel_announce_cache_path(), json.dumps(cache_data))
 
     def __get_panel_announce_data(self, url):
+        # 公告缓存
         cache_ttl = 3600*24
+        # cache_ttl = 3 # 测试用
         cache_data = self.__read_panel_announce_cache()
         cache_time = int(cache_data.get('time', 0) or 0)
         cached_response = cache_data.get('data')
@@ -2630,37 +2635,118 @@ echo "=====================================" """
         result['content'] = content.strip()
         return result
 
-    def getPanelAnnounce(self, get):
+    def __get_panel_announce_info(self, filter_type=None, exempt_read_types=None):
+        """首页通知完整逻辑, 返回 (status, info); 供 getPanelAnnounce 与聚合接口复用.
+        filter_type 非空时仅展示该类型通知(其余类型按不展示处理).
+        exempt_read_types 里的类型已读后保留 content(show=false 但内容仍返回, 如营销类 pro)"""
         api_path = '/api/panel/getPanelAnnounce'
         url = self.__official_url + api_path
 
         config = self.__get_panel_announce_config()
         if not config.get('home_announce', True):
-            return public.return_message(0, 0, {'show': False, 'reason': 'closed'})
+            return 0, {'show': False, 'reason': 'closed'}
 
         try:
             data = self.__get_panel_announce_data(url)
             if data.get("success",False):
                 announce = data.get("res", {}).get("announce", "")
                 if announce:
+                    announce_info = self.__parse_panel_announce(announce)
+                    # 类型过滤: 仅展示允许的类型(单类型传 str, 多类型传 list/tuple)
+                    if filter_type:
+                        _allow = (filter_type,) if isinstance(filter_type, str) else filter_type
+                        if announce_info.get('type') not in _allow:
+                            return 0, {'show': False, 'reason': 'filtered', 'type': announce_info.get('type', '')}
+
                     announce_md5 = hashlib.md5(announce.encode('utf-8')).hexdigest()
+                    # 关闭/忽略: 用户主动关闭 不再展示
+                    if announce_md5 == config.get('dismissed_md5', ''):
+                        return 0, {
+                            'show': False,
+                            'reason': 'dismissed',
+                            'md5': announce_md5
+                        }
+                    # 已读: 普通类型只返回 show=false+md5(丢弃 content); 豁免类型(如 pro)保留 content 但 show=false
                     if announce_md5 == config.get('read_md5', ''):
-                        return public.return_message(0, 0, {
+                        public.print_log(f"5 --{config}")
+                        if announce_info.get('type') in (exempt_read_types or ()):
+                            announce_info.update({
+                                'show': False,
+                                'md5': announce_md5
+                            })
+                            return 0, announce_info
+                        return 0, {
                             'show': False,
                             'reason': 'read',
                             'md5': announce_md5
-                        })
+                        }
 
-                    announce_info = self.__parse_panel_announce(announce)
                     announce_info.update({
                         'show': True,
                         'md5': announce_md5
                     })
-                    return public.return_message(0, 0, announce_info)
-            return public.return_message(0, 0, {'show': False, 'reason': 'empty'})
+                    return 0, announce_info
+            return 0, {'show': False, 'reason': 'empty'}
         except Exception as ex:
             # public.print_log("error info: {}".format(ex))
-            return public.return_message(-1, 0, {'show': False, 'reason': "error info: {}".format(ex)})
+            return -1, {'show': False, 'reason': "error info: {}".format(ex)}
+
+    def getPanelAnnounce(self, get):
+        status, info = self.__get_panel_announce_info(filter_type=('security', 'update'))
+        return public.return_message(status, 0, info)
+
+    def __get_user_statics_kanban(self, token=''):
+        """官网用户服务器统计(bind_pro_server_num / bind_server_num), 失败返回 0"""
+        result = {'bind_pro_server_num': 0, 'bind_server_num': 0}
+        token = (token or '').strip()
+        if not token:
+            return result
+        url = '{}/api/user/statics_kanban'.format(self.__official_url)
+        headers = {'authorization': 'bt {}'.format(token)}
+        try:
+            data = json.loads(public.HttpGet(url, headers=headers))
+        except Exception:
+            return result
+        if not isinstance(data, dict):
+            return result
+
+        payload = data.get('res')
+        if not isinstance(payload, dict):
+            return result
+        try:
+            result['bind_pro_server_num'] = int(payload.get('bind_pro_server_num', 0) or 0)
+            result['bind_server_num'] = int(payload.get('bind_server_num', 0) or 0)
+        except (TypeError, ValueError):
+            pass
+        return result
+
+    def getPanelHomeInfo(self, get):
+        """首页聚合信息: 通知 + 账号 + pro/绑定数量"""
+        _, announce = self.__get_panel_announce_info(filter_type='pro', exempt_read_types=('pro',))
+
+        user_info = {'uid': 0, 'username': ''}
+        token = ''
+        try:
+            ui = json.loads(public.ReadFile('data/userInfo.json') or '{}')
+            if isinstance(ui, dict):
+                user_info['uid'] = ui.get('uid', 0)
+                user_info['username'] = ui.get('username', '')
+                user_info['email'] = ui.get('email', '')
+                token = ui.get('token', '') or ''
+        except Exception:
+            pass
+
+        kanban = self.__get_user_statics_kanban(token)
+        result = {
+            'announce': announce,
+            'user': user_info,
+            'bind_pro_server_num': kanban.get('bind_pro_server_num', 0),
+            'bind_server_num': kanban.get('bind_server_num', 0),
+            'order_center': "https://www.aapanel.com/user_admin/order_list",
+            'account_settings': "https://www.aapanel.com/user_admin/profile",
+
+        }
+        return public.return_message(0, 0, result)
 
     def markPanelAnnounceRead(self, get):
         try:
@@ -2678,6 +2764,26 @@ echo "=====================================" """
             return public.return_message(-1, 0, public.lang("Parameter error!"))
 
         if not self.__write_panel_announce_config({'read_md5': announce_md5}):
+            return public.return_message(-1, 0, public.lang("Operation failed"))
+        return public.return_message(0, 0, public.lang("Setup successfully!"))
+
+    def markPanelAnnounceDismissed(self, get):
+        """关闭信息: 与已读不同, 直接丢弃 content 不再展示 """
+        try:
+            get.validate([
+                Param('md5').Require().String(),
+            ], [
+                public.validate.trim_filter(),
+            ])
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
+
+        announce_md5 = get.md5.strip().lower()
+        if not re.match(r'^[a-f0-9]{32}$', announce_md5):
+            return public.return_message(-1, 0, public.lang("Parameter error!"))
+
+        if not self.__write_panel_announce_config({'dismissed_md5': announce_md5}):
             return public.return_message(-1, 0, public.lang("Operation failed"))
         return public.return_message(0, 0, public.lang("Setup successfully!"))
 

@@ -188,7 +188,7 @@ class mailUnsubscribe:
 
         with public.S("mail_unsubscribe", '/www/vmail/mail_unsubscribe.db') as obj:
             mail_type = []
-            etypes = obj.where('active', 1).where('recipient like ?', '{}%'.format(email)).field('etype').select()
+            etypes = obj.where('active', 1).where('recipient', email).field('etype').select()
 
 
             for j in etypes:

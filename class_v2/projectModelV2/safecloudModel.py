@@ -676,7 +676,7 @@ class Config:
             # 定义支持的云存储类型
             cloud_storage_types = {
                 'fuse.ossfs': '阿里云OSS',
-                'fuse.s3fs': 'AWS S3',
+                'fuse.s3fs': 'S3 Storage',
                 'fuse.cosfs': '腾讯云COS',
                 'fuse.obsfs': '华为云OBS',
                 'fuse.bosfs': '百度智能云BOS',
@@ -2117,22 +2117,22 @@ class main(projectBase):
         except Exception as e:
             return public.returnMsg(False, 'An error occurred while executing the alarm test: {}'.format(str(e)))
 
-    def GetCheckUrl(self):
-        '''
-            @time: 2025-02-19
-            @name 获取云端URL地址
-            @author lkq<2022-4-12>
-            @return URL
-        '''
-        try:
-
-            ret = requests.get(f'{public.OfficialWebShellCheckBase()}/checkWebShell.php').json()
-            # public.print_log("|====ret:".format(ret))
-            if ret['status']:
-                return ret['url']
-            return False
-        except:
-            return False
+    # def GetCheckUrl(self):
+    #     '''
+    #         @time: 2025-02-19
+    #         @name 获取云端URL地址
+    #         @author lkq<2022-4-12>
+    #         @return URL
+    #     '''
+    #     try:
+    #
+    #         ret = requests.get(f'{public.OfficialWebShellCheckBase()}/checkWebShell.php').json()
+    #         # public.print_log("|====ret:".format(ret))
+    #         if ret['status']:
+    #             return ret['url']
+    #         return False
+    #     except:
+    #         return False
 
     def ReadFile(self, filepath, mode='r'):
         '''
@@ -2159,65 +2159,65 @@ class main(projectBase):
                 return False
         return f_body
 
-    def test_file(self, get):
-        '''
-            @time: 2025-02-19
-            @name 测试文件是否为木马
-            @param get.filepath 要检测的文件路径
-            @return dict
-        '''
-        try:
-            # 验证参数
-            if not hasattr(get, 'filepath'):
-                return public.returnMsg(False, 'Please provide the file path to be tested!')
-
-            filepath = get.filepath
-            if not os.path.exists(filepath):
-                return public.returnMsg(False, 'File does not exist: {}'.format(filepath))
-
-            # 获取文件大小
-            file_size = os.path.getsize(filepath)
-            if file_size > 1024000:  # 1MB限制
-                return public.returnMsg(False, 'File size exceeds the limit (1MB)')
-
-            # 获取云端检测URL
-            url = self.GetCheckUrl()
-            if not url:
-                return public.returnMsg(False, 'Failed to get the cloud detection address')
-
-            # 进行云端检测
-            try:
-                # 准备上传数据
-                upload_data = {
-                    'inputfile': self.ReadFile(filepath),
-                    'md5': self.FileMd5(filepath)
-                }
-
-                # 发送检测请求
-                upload_res = requests.post(url, upload_data, timeout=20).json()
-
-                # 处理响应结果
-                if upload_res['msg'] == 'ok':
-                    is_webshell = upload_res['data']['data']['level'] == 5
-                    return {
-                        'status': True,
-                        'msg': 'Detection completed',
-                        'data': {
-                            'filepath': filepath,
-                            'is_webshell': is_webshell,
-                            'level': upload_res['data']['data']['level'],
-                            'md5': upload_data['md5']
-                        }
-                    }
-                else:
-                    return public.returnMsg(False, 'Cloud detection failed: {}'.format(upload_res['msg']))
-
-            except Exception as e:
-                return public.returnMsg(False, 'Cloud detection request failed: {}'.format(str(e)))
-
-        except Exception as e:
-            # logging.error("Error in test_file: {}".format(str(e)))
-            return public.returnMsg(False, 'An error occurred during the test: {}'.format(str(e)))
+    # def test_file(self, get):
+    #     '''
+    #         @time: 2025-02-19
+    #         @name 测试文件是否为木马 已禁用
+    #         @param get.filepath 要检测的文件路径
+    #         @return dict
+    #     '''
+    #     try:
+    #         # 验证参数
+    #         if not hasattr(get, 'filepath'):
+    #             return public.returnMsg(False, 'Please provide the file path to be tested!')
+    #
+    #         filepath = get.filepath
+    #         if not os.path.exists(filepath):
+    #             return public.returnMsg(False, 'File does not exist: {}'.format(filepath))
+    #
+    #         # 获取文件大小
+    #         file_size = os.path.getsize(filepath)
+    #         if file_size > 1024000:  # 1MB限制
+    #             return public.returnMsg(False, 'File size exceeds the limit (1MB)')
+    #
+    #         # 获取云端检测URL
+    #         url = self.GetCheckUrl()
+    #         if not url:
+    #             return public.returnMsg(False, 'Failed to get the cloud detection address')
+    #
+    #         # 进行云端检测
+    #         try:
+    #             # 准备上传数据
+    #             upload_data = {
+    #                 'inputfile': self.ReadFile(filepath),
+    #                 'md5': self.FileMd5(filepath)
+    #             }
+    #
+    #             # 发送检测请求
+    #             upload_res = requests.post(url, upload_data, timeout=20).json()
+    #
+    #             # 处理响应结果
+    #             if upload_res['msg'] == 'ok':
+    #                 is_webshell = upload_res['data']['data']['level'] == 5
+    #                 return {
+    #                     'status': True,
+    #                     'msg': 'Detection completed',
+    #                     'data': {
+    #                         'filepath': filepath,
+    #                         'is_webshell': is_webshell,
+    #                         'level': upload_res['data']['data']['level'],
+    #                         'md5': upload_data['md5']
+    #                     }
+    #                 }
+    #             else:
+    #                 return public.returnMsg(False, 'Cloud detection failed: {}'.format(upload_res['msg']))
+    #
+    #         except Exception as e:
+    #             return public.returnMsg(False, 'Cloud detection request failed: {}'.format(str(e)))
+    #
+    #     except Exception as e:
+    #         # logging.error("Error in test_file: {}".format(str(e)))
+    #         return public.returnMsg(False, 'An error occurred during the test: {}'.format(str(e)))
 
     # 移动到回收站
     def Mv_Recycle_bin(self, path):

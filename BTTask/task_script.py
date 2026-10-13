@@ -122,6 +122,22 @@ def update_monitor_requests():
     dataObject.getSiteThirtyTotal(get=None)
     del dataObject
 
+
+# 独立任务进程中的磁盘分类统计刷新入口
+# 发布前临时禁用磁盘分类统计任务入口，后续上线时恢复
+# @task()
+# def update_disk_category_stats():
+#     # 发布前临时禁用磁盘分类统计手动执行入口，后续上线时移除此处 return
+#     return
+#     from class_v2.system_v2 import system
+#     system_obj = system()
+#     if not system_obj.is_disk_category_stats_enabled():
+#         return
+#     if not system_obj.refresh_disk_category_stats():
+#         message = 'Update disk category statistics failed; see panel error log for details.'
+#         logger.error(message)
+#         raise RuntimeError(message)
+
 # todo 弃用 改手动执行
 # @task()
 # def malicious_file_scanning():
@@ -194,10 +210,8 @@ def multi_web_server_daemon():
     import public
     import psutil
     if public.get_multi_webservice_status():
-        from panel_site_v2 import panelSite
         from script.restart_services import DaemonManager
 
-        obj = panelSite()
         pid_paths = {
             'nginx': "/www/server/nginx/logs/nginx.pid",
             'apache': "/www/server/apache/logs/httpd.pid",
@@ -222,6 +236,8 @@ def multi_web_server_daemon():
                         pass
 
             if not is_running:
+                from panel_site_v2 import panelSite
+                obj = panelSite()
                 public.WriteLog("Service Daemon",
                                 f"Multi-WebServer: An error occurred in {service_name}. Initiate the repair")
                 obj.cheak_port_conflict('enable')
@@ -560,6 +576,10 @@ def update_vulnerabilities():
 
     # noinspection PyInconsistentReturns
     def check_vlun():
+        # 无 WordPress 站点则无需拉取漏洞库
+        site_infos = public.M("sites").where("project_type=?", ("WP2",)).select()
+        if len(site_infos) == 0:
+            return
         path_time = "/www/server/panel/data/wordpress_check_vlun.pl"
         if not os.path.exists(path_time):
             public.writeFile(path_time, json.dumps({"time": int(time.time())}))
@@ -571,7 +591,7 @@ def update_vulnerabilities():
                 public.ExecShell("rm -f {}".format(path_time))
                 share_ip_info = {"time": 0}
         if (int(time.time()) - share_ip_info["time"]) < 86400:
-            return public.returnMsg(False, "未达到时间")
+            return public.returnMsg(False, "Cooldown time not reached")
         share_ip_info["time"] = int(time.time())
         public.writeFile(path_time, json.dumps(share_ip_info))
         load_time = M("wordpress_vulnerabilities", "wordpress_vulnerabilities").order("data_time desc").limit(

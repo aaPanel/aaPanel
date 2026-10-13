@@ -2417,7 +2417,7 @@ SetLink
             if db_type == 0:
                 if sql.where("name=? AND LOWER(type)=LOWER('mysql')", (value[0])).count(): continue
             else:
-                if sql.where("name=? AND LOWER(type)=LOWER('mysql') AND accept=?", (value[0], host)).count(): continue
+                if sql.where("name=? AND LOWER(type)=LOWER('mysql') AND sid=?", (value[0], self.sid)).count(): continue
 
             ps = public.lang('Edit notes')
             if value[0] == 'test':
@@ -2428,8 +2428,9 @@ SetLink
 
             addTime = time.strftime('%Y-%m-%d %X', time.localtime())
 
-            if sql.table('databases').add('name,sid,db_type,username,password,accept,ps,addtime',
-                                          (value[0], self.sid, db_type, value[0], '', host, ps, addTime)): n += 1
+            r = sql.table('databases').add('name,sid,db_type,username,password,accept,ps,addtime',
+                                           (value[0], self.sid, db_type, value[0], '', host, ps, addTime))
+            if isinstance(r, int): n += 1
 
         return public.return_message(0, 0, public.lang("Obtain {} database(s) from server!", n))
 

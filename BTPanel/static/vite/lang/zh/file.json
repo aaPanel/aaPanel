@@ -253,7 +253,7 @@
       "uploadToCloud": "上传到云存储",
       "cloudStorage": {
         "ftp": "FTP存储",
-        "awsS3": "AWS S3 存储",
+        "awsS3": "S3 存储",
         "gdrive": "谷歌硬盘",
         "gcloudStorage": "谷歌云存储"
       },

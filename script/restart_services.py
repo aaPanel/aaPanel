@@ -327,6 +327,86 @@ def write_logs(msg: str, logger_name: str = "Service Daemon"):
         pass
 
 
+# ---- 一次性静默本地 MySQL/MariaDB 探测日志 (自退休; 见 RestartServices.main 调用) ----
+MYSQL_CNF_FILE = "/etc/my.cnf"
+QUIET_MYSQL_LOG_MARKER = os.path.join(DATA_PATH, "mysql_log_error_verbosity.pl")
+QUIET_MYSQL_LOCK = os.path.join(DATA_PATH, "mysql_log_error_verbosity.lock")
+
+
+def _write_mycnf_atomic(content: str, cnf_file: str = None) -> bool:
+    """原子写 my.cnf: 同目录临时文件 + fsync + os.replace, 防写一半中断致文件残缺"""
+    target = cnf_file or MYSQL_CNF_FILE
+    tmp = "{}.tmp_{}".format(target, os.getpid())
+    try:
+        with open(tmp, "w", encoding="utf-8") as fp:
+            fp.write(content)
+            fp.flush()
+            os.fsync(fp.fileno())
+        os.chmod(tmp, 0o644)
+        try:
+            st = os.stat(target)
+            os.chown(tmp, st.st_uid, st.st_gid)
+        except Exception:
+            pass
+        os.replace(tmp, target)
+        return True
+    except Exception:
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except Exception:
+            pass
+        return False
+
+
+def quiet_mysql_error_log_once() -> bool:
+    """一次性静默本机 MySQL/MariaDB 的 Aborted connection 探测日志.
+    仅当用户未在 my.cnf 显式配置该变量时才 SET + 落 {key}=1; 用户已配置则尊重其取值, 不做任何强制修改.
+    处理完成后落标识返回 True; 失败返回 False, 由 main 下个周期自动重试.
+    只对本地库生效; 不碰 /etc/my.cnf.bak; 有标识时纯文件存在判断, 零成本."""
+    if os.path.exists(QUIET_MYSQL_LOG_MARKER):
+        return True
+    try:
+        with open(QUIET_MYSQL_LOCK, "w") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            if os.path.exists(QUIET_MYSQL_LOG_MARKER):
+                return True  # 锁内复查: 其它进程已处理
+            import re
+            import public
+            mysql_obj = public.get_mysql_obj_by_sid(0)
+            rows = mysql_obj.query("SHOW VARIABLES LIKE 'log_error_verbosity'")  # MySQL>=5.7
+            if isinstance(rows, list) and rows:
+                cnf_key, cnf_val = 'log_error_verbosity', '1'
+            else:
+                rows = mysql_obj.query("SHOW VARIABLES LIKE 'log_warnings'")     # MariaDB / 旧版MySQL
+                if isinstance(rows, list) and rows:
+                    cnf_key, cnf_val = 'log_warnings', '1'
+                else:
+                    return False  # mysqld 未就绪(query 回异常对象)或两变量都不在 -> 下周期再试
+            mycnf = public.readFile(MYSQL_CNF_FILE)
+            if mycnf and re.search(r'(?m)^\s*' + cnf_key + r'\s*=', mycnf):
+                # 用户已在 my.cnf 显式配置该变量: 尊重用户取值, 不 SET/不覆写, 直接落标识自退休
+                pass
+            else:
+                # 用户未配置: SET 压掉当前实例的 Aborted 探测日志, 再原子写入 {key} = 1 持久化
+                if not isinstance(mysql_obj.execute("SET GLOBAL {} = {}".format(cnf_key, cnf_val)), int):
+                    return False      # SET 未真正成功(execute 失败回异常对象) -> 不落标识, 下周期重试
+                if mycnf:
+                    line = '{} = {}'.format(cnf_key, cnf_val)
+                    if '[mysqld]\n' in mycnf:
+                        mycnf = mycnf.replace('[mysqld]\n', '[mysqld]\n' + line + '\n', 1)
+                    else:
+                        mycnf = mycnf.rstrip('\n') + '\n\n[mysqld]\n' + line + '\n'
+                    if not _write_mycnf_atomic(mycnf):
+                        return False  # 原子写失败 -> 不落标识, 下周期重试
+                write_logs("Lowered MySQL/MariaDB error-log verbosity once ({} = {})".format(cnf_key, cnf_val))
+            public.writeFile(QUIET_MYSQL_LOG_MARKER, '1')  # 处理完成(降噪或用户已配置)才落标识
+            return True
+    except Exception as e:
+        # write_logs("quiet_mysql_error_log_once failed: {}".format(e))
+        return False
+
+
 # 手动干预
 def manual_flag(server_name: str = None, open_: str = None) -> Optional[dict]:
     if not server_name:  # only read
@@ -491,7 +571,7 @@ class ServicesHelper:
                     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
                         s.settimeout(0.1)
                         s.connect(self.pid)
-                    return True
+                        return True
                 except (socket.timeout, ConnectionRefusedError, FileNotFoundError):
                     return False
                 except Exception:
@@ -730,6 +810,11 @@ class RestartServices:
 
     @DaemonManager.read_lock
     def main(self):
+        # 一次性静默本机 MySQL/MariaDB 探测日志: 有标识即过; 失败下个周期自动重试
+        try:
+            quiet_mysql_error_log_once()
+        except Exception:
+            pass
         manaul = read_file(MANUAL_FLAG)
         services = read_file(DAEMON_SERVICE)
         try:

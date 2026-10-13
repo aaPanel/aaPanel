@@ -182,7 +182,7 @@ class panelMysql:
             self.__DB_ERR = err
             self._ex = err
         self.DB_ERROR = self._ex
-        public.WriteLog("databse manager", "databse connect fail:{}".format(self._ex))
+        public.WriteLog("Databases manager", "Database connect fail:{}".format(self._ex))
         return False
 
     def table(self, table):

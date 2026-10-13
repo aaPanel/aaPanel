@@ -214,6 +214,1038 @@ class NodeJs():
         except:
             return []
 
+    # =========================================================
+    # 版本运行时管理 - 扫描/汇总系统与NVM安装的node（插件不感知）
+    # 机制：来源后缀软链目录 /www/server/nodejs/{version}-{source}
+    # =========================================================
+    _EXTRA_NODE_FLAG = '.aapanel-node-extra'
+
+    def _probe_profile_env_nodes(self):
+        '''
+            @name 加载 /etc/profile 与 /root/.bashrc 后探测其暴露的 node / NVM_DIR
+            背景: 面板守护进程不含用户 shell 启动环境, 仅靠 .bashrc/.profile 注入
+            PATH 或 NVM_DIR 才可见的 node(nvm 自定义目录、/opt 等)常规 which 扫不到。
+            必须以 bash -i(交互)执行, 否则 .bashrc 顶部 `case $- in *i*)` 非交互守卫
+            会提前 return, nvm 安装器追加在文件末尾的 export 段不会执行。
+            @return dict {nodes: list[str], nvm_dir: str, ok: bool}
+        '''
+        ret = {'nodes': [], 'nvm_dir': '', 'ok': False}
+        script = (
+            'export HOME="${HOME:-/root}"\n'
+            'source /etc/profile >/dev/null 2>&1\n'
+            '[ -f /root/.bashrc ] && source /root/.bashrc >/dev/null 2>&1\n'
+            '[ -n "$HOME" ] && [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc" >/dev/null 2>&1\n'
+            'printf "__BTP_NVM_DIR__=%s\\n" "$NVM_DIR"\n'
+            'printf "__BTP_NODE_BEGIN__\\n"\n'
+            'which -a node 2>/dev/null\n'
+            'printf "__BTP_NODE_END__\\n"\n'
+        )
+        # 外层单引号包裹保证 /etc/profile、.bashrc 内 $HOME/$NVM_DIR 不提前被 sh 展开
+        cmd = 'timeout 20 bash -ic \'' + script + '\' </dev/null 2>/dev/null'
+        out = ''
+        try:
+            r = public.ExecShell(cmd, timeout=25)
+            if isinstance(r, (tuple, list)):
+                out = (r[0] or '')
+        except:
+            out = ''
+        if out:
+            nvm_dir = ''
+            nodes = []
+            in_nodes = False
+            for line in out.splitlines():
+                line = line.strip()
+                if line.startswith('__BTP_NVM_DIR__='):
+                    nvm_dir = line.split('=', 1)[1].strip()
+                elif line == '__BTP_NODE_BEGIN__':
+                    in_nodes = True
+                elif line == '__BTP_NODE_END__':
+                    in_nodes = False
+                elif in_nodes and line:
+                    nodes.append(line)
+            ret['nvm_dir'] = nvm_dir
+            ret['nodes'] = nodes
+            ret['ok'] = bool(nodes) or bool(nvm_dir)
+        return ret
+
+    def _collect_extra_nodes(self):
+        '''
+            @name 扫描系统与NVM安装的node版本（不含面板安装的）
+            @return list [{version, source, node_path, npm_path, npx_path,
+                          yarn_path, pnpm_path, pm2_path, lib_path}]
+        '''
+        candidates = []
+        # PATH 中全部 node(面板进程自身环境)
+        try:
+            which_nodes = public.ExecShell('which -a node 2>/dev/null')[0].strip()
+            candidates.extend([p.strip() for p in which_nodes.split('\n') if p.strip()])
+        except:
+            pass
+
+        # 加载 /etc/profile 与 /root/.bashrc 后可见的 node(面板进程环境不含这些)
+        profile_env = self._probe_profile_env_nodes()
+        candidates.extend(profile_env.get('nodes') or [])
+        profile_nvm_dir = profile_env.get('nvm_dir') or ''
+
+        # nvm 常见目录 + profile 暴露的自定义 NVM_DIR
+        nvm_dirs = [os.path.expanduser('~/.nvm'),
+                    '/usr/local/nvm',
+                    '/root/.nvm']
+        if profile_nvm_dir:
+            profile_nvm_dir = profile_nvm_dir.strip()
+            bad_chars = {"\n", "\r", ";", "|", "&", "`", "$"}
+            if any(c in profile_nvm_dir for c in bad_chars):
+                profile_nvm_dir = ""
+            else:
+                profile_nvm_dir = os.path.normpath(profile_nvm_dir)
+
+        if profile_nvm_dir and profile_nvm_dir not in nvm_dirs:
+            nvm_dirs.append(profile_nvm_dir)
+        for nvm_root in nvm_dirs:
+            nvm_dir = os.path.join(nvm_root, "versions", "node")
+            if not os.path.isdir(nvm_dir):
+                continue
+            for version_name in os.listdir(nvm_dir):
+                node_path = os.path.join(nvm_dir, version_name, 'bin', 'node')
+                if os.path.exists(node_path):
+                    candidates.append(node_path)
+        candidates.extend(['/usr/local/bin/node', '/usr/bin/node', '/usr/bin/nodejs'])
+
+        # 去重 + 过滤面板目录 + 解析版本
+        nodes = {}
+        for cand in candidates:
+            if not cand or not os.path.exists(cand):
+                continue
+            real_path = os.path.realpath(cand)
+            # 过滤已通过面板管理的版本
+            if real_path.startswith(self.nodejs_path):
+                continue
+            if real_path in nodes:
+                continue
+            version = self._get_extra_node_version(real_path)
+            if not version:
+                continue
+            # 来源分类：路径含nvm视为NVM安装，否则视为系统安装
+            source = 'nvm' if real_path.find('nvm') != -1 else 'system'
+            # owner：nvm 来源推断所属用户（第一版仅 root，为多用户 NVM 预留）
+            owner = self._infer_node_owner(real_path)
+            nodes[real_path] = {
+                'version': version,
+                'source': source,
+                'owner': owner,
+                'node_path': real_path,
+                'npm_path': '',
+                'npx_path': '',
+                'yarn_path': '',
+                'pnpm_path': '',
+                'pm2_path': '',
+                'lib_path': '',
+            }
+
+        # 补充 npm/npx/yarn/pnpm/pm2 与全局模块目录
+        for item in nodes.values():
+            node_bin_dir = os.path.dirname(item['node_path'])
+            for cmd in ('npm', 'npx', 'yarn', 'pnpm', 'pm2'):
+                cmd_path = os.path.join(node_bin_dir, cmd)
+                if os.path.exists(cmd_path):
+                    item['{}_path'.format(cmd)] = os.path.realpath(cmd_path)
+                    continue
+                try:
+                    which_res = public.ExecShell('which {} 2>/dev/null'.format(cmd))[0].strip()
+                    if which_res and os.path.exists(which_res):
+                        item['{}_path'.format(cmd)] = os.path.realpath(which_res)
+                except:
+                    pass
+            item['lib_path'] = self._get_extra_node_lib(item)
+        return list(nodes.values())
+
+    def _infer_node_owner(self, node_path):
+        '''
+            @name 从真实路径推断 node 所属用户
+            /home/{user}/... -> {user}（nvm 或用户自装 node 均适用）
+            其余（/usr/bin、/usr/local、/root/.nvm 等）视为系统级 root
+        '''
+        m = re.search(r'/home/([^/]+)/', str(node_path or ''))
+        if m:
+            return m.group(1)
+        return 'root'
+
+    def _get_extra_node_version(self, node_path):
+        '''
+            @name 解析node真实路径的版本号
+        '''
+        try:
+            result = public.ExecShell('"{}" -v 2>/dev/null'.format(node_path))[0]
+            result = result.strip().replace('v', '')
+            if re.match(r'^\d+\.\d+\.\d+', result):
+                return 'v{}'.format(result)
+        except:
+            pass
+        return ''
+
+    def _get_extra_node_lib(self, item):
+        '''
+            @name 获取真实全局 node_modules 目录
+        '''
+        npm_path = item.get('npm_path') or item.get('node_path')
+        if npm_path:
+            try:
+                npm_bin_dir = os.path.dirname(npm_path)
+                cmd = 'PATH="{}:$PATH" "{}" root -g --userconfig=/dev/null 2>/dev/null'.format(
+                    npm_bin_dir, npm_path)
+                lib = public.ExecShell(cmd)[0].strip()
+                if lib and os.path.isdir(lib):
+                    return os.path.realpath(lib)
+            except:
+                pass
+        # 同目录下的 lib/node_modules 或 node_modules
+        base_dir = os.path.dirname(item['node_path'])
+        for lib in ('{}/lib/node_modules'.format(base_dir),
+                    '{}/node_modules'.format(base_dir)):
+            if os.path.isdir(lib):
+                return os.path.realpath(lib)
+        return ''
+
+    def _ensure_extra_node_link(self, item):
+        '''
+            @name 幂等创建系统/NVM版本的软链目录
+            @param item dict _collect_extra_nodes
+            @return dict {version, source, created, skip_reason?}
+        '''
+        version = item['version']
+        source = item['source']
+        owner = item.get('owner', 'root')
+        # 目录名统一带 owner：{version}-{source}-{owner}  避免同版本多来源/多属主撞名
+        node_dir = '{}/{}-{}-{}'.format(self.nodejs_path, version, source, owner)
+        if os.path.exists(node_dir):
+            return {'version': version, 'source': source, 'created': False,
+                    'skip_reason': 'exists',
+                    'node_path': item.get('node_path', '')}
+        bin_dir = os.path.join(node_dir, 'bin')
+        try:
+            os.makedirs(bin_dir, 493)
+            for cmd in ('node', 'npm', 'npx', 'yarn', 'pnpm', 'pm2'):
+                cmd_path = item.get('{}_path'.format(cmd))
+                if not cmd_path or not os.path.exists(cmd_path):
+                    continue
+                os.symlink(cmd_path, os.path.join(bin_dir, cmd))
+            # lib/node_modules 软链指向真实全局模块目录
+            if item.get('lib_path'):
+                lib_dir = os.path.join(node_dir, 'lib')
+                os.makedirs(lib_dir, 493)
+                os.symlink(item['lib_path'], os.path.join(lib_dir, 'node_modules'))
+            # 标记文件
+            flag = {
+                'source': source,
+                'owner': item.get('owner', 'root'),
+                'node_version': version,
+                'real_path': item.get('node_path', ''),
+                'npm_path': item.get('npm_path', ''),
+                'lib_path': item.get('lib_path', ''),
+                'scan_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+            }
+            public.writeFile(os.path.join(node_dir, self._EXTRA_NODE_FLAG),
+                             json.dumps(flag))
+        except Exception as ex:
+            return {'version': version, 'source': source, 'created': False,
+                    'error': str(ex),
+                    'node_path': item.get('node_path', '')}
+        return {'version': version, 'source': source, 'created': True,
+                'node_path': item.get('node_path', '')}
+
+    def _system_node_notes(self):
+        '''
+            @name 扫描未发现系统node时的诊断说明
+        '''
+        notes = []
+        nodejs_path = self.nodejs_path
+        # 1) 常见系统 node 路径是否被面板软链接管
+        covered = []
+        for p in ('/usr/bin/node', '/usr/bin/nodejs', '/usr/local/bin/node'):
+            try:
+                if os.path.islink(p):
+                    real = os.path.realpath(p)
+                    if real.startswith(nodejs_path):
+                        covered.append('{} -> {}'.format(p, real))
+            except:
+                pass
+        # 2) 包管理器是否装了系统 nodejs（dpkg 优先，rpm 兜底）
+        pkg_ver = ''
+        try:
+            pkg_line = public.ExecShell('dpkg -l nodejs 2>/dev/null | grep "^ii "')[0].strip()
+            if pkg_line:
+                parts = pkg_line.split()
+                if len(parts) >= 3:
+                    pkg_ver = parts[2]
+        except:
+            pass
+        if not pkg_ver:
+            try:
+                rpm_line = public.ExecShell('rpm -q nodejs --qf "%{VERSION}" 2>/dev/null')[0].strip()
+                if rpm_line:
+                    pkg_ver = rpm_line
+            except:
+                pass
+        if covered:
+            if pkg_ver:
+                head = 'System Node not detected: nodejs {} package is installed in system'.format(pkg_ver)
+            else:
+                head = 'System Node not detected'
+            notes.append('{}, but its executable path is managed by aaPanel default version symlink ({}), '
+                         'the real system binary has been replaced and removed, so it will not be included. '
+                         'To restore system Node, unset the default version in panel and reinstall nodejs via system package manager.'.format(
+                head, ';'.join(covered)))
+        elif pkg_ver:
+            notes.append('System Node not detected: nodejs {} package is installed in system, '
+                         'but no valid executable found under common paths (/usr/bin/node, /usr/bin/nodejs, /usr/local/bin/node).'.format(
+                pkg_ver))
+
+        return notes
+
+    def _write_scan_info(self, source, scan_ret):
+        '''
+            @name 统一记录最近一次扫描元数据到 {nodejs_path}/.scan_info.json
+            @param source string 触发来源：manual | after_install
+            @param scan_ret dict _scan_system_nodes_internal 返回值 {created, skipped}
+        '''
+        try:
+            info = {
+                'last_scan_time': int(time.time()),
+                'last_scan_source': source,
+                'last_scan': {
+                    'created': scan_ret.get('created', 0),
+                    'skipped': scan_ret.get('skipped', 0),
+                },
+            }
+            public.writeFile('{}/.scan_info.json'.format(self.nodejs_path), json.dumps(info))
+        except:
+            pass
+
+    def _scan_system_nodes_internal(self, source='manual'):
+        '''
+            @name 扫描系统与NVM node并挂载到面板版本目录（幂等）
+            @param source string 触发来源：manual | after_install
+            @return dict {data, created, skipped}
+        '''
+        collected = self._collect_extra_nodes()
+        result = []
+        created = 0
+        skipped = 0
+        for item in collected:
+            res = self._ensure_extra_node_link(item)
+            if res.get('created'):
+                created += 1
+            else:
+                skipped += 1
+            result.append(res)
+        ret = {
+            'data': result,
+            'created': created,
+            'skipped': skipped,
+        }
+        self._write_scan_info(source, ret)
+        return ret
+
+    def scan_system_nodes(self, get):
+        '''
+            @name 扫描系统与NVM安装的node版本并入面板管理
+            @param get<dict_obj>
+            @return dict {data, created, skipped, notice?}
+        '''
+        ret = self._scan_system_nodes_internal()
+        # 未扫到系统来源版本时，附加诊断说明（如被面板默认版本软链覆盖）
+        # if not any(i.get('source') == 'system' for i in ret['data']):
+        #     notes = self._system_node_notes()
+        #     if notes:
+        #         ret['notice'] = notes
+
+        return public.return_message(0, 0, public.lang("Scan completed"))
+
+    # =========================================================
+    # System NVM 环境管理
+    # 第一版只管理 root 用户的 NVM（/root/.nvm）
+    # 下载源等配置持久化到 {nodejs_path}/.nvm_env.json
+    # 下载日志 {nodejs_path}/.nvm_install_status.json
+    # =========================================================
+    _NVM_ENV_FILE = '.nvm_env.json'
+    _NVM_SOURCE_URLS = {
+        'npmmirror': 'https://npmmirror.com/mirrors/node',
+        'official': 'https://nodejs.org/dist', # todo 换源
+    }
+
+    def _nvm_env_config(self):
+        '''
+            @name 读取 NVM 环境配置（下载源等）
+            @return dict {nvm_dir, source, custom_url}
+        '''
+        cfg = {'nvm_dir': '/root/.nvm', 'source': 'npmmirror', 'custom_url': ''}
+        try:
+            cfg_file = '{}/{}'.format(self.nodejs_path, self._NVM_ENV_FILE)
+            if os.path.exists(cfg_file):
+                data = json.loads(public.readFile(cfg_file))
+                if isinstance(data, dict):
+                    cfg.update(data)
+        except:
+            pass
+        return cfg
+
+    def _nvm_save_config(self, cfg):
+        cfg_file = '{}/{}'.format(self.nodejs_path, self._NVM_ENV_FILE)
+        public.writeFile(cfg_file, json.dumps(cfg))
+        return True
+
+    def _nvm_root_dir(self):
+        '''
+            @name 检测 root 用户 NVM 目录（存在 nvm.sh 才认定有效）
+            @return string 目录路径，未检测到返回 ''
+        '''
+        for cand in ('/root/.nvm', '/usr/local/nvm', os.path.expanduser('~/.nvm')):
+            if os.path.isfile('{}/nvm.sh'.format(cand)):
+                return cand
+        return ''
+
+    def _nvm_installed_versions(self, nvm_dir):
+        '''
+            @name 列出 NVM 已安装版本目录名
+            @return list[str] ['v22.14.0', ...]
+        '''
+        versions = []
+        node_versions_dir = '{}/versions/node'.format(nvm_dir)
+        if os.path.isdir(node_versions_dir):
+            for v in os.listdir(node_versions_dir):
+                if v.startswith('v') and os.path.exists('{}/{}/bin/node'.format(node_versions_dir, v)):
+                    versions.append(v)
+        return sorted(versions, key=lambda v: tuple(map(int, re.findall(r'\d+', v))))
+
+    def _nvm_installed_with_binding(self, nvm_dir):
+        '''
+            @name 列出 NVM 已安装版本，并附带面板侧绑定的版本目录名
+            @param nvm_dir string NVM 根目录
+            @return list[dict] [{value: 'v25.9.0', source: 'v25.9.0-nvm-root'}, ...]
+            value   NVM 原版本号（versions/node 目录名）
+            source  系统扫描挂载到面板的版本目录名（{version}-nvm-{owner}），未挂载为空字符串
+        '''
+        installed = self._nvm_installed_versions(nvm_dir)
+        # 一次性扫描面板 nodejs 目录，建立 nvm 来源：版本号 -> 目录名 映射
+        binding = {}
+        if os.path.isdir(self.nodejs_path):
+            for d in os.listdir(self.nodejs_path):
+                if d[0] != 'v' or d.find('.') == -1:
+                    continue
+                flag_file = os.path.join(self.nodejs_path, d, self._EXTRA_NODE_FLAG)
+                if not os.path.isfile(flag_file):
+                    continue
+                try:
+                    flag = json.loads(public.readFile(flag_file))
+                    if isinstance(flag, dict) and flag.get('source') == 'nvm':
+                        ver = flag.get('node_version') or d.split('-')[0]
+                        binding.setdefault(ver, d)
+                except:
+                    pass
+        return [{'value': v, 'source': binding.get(v, '')} for v in installed]
+
+    def _nvm_current_version(self, nvm_dir):
+        '''
+            @name 读取 NVM 当前默认版本（nvm alias default 落盘在 alias/default）
+            @return string 版本号，未设置返回 ''
+        '''
+        alias_file = '{}/alias/default'.format(nvm_dir)
+        if os.path.exists(alias_file):
+            ver = public.readFile(alias_file).strip()
+            if ver:
+                return ver
+        return ''
+
+    def _nvm_source_url(self, source, custom_url=''):
+        if source == 'custom' and custom_url:
+            return custom_url
+        return self._NVM_SOURCE_URLS.get(source, self._NVM_SOURCE_URLS['npmmirror'])
+
+    def _nvm_platform_filename(self):
+        '''
+            @name 获取当前系统适用的 Node 平台标识
+            @return string 如 'linux-x64'
+        '''
+        try:
+            import platform
+            sysname = (os.uname().sysname if hasattr(os, 'uname') else platform.system()).lower()
+            machine = os.uname().machine if hasattr(os, 'uname') else platform.machine()
+            if machine == 'x86_64':
+                return '{}-x64'.format(sysname)
+            if machine == 'i686':
+                return '{}-x86'.format(sysname)
+            if machine == 'aarch64':
+                return '{}-arm64'.format(sysname)
+            if machine == 'armv7l':
+                return '{}-armv7l'.format(sysname)
+            if machine == 'armv6l':
+                return '{}-armv6l'.format(sysname)
+            if machine == 'armv5l':
+                return '{}-armv5l'.format(sysname)
+            return sysname
+        except:
+            return 'linux-x64'
+
+    def get_nvm_online_versions(self, get):
+        '''
+            @name 获取 NVM 可安装版本列表（来自已配置下载源的 index.json）
+            每个大版本只保留最新一个稳定版本
+            @param get<dict_obj> {force?: '1'}
+            @return list [{version, status, lts, npm}]
+        '''
+
+        # 固定版本提示 其他版本默认"status": "Eol"
+        status_list = [
+            {
+                "version": "v26.8.1",
+                "status": "Current"
+            },
+            {
+                "version": "v24.20.0",
+                "status": "LTS"
+            },
+            {
+                "version": "v22.23.2",
+                "status": "LTS"
+            },
+        ]
+
+
+        cfg = self._nvm_env_config()
+        source = cfg.get('source', 'npmmirror')
+        source_url = self._nvm_source_url(source, cfg.get('custom_url', ''))
+        index_url = source_url.rstrip('/') + '/index.json'
+        namex = self._nvm_platform_filename()
+        data = None
+        try:
+            if get.get('force') != '1':
+                # 5 分钟缓存
+                cache_file = '{}/.nvm_versions_cache.json'.format(self.nodejs_path)
+                if os.path.exists(cache_file) and os.stat(cache_file).st_mtime + 300 > time.time():
+                    try:
+                        data = json.loads(public.readFile(cache_file))
+                    except:
+                        data = None
+            if not data:
+                http_json = public.httpGet(index_url, timeout=10)
+                if http_json:
+                    try:
+                        data = json.loads(http_json)
+                        public.writeFile('{}/.nvm_versions_cache.json'.format(self.nodejs_path), http_json)
+                    except:
+                        data = None
+        except:
+            data = None
+        if not isinstance(data, list) or data is None:
+            return public.return_message(-1, 0, public.lang(
+                'Failed to fetch the NVM installable version list from the download source ({}). '
+                'Please check the download source or network.'.format(index_url)))
+        # 每个大版本只留最新一个稳定版本：大版本号 → 版本项
+        latest_by_major = {}
+        for v in data:
+            if not isinstance(v, dict) or not v.get('version'):
+                continue
+            version = v['version']
+            # 跳过 prerelease（带 - 后缀，如 v22.0.0-rc.1）
+            # if '-' in version:
+            #     continue
+
+            # 过滤不支持当前平台的版本（files 为裸平台标识，如 linux-x64）
+            if 'files' in v and isinstance(v['files'], list):
+                if namex not in v['files']:
+                    continue
+            nums = tuple(map(int, re.findall(r'\d+', version)))
+            if len(nums) < 2:
+                continue
+            major = nums[0]
+            cur = latest_by_major.get(major)
+            if cur is None or nums > cur['nums']:
+                status = 'Eol'
+                for item in status_list:
+                    if item['version'] == version:
+                        status = item['status']
+                        break
+                latest_by_major[major] = {
+                    'nums': nums,
+                    'version': version,
+                    'status': status,
+                    'lts': v.get('lts') or '',
+                    'npm': v.get('npm', ''),
+                }
+        result = [latest_by_major[m] for m in sorted(latest_by_major.keys(), reverse=True)]
+        for item in result:
+            item.pop('nums', None)
+        return public.return_message(0, 0, result)
+
+
+    def get_nvm_env_info(self, get):
+        '''
+            @name 获取 System NVM 环境信息（路径/当前版本/已装版本/下载源）
+            @param get<dict_obj>
+            @return dict {nvm_dir, current_version, installed, source, source_url,
+                          last_scan_time, last_scan_time_ts, last_scan_source, last_scan_result}
+            nvm_dir 为空时表示未检测到 root 用户 NVM；
+            installed 为对象列表 [{value, source}]：value 为 NVM 原版本号，source 为系统扫描挂载到面板的
+            版本目录名（{version}-nvm-{owner}，未挂载时为空字符串），前端可用 source 传 get_package_manager_info；
+            last_scan_time 为最近一次扫描（手动 scan_system_nodes 或安装后自动扫描）时间，无记录为空
+        '''
+        cfg = self._nvm_env_config()
+        nvm_dir = self._nvm_root_dir()
+        data = {
+            'nvm_dir': nvm_dir,
+            'current_version': '',
+            'installed': [],
+            'source': cfg.get('source', 'npmmirror'),
+            'custom_url': cfg.get('custom_url', ''),
+            'source_url': self._nvm_source_url(cfg.get('source', 'npmmirror'), cfg.get('custom_url', '')),
+            'last_scan_time': '',
+            'last_scan_time_ts': 0,
+        }
+        if nvm_dir:
+            data['current_version'] = self._nvm_current_version(nvm_dir)
+            data['installed'] = self._nvm_installed_with_binding(nvm_dir)
+        # 最近一次扫描元数据
+        try:
+            f = '{}/.scan_info.json'.format(self.nodejs_path)
+            if os.path.exists(f):
+                info = json.loads(public.readFile(f))
+                if isinstance(info, dict):
+                    ts = int(info.get('last_scan_time') or 0)
+                    data['last_scan_time_ts'] = ts
+                    if ts:
+                        data['last_scan_time'] = time.strftime(
+                            '%Y-%m-%d %H:%M:%S', time.localtime(ts))
+        except:
+            pass
+        return public.return_message(0, 0, data)
+
+    def _nvm_set_default_alias(self, nvm_dir, version):
+        '''
+            @name 写 NVM alias/default（即 nvm alias default） 只影响新会话
+            @param nvm_dir string NVM 根目录
+            @param version string 如 v22.18.0
+        '''
+        alias_file = '{}/alias/default'.format(nvm_dir)
+        if not os.path.isdir(os.path.dirname(alias_file)):
+            os.makedirs(os.path.dirname(alias_file), 493)
+        public.writeFile(alias_file, version)
+        return True
+
+    def switch_nvm_default_version(self, get):
+        '''
+            @name 切换 NVM 环境默认版本（nvm alias default） /root/.nvm/alias/default
+            只写 NVM 的 alias/default 文件，影响新会话；不碰 /usr/bin/node、不重启项目
+            @param get<dict_obj> {version: 'v22.14.0'}
+        '''
+        version = get.get('version', '')
+        if not version:
+            return public.return_message(-1, 0, public.lang('The "version" parameter cannot be left blank.'))
+        nvm_dir = self._nvm_root_dir()
+        if not nvm_dir:
+            return public.return_message(-1, 0, public.lang(
+                'No root NVM environment detected, unable to switch the environment version.'))
+        installed = self._nvm_installed_versions(nvm_dir)
+        if version not in installed:
+            return public.return_message(-1, 0, public.lang(
+                'The version "{}" is not installed in NVM ({}). Installed: {}'.format(
+                    version, nvm_dir, ', '.join(installed) or 'none')))
+        self._nvm_set_default_alias(nvm_dir, version)
+        return public.return_message(0, 0, public.lang(
+            'The NVM environment version has been switched to: {}'.format(version)))
+
+    def set_nvm_config(self, get):
+        '''
+            @name 设置 NVM 下载源（npmmirror/official/custom）和 NVM 环境默认版本
+            @param get<dict_obj> {source: 'npmmirror', custom_url: 'https://...', version?: 'v22.18.0'}
+            @return dict {source, source_url, version?, switched?}
+        '''
+        source = get.get('source', '')
+        if source not in ('npmmirror', 'official', 'custom'):
+            return public.return_message(-1, 0, public.lang(
+                'The "source" parameter is invalid. Support: npmmirror, official, custom.'))
+        # 可选 同时切换 NVM 环境默认版本
+        version = get.get('version', '').strip()
+
+        nvm_dir = ''
+        if version:
+            nvm_dir = self._nvm_root_dir()
+            if not nvm_dir:
+                return public.return_message(-1, 0, public.lang(
+                    'No root NVM environment detected, unable to switch the environment version.'))
+            installed = self._nvm_installed_versions(nvm_dir)
+            if version not in installed:
+                return public.return_message(-1, 0, public.lang(
+                    'The version "{}" is not installed in NVM ({}). Installed: {}'.format(
+                        version, nvm_dir, ', '.join(installed) or 'none')))
+        cfg = self._nvm_env_config()
+        cfg['source'] = source
+        if source == 'custom':
+            custom_url = get.get('custom_url', '').strip()
+            if not custom_url.startswith('http'):
+                return public.return_message(-1, 0, public.lang(
+                    'Custom source must start with http(s).'))
+            cfg['custom_url'] = custom_url
+        else:
+            cfg['custom_url'] = ''
+        if version:
+            self._nvm_set_default_alias(nvm_dir, version)
+
+        self._nvm_save_config(cfg)
+        return public.return_message(0, 0, public.lang('Saved successfully'))
+
+
+    # ---- NVM 异步安装（后台线程执行，装完自动扫描挂载）----
+    def _write_nvm_install_status(self, status):
+        try:
+            public.writeFile('{}/.nvm_install_status.json'.format(self.nodejs_path),
+                             json.dumps(status, ensure_ascii=False))
+        except:
+            pass
+
+    def _do_nvm_install(self, nvm_dir, version, mirror, switch_nvm=False):
+        '''
+            @name 执行 nvm install 成功后自动扫描挂载到面板
+            @param nvm_dir string NVM 根目录
+            @param version string 如 v22.18.0
+            @param mirror string 下载源 URL
+            @param switch_nvm bool 安装成功后是否同时切换 NVM 环境默认版本
+        '''
+        # 并发锁：同一时间只允许一个 nvm 安装任务
+        # 锁内记录本线程 ID 线程结束自动失效
+        if not public.progress_acquire_lock('/tmp/nvm_install.lock'):
+            self._write_nvm_install_status({
+                'status': 'failed', 'version': version,
+                'message': 'Another NVM installation task is running. Please wait!',
+                'started_at': int(time.time()), 'finished_at': int(time.time())})
+            return
+        status = {'status': 'running', 'version': version, 'message': 'installing...',
+                  'started_at': int(time.time())}
+        self._write_nvm_install_status(status)
+        from subprocess import Popen, PIPE, STDOUT
+        import threading
+
+        log_lines = []
+
+        def _append_log(line):
+            log_lines.append(line)
+            # message 记录安装日志，保留最近 300 行避免状态文件膨胀
+            status['message'] = '\n'.join(log_lines[-300:])
+            self._write_nvm_install_status(status)
+
+        try:
+            cmd = '''export NVM_DIR="{}"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export NVM_NODEJS_ORG_MIRROR="{}"
+nvm install {}
+'''.format(nvm_dir, mirror, version)
+            p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT,
+                      universal_newlines=True, encoding='utf-8', errors='replace')
+
+            def _reader():
+                for line in iter(p.stdout.readline, ''):
+                    if line:
+                        _append_log(line.rstrip())
+            reader = threading.Thread(target=_reader, daemon=True)
+            reader.start()
+            try:
+                p.wait(timeout=900)
+            except Exception:
+                try:
+                    p.kill()
+                except:
+                    pass
+            reader.join(timeout=3)
+            stdout = '\n'.join(log_lines)
+            installed = os.path.exists('{}/versions/node/{}/bin/node'.format(nvm_dir, version))
+            if installed or 'is already installed' in stdout:
+                status['status'] = 'success'
+                status['message'] = (stdout + '\n' if stdout else '') + \
+                    'NVM install success: {}'.format(version)
+                # 安装成功（含已安装）→ 自动触发扫描挂载 + 可选切换环境默认版本
+                try:
+                    self._scan_system_nodes_internal('after_install')
+                except Exception as ex:
+                    # 仅扫描失败记录
+                    status['scan'] = {'error': str(ex)}
+                if switch_nvm:
+                    self._nvm_set_default_alias(nvm_dir, version)
+                    status['switched'] = True
+                    status['message'] += '\nNVM environment version switched to: {}'.format(version)
+            else:
+                status['status'] = 'failed'
+                status['message'] = (stdout + '\n' if stdout else '') + \
+                    'NVM install failed (check the log above)'
+        except Exception as ex:
+            status['status'] = 'failed'
+            status['message'] = (status.get('message') or '') + '\n{}'.format(ex)
+        status['finished_at'] = int(time.time())
+        self._write_nvm_install_status(status)
+
+    def install_nvm_node(self, get):
+        '''
+            @name 异步通过 root NVM 安装新版本 node
+            只调用目标 NVM 环境执行 nvm install 不修改面板版本目录
+            @param get<dict_obj> {version: 'v22.18.0', switch_nvm?: '1'} switch_nvm=1 安装成功同时切换 NVM 环境默认版本
+            @return dict {status, version, message}
+        '''
+        version = get.get('version', '').strip()
+        if not version:
+            return public.return_message(-1, 0, public.lang('The "version" parameter cannot be left blank.'))
+        if not re.match(r'^v\d+\.\d+\.\d+$', version):
+            return public.return_message(-1, 0, public.lang(
+                'The version format is incorrect, e.g. v22.18.0: {}'.format(version)))
+        # 自动切换 NVM 环境默认版本
+        switch_nvm = get.get('switch_nvm', '') == '1'
+        # 已有安装任务在进行时拒绝重复提交
+        try:
+            f = '{}/.nvm_install_status.json'.format(self.nodejs_path)
+            if os.path.exists(f):
+                prev = json.loads(public.readFile(f))
+                if isinstance(prev, dict) and prev.get('status') == 'running':
+                    return public.return_message(-1, 0, public.lang(
+                        'Another NVM installation task is running. Please wait!'))
+        except:
+            pass
+        nvm_dir = self._nvm_root_dir()
+        if not nvm_dir:
+            return public.return_message(-1, 0, public.lang(
+                'No root NVM environment detected, cannot install. NVM is not managed by the panel.'))
+        # 下载源
+        source = get.get('source', '')
+        if not source:
+            cfg = self._nvm_env_config()
+            source = cfg.get('source', 'npmmirror')
+            custom_url = cfg.get('custom_url', '')
+        else:
+            custom_url = get.get('custom_url', '')
+        mirror = self._nvm_source_url(source, custom_url)
+        # 后台线程执行
+        from concurrent.futures import ThreadPoolExecutor
+        thread = ThreadPoolExecutor(max_workers=1)
+        thread.submit(self._do_nvm_install, nvm_dir, version, mirror, switch_nvm)
+        return public.return_message(0, 0, {
+            'status': 'running',
+            'version': version,
+            'switch_nvm': switch_nvm,
+            'message': 'NVM installation started in the background.',
+        })
+
+    def get_nvm_install_status(self, get):
+        '''
+            @name 查询 NVM 异步安装任务状态
+            @param get<dict_obj>
+            @return dict {status: idle|running|success|failed, version, message, scan?, started_at, finished_at}
+            message 记录安装过程日志（nvm install 实时输出，保留最近 300 行）；
+            status 判断结果，scan 仅 success 时存在，switched 仅 switch_nvm=1 成功时存在
+        '''
+        status = {'status': 'idle', 'version': '', 'message': ''}
+        try:
+            f = '{}/.nvm_install_status.json'.format(self.nodejs_path)
+            if os.path.exists(f):
+                data = json.loads(public.readFile(f))
+                if isinstance(data, dict):
+                    status = data
+        except:
+            pass
+        return public.return_message(0, 0, status)
+
+
+    def get_node_runtime_list(self, get):
+        '''
+            @name 汇总已管理版本（面板安装 + 系统/NVM）
+            @param get<dict_obj>
+            @return dict {data: [{version, source, owner, path, node_path}]}
+        '''
+        version_list = []
+        if os.path.exists(self.nodejs_path):
+            for v in os.listdir(self.nodejs_path):
+                if v[0] != 'v' or v.find('.') == -1:
+                    continue
+                node_bin = '{}/{}/bin/node'.format(self.nodejs_path, v)
+                if not os.path.exists(node_bin):
+                    continue
+                flag_file = os.path.join(self.nodejs_path, v, self._EXTRA_NODE_FLAG)
+                source = 'panel'
+                owner = ''
+                node_path = node_bin
+                if os.path.exists(flag_file):
+                    try:
+                        flag = json.loads(public.readFile(flag_file))
+                        source = flag.get('source', 'system')
+                        owner = flag.get('owner', 'root')
+                        node_path = flag.get('real_path') or node_bin
+                    except:
+                        source = 'system'
+                version_list.append({
+                    'version': v,
+                    'source': source,
+                    'owner': owner,
+                    'path': '{}/{}/bin/node'.format(self.nodejs_path, v),
+                    'node_path': node_path,
+                })
+
+        # 排序
+        # 1. 面板在前,后缀版本在后
+        # 2. 同分组内部 版本号从高到低降序
+        def _version_sort_key(item):
+            # panel组返回0,其他返回1, 0排在前面
+            group = 0 if item["source"] == "panel" else 1
+            # 提取版本数字 v22.14.0‑rc1 → [22,14,0]
+            ver_nums = re.findall(r'\d+', item['version'])
+            ver_tuple = tuple(map(int, ver_nums)) if ver_nums else (0, 0, 0)
+            # 返回元组，sort升序, -ver_tuple实现版本降序
+            return (group, tuple(-x for x in ver_tuple))
+
+        version_list.sort(key=_version_sort_key)
+
+        # 默认版本标记:以 which node 当前实际命中的版本为准
+        # 取不到（无 node / 命中的不是本目录管理的版本）时，把版本号最高的版本标记为默认
+        default_version = self._get_current_default_node_version()
+        for item in version_list:
+            item['is_default'] = 0
+        if not default_version or not any(item['version'] == default_version for item in version_list):
+            if version_list:
+                newest_item = max(
+                    version_list,
+                    key=lambda it: tuple(int(x) for x in re.findall(r'\d+', it['version'])))
+                default_version = newest_item['version']
+        for item in version_list:
+            if item['version'] == default_version:
+                item['is_default'] = 1
+
+        return public.return_message(0, 0, version_list)
+
+    def _get_current_default_node_version(self):
+        '''
+            @name 判定命令行当前默认 node（which node）对应的受管版本目录
+            按以下优先级判定：
+            1) /etc/profile 中 BT-NODE-ENV 前缀（面板/插件"设为默认"写入处，登录 shell 的
+               which node 据此命中）的最后一行版本，最后一行 = 最新一次设置；
+            2) 否则按面板环境 command -v node 命中路径 realpath 归一匹配受管版本；
+            3) 否则按 /usr/bin/node 软链 realpath 归一匹配受管版本；
+            全部未命中返回 ''（调用方兜底标最高版本）
+            @return string 默认版本目录名，未命中返回 ''
+        '''
+        # 1) /etc/profile BT-NODE-ENV 前缀
+        default_version = ''
+        try:
+            profile_body = public.readFile('/etc/profile')
+            if profile_body:
+                for line in profile_body.splitlines():
+                    m = re.search(r'nodejs/(v[0-9][A-Za-z0-9_.\-]*)/bin', line)
+                    if m:
+                        default_version = m.group(1)
+        except:
+            default_version = ''
+        if default_version and os.path.exists(
+                '{}/{}/bin/node'.format(self.nodejs_path, default_version)):
+            return default_version
+        # 2) / 3) realpath 归一匹配
+        target = ''
+        try:
+            target = public.ExecShell('command -v node 2>/dev/null')[0].strip() or ''
+        except:
+            target = ''
+        if not target or not os.path.exists(target):
+            target = '/usr/bin/node'
+        return self._match_node_version_by_realpath(target)
+
+    def _match_node_version_by_realpath(self, target):
+        '''
+            @name 把命令路径 realpath 归一到受管 node 版本目录名
+            target 可为面板安装版本 bin/node、/usr/bin 软链或 NVM 真实 node 路径，
+            三者 realpath 归一后与该版本 bin/node 的 realpath 相等即命中
+            @param target string node 可执行文件路径
+            @return string 版本目录名，未命中返回 ''
+        '''
+        try:
+            real = os.path.realpath(target)
+        except:
+            real = ''
+        if not real:
+            return ''
+        try:
+            for v in os.listdir(self.nodejs_path):
+                if v[0] != 'v' or v.find('.') == -1:
+                    continue
+                try:
+                    if os.path.realpath('{}/{}/bin/node'.format(self.nodejs_path, v)) == real:
+                        return v
+                except:
+                    continue
+        except:
+            pass
+        return ''
+
+    def set_default_node_version(self, get):
+        '''
+            @name 切换命令行默认 node（which node）到指定版本
+            重建 /usr/bin 下 node/npm/npx 软链指向该版本，并把 /etc/profile 的
+            BT-NODE-ENV PATH 前缀改到该版本 bin，使新登录 shell 的 which node 命中该版本
+            @param get<dict_obj> {version: 'v24.15.0' | 'v22.14.0-nvm-root'}
+            @return dict
+        '''
+        version = str(get.get('version', '') or '').strip()
+        if not version:
+            return public.return_message(-1, 0, public.lang('The "version" parameter cannot be left blank.'))
+        node_dir = '{}/{}'.format(self.nodejs_path, version)
+        src_node_bin = '{}/bin/node'.format(node_dir)
+        if not os.path.exists(src_node_bin):
+            return public.return_message(-1, 0, public.lang(
+                'This version does not exist: {}'.format(version)))
+        # 重建 /usr/bin 下 node/npm/npx 软链。
+        # 软链目标保留 {nodejs_path}/{version}/bin/<cmd>（挂载版本 bin 下本身是软链，链到链即可），
+        # 保持路径落在 nodejs_path 内，兼容插件 get_default_env 的"/usr/bin/node 指向面板目录"判定；
+        # realpath 穿透两层软链仍能解析到真实 node，不影响 _match_node_version_by_realpath 命中
+        for name in ('node', 'npm', 'npx'):
+            src_bin = '{}/bin/{}'.format(node_dir, name)
+            if not os.path.exists(src_bin):
+                continue
+            env_bin = '/usr/bin/{}'.format(name)
+            try:
+                if os.path.islink(env_bin) or os.path.exists(env_bin):
+                    os.remove(env_bin)
+                os.symlink(src_bin, env_bin)
+            except Exception as ex:
+                return public.return_message(-1, 0, 'Failed to set /usr/bin/{}: {}'.format(name, ex))
+        # 更新 /etc/profile 的 BT-NODE-ENV 前缀，保证登录 shell 的 which node 命中该版本 bin
+        profile = '/etc/profile'
+        try:
+            if os.path.exists(profile):
+                public.ExecShell("sed -i '/BT-NODE-ENV/d' {}".format(profile))
+                body = public.readFile(profile)
+                if body is not False:
+                    body = body.strip()
+                    body += "\nPATH={}/bin:$PATH # BT-NODE-ENV\n".format(node_dir)
+                    body += "export PATH # BT-NODE-ENV\n".format(node_dir)
+                    public.writeFile(profile, body)
+        except Exception as ex:
+            return public.return_message(-1, 0, 'Failed to update {}: {}'.format(profile, ex))
+        public.WriteLog(self.log_name, 'Switch default node version to {}'.format(version))
+        return public.return_message(0, 0, public.lang(
+            'The default Node.js version has been switched to: {}'.format(version)))
+
+    def remove_extra_node(self, get):
+        '''
+            @name 卸载系统/NVM版本（仅删软链目录，不影响真实node）
+            @param get<dict_obj> {version: 'v24.19.0-system'}
+            @return dict
+        '''
+        version = get.get('version', '')
+        if not version:
+            return public.return_message(-1, 0, public.lang('The "version" parameter cannot be left blank.'))
+        node_dir = '{}/{}'.format(self.nodejs_path, version)
+        flag_file = os.path.join(node_dir, self._EXTRA_NODE_FLAG)
+        if not os.path.exists(flag_file):
+            return public.return_message(-1, 0, public.lang(
+                'Only the system/NVM managed version can be uninstalled here: {}'.format(version)))
+        if not os.path.exists(node_dir):
+            return public.return_message(-1, 0, public.lang('This version does not exist.'))
+        public.ExecShell('rm -rf "{}"'.format(node_dir))
+        return public.return_message(0, 0, public.lang(
+            'The system/NVM Node.js version link has been removed: {}'.format(version)))
+
+
     # 2024/7/10 下午5:02 将node版本转成元祖
     def version_key(self, version):
         return tuple(map(int, re.findall(r'\d+', version)))

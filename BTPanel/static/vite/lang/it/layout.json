@@ -101,7 +101,8 @@
 			"domain_2": "Certificato",
 			"security_8": "Website Security",
 			"security_9": "Scan Detection",
-			"wap_12": "Exclusive Rules"
+			"wap_12": "Exclusive Rules",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "Pannello Aapanel Linux © 2014 • {0} Aapanel",
@@ -117,5 +118,25 @@
 			"index_6": "Casella dei messaggi",
 			"index_7": "Consumo di tempo"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Ricerca Globale",
+		"sider": "Cerca (Ctrl+K)",
+		"placeholder": "Inserisci una parola chiave e premi Invio per cercare",
+		"group_menu": "Menu",
+		"group_tab": "Schede pagina",
+		"group_action": "Azioni",
+		"history": "Ricerche recenti",
+		"clear": "Cancella",
+		"searching": "Ricerca in corso…",
+		"done": "Fatto · {n} risultati",
+		"empty": "Nessun risultato trovato",
+		"empty_tip": "Prova una parola chiave più corta o cambia il tipo di ricerca",
+		"press_enter_search": "Premi Invio o fai clic sull'icona di ricerca per cercare di più",
+		"no_local": "Nessuna funzione corrispondente trovata",
+		"footer": "↑↓ Naviga · Invio Apri o Cerca · Esc Chiudi",
+		"welcome": "Cerca menu, siti, database, FTP, cron, software e azioni",
+		"type_all": "Tutti",
+		"scope_label": "Tipo di ricerca"
 	}
 }

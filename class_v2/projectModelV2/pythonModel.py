@@ -863,6 +863,43 @@ class main(projectBase):
         self.run_simple_prep_env(res, values)
         time.sleep(0.5)
         public.WriteLog(self._log_name, "Create Python Project [{}]".format(values["pjname"]))
+
+        # ================ git start ======================
+        try:
+            _deploy_type = get.get('deploy_type', '')
+            _auth_type = get.get('auth_type', '')
+            _has_git = bool(_auth_type) or _deploy_type in ['ssh', 'github']
+            if _has_git:
+                if not _auth_type:
+                    _auth_type = {'ssh': 'ssh_key', 'github': 'github'}.get(_deploy_type, _deploy_type)
+                from git_tools import GitTools
+                git_obj = GitTools()
+
+                # 已clone项目，使用.git导入
+                res_info = git_obj.get_git_directory(public.to_dict_obj({"site_id": res}))
+                if res_info['status'] != 0:
+                    return public.fail_v2(res_info['message'])
+                git_info = res_info['message'] or {}
+                if not git_info.get('repo'):
+                    return public.fail_v2("Failed to read Git information from the cloned repository")
+                import_res = git_obj.import_existing_repository(
+                    public.to_dict_obj({
+                        "site_id": res,
+                        "repo": git_info['repo'],
+                        "branch": git_info['branch'],
+                        "key_path": git_info.get('key_path', ''),
+                        "auth_type": _auth_type,
+                        "username": get.get('username', ''),
+                        "token": get.get('token', ''),
+                        "project_type": 'python',
+                    }))
+                if import_res['status'] != 0:
+                    return public.fail_v2(import_res['message'])
+        except Exception as e:
+            print(e)
+            return public.fail_v2(public.lang("There was an error while configuring Git tools!"))
+        # ================ git end ======================
+
         get.release_firewall = True
         flag, tip = self._release_firewall(get)
         tip = "" if flag else "<br>" + tip

@@ -33,6 +33,7 @@
 			"Daily": "Tous les jours"
 		},
 		"Btn": {
+			"Close": "Fermer",
 			"Add": "Ajouter",
 			"Save": "Sauvegarder",
 			"Config": "Configurer",

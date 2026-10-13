@@ -45,6 +45,10 @@ except:
     cache = _Cache()
 
 
+NODE_MONITOR_REQUEST_TIMEOUT = 15   # 单节点http请求超时
+NODE_MONITOR_MAX_THREADS = 10      # 最大并发线程数
+NODE_MONITOR_CLEANUP_INTERVAL = 86400
+
 def _get_os_info() -> Tuple[str, str]:
     os_data = public.readFile("/etc/os-release")
     if not os_data:
@@ -1117,7 +1121,7 @@ def _attach_monitor_service_data(monitor_db, node_id: int, srv, data: dict) -> d
         elif hasattr(srv, "get_service_status"):
             service_data, err = srv.get_service_status(services)
             if err and not service_data:
-                service_data, err = _get_monitor_service_status_by_saved_ssh(node_id, services)
+                service_data, err = _get_monitor_service_status_by_saved_ssh(node_id, services, getattr(srv, "timeout", NODE_MONITOR_REQUEST_TIMEOUT))
             if err and not service_data:
                 service_data = service_unknown_statuses(services, err)
         else:
@@ -1131,7 +1135,7 @@ def _attach_monitor_service_data(monitor_db, node_id: int, srv, data: dict) -> d
     return data
 
 
-def _get_monitor_service_status_by_saved_ssh(node_id: int, services: List[Dict[str, Any]]) -> Tuple[List[dict], str]:
+def _get_monitor_service_status_by_saved_ssh(node_id: int, services: List[Dict[str, Any]], timeout: int = NODE_MONITOR_REQUEST_TIMEOUT) -> Tuple[List[dict], str]:
     try:
         node_data = public.S('node', public.get_panel_path() + "/data/db/node.db").where("id=?", (int(node_id),)).find()
         if not isinstance(node_data, dict) or not node_data:
@@ -1142,6 +1146,8 @@ def _get_monitor_service_status_by_saved_ssh(node_id: int, services: List[Dict[s
         if not isinstance(ssh_conf, dict) or not ssh_conf:
             return [], "Service status check is not supported by the remote node"
         from mod.project.node.nodeutil.ssh_wrap import SSHApi
+        ssh_conf = dict(ssh_conf)
+        ssh_conf["timeout"] = timeout
         return SSHApi(**ssh_conf).get_service_status(services)
     except Exception as e:
         return [], str(e)
@@ -1176,30 +1182,86 @@ def _save_monitor_status(node_id: int, status: int, error_msg: str):
             public.print_error()
 
 
+
+def _parse_monitor_node_data(node_data: dict) -> Tuple[Optional[dict], str]:
+    if not isinstance(node_data, dict):
+        return None, "Node data must be a dictionary"
+    parsed = dict(node_data)
+    for field_name in ("error", "ssh_conf"):
+        raw_value = parsed.get(field_name, {})
+        if isinstance(raw_value, str):
+            try:
+                raw_value = json.loads(raw_value or "{}")
+            except (TypeError, ValueError) as e:
+                return None, "Invalid {}: {}".format(field_name, e)
+        elif isinstance(raw_value, dict):
+            raw_value = dict(raw_value)
+        elif raw_value is None:
+            raw_value = {}
+        else:
+            return None, "Invalid {} type".format(field_name)
+        if not isinstance(raw_value, dict):
+            return None, "Invalid {} content".format(field_name)
+        parsed[field_name] = raw_value
+    return parsed, ""
+
+
+def _record_node_monitor_error(node, error_msg: str) -> int:
+    from mod.project.node.dbutil import ServerNodeDB, ServerMonitorRepo
+    error_num = int(node.error_num or 0) + 1
+    status = 0 if error_num >= 2 else None
+    if status == 0:
+        ServerMonitorRepo().remove_cache(node.id)
+    update_error = ServerNodeDB().update_monitor_state(
+        node.id,
+        error_num,
+        {"msg": error_msg, "time": int(time.time())},
+        status=status,
+    )
+    if update_error and public.is_debug():
+        public.print_log("Node monitor state update failed: {}".format(update_error))
+    return error_num
+
+
+def _record_node_monitor_success(node) -> None:
+    if int(node.error_num or 0) == 0 and int(node.status or 0) == 1:
+        return
+    from mod.project.node.dbutil import ServerNodeDB
+    update_error = ServerNodeDB().update_monitor_state(node.id, 0, {}, status=1)
+    if update_error and public.is_debug():
+        public.print_log("Node monitor state reset failed: {}".format(update_error))
+
 def monitor_all_node_status():
     all_nodes = public.S('node', public.get_panel_path() + "/data/db/node.db").select()
     if not isinstance(all_nodes, list) or not all_nodes:
         return
 
-    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    threads = []
-    for tmp_node_data in all_nodes:
-        t = threading.Thread(target=monitor_node_once, args=(tmp_node_data,))
-        t.start()
-        threads.append(t)
-
+    worker_count = min(NODE_MONITOR_MAX_THREADS, len(all_nodes))
+    with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="NodeMonitor") as executor:
+        futures = [
+            executor.submit(monitor_node_once, dict(node_data), NODE_MONITOR_REQUEST_TIMEOUT)
+            for node_data in all_nodes
+        ]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception:
+                if public.is_debug():
+                    public.print_error()
     # 等待所有线程完成（可选）
-    for t in threads:
-        t.join()
-    try:
-        from mod.project.node.dbutil import NodeMonitorDB
-        err = NodeMonitorDB().cleanup_expired_snapshots()
-        if err and public.is_debug():
-            public.print_log("Node monitor snapshot cleanup failed: {}".format(err))
-    except Exception:
-        if public.is_debug():
-            public.print_error()
+    cleanup_marker = '/tmp/node_monitor_snapshot_cleanup.pl'
+    if not os.path.exists(cleanup_marker) or os.path.getmtime(cleanup_marker) < time.time() - NODE_MONITOR_CLEANUP_INTERVAL:
+        public.writeFile(cleanup_marker, str(int(time.time())))
+        try:
+            from mod.project.node.dbutil import NodeMonitorDB
+            err = NodeMonitorDB().cleanup_expired_snapshots()
+            if err and public.is_debug():
+                public.print_log("Node monitor snapshot cleanup failed: {}".format(err))
+        except Exception:
+            if public.is_debug():
+                public.print_error()
     # 采集完成后调用一次告警判断
     try:
         from mod.project.node.nodeutil.alert_engine import NodeAlertEngine
@@ -1211,7 +1273,7 @@ def monitor_all_node_status():
             public.print_error()
 
 
-def monitor_node_once(node_data: dict):
+def monitor_node_once(node_data: dict, timeout: int = NODE_MONITOR_REQUEST_TIMEOUT):
     from mod.project.node.dbutil import Node, ServerNodeDB, ServerMonitorRepo
     from mod.project.node.nodeutil.ssh_wrap import SSHApi
     from mod.base.ssh_executor import test_ssh_config
@@ -1223,40 +1285,32 @@ def monitor_node_once(node_data: dict):
             else:
                 _save_monitor_status(int(node_data.get("id", 0)), 2, "Failed to obtain local node data")
             return
-        node_data["error"] = json.loads(node_data["error"])
-        node_data["ssh_conf"] = json.loads(node_data["ssh_conf"])
-        node, err = Node.from_dict(node_data)
+        parsed_node_data, parse_error = _parse_monitor_node_data(node_data)
+        if parse_error:
+            if public.is_debug():
+                public.print_log("Node data parsing error: {}".format(parse_error))
+            return
+        node, err = Node.from_dict(parsed_node_data)
+
         if err:
             # public.print_log("Node data parsing error:{}".format(err))
             return
 
-        if node_data["lpver"]:
-            srv = LPanelNode(node.address, node.api_key, node.lpver)
+        if parsed_node_data.get("lpver"):
+            srv = LPanelNode(node.address, node.api_key, node.lpver, timeout=timeout)
         elif node.api_key or node.app_key:
-            srv = ServerNode(node.address, node.api_key, node.app_key)
+            srv = ServerNode(node.address, node.api_key, node.app_key, timeout=timeout)
         else:
-            srv =SSHApi(**node_data["ssh_conf"])
+            ssh_conf = dict(parsed_node_data["ssh_conf"])
+            ssh_conf["timeout"] = timeout
+            srv = SSHApi(**ssh_conf)
 
         data, err = srv.get_net_work()
         if err:
-            node.error_num += 1
-            node.error = {
-                "msg": err,
-                "time": int(time.time())
-            }
-            if node.error_num >= 2:
-                node.status = 0
-                ServerMonitorRepo().remove_cache(node.id)
-
-            ServerNodeDB().update_node(node)
-            _save_monitor_status(node.id, 0 if node.error_num >= 2 else 2, err)
-
+            error_num = _record_node_monitor_error(node, err)
+            _save_monitor_status(node.id, 0 if error_num >= 2 else 2, err)
         else:
-            if node.error_num > 0:
-                node.error_num = 0
-                node.error = {}
-                node.status = 1
-                ServerNodeDB().update_node(node)
+            _record_node_monitor_success(node)
 
         if data:
             repo = ServerMonitorRepo()
@@ -1264,7 +1318,7 @@ def monitor_node_once(node_data: dict):
             _save_monitor_snapshot(node.id, srv, data)
             if repo.is_reboot_wait(node.server_ip):
                 repo.set_wait_reboot(node.server_ip, False)
-        if not node_data["ssh_test"] and not node_data["ssh_conf"] and not isinstance(srv, SSHApi):
+        if not parsed_node_data.get("ssh_test") and not parsed_node_data["ssh_conf"] and not isinstance(srv, SSHApi):
             ssh_key, err = srv.read_ssh_key()
             if err:
                 # public.print_log("Failed to obtain SSH key:{}".format(err))
@@ -1307,41 +1361,33 @@ def monitor_node_once_with_timeout(node_data: dict, timeout: int = 5):
     from mod.project.node.dbutil import Node, ServerNodeDB, ServerMonitorRepo
     from mod.project.node.nodeutil.ssh_wrap import SSHApi
     try:
-        node_data["error"] = json.loads(node_data["error"])
-        node_data["ssh_conf"] = json.loads(node_data["ssh_conf"])
-        node, err = Node.from_dict(node_data)
+        parsed_node_data, parse_error = _parse_monitor_node_data(node_data)
+        if parse_error:
+            if public.is_debug():
+                public.print_log("Node data parsing error: {}".format(parse_error))
+            return
+        node, err = Node.from_dict(parsed_node_data)
+
         if err:
             # public.print_log("Node data parsing error:{}".format(err))
             return
 
-        if node_data["app_key"] or node_data["api_key"]:
-            node_data["timeout"] = timeout
-            srv = ServerNode.new_by_data(node_data)
-            node_data.pop("timeout")
-        elif node_data["ssh_conf"]:
-            srv = SSHApi(**node_data["ssh_conf"], timeout=timeout)
+        if parsed_node_data["app_key"] or parsed_node_data["api_key"]:
+            parsed_node_data["timeout"] = timeout
+            srv = ServerNode.new_by_data(parsed_node_data)
+        elif parsed_node_data["ssh_conf"]:
+            ssh_conf = dict(parsed_node_data["ssh_conf"])
+            ssh_conf["timeout"] = timeout
+            srv = SSHApi(**ssh_conf)
         else:
             return
 
         data, err = srv.get_net_work()
         if err:
-            node.error_num += 1
-            node.error = {
-                "msg": err,
-                "time": int(time.time())
-            }
-            if node.error_num >= 2:
-                node.status = 0
-                ServerMonitorRepo().remove_cache(node.id)
-
-            ServerNodeDB().update_node(node)
-            _save_monitor_status(node.id, 0 if node.error_num >= 2 else 2, err)
-
-        elif node.error_num > 0:
-            node.error_num = 0
-            node.error = {}
-            node.status = 1
-            ServerNodeDB().update_node(node)
+            error_num = _record_node_monitor_error(node, err)
+            _save_monitor_status(node.id, 0 if error_num >= 2 else 2, err)
+        else:
+            _record_node_monitor_success(node)
 
         if data:
             repo = ServerMonitorRepo()

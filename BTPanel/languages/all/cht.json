@@ -639,7 +639,7 @@
     "4cc4ddc196a295ee4ab82daec08f91a6": "網站不存在",
     "9d1ee7d092060a4d3418a979fba5e46b": "backup_error",
     "f8320b26d30ab433c5a54546d21f414c": "錯誤的",
-    "8080ccf57df49ce6d4792cc5041be1b8": "目前僅支持還原本地，Google Storage和AWS S3備份",
+    "8080ccf57df49ce6d4792cc5041be1b8": "目前僅支持還原本地，Google Storage和S3 Storage備份",
     "6f3446d8579a066540c5d7e68ff05f0b": "恢復成功",
     "260ca9dd8a4577fc00b7bd5810298076": "成功",
     "1cbb155db1ca49d77f886c41b7850b48": "下載錯誤！",

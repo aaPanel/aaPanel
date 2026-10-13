@@ -110,7 +110,7 @@ def exec_shell(cmdstring, timeout=None, shell=True, cwd=None):
         )
         return result.stdout, result.stderr
     except subprocess.TimeoutExpired:
-        return 'Timed out', ''
+        return '', 'Timed out'
     except Exception:
         return '', traceback.format_exc()
 
@@ -141,9 +141,16 @@ def task_ExecShell(fucn_name: str, **kw):
             except Exception as e:
                 raise ValueError(f"Invalid path in paths_exists: '{p}', error: {e}")
 
-    cmd = f"{PYTHON_BIN} /www/server/panel/BTTask/task_script.py {fucn_name}"
-    _, err = exec_shell(cmd)
+    cmd = [PYTHON_BIN, "/www/server/panel/BTTask/task_script.py", fucn_name]
+    _, err = exec_shell(cmd, timeout=kw.get("timeout"), shell=False)  # shell=False 需传入 list 数组
     if err:
+        if err == 'Timed out':
+            pid_file = "/tmp/brain_task_pids/{}.pid".format(fucn_name)
+            if os.path.exists(pid_file):
+                try:
+                    os.remove(pid_file)
+                except OSError:
+                    pass
         raise Exception(err)
 
 
@@ -1014,6 +1021,22 @@ def update_monitor_requests():
     task_ExecShell("update_monitor_requests")
 
 
+# 每天凌晨2点通过独立 task_script 子进程刷新磁盘分类统计
+# 发布前临时禁用磁盘分类统计任务入口，后续上线时恢复
+# def update_disk_category_stats():
+#     from class_v2.system_v2 import system
+#     system_obj = system()
+#     if not system_obj.is_disk_category_stats_enabled(): return
+#     now = datetime.now()
+#     if now.hour != 2: return
+#     # 调度繁忙时允许在2点这一小时内补执行，成功后当天不再重复
+#     result = system_obj._get_disk_category_raw_result()
+#     if result and system_obj.is_disk_category_stats_valid() and all(isinstance(value,dict) and
+#                       str(value.get('updated_at','')).startswith(now.strftime('%Y-%m-%d') + ' 02:')
+#                       for value in result.values()): return
+#     task_ExecShell("update_disk_category_stats")
+
+
 # 每隔20分钟更新一次waf报表数据
 def update_waf_config():
     task_ExecShell("update_waf_config")
@@ -1257,9 +1280,26 @@ def check_site_monitor():
     task_ExecShell("check_site_monitor")
 
 
+
+
+def _node_monitor_task_timeout() -> int:
+    node_count = 1
+    conn = None
+    try:
+        conn = sqlite3.connect(os.path.join(BASE_PATH, "data/db/node.db"))
+        row = conn.execute("SELECT COUNT(*) FROM node").fetchone()
+        if row:
+            node_count = max(1, int(row[0]))
+    except Exception:
+        pass
+    finally:
+        if conn is not None:
+            conn.close()
+    batch_count = (node_count + 9) // 10
+    return min(3600, max(120, batch_count * 90 + 30))
 # 节点监控
 def node_monitor():
-    task_ExecShell("node_monitor")
+    task_ExecShell("node_monitor", timeout=_node_monitor_task_timeout())
 
 
 # 节点监控
@@ -1396,6 +1436,8 @@ TASKS = [
 
     {"func": update_vulnerabilities, "interval": 3600 * 24},  # # 每天一次 更新漏洞信息
     {"func": refresh_dockerapps, "interval": 3600 * 24},  # # 每天一次 更新docker app 列表
+    # 发布前临时禁用磁盘四分类统计定时任务，后续上线时恢复下方注册
+    # {"func": update_disk_category_stats, "interval": 60, "loop": True},  # 每分钟检查凌晨2点，允许低优先级扫描长时间执行
 ]
 
 
@@ -1422,6 +1464,7 @@ def thread_register(brain: SimpleBrain, is_core: bool = True):
                     interval=task.get("interval", 3600),
                     is_core=task.get("is_core", False),
                     loop=task.get("loop", False),
+                    timeout=task.get("timeout", 3600 if task_id == "node_monitor" else 0),
                 )
         except Exception:
             import traceback
@@ -1462,6 +1505,13 @@ def main(max_workers: int = None):
 
     time.sleep(5)
     task_version_part()
+    # 在长期运行的 BT-Task 主进程中启动磁盘分类网站 watcher
+    # 发布前临时禁用磁盘四分类 watcher，后续上线时恢复下方启动代码
+    # try:
+    #     from class_v2.system_v2 import system
+    #     system().start_disk_category_watcher()
+    # except Exception:
+    #     logger.error(traceback.format_exc())
     # =================== Start ===========================
     sb = SimpleBrain(cpu_max=20.0, workers=max_workers)
     try:

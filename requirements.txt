@@ -129,3 +129,4 @@ pymssql==2.3.0
 jsonpath==0.82.2
 openai==1.39.0
 httpx==0.24.1
+anyio==4.14.2

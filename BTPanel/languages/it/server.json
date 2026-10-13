@@ -428,7 +428,7 @@
     "6ca3d3b27428d22e047e13a552f1600e": "Aggiungi correttamente",
     "868903fa7bc939d9ff39df264589c0fd": "Elimina con successo",
     "c614196ffa00bf43880f547acfab993b": "Il pannello non trova il file di backup: {}",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Attualmente supporta solo il ripristino di backup Local, Google Storage e AWS S3",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Attualmente supporta solo il ripristino di backup Local, Google Storage e S3 Storage",
     "6f3446d8579a066540c5d7e68ff05f0b": "Ripristina il successo",
     "260ca9dd8a4577fc00b7bd5810298076": "successo",
     "1cbb155db1ca49d77f886c41b7850b48": "Scarica errore!",

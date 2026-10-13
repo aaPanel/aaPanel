@@ -118,5 +118,25 @@
 			"index_6": "消息盒子",
 			"index_7": "时间消耗"
 		}
+	},
+	"GlobalSearch": {
+		"title": "全局搜索",
+		"sider": "搜索 (Ctrl+K)",
+		"placeholder": "请输入关键词，按回车搜索",
+		"group_menu": "功能菜单",
+		"group_tab": "页面标签",
+		"group_action": "操作",
+		"history": "最近搜索",
+		"clear": "清空",
+		"searching": "搜索中…",
+		"done": "已完成 · {n} 条结果",
+		"empty": "未找到相关内容",
+		"empty_tip": "试试更短关键词或切换搜索类型",
+		"press_enter_search": "按回车或点击搜索图标搜索更多信息",
+		"no_local": "操作功能没有找到",
+		"footer": "↑↓ 选择 · Enter 打开 或 搜索 · Esc 关闭",
+		"welcome": "搜索菜单、网站、数据库、FTP、计划任务、软件与操作",
+		"type_all": "全部",
+		"scope_label": "搜索类型"
 	}
 }

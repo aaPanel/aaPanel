@@ -482,7 +482,7 @@ class CloudStoraUpload:
         "ftp": "FTP Storage",
         "bos": "Baidu Cloud BOS",
         "obs": "Huawei Cloud OBS",
-        "aws_s3": "AWS S3",
+        "aws_s3": "S3 Storage",
         "gdrive": "Google Drive",
         "msonedrive": "Microsoft OneDrive",
         "gcloud_storage": "Google Cloud Storage",

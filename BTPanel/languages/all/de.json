@@ -647,7 +647,7 @@
     "4cc4ddc196a295ee4ab82daec08f91a6": "Site existiert nicht",
     "9d1ee7d092060a4d3418a979fba5e46b": "Backup_error",
     "f8320b26d30ab433c5a54546d21f414c": "FALSCH",
-    "8080ccf57df49ce6d4792cc5041be1b8": "Derzeit unterstützt die Wiederherstellung des lokalen, Google Storage und AWS S3 Backups",
+    "8080ccf57df49ce6d4792cc5041be1b8": "Derzeit unterstützt die Wiederherstellung des lokalen, Google Storage und S3 Storage Backups",
     "6f3446d8579a066540c5d7e68ff05f0b": "Erfolgreich wiederherstellen",
     "260ca9dd8a4577fc00b7bd5810298076": "Erfolg",
     "1cbb155db1ca49d77f886c41b7850b48": "Download -Fehler!",

@@ -401,6 +401,47 @@ def sql_pacth():
         public.M('crontab').execute("ALTER TABLE 'crontab' ADD 'notice_channel' TEXT DEFAULT ''",())
 
     sql = db.Sql()
+    # 发布前临时禁用磁盘统计表及索引初始化，后续上线时恢复
+    # # 创建磁盘分类统计结果、dirty 事件和文件缓存表
+    # csql = '''CREATE TABLE IF NOT EXISTS `disk_category_stats` (
+    #  INTEGER PRIMARY KEY AUTOINCREMENT,
+    # egory` TEXT NOT NULL,
+    # t_path` TEXT NOT NULL,
+    # e` INTEGER DEFAULT 0,
+    # tialized` INTEGER DEFAULT 0,
+    # ated_at` INTEGER DEFAULT 0,
+    # UE (`category`, `unit_path`)
+    # )'''
+    # # 保存每个分类 unit 的当前大小和是否已建立 baseline
+    # sql.execute(csql, ())
+    # csql = '''CREATE TABLE IF NOT EXISTS `disk_category_dirty` (
+    #  INTEGER PRIMARY KEY AUTOINCREMENT,
+    # egory` TEXT NOT NULL,
+    # t_path` TEXT NOT NULL,
+    # h` TEXT NOT NULL,
+    # _path` TEXT DEFAULT '',
+    # nt_type` TEXT DEFAULT '',
+    # dir` INTEGER DEFAULT 0,
+    # ated_at` INTEGER DEFAULT 0,
+    # ated_at` INTEGER DEFAULT 0,
+    # UE (`category`, `unit_path`, `path`)
+    # )'''
+    # # 保存 watcher 产生的待处理事件及 rename 相关字段
+    # sql.execute(csql, ())
+    # sql.execute('CREATE INDEX IF NOT EXISTS `disk_category_dirty_unit` ON `disk_category_dirty` (`category`, `unit_path`, `updated_at`)', ())
+    # csql = '''CREATE TABLE IF NOT EXISTS `disk_category_file_cache` (
+    # h` TEXT PRIMARY KEY,
+    # egory` TEXT NOT NULL,
+    # t_path` TEXT NOT NULL,
+    # e` INTEGER DEFAULT 0,
+    # ` INTEGER DEFAULT 0,
+    # de` INTEGER DEFAULT 0,
+    # me_ns` INTEGER DEFAULT 0,
+    # ated_at` INTEGER DEFAULT 0
+    # )'''
+    # # 保存文件级增量计算所需的稀疏元数据
+    # sql.execute(csql, ())
+    # sql.execute('CREATE INDEX IF NOT EXISTS `disk_category_file_unit` ON `disk_category_file_cache` (`category`, `unit_path`)', ())
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_types')).count():
         csql = '''CREATE TABLE IF NOT EXISTS `site_types` (
 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -463,6 +504,32 @@ def sql_pacth():
     # Git manager deployment ignored paths (JSON array), preserved on full replace.
     if not public.M('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'git_sites_auth','%ignore_paths%')).count():
         public.M('crontab').execute("ALTER TABLE 'git_sites_auth' ADD 'ignore_paths' TEXT",())
+
+    # GitHub account authorization (panel-level, used to list account/org repos).
+    if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'github_oauth')).count():
+        csql = r"""
+        CREATE TABLE IF NOT EXISTS `github_oauth` (
+      `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+      `login` TEXT,
+      `access_token` TEXT,
+      `token_type` TEXT,
+      `scope` TEXT,
+      `avatar_url` TEXT,
+      `grant_id` TEXT,
+      `grant_secret` TEXT,
+      `expires_in` TEXT,
+      `created_at` TEXT,
+      `updated_at` TEXT
+)"""
+        sql.execute(csql, ())
+
+
+    if not sql.table('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'github_oauth', '%grant_id%')).count():
+        sql.execute("ALTER TABLE 'github_oauth' ADD 'grant_id' TEXT", ())
+    if not sql.table('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'github_oauth', '%grant_secret%')).count():
+        sql.execute("ALTER TABLE 'github_oauth' ADD 'grant_secret' TEXT", ())
+    if not sql.table('sqlite_master').where('type=? AND name=? AND sql LIKE ?', ('table', 'github_oauth', '%expires_in%')).count():
+        sql.execute("ALTER TABLE 'github_oauth' ADD 'expires_in' TEXT", ())
 
     if not sql.table('sqlite_master').where('type=? AND name=?', ('table', 'site_deploy_status')).count():
         csql = r"""

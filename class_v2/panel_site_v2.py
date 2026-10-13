@@ -46,6 +46,63 @@ class panelSite(panelRedirect):
     is_ipv6 = False
     conf_dir = '{}/vhost/config'.format(public.get_panel_path())  # 防盗链配置
 
+    # ========================网站全局配置（仅 Nginx）========================
+    GLOBAL_RULE_CONF = '/www/server/panel/vhost/nginx/global_rule/global.conf'
+    GLOBAL_RULE_BLOCK = '\n    #GLOBAL-RULE-START\n    include {0};\n    #GLOBAL-RULE-END\n'.format(GLOBAL_RULE_CONF)
+    GLOBAL_RULE_STRIP_RE = re.compile(r'\n?[ \t]*#GLOBAL-RULE-START\r?\n.*?#GLOBAL-RULE-END[ \t]*(?:\r?\n)+', re.DOTALL)
+    # 全局规则仅作用于 PHP 类型站点
+    GLOBAL_RULE_SITE_TYPES = ('php',)
+    # 内置预置模板（首次访问时作为种子写入 config/nginx_global_rule_templates.json，之后可编辑/删除）
+    GLOBAL_RULE_PRESET_TEMPLATES = [
+        {
+            "id": 1,
+            "name": "Block User-Agent",
+            "desc": "Block bots, scanners, or clients that match specific User-Agent values.",
+            "code": '# Replace the example values before saving\n# Block selected User-Agents\nif ($http_user_agent ~* "REPLACE_WITH_USER_AGENT|ANOTHER_USER_AGENT") {\n    return 403;\n}',
+            "create_time": 0,
+        },
+        {
+            "id": 2,
+            "name": "Block IP address",
+            "desc": "Deny requests from a specific IP address across affected websites.",
+            "code": '# Replace with the IP address you want to block\n# Example format: 203.0.113.10\ndeny REPLACE_WITH_IP;',
+            "create_time": 0,
+        },
+        {
+            "id": 3,
+            "name": "Allow IP only",
+            "desc": "Allow trusted IPs and deny all other requests.",
+            "code": '# Replace with your trusted IP address\nallow REPLACE_WITH_TRUSTED_IP;\ndeny all;',
+            "create_time": 0,
+        },
+        {
+            "id": 4,
+            "name": "Block request path",
+            "desc": "Block access to a sensitive or frequently scanned request path.",
+            "code": '# Replace with the path you want to block\nlocation = /REPLACE_WITH_PATH {\n    deny all;\n}',
+            "create_time": 0,
+        },
+        {
+            "id": 5,
+            "name": "Restrict request method",
+            "desc": "Reject request methods that are not needed by your websites.",
+            "code": '# Review the methods before saving\nif ($request_method ~* "PUT|DELETE|TRACE") {\n    return 405;\n}',
+            "create_time": 0,
+        },
+        {
+            "id": 6,
+            "name": "Add response header",
+            "desc": "Add a shared response header to affected websites.",
+            "code": '# Review the header value before saving\nadd_header X-Content-Type-Options "nosniff" always;',
+            "create_time": 0,
+        },
+    ]
+
+
+
+
+
+
     def __init__(self):
         self._is_nginx_http3 = None
         self.setupPath = public.get_setup_path()
@@ -352,7 +409,7 @@ class panelSite(panelRedirect):
         conf = r'''server
 {{
     listen {listen_port};{listen_ipv6}
-    server_name {site_name};
+    server_name {site_name};{global_rule}
     index index.php index.html index.htm default.php default.htm default.html;
     root {site_path};
 
@@ -422,7 +479,8 @@ class panelSite(panelRedirect):
             description1=public.get_msg_gettext(
                 '# Directory verification related settings for one-click application for SSL certificate'),
             log_path=public.GetConfigValue('logs_path'),
-            site_name=self.siteName
+            site_name=self.siteName,
+            global_rule=self._get_global_rule_include(self.siteName, getattr(self, 'project_type', 'PHP'))
         )
 
         # 写配置文件
@@ -1137,8 +1195,8 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                 return public.return_message(-1, 0, "Subdirectory name cannot be empty")
             is_subdir = True
 
-        # git部署，测试连接
-        if get.get('deploy_type') == 'ssh':
+        # git部署，测试连接（三种鉴权 + github 登录均需初始化 webhook）
+        if get.get('deploy_type') in ['ssh', 'github'] or get.get('auth_type'):
             get.is_create_default_file = False
             from git_tools import GitTools
             git = GitTools()
@@ -1195,7 +1253,8 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
         if not hasattr(get, 'type_id'): get.type_id = 0
 
         if not hasattr(get, 'project_type'): get.project_type = "PHP"
-        
+        self.project_type = get.project_type
+
         self.check_default()
 
         self.check_php_conf()
@@ -1515,7 +1574,14 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
             public.write_log_gettext('Site manager', 'Successfully added site [{}]!', (self.siteName,))
 
             # ================ git start ======================
-            if data['status'] == 0 and get.get('deploy_type') in ['ssh', 'github']:
+            _deploy_type = get.get('deploy_type', '')
+            _auth_type = get.get('auth_type', '')
+            _has_git = bool(_auth_type) or _deploy_type in ['ssh', 'github']
+            if data['status'] == 0 and _has_git:
+                # 旧 deploy_type 映射为 auth_type：ssh -> ssh_key，github -> github
+                if not _auth_type:
+                    _auth_type = {'ssh': 'ssh_key', 'github': 'github'}.get(
+                        _deploy_type, _deploy_type)
                 dict_obj = {
                     'site_id': data['message']['siteId'],
                     'site_path': get.path,
@@ -1523,19 +1589,21 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     'repo': get.get('repo'),
                     'coverage_data': True,
                     'deploy_script': get.get('deploy_script', ''),
-                    'key_path': get.get('key_path', '')
+                    'auth_type': _auth_type,
+                    'key_path': get.get('key_path', ''),
+                    'username': get.get('username', ''),
+                    'token': get.get('token', '')
                 }
-                if get.get('deploy_type') == 'ssh':
-                    # 校验目录文件
-                    dir_contents = os.listdir(get.path)
-                    if not (len(dir_contents) == 2 and '.user.ini' in dir_contents):
-                        self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
-                        return public.return_message(-1,0,'The directory is not empty')
+                # 校验目录文件（clone 前站点目录仅允许默认文件 + .user.ini）
+                dir_contents = os.listdir(get.path)
+                if not (len(dir_contents) == 2 and '.user.ini' in dir_contents):
+                    self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
+                    return public.return_message(-1,0,'The directory is not empty')
 
-                    data = git.add_key_repository(public.to_dict_obj(dict_obj))
-                    # 删除网站
-                    if data['status'] != 0 and dict_obj.get('site_id'):
-                        self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
+                data = git.add_key_repository(public.to_dict_obj(dict_obj))
+                # 删除网站
+                if data['status'] != 0 and dict_obj.get('site_id'):
+                    self.DeleteSite(public.to_dict_obj({'id': dict_obj.get('site_id'), 'webname': self.siteName,'database':1,'path':1,'ftp':1}))
             # ================ git end ======================
 
             if hasattr(get, "pid") and getattr(get, "ssl_auto", "0") == "1":
@@ -1875,6 +1943,7 @@ include /www/server/panel/vhost/openlitespeed/proxy/BTSITENAME/*.conf
                     result = self.sub_dir_apache_conf()
                     result = self.sub_dir_ols_conf()
                 else:
+                    self.project_type = getattr(get, 'project_type', 'PHP')
                     result = self.nginxAdd()
                     result = self.apacheAdd()
                     result = self.openlitespeed_add_site(get)
@@ -12243,20 +12312,29 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         try:
             if not (hasattr(get, "id") and hasattr(get, "rname")):
                 return public.return_message(-1, 0, public.lang("parameter error"))
-            id = get.id
-            rname = get.rname
-            data = public.M('sites').where("id=?", (id,)).select()
+            get.validate([
+                Param('id').Integer('>', 0),
+                Param('rname').String(),
+            ], [])
+            if re.search(r'[\x00-\x1f\x7f-\x9f\u2028\u2029]', get.rname):
+                return public.return_message(-1, 0, public.lang("The website name cannot contain control characters"))
+            rname = get.rname.strip()
+            if len(rname) > 128:
+                return public.return_message(-1, 0, public.lang("The website name cannot exceed 128 characters"))
+            site_id = int(get.id)
+            data = public.M('sites').where("id=?", (site_id,)).select()
             if not data:
                 return public.return_message(-1, 0, public.lang("The site does not exist!"))
             data = data[0]
             name = data['rname'] if 'rname' in data.keys() and data.get('rname', '') else data['name']
             if 'rname' not in data.keys():
                 public.M('sites').execute("ALTER TABLE 'sites' ADD 'rname' text DEFAULT ''", ())
-            public.M('sites').where('id=?', data['id']).update({'rname': rname})
+            public.M('sites').where('id=?', (data['id'],)).update({'rname': rname})
             # public.write_log_gettext('Site manager', 'Website [{}] renamed: [{}]'.format(name, rname))
-            return public.return_message(0, 0, public.lang("Website [{}] renamed: [{}]", name, rname))
-        except:
-            return public.return_message(-1, 0, traceback.format_exc())
+            return public.return_message(0, 0, public.lang("Website [{}] renamed: [{}]", public.xssencode2(name), public.xssencode2(rname)))
+        except Exception as ex:
+            public.print_log("error info: {}".format(ex))
+            return public.return_message(-1, 0, str(ex))
 
 
     # Wordpress 漏洞扫描
@@ -14310,6 +14388,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         ssl_port = '443'
         listen_port = '80'
 
+        # 全局规则仅作用于 PHP 站点：服务切换重建配置时按站点类型决定是否注入
+        project_type = public.M('sites').where('id=?', (site_id,)).getField('project_type') or ''
+
         content = public.readFile(config_path)
         if not content:
             return False
@@ -14322,6 +14403,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             'server_name': r'(server_name\s+[^;]+\s*;)',
             'ssl': r'#SSL-START.*?\n(.*?)#SSL-END',
             'Monitor' : r'#Monitor-Config-Start.*?#Monitor-Config-End',
+            'bt_site_total' : r'#BT-SITE-TOTAL--START.*?#BT-SITE-TOTAL--END',
             'include_php': r'#PHP-INFO-START.*?\n(.*?)#PHP-INFO-END',
             'listen' : r'^\s*listen\b.*?;.*$',
             'rert_apply_check': r'#CERT-APPLY-CHECK--START.*?\n(.*?)#CERT-APPLY-CHECK--END',
@@ -14348,7 +14430,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
                         if not matches[0].lstrip().startswith('#'):
                             res[key] = res[key].replace(matches[0].lstrip(), '#' + matches[0].lstrip())
 
-            elif key == 'Monitor' or key == 'rert_apply_check' :
+            elif key == 'Monitor' or key == 'rert_apply_check' or key == 'bt_site_total':
                 match = re.findall(pattern, content, re.DOTALL)
                 res[key] = match[0] if match else '\n'
 
@@ -14367,7 +14449,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             else:
                 matches = re.findall(pattern, content)
                 if matches:
-                    res[key] = f"{matches[0]}\n"
+                    res[key] = matches[0]
                 else:
                     return False
 
@@ -14392,7 +14474,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
             conf = r'''server
  {{
 {listen}
-    {server_name}
+    {server_name}{global_rule}
 {default_document}
     root {site_path};
     
@@ -14401,7 +14483,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     #Subdirectory-configuration-end
     
     include /www/server/panel/vhost/nginx/extension/{site_name}/*.conf;
-
+    
+    {bt_site_total}
+    
     #SSL-START SSL related configuration, do NOT delete or modify the next line of commented-out 404 rules
     {ssl}
     #SSL-END
@@ -14439,12 +14523,14 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     }}
 
     access_log {_log}.log;
-    error_log  {_log}.error.log;  
-    
+    error_log  {_log}.error.log;
+
     {Monitor}
 }}'''.format(server_name=res['server_name'], include_php=res['include_php'], Monitor=res['Monitor'],rert_apply_check=res['rert_apply_check'],
              listen_port=listen_port, site_name=site_name, site_path=site_path, ssl=res['ssl'],listen=res['listen'],begin_deny=res['begin_deny'],
-             _log=log_path,default_document=res['default_document'],referenced_redirect=res['referenced_redirect'])
+             _log=log_path,default_document=res['default_document'],referenced_redirect=res['referenced_redirect'],
+             bt_site_total=res['bt_site_total'],
+             global_rule=self._get_global_rule_include(site_name, project_type))
 
             public.writeFile(config_path, conf)
             wp_path = os.path.join(site_path, 'wp-config.php')
@@ -14486,8 +14572,8 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
         new_block = r"""server 
 {{
 {listen}
-    {server_name}
-{default_document} 
+    {server_name}{global_rule}
+{default_document}
     root {site_path};
 
     #Subdirectory-configuration-start 
@@ -14515,7 +14601,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     #error_page 502 /502.html;
     #ERROR-PAGE-END
     {begin_deny}
-
+    
+    {bt_site_total}
+    
     location / {{
         proxy_pass {proxy_host};
 {proxy_ssl_config}
@@ -14553,7 +14641,7 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
     }}
 
     access_log {_log}.log;
-    error_log  {_log}.error.log;  
+    error_log  {_log}.error.log;
 
     {Monitor}
 }} """.format(server_name=res['server_name'], include_php=res['include_php'],
@@ -14562,7 +14650,9 @@ RewriteRule \.(BTPFILE)$    /404.html   [R,NC]
           begin_deny=res['begin_deny'],
           site_name=site_name, site_path=site_path, listen=res['listen'], _log=log_path,
           default_document=res['default_document'],
-          referenced_redirect=res['referenced_redirect'])
+          referenced_redirect=res['referenced_redirect'],
+          bt_site_total=res['bt_site_total'],
+          global_rule=self._get_global_rule_include(site_name, project_type))
         public.writeFile(config_path, new_block)
 
         # 处理apache配置ssl后，强制重定向
@@ -15045,6 +15135,59 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
     # ======================网站多服务 end==============================
 
     # ========================网站全局设置 start=========================
+    # 读取全局规则元数据
+    def _get_global_rule_meta(self):
+        defaults = {"status": 0, "scope_mode": "all", "selected_sites": [], "update_time": 0}
+        try:
+            return {**defaults, **public.read_config('nginx_global_rule')}
+        except Exception:
+            return defaults
+
+    # nginx 是否可用（nginx 二进制是否存在）
+    def _nginx_available(self):
+        return os.path.exists(public.get_setup_path() + '/nginx/sbin/nginx')
+
+    # scope 是否命中某站点
+    def _scope_hit(self, site_name, scope_mode, selected_set):
+        if scope_mode == 'selected':
+            return site_name in selected_set
+        if scope_mode == 'except':
+            return site_name not in selected_set
+        return True
+
+    # 全局规则是否作用于某站点
+    def _global_rule_enabled_for_site(self, site_name):
+        meta = self._get_global_rule_meta()
+        if not meta.get('status'):
+            return False
+        return self._scope_hit(site_name, meta.get('scope_mode', 'all'), set(meta.get('selected_sites', [])))
+
+    # 返回某站点应注入的 include 块 project_type 传 None 表示不校验类型（如服务切换重建）；传具体类型则仅 PHP 注入
+    def _get_global_rule_include(self, site_name, project_type=None):
+        if project_type is not None and (project_type or '').lower() not in self.GLOBAL_RULE_SITE_TYPES:
+            return ''
+        return self.GLOBAL_RULE_BLOCK if self._global_rule_enabled_for_site(site_name) else ''
+
+    # 拼接站点 nginx 配置路径（含项目类型前缀）
+    def _get_site_nginx_conf_path(self, site_name, project_type):
+        from ssl_domainModelV2 import SPECIAL_PROJECT_TYPE
+        prefix = ''
+        if (project_type or '').lower() in SPECIAL_PROJECT_TYPE:
+            prefix = (project_type or '').lower() + '_'
+        return os.path.join(public.get_panel_path(), 'vhost', 'nginx', prefix + site_name + '.conf')
+
+    # 向 server 块注入全局规则 include 块
+    def _inject_block(self, content):
+        # 锚定 server 块顶层的 server_name，避免落入 location 块内的 access_log /dev/null
+        m = re.search(r'^[ \t]*server_name\s+[^;]+;[ \t]*$', content, re.MULTILINE)
+        if m:
+            return content[:m.end()] + self.GLOBAL_RULE_BLOCK + content[m.end():]
+        # 兜底：锚定 server 顶层真实日志 access_log（排除 location 内的 /dev/null 或 off）
+        m2 = re.search(r'^[ \t]*access_log\s+(?!off\b|/dev/null\b).+;[ \t]*$', content, re.MULTILINE)
+        if m2:
+            return content[:m2.start()] + self.GLOBAL_RULE_BLOCK + '\n' + content[m2.start():]
+        return content
+
     # 获取网站全局设置
     def get_site_global(self, get):
         status = {}
@@ -15202,6 +15345,228 @@ if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FOR
             all_ips = ["0.0.0.0/0", "::/0"]
 
         return public.return_message(0, 0, "\n".join(all_ips))
+
+
+
+
+    # 获取全局规则
+    def get_global_rule(self, get):
+        meta = self._get_global_rule_meta()
+        content = public.readFile(self.GLOBAL_RULE_CONF) or ''
+        sites = [{"name": s['name'], "project_type": s.get('project_type', '')}
+                 for s in public.M('sites').field('name,project_type').select()
+                 if (s.get('project_type') or '').lower() in self.GLOBAL_RULE_SITE_TYPES]
+        return public.return_message(0, 0, {
+            "status": meta.get('status', 0),
+            "file":self.GLOBAL_RULE_CONF,
+            "scope_mode": meta.get('scope_mode', 'all'),
+            "selected_sites": meta.get('selected_sites', []),
+            "content": content,
+            "available": self._nginx_available(),
+            "sites": sites,
+        })
+
+
+    # # 避免 form-data 传多行 content 时换行被吞成空格、整段被首个 # 注释
+    # def _merge_json_body(self, get):
+    #     try:
+    #         from flask import request
+    #         j = request.get_json(force=True, silent=True)
+    #     except Exception:
+    #         return get
+    #     if isinstance(j, dict):
+    #         for k, v in j.items():
+    #             get[k] = v
+    #     return get
+
+    # 设置全局规则
+    def set_global_rule(self, get):
+        # get = self._merge_json_body(get)
+        if not self._nginx_available():
+            return public.return_message(-1, 0, public.lang('Global rules require Nginx'))
+
+        status = 1 if str(get.get('status', 0)) in ('1', 'true', 'True') else 0
+        scope_mode = get.get('scope_mode', 'all')
+        content = get.get('content', '')
+
+        selected_raw = get.get('selected_sites', '')
+        if isinstance(selected_raw, list):
+            selected = selected_raw
+        elif selected_raw:
+            try:
+                selected = json.loads(selected_raw)
+            except Exception:
+                selected = []
+        else:
+            selected = []
+
+        if scope_mode not in ('all', 'selected', 'except'):
+            return public.return_message(-1, 0, public.lang('Invalid scope mode'))
+        if scope_mode in ('selected', 'except') and not selected:
+            return public.return_message(-1, 0, public.lang('Please select at least one website'))
+
+        return self._apply_global_rule(status, scope_mode, selected, content)
+
+    # 测试全局规则配置语法（只校验，不落盘/不注入站点/不 reload）
+    def test_global_rule(self, get):
+        # get = self._merge_json_body(get)
+        if not self._nginx_available():
+            return public.return_message(-1, 0, public.lang('Global rules require Nginx'))
+        content = get.get('content', '')
+        if not isinstance(content, str):
+            content = ''
+        content = content.replace('\r\n', '\n').replace('\r', '\n')
+
+        self._ensure_global_rule_conf_dir()
+        existed = os.path.exists(self.GLOBAL_RULE_CONF)
+        bak = public.readFile(self.GLOBAL_RULE_CONF) if existed else None
+        try:
+            public.writeFile(self.GLOBAL_RULE_CONF, content)
+            check = public.checkWebConfig()
+            if check is True:
+                return public.return_message(0, 0, public.lang('Nginx configuration test passed'))
+            return public.return_message(-1, 0, str(check).strip().split('\n')[0])
+        finally:
+            # 无论结果如何恢复原 global.conf，保证测试不留痕迹
+            if existed:
+                public.writeFile(self.GLOBAL_RULE_CONF, bak)
+            elif os.path.exists(self.GLOBAL_RULE_CONF):
+                os.remove(self.GLOBAL_RULE_CONF)
+
+    # 删除/清空全局规则（清掉规则内容、选中网站、模式等，回到未配置状态）
+    def delete_global_rule(self, get):
+        if not self._nginx_available():
+            return public.return_message(-1, 0, public.lang('Global rules require Nginx'))
+        res = self._apply_global_rule(0, 'all', [], '')
+        if isinstance(res, dict) and res.get('status') == 0:
+            return public.return_message(0, 0, public.lang('Deleted'))
+        return res
+
+    # 获取全局规则模板列表（含内置预置模板，首次访问时初始化写入）
+    def _get_global_rule_templates(self):
+        try:
+            tpls = public.read_config('nginx_global_rule_templates')
+        except Exception:
+            tpls = [dict(t) for t in self.GLOBAL_RULE_PRESET_TEMPLATES]
+            public.save_config('nginx_global_rule_templates', tpls)
+            return tpls
+        for t in tpls:
+            t.setdefault('desc', '')
+        return tpls
+
+    # 获取全局规则模板列表
+    def get_global_rule_templates(self, get):
+        try:
+            tpls = self._get_global_rule_templates()
+        except Exception:
+            tpls = [dict(t) for t in self.GLOBAL_RULE_PRESET_TEMPLATES]
+        return public.return_message(0, 0, tpls)
+
+    # 保存全局规则模板（预置模板同样可编辑）
+    def save_global_rule_template(self, get):
+        # get = self._merge_json_body(get)
+        name = get.get('name', '').strip()
+        code = get.get('code', '')
+        desc = get.get('desc', '').strip()
+        if not name or not code:
+            return public.return_message(-1, 0, public.lang('Template name and code are required'))
+        tpls = self._get_global_rule_templates()
+        try:
+            tid = int(get.get('id', 0) or 0)
+        except (ValueError, TypeError):
+            tid = 0
+        if tid:
+            for t in tpls:
+                if t.get('id') == tid:
+                    t['name'], t['code'], t['desc'] = name, code, desc
+                    break
+            else:
+                return public.return_message(-1, 0, public.lang('Template does not exist'))
+        else:
+            new_id = (max([t['id'] for t in tpls]) + 1) if tpls else 1
+            tpls.insert(0, {"id": new_id, "name": name, "desc": desc, "code": code, "create_time": int(time.time())})
+        public.save_config('nginx_global_rule_templates', tpls)
+        return public.return_message(0, 0, public.lang('Saved'))
+
+    # 删除全局规则模板（预置模板同样可删除）
+    def delete_global_rule_template(self, get):
+        try:
+            tid = int(get.get('id', 0) or 0)
+        except (ValueError, TypeError):
+            return public.return_message(-1, 0, public.lang('Invalid template id'))
+        tpls = self._get_global_rule_templates()
+        public.save_config('nginx_global_rule_templates', [t for t in tpls if t.get('id') != tid])
+        return public.return_message(0, 0, public.lang('Deleted'))
+
+    # 确保 global.conf 目录存在
+    def _ensure_global_rule_conf_dir(self):
+        d = os.path.dirname(self.GLOBAL_RULE_CONF)
+        if d and not os.path.isdir(d):
+            os.makedirs(d, exist_ok=True)
+
+
+    # 落地全局规则（含回滚）
+    def _apply_global_rule(self, status, scope_mode, selected, content):
+        selected_set = set(selected)
+        all_sites = public.M('sites').field('name,project_type').select()
+        php_sites = set(s['name'] for s in all_sites
+                        if (s.get('project_type') or '').lower() in self.GLOBAL_RULE_SITE_TYPES)
+        bak = []
+
+        # 统一换行符：防止 \r\n / \r 被 nginx 视为非换行，导致整段被首个 # 注释吞掉
+        if not isinstance(content, str):
+            content = ''
+        content = content.replace('\r\n', '\n').replace('\r', '\n')
+
+        # 备份并写入 global.conf
+        self._ensure_global_rule_conf_dir()
+        if os.path.exists(self.GLOBAL_RULE_CONF):
+            shutil.copy2(self.GLOBAL_RULE_CONF, self.GLOBAL_RULE_CONF + '.global_rule.bak')
+            bak.append((self.GLOBAL_RULE_CONF, self.GLOBAL_RULE_CONF + '.global_rule.bak'))
+        public.writeFile(self.GLOBAL_RULE_CONF, content or '')
+
+        # 遍历所有站点：剥离历史注入块；仅 PHP 站点按 scope 决定是否注入
+        for s in all_sites:
+            path = self._get_site_nginx_conf_path(s['name'], s.get('project_type', ''))
+            if not os.path.exists(path):
+                continue
+            old = public.readFile(path)
+            if not old:
+                continue
+            stripped = self.GLOBAL_RULE_STRIP_RE.sub('\n', old)
+            should_inject = (s['name'] in php_sites) and (status == 1) and self._scope_hit(s['name'], scope_mode, selected_set)
+            new = self._inject_block(stripped) if should_inject else stripped
+            if new != old:
+                shutil.copy2(path, path + '.global_rule.bak')
+                bak.append((path, path + '.global_rule.bak'))
+                public.writeFile(path, new)
+
+        # 校验 nginx 配置
+        check_result = public.checkWebConfig()
+        if check_result is not True:
+            for path, bpath in bak:
+                if os.path.exists(bpath):
+                    shutil.copy2(bpath, path)
+                    os.remove(bpath)
+            err_detail = check_result.strip() if isinstance(check_result, str) else ''
+            msg = public.lang('Nginx config check failed, changes rolled back')
+            if err_detail:
+                msg += '\n' + err_detail
+            return public.return_message(-1, 0, msg)
+
+        # 校验通过，持久化元数据
+        public.save_config('nginx_global_rule', {
+            "status": status, "scope_mode": scope_mode,
+            "selected_sites": sorted(selected_set), "update_time": int(time.time()),
+        })
+        for _, bpath in bak:
+            if os.path.exists(bpath):
+                os.remove(bpath)
+
+        # reload nginx
+        if not public.webservice_operation('nginx', 'reload'):
+            return public.return_message(-1, 0, public.lang('Nginx reload failed'))
+        return public.return_message(0, 0, public.lang('Applied'))
     # ========================网站全局设置 end=========================
 
     # 获取网站安装报告

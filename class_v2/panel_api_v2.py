@@ -6,7 +6,7 @@
 # +-------------------------------------------------------------------
 # | Author: hwliang <hwl@aapanel.com>
 # +-------------------------------------------------------------------
-import public,os,json,time
+import public,os,json,time,ipaddress
 try:
     from BTPanel import cache
 except:pass
@@ -261,7 +261,21 @@ class panelApi:
             public.add_security_logs('API configuration', '{} API interface', (stats[data['open']],))
             token = stats[data['open']] + ' success!'
         elif get.t_type == '3':
-            data['limit_addr'] = get.limit_addr.split('\n')
+            limit_addr = get.limit_addr.split('\n')
+            for rule in limit_addr:
+                rule = rule.strip()
+                if not rule or rule in ('*', 'all'):
+                    continue
+                try:
+                    if '-' in rule:
+                        start_ip, end_ip = [ipaddress.ip_address(ip.strip()) for ip in rule.split('-')]
+                        if start_ip.version != end_ip.version or start_ip > end_ip:
+                            raise ValueError
+                    else:
+                        ipaddress.ip_network(rule, strict=False)
+                except (ValueError, TypeError):
+                    return public.return_message(-1, 0, public.lang("IP address you entered is illegal!"))
+            data['limit_addr'] = limit_addr
             public.write_log_gettext('API configuration','Change IP limit to [{}]',(get.limit_addr,))
             public.add_security_logs('API configuration', 'Change IP limit to [{}]', (get.limit_addr,))
             token ='Saved successfully!'

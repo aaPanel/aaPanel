@@ -71,6 +71,11 @@ class panel_restore:
             self._progress_rewrite('Detected full backup archive, switching to full restore mode...')
             return self._restore_full_backup(local_backup_file_path, site_info, args)
 
+        # 网站根目录为软链接时，保留软链接并将文件恢复到实际目录
+        if os.path.islink(args.path):
+            args.path = os.path.realpath(args.path)
+            site_info['site_path'] = args.path
+
         # 将网站目录移至回收站
         self._progress_rewrite('Move the current website directory to the recycle bin: {}'.format(str(args.path)))
         self._remove_old_website_file_to_trush(args)
@@ -245,7 +250,7 @@ class panel_restore:
             self._download_ftp_file(args)
             result = self._restore_backup(self._local_file, site_info, args)
         else:
-            return public.return_msg_gettext(False,'Currently only supports restoring local, Google storage, AWS S3 and FTP backups')
+            return public.return_msg_gettext(False,'Currently only supports restoring local, Google storage, S3 Storage and FTP backups')
         if os.path.exists(self._local_file):
             os.remove(self._local_file)
         if result:
@@ -293,7 +298,7 @@ class panel_restore:
             elif backup_method == 'ftp':
                 self._download_ftp_file(args,'database')
             else:
-                return public.returnMsg(False,'Currently only supports restoring local, Google storage, AWS S3 and FTP backups')
+                return public.returnMsg(False,'Currently only supports restoring local, Google storage, S3 Storage and FTP backups')
             public.ExecShell('mv {} {}/database'.format(self._local_file, self._get_local_backup_path()))
             return public.returnMsg(True,'success')
         except:

@@ -101,7 +101,8 @@
 			"domain_2": "Sertifika",
 			"security_8": "Website Security",
 			"security_9": "Scan Detection",
-			"wap_12": "Exclusive Rules"
+			"wap_12": "Exclusive Rules",
+			"wap_13": "Protection Screen"
 		},
 		"Footer": {
 			"index_1": "aaPanel Linux paneli ©2014-{0} aaPanel",
@@ -117,5 +118,25 @@
 			"index_6": "Mesaj Kutusu",
 			"index_7": "Harcanan Süre"
 		}
+	},
+	"GlobalSearch": {
+		"title": "Global Arama",
+		"sider": "Ara (Ctrl+K)",
+		"placeholder": "Aramak için anahtar kelime girip Enter'a basın",
+		"group_menu": "Menüler",
+		"group_tab": "Sayfa Sekmeleri",
+		"group_action": "İşlemler",
+		"history": "Son Aramalar",
+		"clear": "Temizle",
+		"searching": "Aranıyor…",
+		"done": "Tamam · {n} sonuç",
+		"empty": "Sonuç bulunamadı",
+		"empty_tip": "Daha kısa bir anahtar kelime deneyin veya arama türünü değiştirin",
+		"press_enter_search": "Aramak için Enter'a basın veya arama simgesine tıklayın, daha fazlasını arayın",
+		"no_local": "Eşleşen özellik bulunamadı",
+		"footer": "↑↓ Gezin · Enter Aç veya Ara · Esc Kapat",
+		"welcome": "Menüler, siteler, veritabanları, FTP, cron, yazılım ve işlemleri ara",
+		"type_all": "Tümü",
+		"scope_label": "Arama türü"
 	}
 }
