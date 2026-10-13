@@ -1028,14 +1028,25 @@ class main(databaseBase, panelPgsql):
             return public.fail_v2(public.lang("Failed to connect to the database!"))
 
         data = pgsql_obj.query('SELECT rolname FROM pg_roles;')
-        if username not in data:
-            # 添加用户
-            result = self.__CreateUsers(find['sid'], username, username, newpassword, "127.0.0.0.1")
+
+        roles = [x[0] for x in data] if isinstance(data, list) else []
+        
+        if username not in roles:
+            result = self.__CreateUsers(
+                find['sid'],
+                username,
+                username,
+                newpassword,
+                "127.0.0.1"
+            )
         else:
-            result = pgsql_obj.execute("""ALTER USER "{}" with password '{}';""".format(username, newpassword))
-        isError = self.IsSqlError(result)
-        if isError is not None:
-            return isError
+            result = pgsql_obj.execute(
+                """ALTER USER "{}" WITH PASSWORD '{}';""".format(
+                    username,
+                    newpassword
+                )
+            )
+        
 
         # 修改SQLITE
         public.M('databases').where("id=? AND LOWER(type)=LOWER('PgSql')", (id,)).setField('password', newpassword)
