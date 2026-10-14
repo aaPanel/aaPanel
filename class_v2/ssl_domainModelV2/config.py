@@ -34,6 +34,7 @@ DNS_MAP = {
     "aaPanelDns": aaPanelDns,
     "GodaddyDns": GodaddyDns,
     "SpaceShipDNS": SpaceShipDNS,
+    "ScalewayDns": ScalewayDns,
     "AmazonRoute53Dns": AmazonRoute53Dns,
 }
 
