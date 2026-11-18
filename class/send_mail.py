@@ -13,7 +13,7 @@ import os, sys, public, base64, json, re
 import smtplib, requests
 # import http_requests as requests
 from email.mime.text import MIMEText
-from email.utils import formataddr
+from email.utils import formataddr, formatdate
 
 class send_mail:
     __mail_config = '/www/server/panel/data/stmp_mail.json'
@@ -124,6 +124,7 @@ class send_mail:
         if not 'port' in self.__qq_mail_user: self.__qq_mail_user['port'] = 465
         try:
             msg = MIMEText(body, 'html', 'utf-8')
+            msg['Date'] = formatdate()
             msg['From'] = formataddr([self.__qq_mail_user['qq_mail'], self.__qq_mail_user['qq_mail']])
             if type(email)==str:
                 msg['To'] = formataddr([self.__qq_mail_user['qq_mail'], email.strip()])
