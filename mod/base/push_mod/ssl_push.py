@@ -133,7 +133,7 @@ class DomainEndTimeTask(BaseTask):
     def filter_template(self, template) -> dict:
         domain_list = DB("ssl_domains").select()
 
-        items = [{"title": i["domain"], "value": i["domain"]}for i in domain_list]
+        items = [{"title": (i if isinstance(i, str) else i["domain"]), "value": (i if isinstance(i, str) else i["domain"])} for i in domain_list]
 
         template["field"][0]["items"].extend(items)
         return template
